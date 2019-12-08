@@ -254,6 +254,9 @@ void QgsPalLayerSettings::initPropertyDefinitions()
     { QgsPalLayerSettings::LabelAllParts, QgsPropertyDefinition( "LabelAllParts", QObject::tr( "Label all parts" ), QgsPropertyDefinition::Boolean, origin ) },
     { QgsPalLayerSettings::AllowDegradedPlacement, QgsPropertyDefinition( "AllowDegradedPlacement", QObject::tr( "Allow inferior fallback placements" ), QgsPropertyDefinition::Boolean, origin ) },
     { QgsPalLayerSettings::OverlapHandling, QgsPropertyDefinition( "OverlapHandling", QgsPropertyDefinition::DataTypeString, QObject::tr( "Overlap handing" ), QObject::tr( "string " ) + "[<b>Prevent</b>|<b>AllowIfNeeded</b>|<b>AlwaysAllow</b>]", origin ) },
+
+    { QgsPalLayerSettings::RemoveDuplicateLabels, QgsPropertyDefinition( "RemoveDuplicates", QObject::tr( "Remove duplicate labels" ), QgsPropertyDefinition::Boolean, origin ) },
+    { QgsPalLayerSettings::RemoveDuplicateLabelDistance, QgsPropertyDefinition( "RemoveDuplicateDistance", QObject::tr( "Minimum distance to duplicate labels" ), QgsPropertyDefinition::DoublePositive, origin ) },
   };
 }
 
@@ -1167,6 +1170,12 @@ void QgsPalLayerSettings::readXml( const QDomElement &elem, const QgsReadWriteCo
   mThinningSettings.setMinimumFeatureSize( renderingElem.attribute( QStringLiteral( "minFeatureSize" ) ).toDouble() );
   mThinningSettings.setLimitNumberLabelsEnabled( renderingElem.attribute( QStringLiteral( "limitNumLabels" ), QStringLiteral( "0" ) ).toInt() );
   mThinningSettings.setMaximumNumberLabels( renderingElem.attribute( QStringLiteral( "maxNumLabels" ), QStringLiteral( "2000" ) ).toInt() );
+
+  mThinningSettings.setMinimumDistanceToDuplicate( placementElem.attribute( QStringLiteral( "minDistanceToDuplicates" ), QStringLiteral( "0" ) ).toDouble() );
+  mThinningSettings.setMinimumDistanceToDuplicateUnits( QgsUnitTypes::decodeRenderUnit( placementElem.attribute( QStringLiteral( "minDistanceToDuplicatesUnit" ) ) ) );
+  mThinningSettings.setMinimumDistanceToDuplicateMapUnitScale( QgsSymbolLayerUtils::decodeMapUnitScale( placementElem.attribute( QStringLiteral( "minDistanceToDuplicateMapUnitScale" ) ) ) );
+  mThinningSettings.setAllowDuplicateRemoval( placementElem.attribute( QStringLiteral( "allowDuplicateRemoval" ), QStringLiteral( "0" ) ).toInt() );
+
   mObstacleSettings.setIsObstacle( renderingElem.attribute( QStringLiteral( "obstacle" ), QStringLiteral( "1" ) ).toInt() );
   mObstacleSettings.setFactor( renderingElem.attribute( QStringLiteral( "obstacleFactor" ), QStringLiteral( "1" ) ).toDouble() );
   mObstacleSettings.setType( static_cast< QgsLabelObstacleSettings::ObstacleType >( renderingElem.attribute( QStringLiteral( "obstacleType" ), QString::number( PolygonInterior ) ).toUInt() ) );
@@ -1327,6 +1336,11 @@ QDomElement QgsPalLayerSettings::writeXml( QDomDocument &doc, const QgsReadWrite
   renderingElem.setAttribute( QStringLiteral( "minFeatureSize" ), mThinningSettings.minimumFeatureSize() );
   renderingElem.setAttribute( QStringLiteral( "limitNumLabels" ), mThinningSettings.limitNumberOfLabelsEnabled() );
   renderingElem.setAttribute( QStringLiteral( "maxNumLabels" ), mThinningSettings.maximumNumberLabels() );
+  placementElem.setAttribute( QStringLiteral( "minDistanceToDuplicates" ), mThinningSettings.minimumDistanceToDuplicate() );
+  placementElem.setAttribute( QStringLiteral( "minDistanceToDuplicatesUnit" ), QgsUnitTypes::encodeUnit( mThinningSettings.minimumDistanceToDuplicateUnits() ) );
+  placementElem.setAttribute( QStringLiteral( "minDistanceToDuplicateMapUnitScale" ), QgsSymbolLayerUtils::encodeMapUnitScale( mThinningSettings.minimumDistanceToDuplicateMapUnitScale() ) );
+  placementElem.setAttribute( QStringLiteral( "allowDuplicateRemoval" ), mThinningSettings.allowDuplicateRemoval() );
+
   renderingElem.setAttribute( QStringLiteral( "obstacle" ), mObstacleSettings.isObstacle() );
   renderingElem.setAttribute( QStringLiteral( "obstacleFactor" ), mObstacleSettings.factor() );
   renderingElem.setAttribute( QStringLiteral( "obstacleType" ), static_cast< unsigned int >( mObstacleSettings.type() ) );
@@ -2754,6 +2768,15 @@ std::unique_ptr<QgsLabelFeature> QgsPalLayerSettings::registerFeatureWithDetails
   {
     labelFeature->setOuterBounds( outerBounds );
   }
+
+  QgsLabelFeatureThinningSettings thinning;
+  if ( featureThinningSettings.allowDuplicateRemoval() )
+  {
+    thinning.setNoRepeatDistance( context.convertToMapUnits( featureThinningSettings.minimumDistanceToDuplicate(),
+                                  featureThinningSettings.minimumDistanceToDuplicateUnits(),
+                                  featureThinningSettings.minimumDistanceToDuplicateMapUnitScale() ) );
+  }
+  ( *labelFeature ).setThinningSettings( thinning );
 
   //set label's visual margin so that top visual margin is the leading, and bottom margin is the font's descent
   //this makes labels align to the font's baseline or highest character

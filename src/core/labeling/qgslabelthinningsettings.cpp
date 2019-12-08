@@ -21,10 +21,14 @@
 
 void QgsLabelThinningSettings::updateDataDefinedProperties( const QgsPropertyCollection &properties, QgsExpressionContext &context )
 {
-  Q_UNUSED( properties )
-  Q_UNUSED( context )
-
-  // temporarily avoid warnings
-  const int unused = 1;
-  ( void )unused;
+  if ( properties.isActive( QgsPalLayerSettings::RemoveDuplicateLabels ) )
+  {
+    context.setOriginalValueVariable( mAllowDuplicateRemoval );
+    mAllowDuplicateRemoval = properties.valueAsBool( QgsPalLayerSettings::RemoveDuplicateLabels, context, mAllowDuplicateRemoval );
+  }
+  if ( properties.isActive( QgsPalLayerSettings::RemoveDuplicateLabelDistance ) )
+  {
+    context.setOriginalValueVariable( mMinDistanceToDuplicate );
+    mMinDistanceToDuplicate = properties.valueAsDouble( QgsPalLayerSettings::RemoveDuplicateLabelDistance, context, mMinDistanceToDuplicate );
+  }
 }

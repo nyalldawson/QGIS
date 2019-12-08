@@ -30,6 +30,7 @@
 #include "qgslabelobstaclesettingswidget.h"
 #include "qgslabellineanchorwidget.h"
 #include "qgsprojectstylesettings.h"
+#include "qgslabelremoveduplicatesettingswidget.h"
 
 #include <mutex>
 
@@ -232,6 +233,50 @@ void QgsLabelingGui::showLineAnchorSettings()
   }
 }
 
+
+void QgsLabelingGui::showDuplicateSettings()
+{
+  QgsExpressionContext context = createExpressionContext();
+
+  QgsSymbolWidgetContext symbolContext;
+  symbolContext.setExpressionContext( &context );
+  symbolContext.setMapCanvas( mMapCanvas );
+
+  QgsLabelRemoveDuplicatesSettingsWidget *widget = new QgsLabelRemoveDuplicatesSettingsWidget( nullptr, mLayer );
+  widget->setDataDefinedProperties( mDataDefinedProperties );
+  widget->setSettings( mThinningSettings );
+  widget->setGeometryType( mLayer ? mLayer->geometryType() : Qgis::GeometryType::Unknown );
+  widget->setContext( symbolContext );
+
+  auto applySettings = [ = ]
+  {
+    mThinningSettings = widget->settings();
+    const QgsPropertyCollection obstacleDataDefinedProperties = widget->dataDefinedProperties();
+    widget->updateDataDefinedProperties( mDataDefinedProperties );
+    emit widgetChanged();
+  };
+
+  QgsPanelWidget *panel = QgsPanelWidget::findParentPanel( this );
+  if ( panel && panel->dockMode() )
+  {
+    connect( widget, &QgsLabelSettingsWidgetBase::changed, this, [ = ]
+    {
+      applySettings();
+    } );
+    panel->openPanel( widget );
+  }
+  else
+  {
+    QgsLabelSettingsWidgetDialog dialog( widget, this );
+    if ( dialog.exec() )
+    {
+      applySettings();
+    }
+    // reactivate button's window
+    activateWindow();
+  }
+}
+
 QgsLabelingGui::QgsLabelingGui( QgsVectorLayer *layer, QgsMapCanvas *mapCanvas, const QgsPalLayerSettings &layerSettings, QWidget *parent, Qgis::GeometryType geomType )
   : QgsTextFormatWidget( mapCanvas, parent, QgsTextFormatWidget::Labeling, layer )
   , mSettings( layerSettings )
@@ -278,6 +323,7 @@ QgsLabelingGui::QgsLabelingGui( QgsVectorLayer *layer, QgsMapCanvas *mapCanvas, 
   connect( mGeometryGeneratorType, qOverload<int>( &QComboBox::currentIndexChanged ), this, &QgsLabelingGui::validateGeometryGeneratorExpression );
   connect( mObstacleSettingsButton, &QAbstractButton::clicked, this, &QgsLabelingGui::showObstacleSettings );
   connect( mLineAnchorSettingsButton, &QAbstractButton::clicked, this, &QgsLabelingGui::showLineAnchorSettings );
+  connect( mDuplicateSettingsButton, &QAbstractButton::clicked, this, &QgsLabelingGui::showDuplicateSettings );
 
   mFieldExpressionWidget->registerExpressionContextGenerator( this );
 
@@ -400,6 +446,10 @@ void QgsLabelingGui::setLayer( QgsMapLayer *mapLayer )
   mChkNoObstacle->setChecked( mSettings.obstacleSettings().isObstacle() );
 
   mObstacleSettings = mSettings.obstacleSettings();
+
+  mThinningSettings = mSettings.thinningSettings();
+  mChkNoDuplicates->setChecked( mThinningSettings.allowDuplicateRemoval() );
+
   mLineSettings = mSettings.lineSettings();
 
   chkLabelPerFeaturePart->setChecked( mSettings.labelPerPart );
@@ -581,6 +631,9 @@ QgsPalLayerSettings QgsLabelingGui::layerSettings()
   lyr.lineSettings().setAnchorType( mLineSettings.anchorType() );
   lyr.lineSettings().setAnchorClipping( mLineSettings.anchorClipping() );
   lyr.lineSettings().setAnchorTextPoint( mLineSettings.anchorTextPoint() );
+
+  mThinningSettings.setAllowDuplicateRemoval( mChkNoDuplicates->isChecked() );
+  lyr.setThinningSettings( mThinningSettings );
 
   lyr.labelPerPart = chkLabelPerFeaturePart->isChecked();
   lyr.placementSettings().setOverlapHandling( static_cast< Qgis::LabelOverlapHandling>( mComboOverlapHandling->currentData().toInt() ) );

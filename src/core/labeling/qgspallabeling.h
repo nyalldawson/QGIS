@@ -277,6 +277,9 @@ class CORE_EXPORT QgsPalLayerSettings
       AllowDegradedPlacement = 117, //!< Allow degraded label placements (since QGIS 3.26)
       OverlapHandling = 118, //!< Overlap handling technique (since QGIS 3.26)
 
+      RemoveDuplicateLabels = 119, //!< Whether this feature can cause removal of duplicate labels (since QGIS 3.20)
+      RemoveDuplicateLabelDistance = 120, //!< Minimum distance from labels for this feature to other labels with duplicate text (since QGIS 3.20)
+
       // (data defined only)
       Show = 15,
       AlwaysShow = 20

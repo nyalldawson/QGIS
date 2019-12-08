@@ -130,11 +130,15 @@ namespace pal
        */
       void getBoundingBox( double amin[2], double amax[2] ) const;
 
+      void getBoundingBoxForConflictSearch( double amin[2], double amax[2] ) const;
+
+
       /**
        * Returns TRUE if the outer bounding box of this pointset intersects the outer bounding box
        * of another label position.
        */
       bool outerBoundingBoxIntersects( const LabelPosition *other ) const;
+
 
       /**
        * Gets distance from this label to a point. If point lies inside, returns negative number.
@@ -422,6 +426,9 @@ namespace pal
        * Creates a GEOS representation of all label parts as a multipolygon.
        */
       void createMultiPartGeosGeom() const;
+
+
+      double minDistance( const LabelPosition *lp ) const;
 
       bool isInConflictMultiPart( const LabelPosition *lp ) const;
 

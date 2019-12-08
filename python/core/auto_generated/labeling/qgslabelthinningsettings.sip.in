@@ -76,6 +76,94 @@ Sets the minimum feature ``size`` (in millimeters) for a feature to be labelled.
 .. seealso:: :py:func:`minimumFeatureSize`
 %End
 
+    double minimumDistanceToDuplicate() const;
+%Docstring
+Returns the minimum distance to labels with duplicate text. Units are specified through :py:func:`~QgsLabelThinningSettings.minimumDistanceToDuplicateUnits`.
+
+.. seealso:: :py:func:`setMinimumDistanceToDuplicate`
+
+.. seealso:: :py:func:`minimumDistanceToDuplicateUnits`
+
+.. versionadded:: 3.20
+%End
+
+    void setMinimumDistanceToDuplicate( double length );
+%Docstring
+Sets the minimum ``distance`` to labels with duplicate text. Units are specified through :py:func:`~QgsLabelThinningSettings.setMinimumLengthUnit`.
+
+.. seealso:: :py:func:`minimumDistanceToDuplicate`
+
+.. seealso:: :py:func:`setMinimumDistanceToDuplicateUnits`
+
+.. versionadded:: 3.20
+%End
+
+    void setMinimumDistanceToDuplicateUnits( Qgis::RenderUnit unit );
+%Docstring
+Sets the ``unit`` for the minimum distance to labels with duplicate text.
+
+.. seealso:: :py:func:`minimumDistanceToDuplicateUnits`
+
+.. seealso:: :py:func:`setMinimumDistanceToDuplicate`
+
+.. versionadded:: 3.20
+%End
+
+    Qgis::RenderUnit minimumDistanceToDuplicateUnits() const;
+%Docstring
+Returns the units for the minimum distance to labels with duplicate text.
+
+.. seealso:: :py:func:`setMinimumDistanceToDuplicateUnits`
+
+.. seealso:: :py:func:`minimumDistanceToDuplicate`
+
+.. versionadded:: 3.20
+%End
+
+    void setMinimumDistanceToDuplicateMapUnitScale( const QgsMapUnitScale &scale );
+%Docstring
+Sets the map unit ``scale`` for the minimum distance to labels with duplicate text.
+
+.. seealso:: :py:func:`minimumDistanceToDuplicateMapUnitScale`
+
+.. seealso:: :py:func:`minimumDistanceToDuplicateUnits`
+
+.. seealso:: :py:func:`setMinimumDistanceToDuplicate`
+
+.. versionadded:: 3.20
+%End
+
+    const QgsMapUnitScale &minimumDistanceToDuplicateMapUnitScale() const;
+%Docstring
+Returns the map unit scale for the minimum distance to labels with duplicate text.
+
+.. seealso:: :py:func:`setMinimumDistanceToDuplicateMapUnitScale`
+
+.. seealso:: :py:func:`minimumDistanceToDuplicateUnits`
+
+.. seealso:: :py:func:`minimumDistanceToDuplicate`
+
+.. versionadded:: 3.20
+%End
+
+    bool allowDuplicateRemoval() const;
+%Docstring
+Returns whether duplicate label removal is permitted for this layer.
+
+.. seealso:: :py:func:`setAllowDuplicateRemoval`
+
+.. versionadded:: 3.20
+%End
+
+    void setAllowDuplicateRemoval( bool allow );
+%Docstring
+Sets whether duplicate label removal is permitted for this layer.
+
+.. seealso:: :py:func:`setAllowDuplicateRemoval`
+
+.. versionadded:: 3.20
+%End
+
     void updateDataDefinedProperties( const QgsPropertyCollection &properties, QgsExpressionContext &context );
 %Docstring
 Updates the thinning settings to respect any data defined properties
@@ -83,6 +171,7 @@ set within the specified ``properties`` collection.
 %End
 
 };
+
 
 /************************************************************************
  * This file has been generated automatically from                      *

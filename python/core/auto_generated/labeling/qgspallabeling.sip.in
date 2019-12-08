@@ -186,6 +186,9 @@ Contains settings for how a map layer will be labeled.
       AllowDegradedPlacement,
       OverlapHandling,
 
+      RemoveDuplicateLabels,
+      RemoveDuplicateLabelDistance,
+
       // (data defined only)
       Show,
       AlwaysShow
