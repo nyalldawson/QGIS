@@ -30,6 +30,7 @@
 #include "qgsexpressioncontextutils.h"
 #include "qgslayoutrendercontext.h"
 #include "qgssvgcache.h"
+#include "qgslinesymbollayer.h"
 
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
@@ -65,6 +66,10 @@ QgsLayoutItem::QgsLayoutItem( QgsLayout *layout, bool manageZValue )
   // required to initially setup background/frame style
   refreshBackgroundColor( false );
   refreshFrame( false );
+  mFrameSymbol = qgis::make_unique< QgsLineSymbol >();
+  mFrameSymbol->setColor( QColor( 0, 0, 0 ) );
+  mFrameSymbol->setWidth( 0.3 );
+  qgis::down_cast< QgsSimpleLineSymbolLayer * >( mFrameSymbol->symbolLayer( 0 ) )->setPenJoinStyle( Qt::MiterJoin );
 
   initConnectionsToLayout();
 
@@ -376,9 +381,9 @@ void QgsLayoutItem::paint( QPainter *painter, const QStyleOptionGraphicsItem *it
       const double viewScale = QgsLayoutUtils::scaleFactorFromItemStyle( itemStyle, painter );
       QgsLayoutItemRenderContext itemRenderContext( context, viewScale );
       draw( itemRenderContext );
-      p.scale( context.scaleFactor(), context.scaleFactor() );
+      // p.scale( context.scaleFactor(), context.scaleFactor() );
       drawFrame( context );
-      p.scale( 1 / context.scaleFactor(), 1 / context.scaleFactor() );
+      // p.scale( 1 / context.scaleFactor(), 1 / context.scaleFactor() );
       p.end();
 
       QgsImageOperation::multiplyOpacity( image, mEvaluatedOpacity );
@@ -413,7 +418,7 @@ void QgsLayoutItem::paint( QPainter *painter, const QStyleOptionGraphicsItem *it
     QgsLayoutItemRenderContext itemRenderContext( context, viewScale );
     draw( itemRenderContext );
 
-    painter->scale( context.scaleFactor(), context.scaleFactor() );
+    // painter->scale( context.scaleFactor(), context.scaleFactor() );
     drawFrame( context );
   }
 
@@ -666,15 +671,11 @@ bool QgsLayoutItem::writeXml( QDomElement &parentElement, QDomDocument &doc, con
     element.setAttribute( QStringLiteral( "background" ), QStringLiteral( "false" ) );
   }
 
-  //frame color
-  QDomElement frameColorElem = doc.createElement( QStringLiteral( "FrameColor" ) );
-  frameColorElem.setAttribute( QStringLiteral( "red" ), QString::number( mFrameColor.red() ) );
-  frameColorElem.setAttribute( QStringLiteral( "green" ), QString::number( mFrameColor.green() ) );
-  frameColorElem.setAttribute( QStringLiteral( "blue" ), QString::number( mFrameColor.blue() ) );
-  frameColorElem.setAttribute( QStringLiteral( "alpha" ), QString::number( mFrameColor.alpha() ) );
-  element.appendChild( frameColorElem );
-  element.setAttribute( QStringLiteral( "outlineWidthM" ), mFrameWidth.encodeMeasurement() );
-  element.setAttribute( QStringLiteral( "frameJoinStyle" ), QgsSymbolLayerUtils::encodePenJoinStyle( mFrameJoinStyle ) );
+  //frame
+  QDomElement frameElem = doc.createElement( QStringLiteral( "frameSymbol" ) );
+  QDomElement frameSymbolElem = QgsSymbolLayerUtils::saveSymbol( QString(), mFrameSymbol.get(), doc, context );
+  frameElem.appendChild( frameSymbolElem );
+  element.appendChild( frameElem );
 
   //background color
   QDomElement bgColorElem = doc.createElement( QStringLiteral( "BackgroundColor" ) );
@@ -764,29 +765,41 @@ bool QgsLayoutItem::readXml( const QDomElement &element, const QDomDocument &doc
   }
 
   //pen
-  mFrameWidth = QgsLayoutMeasurement::decodeMeasurement( element.attribute( QStringLiteral( "outlineWidthM" ) ) );
-  mFrameJoinStyle = QgsSymbolLayerUtils::decodePenJoinStyle( element.attribute( QStringLiteral( "frameJoinStyle" ), QStringLiteral( "miter" ) ) );
-  const QDomNodeList frameColorList = element.elementsByTagName( QStringLiteral( "FrameColor" ) );
-  if ( !frameColorList.isEmpty() )
+  QDomElement frameStyleElem = element.firstChildElement( QStringLiteral( "frameSymbol" ) );
+  if ( !frameStyleElem.isNull() )
   {
-    const QDomElement frameColorElem = frameColorList.at( 0 ).toElement();
-    bool redOk = false;
-    bool greenOk = false;
-    bool blueOk = false;
-    bool alphaOk = false;
-    int penRed, penGreen, penBlue, penAlpha;
-
-    penRed = frameColorElem.attribute( QStringLiteral( "red" ) ).toDouble( &redOk );
-    penGreen = frameColorElem.attribute( QStringLiteral( "green" ) ).toDouble( &greenOk );
-    penBlue = frameColorElem.attribute( QStringLiteral( "blue" ) ).toDouble( &blueOk );
-    penAlpha = frameColorElem.attribute( QStringLiteral( "alpha" ) ).toDouble( &alphaOk );
-
-    if ( redOk && greenOk && blueOk && alphaOk )
+    QDomElement symbolElem = frameStyleElem.firstChildElement( QStringLiteral( "symbol" ) );
+    if ( !symbolElem.isNull() )
     {
-      mFrameColor = QColor( penRed, penGreen, penBlue, penAlpha );
+      mFrameSymbol.reset( QgsSymbolLayerUtils::loadSymbol<QgsLineSymbol>( symbolElem, context ) );
     }
   }
-  refreshFrame( false );
+  else
+  {
+    mFrameWidth = QgsLayoutMeasurement::decodeMeasurement( element.attribute( QStringLiteral( "outlineWidthM" ) ) );
+    mFrameJoinStyle = QgsSymbolLayerUtils::decodePenJoinStyle( element.attribute( QStringLiteral( "frameJoinStyle" ), QStringLiteral( "miter" ) ) );
+    QDomNodeList frameColorList = element.elementsByTagName( QStringLiteral( "FrameColor" ) );
+    if ( !frameColorList.isEmpty() )
+    {
+      QDomElement frameColorElem = frameColorList.at( 0 ).toElement();
+      bool redOk = false;
+      bool greenOk = false;
+      bool blueOk = false;
+      bool alphaOk = false;
+      int penRed, penGreen, penBlue, penAlpha;
+
+      penRed = frameColorElem.attribute( QStringLiteral( "red" ) ).toDouble( &redOk );
+      penGreen = frameColorElem.attribute( QStringLiteral( "green" ) ).toDouble( &greenOk );
+      penBlue = frameColorElem.attribute( QStringLiteral( "blue" ) ).toDouble( &blueOk );
+      penAlpha = frameColorElem.attribute( QStringLiteral( "alpha" ) ).toDouble( &alphaOk );
+
+      if ( redOk && greenOk && blueOk && alphaOk )
+      {
+        mFrameColor = QColor( penRed, penGreen, penBlue, penAlpha );
+      }
+    }
+    refreshFrame( false );
+  }
 
   //brush
   const QDomNodeList bgColorList = element.elementsByTagName( QStringLiteral( "BackgroundColor" ) );
@@ -855,14 +868,25 @@ void QgsLayoutItem::setFrameEnabled( bool drawFrame )
   emit frameChanged();
 }
 
+void QgsLayoutItem::setFrameSymbol( QgsLineSymbol *symbol )
+{
+  mFrameSymbol.reset( symbol );
+  refreshFrame();
+}
+
+QgsLineSymbol *QgsLayoutItem::frameSymbol() const
+{
+  return mFrameSymbol.get();
+}
+
 void QgsLayoutItem::setFrameStrokeColor( const QColor &color )
 {
-  if ( mFrameColor == color )
+  if ( !mFrameSymbol || mFrameSymbol->color() == color )
   {
     //no change
     return;
   }
-  mFrameColor = color;
+  mFrameSymbol->setColor( color );
   // apply any datadefined overrides
   refreshFrame( true );
   emit frameChanged();
@@ -870,12 +894,14 @@ void QgsLayoutItem::setFrameStrokeColor( const QColor &color )
 
 void QgsLayoutItem::setFrameStrokeWidth( const QgsLayoutMeasurement width )
 {
-  if ( mFrameWidth == width )
+  if ( !mFrameSymbol || mFrameSymbol->width() == width.length() )
   {
     //no change
     return;
   }
-  mFrameWidth = width;
+
+  // TODO - unit conversion
+  mFrameSymbol->setWidth( width.length() );
   refreshFrame();
   emit frameChanged();
 }
@@ -887,7 +913,14 @@ void QgsLayoutItem::setFrameJoinStyle( const Qt::PenJoinStyle style )
     //no change
     return;
   }
-  mFrameJoinStyle = style;
+
+  for ( int layer = 0; layer < mFrameSymbol->symbolLayerCount(); ++layer )
+  {
+    if ( QgsSimpleLineSymbolLayer *line = dynamic_cast<QgsSimpleLineSymbolLayer * >( mFrameSymbol->symbolLayer( layer ) ) )
+    {
+      line->setPenJoinStyle( style );
+    }
+  }
 
   QPen itemPen = pen();
   itemPen.setJoinStyle( mFrameJoinStyle );
@@ -1255,18 +1288,20 @@ QPainterPath QgsLayoutItem::framePath() const
 
 void QgsLayoutItem::drawFrame( QgsRenderContext &context )
 {
-  if ( !mFrame || !context.painter() )
+  if ( !mFrame || !context.painter() || !mFrameSymbol )
     return;
 
-  QPainter *p = context.painter();
+  mFrameSymbol->startRender( context );
 
-  const QgsScopedQPainterState painterState( p );
+  QPolygonF line;
+  line << QPointF( 0, 0 )
+       << QPointF( rect().width() * context.scaleFactor(), 0.0 )
+       << QPointF( rect().width() * context.scaleFactor(), rect().height() * context.scaleFactor() )
+       << QPointF( 0.0, rect().height() * context.scaleFactor() )
+       << QPointF( 0.0, 0.0 );
 
-  p->setPen( pen() );
-  p->setBrush( Qt::NoBrush );
-  context.setPainterFlagsUsingContext( p );
-
-  p->drawPath( framePath() );
+  mFrameSymbol->renderPolyline( line, nullptr, context );
+  mFrameSymbol->stopRender( context );
 }
 
 void QgsLayoutItem::drawBackground( QgsRenderContext &context )

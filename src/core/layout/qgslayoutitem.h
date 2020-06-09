@@ -33,6 +33,8 @@ class QPainter;
 class QgsLayoutItemGroup;
 class QgsLayoutEffect;
 class QgsStyleEntityVisitorInterface;
+class QgsLineSymbol;
+class QgsFillSymbol;
 
 /**
  * \ingroup core
@@ -772,6 +774,22 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
     virtual void setFrameEnabled( bool drawFrame );
 
     /**
+     * Sets the line \a symbol used for drawing the item frame.
+     *
+     * Ownership of \a symbol is transferred to the item.
+     *
+     * \see frameSymbol()
+     */
+    void setFrameSymbol( QgsLineSymbol *symbol SIP_TRANSFER );
+
+    /**
+     * Returns the line symbol used for drawing the item frame.
+     *
+     * \see setFrameSymbol()
+     */
+    QgsLineSymbol *frameSymbol() const;
+
+    /**
      * Sets the frame stroke \a color.
      * \see frameStrokeColor()
      * \see setFrameEnabled()
@@ -1346,6 +1364,9 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
     QColor mBackgroundColor = QColor( 255, 255, 255 );
 
     bool mBlockUndoCommands = false;
+
+    std::unique_ptr< QgsLineSymbol > mFrameSymbol;
+    std::unique_ptr< QgsFillSymbol > mBackgroundSymbol;
 
     void initConnectionsToLayout();
 

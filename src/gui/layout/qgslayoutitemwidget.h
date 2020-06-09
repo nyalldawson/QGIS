@@ -262,6 +262,7 @@ class GUI_EXPORT QgsLayoutItemPropertiesWidget: public QWidget, private Ui::QgsL
      * Set the frame color
      */
     void mFrameColorButton_colorChanged( const QColor &newFrameColor );
+    void frameSymbolChanged();
 
     /**
      * Set the background color
