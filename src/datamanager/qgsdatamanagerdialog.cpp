@@ -21,7 +21,7 @@
 #include "qgsdatamanagerdialog.h"
 #include "qgsapplication.h"
 #include "qgsdataitem.h"
-#include "qgsbrowsermodel.h"
+#include "qgsbrowserguimodel.h"
 #include "qgsencodingfiledialog.h"
 //#include "qgsgenericprojectionselector.h"
 #include "qgslogger.h"
@@ -57,6 +57,9 @@ QgsDataManagerDialog::QgsDataManagerDialog( QWidget *parent, Qt::WindowFlags fla
 {
   setupUi( this );
 
+  setDockOptions( dockOptions() | QMainWindow::GroupedDragging );
+
+
   mMapToolPan.reset( new QgsMapToolPan( mapCanvas ) );
   mapCanvas->setMapTool( mMapToolPan.get() );
 
@@ -66,7 +69,8 @@ QgsDataManagerDialog::QgsDataManagerDialog( QWidget *parent, Qt::WindowFlags fla
   tabWidget->setTabEnabled( tabWidget->indexOf( previewTab ), false );
   tabWidget->setTabEnabled( tabWidget->indexOf( attributesTab ), false );
 
-  mModel = new QgsBrowserModel( treeView );
+  mModel = new QgsBrowserGuiModel( treeView );
+  mModel->initialize();
   treeView->setModel( mModel );
 
   // Last expanded is stored, don't cover whole height with file system

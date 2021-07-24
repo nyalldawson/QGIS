@@ -102,11 +102,21 @@ int main( int argc, char *argv[] )
   QgsApplication::setApplicationName( QStringLiteral( "QGIS3" ) );
 
   QgsApplication::init();
-  QgsApplication::initQgis();
-
-  QgsProviderRegistry::instance( QgsApplication::pluginPath() );
 
   ( void ) QgsApplication::resolvePkgPath(); // trigger storing of application path in QgsApplication
+
+  QString dbError;
+  if ( !QgsApplication::createDatabase( &dbError ) )
+  {
+    //  QMessageBox::critical( this, tr( "Private qgis.db" ), dbError );
+  }
+
+  QgsApplication::createThemeFolder();
+
+
+  QgsApplication::initQgis();
+
+
 
   app.setWindowIcon( QIcon( QgsApplication::iconsPath() + "qbrowser-icon-60x60.png" ) );
 
