@@ -155,6 +155,8 @@ if(WITH_CORE)
 
   set (WITH_QGIS_PROCESS TRUE CACHE BOOL "Determines whether the standalone \"qgis_process\" tool should be built")
 
+  set (WITH_QGIS_DATAMANAGER FALSE CACHE BOOL "Determines whether the \"qgis_datamanager\" application should be built")
+
   # try to configure and build python bindings by default
   set (WITH_BINDINGS TRUE CACHE BOOL "Determines whether python bindings should be built")
   if (WITH_BINDINGS)
@@ -210,6 +212,10 @@ if(WITH_CORE)
 
   if ( WITH_QGIS_PROCESS AND NOT WITH_ANALYSIS )
     message(FATAL_ERROR "Process tool cannot be built without analysis")
+  endif()
+
+  if ( WITH_QGIS_DATAMANAGER AND NOT WITH_GUI )
+    message(FATAL_ERROR "qgis_datamanager application cannot be built without gui")
   endif()
 
   if ( WITH_DESKTOP )
@@ -1030,7 +1036,7 @@ if (WITH_CORE)
 
   # manual page - makes sense only on unix systems
   if (UNIX AND NOT APPLE)
-    install (FILES qgis.1 DESTINATION ${QGIS_MANUAL_DIR}/man1)
+    install (FILES qgis.1 qdatamanager.1 DESTINATION ${QGIS_MANUAL_DIR}/man1)
   endif()
 
   install(FILES cmake/FindQGIS.cmake DESTINATION ${QGIS_DATA_DIR})

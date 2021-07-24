@@ -26,8 +26,11 @@ add_subdirectory(test)
 
 if (WITH_DESKTOP)
   add_subdirectory(app)
-  add_subdirectory(datamanager)
   add_subdirectory(plugins)
+endif()
+
+if (WITH_DESKTOP OR WITH_QGIS_DATAMANAGER)
+  add_subdirectory(datamanager)
 endif()
 
 if (WITH_3D)
