@@ -22,10 +22,8 @@
 #include "ui_qgsdatamanagerdialogbase.h"
 #include "qgis_datamanager.h"
 
-class QgsBrowserModel;
-class QgsLayerItem;
-class QgsMapLayer;
-class QgsMapToolPan;
+class QgsBrowserGuiModel;
+class QgsBrowserDockWidget;
 
 class DATAMANAGER_EXPORT QgsDataManagerDialog : public QMainWindow, private Ui::QgsDataManagerDialogBase
 {
@@ -34,56 +32,17 @@ class DATAMANAGER_EXPORT QgsDataManagerDialog : public QMainWindow, private Ui::
     QgsDataManagerDialog( QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags() );
     ~QgsDataManagerDialog();
 
-    // Expand to given path
-    void expandPath( const QString &path );
-    void setLayer( QgsVectorLayer *vLayer );
-
 
   public slots:
-    void itemClicked( const QModelIndex &index );
-    void itemDoubleClicked( const QModelIndex &index );
-    void on_mActionSetProjection_triggered();
-    void on_mActionWmsConnections_triggered();
-    void on_mActionRefresh_triggered();
-    void newVectorLayer();
 
     void saveWindowState();
     void restoreWindowState();
 
-    void tabChanged();
-    void updateCurrentTab();
-    void stopRendering();
-
-    // Refresh all leaf or expanded items
-    void refresh( const QModelIndex &index = QModelIndex() );
-
-  protected:
-    void keyPressEvent( QKeyEvent *e ) override;
-    void keyReleaseEvent( QKeyEvent *e ) override;
-
-    bool layerClicked( QgsLayerItem *ptr );
-
-    enum Tab
-    {
-      Metadata,
-      Preview,
-      Attributes
-    };
-    Tab activeTab();
-
-    bool mDirtyMetadata, mDirtyPreview, mDirtyAttributes;
-
-    QgsBrowserModel *mModel = nullptr;
-    QgsMapLayer *mLayer = nullptr;
-    QModelIndex mIndex;
-    QWidget *mParamWidget = nullptr;
-    // last (selected) tab for each
-    QMap<QString, int> mLastTab;
-    QgsAttributeTableFilterModel *mAttributeTableFilterModel = nullptr;
-
   private:
 
-    std::unique_ptr< QgsMapToolPan > mMapToolPan;
+    QgsBrowserGuiModel *mBrowserModel = nullptr;
+    QgsBrowserDockWidget *mBrowserWidget = nullptr;
+
 };
 
 #endif // QGSDATAMANAGERDIALOG_H
