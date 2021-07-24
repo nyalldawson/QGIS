@@ -74,7 +74,7 @@ class QgsBrowserPropertiesWrapLabel : public QTextEdit
 /**
  * The QgsBrowserPropertiesWidget base class
  */
-class QgsBrowserPropertiesWidget : public QWidget
+class GUI_EXPORT QgsBrowserPropertiesWidget : public QWidget
 {
     Q_OBJECT
   public:

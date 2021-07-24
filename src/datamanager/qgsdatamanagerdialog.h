@@ -21,9 +21,28 @@
 #include <QModelIndex>
 #include "ui_qgsdatamanagerdialogbase.h"
 #include "qgis_datamanager.h"
+#include "qgsbrowserdockwidget.h"
+#include "qgsdataitem.h"
 
 class QgsBrowserGuiModel;
 class QgsBrowserDockWidget;
+
+class QgsDataManagerBrowserDock : public QgsBrowserDockWidget
+{
+    Q_OBJECT
+
+  public:
+
+    explicit QgsDataManagerBrowserDock( const QString &name, QgsBrowserGuiModel *browserModel, QWidget *parent = nullptr );
+
+  signals:
+
+    void dataItemDoubleClicked( QgsDataItem * );
+
+  protected slots:
+    void itemDoubleClicked( const QModelIndex &index ) override;
+
+};
 
 class DATAMANAGER_EXPORT QgsDataManagerDialog : public QMainWindow, private Ui::QgsDataManagerDialogBase
 {
@@ -40,8 +59,14 @@ class DATAMANAGER_EXPORT QgsDataManagerDialog : public QMainWindow, private Ui::
 
   private:
 
+
+    void setIconSizes( int size );
+    //! Attempts to choose a reasonable default icon size based on the window's screen DPI
+    int chooseReasonableDefaultIconSize() const;
+
+
     QgsBrowserGuiModel *mBrowserModel = nullptr;
-    QgsBrowserDockWidget *mBrowserWidget = nullptr;
+    QgsDataManagerBrowserDock *mBrowserWidget = nullptr;
 
 };
 

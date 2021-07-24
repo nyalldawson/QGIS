@@ -176,8 +176,13 @@ class GUI_EXPORT QgsBrowserDockWidget : public QgsDockWidget, private Ui::QgsBro
     //! Show event override
     void showEvent( QShowEvent *event ) override;
 
+    QgsBrowserGuiModel *mModel = nullptr;
+    QgsBrowserProxyModel *mProxyModel = nullptr;
+
+  protected slots:
+    virtual void itemDoubleClicked( const QModelIndex &index );
+
   private slots:
-    void itemDoubleClicked( const QModelIndex &index );
     void onOptionsChanged();
 
   private:
@@ -198,8 +203,6 @@ class GUI_EXPORT QgsBrowserDockWidget : public QgsDockWidget, private Ui::QgsBro
     QgsDataItemGuiContext createContext();
 
     QgsDockBrowserTreeView *mBrowserView = nullptr;
-    QgsBrowserGuiModel *mModel = nullptr;
-    QgsBrowserProxyModel *mProxyModel = nullptr;
     QString mInitPath;
     bool mPropertiesWidgetEnabled;
     // height fraction

@@ -202,6 +202,10 @@ Connections changed in the browser
 Show event override
 %End
 
+
+  protected slots:
+    virtual void itemDoubleClicked( const QModelIndex &index );
+
 };
 
 /************************************************************************

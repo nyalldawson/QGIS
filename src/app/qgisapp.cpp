@@ -1457,7 +1457,7 @@ QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, bool skipVersionCh
   {
     int size = settings.value( QStringLiteral( "/qgis/iconSize" ) ).toInt();
     if ( size < 16 )
-      size = QGIS_ICON_SIZE;
+      size = 24;
     setIconSizes( size );
   }
   else
