@@ -1957,7 +1957,7 @@ bool DRW_Header::parseDwg( DRW::Version version, dwgBuffer *buf, dwgBuffer *hBbu
 
   QgsDebugMsg( QString( "byte size of data: %1" ).arg( size ) );
 
-  if ( version > DRW::AC1021 && mv > 3 ) //2010+
+  if ( version > DRW::AC1024 || ( version == DRW::AC1024 && mv > 3 ) )
   {
     duint32 hSize = buf->getRawLong32();
     endBitPos += 32; //start bit: + 4 height size
@@ -2750,6 +2750,12 @@ bool DRW_Header::parseDwg( DRW::Version version, dwgBuffer *buf, dwgBuffer *hBbu
     buf->moveBitPos( -128 );
   }
   else if ( version == DRW::AC1027 )  //2013
+  {
+//        sz= buf->size()-76;
+//        buf->setPosition(sz);
+    buf->moveBitPos( -128 );
+  }
+  else if ( version == DRW::AC1032 )  //2018
   {
 //        sz= buf->size()-76;
 //        buf->setPosition(sz);

@@ -52,11 +52,11 @@ void DRW_Class::parseCode( int code, dxfReader *reader )
 
 bool DRW_Class::parseDwg( DRW::Version version, dwgBuffer *buf, dwgBuffer *strBuf )
 {
-  QgsDebugMsg( "***************************** parsing Class *********************************************" );
+  QgsDebugMsgLevel( QStringLiteral( "***************************** parsing Class *********************************************" ), 4 );
 
   classNum = buf->getBitShort();
 
-  QgsDebugMsg( QString( "Class number: %1" ).arg( classNum ) );
+  QgsDebugMsgLevel( QStringLiteral( "Class number: %1" ).arg( classNum ), 4 );
 
   proxyFlag = buf->getBitShort(); //in dwg specs says "version"
 
@@ -64,17 +64,17 @@ bool DRW_Class::parseDwg( DRW::Version version, dwgBuffer *buf, dwgBuffer *strBu
   className = strBuf->getVariableText( version, false );
   recName = strBuf->getVariableText( version, false );
 
-  QgsDebugMsg( QString( "app name:%1, class name:%2, dxf rec name:%3" )
-               .arg( appName.c_str() ).arg( className.c_str() ).arg( recName.c_str() )
-             );
+  QgsDebugMsgLevel( QStringLiteral( "app name:%1, class name:%2, dxf rec name:%3" )
+                    .arg( appName.c_str() ).arg( className.c_str() ).arg( recName.c_str() ), 4
+                  );
 
   wasaProxyFlag = buf->getBit(); //in dwg says wasazombie
   entityFlag = buf->getBitShort();
   entityFlag = entityFlag == 0x1F2 ? 1 : 0;
 
-  QgsDebugMsg( QString( "Proxy capabilities flag:%1, proxy flag (280): %2, entity flag:%3" )
-               .arg( proxyFlag ).arg( wasaProxyFlag ).arg( entityFlag )
-             );
+  QgsDebugMsgLevel( QStringLiteral( "Proxy capabilities flag:%1, proxy flag (280): %2, entity flag:%3" )
+                    .arg( proxyFlag ).arg( wasaProxyFlag ).arg( entityFlag ), 4
+                  );
 
   if ( version > DRW::AC1015 )  //2004+
   {
@@ -84,14 +84,14 @@ bool DRW_Class::parseDwg( DRW::Version version, dwgBuffer *buf, dwgBuffer *strBu
     int unk0 = buf->getBitLong();
     int unk1 = buf->getBitLong();
 
-    QgsDebugMsg( QString( "Instance Count:%1, DWG version: %2, maintenance version:%3, unk0:%4, unk1:%5" )
-                 .arg( instanceCount ).arg( dwgVersion ).arg( t ).arg( unk0 ).arg( unk1 )
-               );
-    Q_UNUSED( instanceCount );
-    Q_UNUSED( dwgVersion );
-    Q_UNUSED( t );
-    Q_UNUSED( unk0 );
-    Q_UNUSED( unk1 );
+    QgsDebugMsgLevel( QStringLiteral( "Instance Count:%1, DWG version: %2, maintenance version:%3, unk0:%4, unk1:%5" )
+                      .arg( instanceCount ).arg( dwgVersion ).arg( t ).arg( unk0 ).arg( unk1 ), 4
+                    );
+    Q_UNUSED( instanceCount )
+    Q_UNUSED( dwgVersion )
+    Q_UNUSED( t )
+    Q_UNUSED( unk0 )
+    Q_UNUSED( unk1 )
   }
 
   toDwgType();

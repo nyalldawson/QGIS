@@ -19,6 +19,7 @@ add_library(libdxfrw STATIC
     intern/dwgreader21.cpp
     intern/dwgreader24.cpp
     intern/dwgreader27.cpp
+    intern/dwgreader32.cpp
     intern/dwgutil.cpp
     intern/dxfreader.cpp
     intern/dxfwriter.cpp
