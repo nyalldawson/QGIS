@@ -19,6 +19,7 @@
 #include "qgssymbol.h"
 #include "qgssymbollayerutils.h"
 #include "qgsmarkersymbol.h"
+#include "qgsannotationitemnode.h"
 
 QgsAnnotationMarkerItem::QgsAnnotationMarkerItem( const QgsPoint &point )
   : QgsAnnotationItem()
@@ -65,6 +66,11 @@ bool QgsAnnotationMarkerItem::writeXml( QDomElement &element, QDomDocument &docu
   element.appendChild( QgsSymbolLayerUtils::saveSymbol( QStringLiteral( "markerSymbol" ), mSymbol.get(), document, context ) );
 
   return true;
+}
+
+QList<QgsAnnotationItemNode> QgsAnnotationMarkerItem::nodes() const
+{
+  return { QgsAnnotationItemNode( mPoint, Qgis::AnnotationItemNodeType::VertexHandle )};
 }
 
 QgsAnnotationMarkerItem *QgsAnnotationMarkerItem::create()

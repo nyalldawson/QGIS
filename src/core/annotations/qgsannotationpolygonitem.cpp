@@ -20,6 +20,7 @@
 #include "qgssymbollayerutils.h"
 #include "qgssurface.h"
 #include "qgsfillsymbol.h"
+#include "qgsannotationitemnode.h"
 
 QgsAnnotationPolygonItem::QgsAnnotationPolygonItem( QgsCurvePolygon *polygon )
   : QgsAnnotationItem()
@@ -92,6 +93,16 @@ bool QgsAnnotationPolygonItem::writeXml( QDomElement &element, QDomDocument &doc
   element.appendChild( QgsSymbolLayerUtils::saveSymbol( QStringLiteral( "lineSymbol" ), mSymbol.get(), document, context ) );
 
   return true;
+}
+
+QList<QgsAnnotationItemNode> QgsAnnotationPolygonItem::nodes() const
+{
+  QList< QgsAnnotationItemNode > res;
+  for ( auto it = mPolygon->vertices_begin(); it != mPolygon->vertices_end(); ++it )
+  {
+    res.append( QgsAnnotationItemNode( QgsPointXY( ( *it ).x(), ( *it ).y() ), Qgis::AnnotationItemNodeType::VertexHandle ) );
+  }
+  return res;
 }
 
 QgsAnnotationPolygonItem *QgsAnnotationPolygonItem::create()
