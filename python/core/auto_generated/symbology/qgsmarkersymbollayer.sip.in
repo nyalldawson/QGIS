@@ -70,6 +70,29 @@ Sets the rendered marker shape.
 .. seealso:: :py:func:`shape`
 %End
 
+    QgsGeometry customShape() const;
+%Docstring
+Returns the custom shape, used when :py:func:`~QgsSimpleMarkerSymbolLayerBase.shape` returns Qgis.MarkerShape.Custom.
+
+.. seealso:: :py:func:`setCustomShape`
+
+.. versionadded:: 3.24
+%End
+
+    void setCustomShape( const QgsGeometry &shape );
+%Docstring
+Sets a custom marker ``shape``.
+
+The ``shape`` should be sized so that it fits within a bounding box covering the range (-1, -1) to (1, 1),
+centered on the origin (0, 0).
+
+Calling this will automatically set :py:func:`~QgsSimpleMarkerSymbolLayerBase.shape` to Qgis.MarkerShape.Custom.
+
+.. seealso:: :py:func:`setCustomShape`
+
+.. versionadded:: 3.24
+%End
+
     static Qgis::MarkerShape decodeShape( const QString &name, bool *ok = 0 );
 %Docstring
 Attempts to decode a string representation of a shape name to the corresponding
@@ -145,6 +168,7 @@ Calculates the marker offset and rotation.
 :param offset: will be set to calculated marker offset (in painter units)
 :param angle: will be set to calculated marker angle
 %End
+
 
 
 

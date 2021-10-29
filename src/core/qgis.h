@@ -1031,6 +1031,7 @@ class CORE_EXPORT Qgis
       HalfArc, //!< A line-only half arc (since QGIS 3.20)
       ThirdArc, //!< A line-only one third arc (since QGIS 3.20)
       QuarterArc, //!< A line-only one quarter arc (since QGIS 3.20)
+      Custom, //!< Custom (geometry defined) shape  (since QGIS 3.24)
     };
     Q_ENUM( MarkerShape )
 

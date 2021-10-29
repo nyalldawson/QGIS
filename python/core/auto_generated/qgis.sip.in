@@ -647,6 +647,7 @@ The development version
       HalfArc,
       ThirdArc,
       QuarterArc,
+      Custom,
     };
 
     enum class MarkerLinePlacement

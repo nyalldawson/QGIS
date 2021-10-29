@@ -86,6 +86,27 @@ class CORE_EXPORT QgsSimpleMarkerSymbolLayerBase : public QgsMarkerSymbolLayer
     void setShape( Qgis::MarkerShape shape ) { mShape = shape; }
 
     /**
+     * Returns the custom shape, used when shape() returns Qgis::MarkerShape::Custom.
+     *
+     * \see setCustomShape()
+     * \since QGIS 3.24
+     */
+    QgsGeometry customShape() const;
+
+    /**
+     * Sets a custom marker \a shape.
+     *
+     * The \a shape should be sized so that it fits within a bounding box covering the range (-1, -1) to (1, 1),
+     * centered on the origin (0, 0).
+     *
+     * Calling this will automatically set shape() to Qgis::MarkerShape::Custom.
+     *
+     * \see setCustomShape()
+     * \since QGIS 3.24
+     */
+    void setCustomShape( const QgsGeometry &shape );
+
+    /**
      * Attempts to decode a string representation of a shape name to the corresponding
      * shape.
      * \param name encoded shape name
@@ -154,6 +175,9 @@ class CORE_EXPORT QgsSimpleMarkerSymbolLayerBase : public QgsMarkerSymbolLayer
 
     //! Symbol shape
     Qgis::MarkerShape mShape;
+
+    //! Custom shape, used when the marker shape is set to Qgis::MarkerShape::Custom
+    QgsGeometry mCustomShape;
 
   private:
 

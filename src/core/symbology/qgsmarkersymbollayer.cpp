@@ -28,6 +28,8 @@
 #include "qgsunittypes.h"
 #include "qgssymbol.h"
 #include "qgsfillsymbol.h"
+#include "qgscurvepolygon.h"
+#include "qgscurve.h"
 
 #include <QPainter>
 #include <QSvgRenderer>
@@ -108,6 +110,17 @@ QgsSimpleMarkerSymbolLayerBase::QgsSimpleMarkerSymbolLayerBase( Qgis::MarkerShap
   mOffsetUnit = QgsUnitTypes::RenderMillimeters;
 }
 
+QgsGeometry QgsSimpleMarkerSymbolLayerBase::customShape() const
+{
+  return mCustomShape;
+}
+
+void QgsSimpleMarkerSymbolLayerBase::setCustomShape( const QgsGeometry &shape )
+{
+  mCustomShape = shape;
+  mShape = Qgis::MarkerShape::Custom;
+}
+
 QgsSimpleMarkerSymbolLayerBase::~QgsSimpleMarkerSymbolLayerBase() = default;
 
 bool QgsSimpleMarkerSymbolLayerBase::shapeIsFilled( Qgis::MarkerShape shape )
@@ -136,6 +149,7 @@ bool QgsSimpleMarkerSymbolLayerBase::shapeIsFilled( Qgis::MarkerShape shape )
     case Qgis::MarkerShape::RightHalfTriangle:
     case Qgis::MarkerShape::LeftHalfTriangle:
     case Qgis::MarkerShape::AsteriskFill:
+    case Qgis::MarkerShape::Custom:
       return true;
 
     case Qgis::MarkerShape::Cross:
@@ -374,6 +388,8 @@ Qgis::MarkerShape QgsSimpleMarkerSymbolLayerBase::decodeShape( const QString &na
     return Qgis::MarkerShape::ThirdArc;
   else if ( cleaned == QLatin1String( "quarter_arc" ) )
     return Qgis::MarkerShape::QuarterArc;
+  else if ( cleaned == QLatin1String( "custom" ) )
+    return Qgis::MarkerShape::Custom;
 
   if ( ok )
     *ok = false;
@@ -442,6 +458,8 @@ QString QgsSimpleMarkerSymbolLayerBase::encodeShape( Qgis::MarkerShape shape )
       return QStringLiteral( "third_arc" );
     case Qgis::MarkerShape::QuarterArc:
       return QStringLiteral( "quarter_arc" );
+    case Qgis::MarkerShape::Custom:
+      return QStringLiteral( "custom" );
   }
   return QString();
 }
@@ -651,6 +669,23 @@ bool QgsSimpleMarkerSymbolLayerBase::shapeToPolygon( Qgis::MarkerShape shape, QP
       return true;
     }
 
+    case Qgis::MarkerShape::Custom:
+    {
+      if ( mCustomShape.isEmpty() )
+        return false;
+
+      if ( const QgsCurvePolygon *curvePolygon = qgsgeometry_cast< const QgsCurvePolygon * >( mCustomShape.constGet()->simplifiedTypeRef() ) )
+      {
+        if ( curvePolygon->numInteriorRings() > 0 || !curvePolygon->exteriorRing() )
+          return false;
+
+        polygon = curvePolygon->exteriorRing()->asQPolygonF();
+        return true;
+      }
+
+      return false;
+    }
+
     case Qgis::MarkerShape::Circle:
     case Qgis::MarkerShape::Cross:
     case Qgis::MarkerShape::Cross2:
@@ -733,6 +768,33 @@ bool QgsSimpleMarkerSymbolLayerBase::prepareMarkerPath( Qgis::MarkerShape symbol
       mPath.lineTo( 0, 0 );
       mPath.lineTo( -1, 1 );
       return true;
+
+    case Qgis::MarkerShape::Custom:
+    {
+
+      for ( auto it = mCustomShape.const_parts_begin(); it != mCustomShape.const_parts_end(); ++it )
+      {
+        if ( const QgsCurvePolygon *curvePolygon = qgsgeometry_cast< const QgsCurvePolygon * >( *it ) )
+        {
+          QPainterPath path;
+          if ( curvePolygon->exteriorRing() )
+            curvePolygon->exteriorRing()->addToPainterPath( path );
+
+          for ( int i = 0; i < curvePolygon->numInteriorRings(); ++i )
+          {
+            curvePolygon->interiorRing( i )->addToPainterPath( path );
+          }
+          mPath.addPath( path );
+        }
+        else if ( const QgsCurve *curve = qgsgeometry_cast< const QgsCurve * >( *it ) )
+        {
+          QPainterPath path;
+          curve->addToPainterPath( path );
+          mPath.addPath( path );
+        }
+      }
+      return true;
+    }
 
     case Qgis::MarkerShape::Square:
     case Qgis::MarkerShape::SquareWithCorners:
@@ -941,6 +1003,11 @@ QgsSymbolLayer *QgsSimpleMarkerSymbolLayer::create( const QVariantMap &props )
   if ( props.contains( QStringLiteral( "cap_style" ) ) )
   {
     m->setPenCapStyle( QgsSymbolLayerUtils::decodePenCapStyle( props[QStringLiteral( "cap_style" )].toString() ) );
+  }
+
+  if ( props.contains( QStringLiteral( "cap_style" ) ) )
+  {
+    m->mCustomShape = QgsGeometry::fromWkt( props[QStringLiteral( "custom_shape" )].toString() );
   }
 
   m->restoreOldDataDefinedProperties( props );
@@ -1246,6 +1313,7 @@ QVariantMap QgsSimpleMarkerSymbolLayer::properties() const
   map[QStringLiteral( "cap_style" )] = QgsSymbolLayerUtils::encodePenCapStyle( mPenCapStyle );
   map[QStringLiteral( "horizontal_anchor_point" )] = QString::number( mHorizontalAnchorPoint );
   map[QStringLiteral( "vertical_anchor_point" )] = QString::number( mVerticalAnchorPoint );
+  map[QStringLiteral( "custom_shape" )] = mCustomShape.asWkt();
   return map;
 }
 
@@ -1264,6 +1332,7 @@ QgsSimpleMarkerSymbolLayer *QgsSimpleMarkerSymbolLayer::clone() const
   m->setHorizontalAnchorPoint( mHorizontalAnchorPoint );
   m->setVerticalAnchorPoint( mVerticalAnchorPoint );
   m->setPenCapStyle( mPenCapStyle );
+  m->mCustomShape = mCustomShape;
   copyDataDefinedProperties( m );
   copyPaintEffect( m );
   return m;
@@ -1764,6 +1833,11 @@ QgsSymbolLayer *QgsFilledMarkerSymbolLayer::create( const QVariantMap &props )
     m->setVerticalAnchorPoint( QgsMarkerSymbolLayer::VerticalAnchorPoint( props[ QStringLiteral( "vertical_anchor_point" )].toInt() ) );
   }
 
+  if ( props.contains( QStringLiteral( "cap_style" ) ) )
+  {
+    m->mCustomShape = QgsGeometry::fromWkt( props[QStringLiteral( "custom_shape" )].toString() );
+  }
+
   m->setSubSymbol( QgsFillSymbol::createSimple( props ) );
 
   m->restoreOldDataDefinedProperties( props );
@@ -1808,6 +1882,7 @@ QVariantMap QgsFilledMarkerSymbolLayer::properties() const
   map[QStringLiteral( "scale_method" )] = QgsSymbolLayerUtils::encodeScaleMethod( mScaleMethod );
   map[QStringLiteral( "horizontal_anchor_point" )] = QString::number( mHorizontalAnchorPoint );
   map[QStringLiteral( "vertical_anchor_point" )] = QString::number( mVerticalAnchorPoint );
+  map[QStringLiteral( "custom_shape" )] = mCustomShape.asWkt();
 
   if ( mFill )
   {
@@ -1819,6 +1894,7 @@ QVariantMap QgsFilledMarkerSymbolLayer::properties() const
 QgsFilledMarkerSymbolLayer *QgsFilledMarkerSymbolLayer::clone() const
 {
   QgsFilledMarkerSymbolLayer *m = static_cast< QgsFilledMarkerSymbolLayer * >( QgsFilledMarkerSymbolLayer::create( properties() ) );
+  m->mCustomShape = mCustomShape;
   copyPaintEffect( m );
   copyDataDefinedProperties( m );
   m->setSubSymbol( mFill->clone() );
