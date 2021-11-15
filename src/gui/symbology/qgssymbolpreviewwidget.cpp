@@ -43,6 +43,12 @@ QgsSymbol *QgsSymbolPreviewWidget::symbol() const
   return mSymbol.get();
 }
 
+void QgsSymbolPreviewWidget::setPatchShape( const QgsLegendPatchShape &shape )
+{
+  mPatchShape = shape;
+  update();
+}
+
 void QgsSymbolPreviewWidget::mousePressEvent( QMouseEvent *event )
 {
   if ( mIsMoving )
@@ -94,6 +100,8 @@ void QgsSymbolPreviewWidget::wheelEvent( QWheelEvent *event )
   mSymbolOffset = QPointF( event->pos().x() - size().width() / 2 - ( mZoomScale / previousZoom ) * ( event->pos().x() - size().width() / 2 - mSymbolOffset.x() ),
                            event->pos().y() - size().height() / 2 - ( mZoomScale / previousZoom ) * ( event->pos().y() - size().height() / 2 - mSymbolOffset.y() ) );
 
+  event->accept();
+
   update();
 }
 
@@ -133,7 +141,9 @@ void QgsSymbolPreviewWidget::paintEvent( QPaintEvent * )
 
     case Qgis::SymbolType::Line:
     {
-      const QList< QList< QPolygonF > > points = QgsStyle::defaultStyle()->defaultPatchAsQPolygonF( Qgis::SymbolType::Line, QSizeF( 100, 100 ) );
+      const QList< QList< QPolygonF > > points = mPatchShape.isNull() ?
+          QgsStyle::defaultStyle()->defaultPatchAsQPolygonF( Qgis::SymbolType::Line, QSizeF( 100, 100 ) )
+          : mPatchShape.toQPolygonF( Qgis::SymbolType::Line, QSizeF( 100, 100 ) );
       QgsLineSymbol *lineSymbol = qgis::down_cast< QgsLineSymbol * >( mSymbol.get() );
       for ( const QList< QPolygonF > &path : points )
         lineSymbol->renderPolyline( t.map( path.at( 0 ) ), nullptr, rc );
@@ -143,7 +153,9 @@ void QgsSymbolPreviewWidget::paintEvent( QPaintEvent * )
 
     case Qgis::SymbolType::Fill:
     {
-      const QList< QList< QPolygonF > > points = QgsStyle::defaultStyle()->defaultPatchAsQPolygonF( Qgis::SymbolType::Fill, QSizeF( 100, 100 ) );
+      const QList< QList< QPolygonF > > points = mPatchShape.isNull() ?
+          QgsStyle::defaultStyle()->defaultPatchAsQPolygonF( Qgis::SymbolType::Fill, QSizeF( 100, 100 ) )
+          : mPatchShape.toQPolygonF( Qgis::SymbolType::Fill, QSizeF( 100, 100 ) );
       QgsFillSymbol *fillSymbol = qgis::down_cast< QgsFillSymbol * >( mSymbol.get() );
       for ( const QList< QPolygonF > &poly : points )
       {

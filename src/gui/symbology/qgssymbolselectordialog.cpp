@@ -455,7 +455,7 @@ void QgsSymbolSelectorWidget::updatePreview()
   std::unique_ptr< QgsSymbol > symbolClone( mSymbol->clone() );
   const QImage preview = symbolClone->bigSymbolPreviewImage( &mPreviewExpressionContext, Qgis::SymbolPreviewFlags() );
   lblPreview->setPixmap( QPixmap::fromImage( preview ) );
-  lblPreview2->setPixmap( QPixmap::fromImage( preview ) );
+  mSymbolPreviewWidget->setSymbol( mSymbol->clone() );
   // Hope this is a appropriate place
   if ( !mBlockModified )
     emit symbolModified();

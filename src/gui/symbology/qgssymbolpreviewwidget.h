@@ -18,6 +18,7 @@
 #include <QWidget>
 #include "qgis_sip.h"
 #include "qgis_gui.h"
+#include "qgslegendpatchshape.h"
 #include <memory>
 
 class QgsSymbol;
@@ -50,6 +51,16 @@ class GUI_EXPORT QgsSymbolPreviewWidget : public QWidget
      */
     QgsSymbol *symbol() const;
 
+    /**
+     * Sets the legend patch shape for the symbol preview.
+     */
+    void setPatchShape( const QgsLegendPatchShape &shape );
+
+    /**
+     * Returns the legend patch shape for the symbol preview.
+     */
+    QgsLegendPatchShape patchShape() const { return mPatchShape; }
+
     void mousePressEvent( QMouseEvent *event ) override;
     void mouseReleaseEvent( QMouseEvent *event ) override;
     void mouseMoveEvent( QMouseEvent *event ) override;
@@ -65,6 +76,8 @@ class GUI_EXPORT QgsSymbolPreviewWidget : public QWidget
     bool mIsMoving = false;
     QPointF mMouseStartMove;
     QPointF mTemporaryOffset;
+
+    QgsLegendPatchShape mPatchShape;
 
 };
 

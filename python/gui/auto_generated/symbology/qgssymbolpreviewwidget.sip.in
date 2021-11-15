@@ -39,6 +39,16 @@ Ownership is transferred to the widget.
 Returns the symbol shown in the widget.
 %End
 
+    void setPatchShape( const QgsLegendPatchShape &shape );
+%Docstring
+Sets the legend patch shape for the symbol preview.
+%End
+
+    QgsLegendPatchShape patchShape() const;
+%Docstring
+Returns the legend patch shape for the symbol preview.
+%End
+
     virtual void mousePressEvent( QMouseEvent *event );
 
     virtual void mouseReleaseEvent( QMouseEvent *event );
