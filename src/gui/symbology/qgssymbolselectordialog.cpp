@@ -290,6 +290,12 @@ QgsSymbolSelectorWidget::QgsSymbolSelectorWidget( QgsSymbol *symbol, QgsStyle *s
   QItemSelectionModel *selModel = layersTree->selectionModel();
   connect( selModel, &QItemSelectionModel::currentChanged, this, &QgsSymbolSelectorWidget::layerChanged );
 
+  connect( mSplitter, &QSplitter::splitterMoved, this, [ = ]( int pos, int )
+  {
+    // if left "preview" pane is collapsed, show the small preview widget
+    lblPreview->setVisible( pos == 0 );
+  } );
+
   loadSymbol( mSymbol, static_cast<SymbolLayerItem *>( mSymbolLayersModel->invisibleRootItem() ) );
   updatePreview();
 
@@ -449,6 +455,7 @@ void QgsSymbolSelectorWidget::updatePreview()
   std::unique_ptr< QgsSymbol > symbolClone( mSymbol->clone() );
   const QImage preview = symbolClone->bigSymbolPreviewImage( &mPreviewExpressionContext, Qgis::SymbolPreviewFlags() );
   lblPreview->setPixmap( QPixmap::fromImage( preview ) );
+  lblPreview2->setPixmap( QPixmap::fromImage( preview ) );
   // Hope this is a appropriate place
   if ( !mBlockModified )
     emit symbolModified();

@@ -428,6 +428,7 @@
 %Include auto_generated/symbology/qgsstylesavedialog.sip
 %Include auto_generated/symbology/qgssvgselectorwidget.sip
 %Include auto_generated/symbology/qgssymbollayerwidget.sip
+%Include auto_generated/symbology/qgssymbolpreviewwidget.sip
 %Include auto_generated/symbology/qgssymbollevelsdialog.sip
 %Include auto_generated/symbology/qgssymbolselectordialog.sip
 %Include auto_generated/symbology/qgssymbolslistwidget.sip

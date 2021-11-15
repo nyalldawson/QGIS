@@ -7,6 +7,7 @@
  ************************************************************************/
 
 
+
 class QgsSymbolPreviewWidget : QWidget
 {
 %Docstring(signature="appended")
@@ -25,6 +26,29 @@ An widget for showing an interactive preview of a :py:class:`QgsSymbol`
 Constructor for QgsSymbolPreviewWidget
 %End
     ~QgsSymbolPreviewWidget();
+
+    void setSymbol( QgsSymbol *symbol /Transfer/ );
+%Docstring
+Sets the symbol to show in the widget.
+
+Ownership is transferred to the widget.
+%End
+
+    QgsSymbol *symbol() const;
+%Docstring
+Returns the symbol shown in the widget.
+%End
+
+    virtual void mousePressEvent( QMouseEvent *event );
+
+    virtual void mouseReleaseEvent( QMouseEvent *event );
+
+    virtual void mouseMoveEvent( QMouseEvent *event );
+
+    virtual void wheelEvent( QWheelEvent *event );
+
+    virtual void paintEvent( QPaintEvent *event );
+
 
 };
 

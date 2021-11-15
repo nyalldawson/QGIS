@@ -64,6 +64,7 @@ set(QGIS_GUI_SRCS
   symbology/qgssymbollayerwidget.cpp
   symbology/qgssymbollevelsdialog.cpp
   symbology/qgssymbolslistwidget.cpp
+  symbology/qgssymbolpreviewwidget.cpp
   symbology/qgssymbolselectordialog.cpp
   symbology/qgssymbolwidgetcontext.cpp
   symbology/qgsvectorfieldsymbollayerwidget.cpp
@@ -1261,6 +1262,7 @@ set(QGIS_GUI_HDRS
   symbology/qgsstylesavedialog.h
   symbology/qgssvgselectorwidget.h
   symbology/qgssymbollayerwidget.h
+  symbology/qgssymbolpreviewwidget.h
   symbology/qgssymbollevelsdialog.h
   symbology/qgssymbolselectordialog.h
   symbology/qgssymbolslistwidget.h
