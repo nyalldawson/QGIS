@@ -26,6 +26,8 @@ Contains a pipeline of raster interfaces for sequential raster processing.
     enum Property
     {
       RendererOpacity,
+      HillshadeAzimuth,
+      HillshadeAltitude,
     };
 
     QgsRasterPipe();

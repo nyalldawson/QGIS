@@ -20,10 +20,13 @@
 
 #include "qgsrectangle.h"
 #include "qgis.h"
+#include "qgsrasterpipe.h"
+#include "qgsexpressioncontextgenerator.h"
 
 #include <QWidget>
 #include "qgis_gui.h"
 
+class QgsPropertyOverrideButton;
 class QgsRasterLayer;
 class QgsRasterRenderer;
 class QgsMapCanvas;
@@ -35,17 +38,14 @@ class QgsRasterMinMaxWidget;
  *
  * \brief Abstract base class for widgets which configure a QgsRasterRenderer.
  */
-class GUI_EXPORT QgsRasterRendererWidget: public QWidget
+class GUI_EXPORT QgsRasterRendererWidget: public QWidget, public QgsExpressionContextGenerator
 {
     Q_OBJECT
 
   public:
 
     //TODO QGIS 4.0 - remove extent parameter, replace with map canvas parameter
-    QgsRasterRendererWidget( QgsRasterLayer *layer, const QgsRectangle &extent )
-      : mRasterLayer( layer )
-      , mExtent( extent )
-    {}
+    QgsRasterRendererWidget( QgsRasterLayer *layer, const QgsRectangle &extent );
 
     /**
      * Creates a new renderer, using the properties defined in the widget.
@@ -98,6 +98,9 @@ class GUI_EXPORT QgsRasterRendererWidget: public QWidget
     //! Returns min/max widget when it exists.
     virtual QgsRasterMinMaxWidget *minMaxWidget() { return nullptr; }
 
+    QgsExpressionContext createExpressionContext() const override;
+
+    QgsPropertyCollection dataDefinedProperties() const { return mPropertyCollection; }
   signals:
 
     /**
@@ -107,6 +110,30 @@ class GUI_EXPORT QgsRasterRendererWidget: public QWidget
     void widgetChanged();
 
   protected:
+
+    /**
+     * Registers a property override button, setting up its initial value, connections and description.
+     * \param button button to register
+     * \param key corresponding data defined property key
+     * \since QGIS 3.24
+     */
+    void initializeDataDefinedButton( QgsPropertyOverrideButton *button, QgsRasterPipe::Property key );
+
+    /**
+     * Updates all property override buttons to reflect the widgets's current properties.
+     * \since QGIS 3.24
+     */
+    void updateDataDefinedButtons();
+
+    /**
+     * Updates a specific property override \a button to reflect the widgets's current properties.
+     * \since QGIS 3.24
+     */
+    void updateDataDefinedButton( QgsPropertyOverrideButton *button );
+
+    //! Temporary property collection
+    QgsPropertyCollection mPropertyCollection;
+
     QgsRasterLayer *mRasterLayer = nullptr;
 
     //! Current extent
@@ -114,6 +141,12 @@ class GUI_EXPORT QgsRasterRendererWidget: public QWidget
 
     //! Associated map canvas
     QgsMapCanvas *mCanvas = nullptr;
+
+    QgsExpressionContext mContext;
+
+  private slots:
+
+    void updateProperty();
 };
 
 #endif // QGSRASTERRENDERERWIDGET_H

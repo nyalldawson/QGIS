@@ -51,6 +51,8 @@ QgsHillshadeRendererWidget::QgsHillshadeRendererWidget( QgsRasterLayer *layer, c
   connect( mZFactor, static_cast < void ( QDoubleSpinBox::* )( double ) > ( &QDoubleSpinBox::valueChanged ), this, &QgsRasterRendererWidget::widgetChanged );
   connect( mMultiDirection, &QAbstractButton::toggled, this, &QgsRasterRendererWidget::widgetChanged );
   connect( mBandsCombo, &QgsRasterBandComboBox::bandChanged, this, &QgsHillshadeRendererWidget::widgetChanged );
+
+  updateDataDefinedButtons();
 }
 
 QgsRasterRenderer *QgsHillshadeRendererWidget::renderer()

@@ -57,6 +57,8 @@ class CORE_EXPORT QgsRasterPipe
     enum Property
     {
       RendererOpacity, //!< Raster renderer global opacity
+      HillshadeAzimuth, //!< Hillshade azimuth (since QGIS 3.24)
+      HillshadeAltitude, //!< Hillshade altitude (since QGIS 3.24)
     };
 
     /**

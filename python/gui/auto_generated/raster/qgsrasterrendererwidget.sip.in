@@ -11,7 +11,7 @@
 
 
 
-class QgsRasterRendererWidget: QWidget
+class QgsRasterRendererWidget: QWidget, QgsExpressionContextGenerator
 {
 %Docstring(signature="appended")
 
@@ -85,6 +85,10 @@ Load programmatically with current values
 Returns min/max widget when it exists.
 %End
 
+    virtual QgsExpressionContext createExpressionContext() const;
+
+
+    QgsPropertyCollection dataDefinedProperties() const;
   signals:
 
     void widgetChanged();
@@ -94,6 +98,34 @@ All widgets will fire this event to notify of an internal change.
 %End
 
   protected:
+
+    void initializeDataDefinedButton( QgsPropertyOverrideButton *button, QgsRasterPipe::Property key );
+%Docstring
+Registers a property override button, setting up its initial value, connections and description.
+
+:param button: button to register
+:param key: corresponding data defined property key
+
+.. versionadded:: 3.24
+%End
+
+    void updateDataDefinedButtons();
+%Docstring
+Updates all property override buttons to reflect the widgets's current properties.
+
+.. versionadded:: 3.24
+%End
+
+    void updateDataDefinedButton( QgsPropertyOverrideButton *button );
+%Docstring
+Updates a specific property override ``button`` to reflect the widgets's current properties.
+
+.. versionadded:: 3.24
+%End
+
+
+
+
 
 
 };

@@ -881,6 +881,9 @@ void QgsRasterLayerProperties::apply()
     rendererWidget->doComputations();
 
     mRasterLayer->setRenderer( rendererWidget->renderer() );
+
+//    mPropertyCollection.unite( rendererWidget->mPropertyCollection );
+    mPropertyCollection = rendererWidget->dataDefinedProperties();
   }
 
   mMetadataWidget->acceptMetadata();

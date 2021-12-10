@@ -28,6 +28,7 @@
 #include "qgshuesaturationfilter.h"
 #include "qgsrasterprojector.h"
 #include "qgsrasternuller.h"
+#include "qgshillshaderenderer.h"
 
 #include <mutex>
 
@@ -427,6 +428,18 @@ void QgsRasterPipe::evaluateDataDefinedProperties( QgsExpressionContext &context
       }
     }
   }
+
+  if ( QgsHillshadeRenderer *hillshadeRenderer = dynamic_cast< QgsHillshadeRenderer * >( renderer() ) )
+  {
+    if ( mDataDefinedProperties.isActive( HillshadeAltitude ) )
+    {
+      hillshadeRenderer->setAltitude( mDataDefinedProperties.valueAsDouble( HillshadeAltitude, context, hillshadeRenderer->altitude() ) );
+    }
+    if ( mDataDefinedProperties.isActive( HillshadeAzimuth ) )
+    {
+      hillshadeRenderer->setAzimuth( mDataDefinedProperties.valueAsDouble( HillshadeAzimuth, context, hillshadeRenderer->azimuth() ) );
+    }
+  }
 }
 
 QgsPropertiesDefinition QgsRasterPipe::sPropertyDefinitions;
@@ -438,6 +451,8 @@ void QgsRasterPipe::initPropertyDefinitions()
   sPropertyDefinitions = QgsPropertiesDefinition
   {
     { QgsRasterPipe::RendererOpacity, QgsPropertyDefinition( "RendererOpacity", QObject::tr( "Renderer opacity" ), QgsPropertyDefinition::Opacity, origin ) },
+    { QgsRasterPipe::HillshadeAltitude, QgsPropertyDefinition( "HillshadeAltitude", QObject::tr( "Hillshade altitude" ), QgsPropertyDefinition::DoublePositive, origin ) },
+    { QgsRasterPipe::HillshadeAzimuth, QgsPropertyDefinition( "HillshadeAzimuth", QObject::tr( "Hillshade azimuth" ), QgsPropertyDefinition::Rotation, origin ) },
   };
 }
 
