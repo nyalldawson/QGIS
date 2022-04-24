@@ -769,6 +769,8 @@ Emitted when the flag whether light source origins are shown has changed.
 .. versionadded:: 3.15
 %End
 
+    void originChanged();
+
     void showLabelsChanged();
 %Docstring
 Emitted when the flag whether labels are displayed on terrain tiles has changed

@@ -17,12 +17,25 @@
  ***************************************************************************/
 
 #include "qgslightsource.h"
+#include <mutex>
+
+QgsPropertiesDefinition QgsLightSource::sPropertyDefinitions;
 
 QgsLightSource::~QgsLightSource() = default;
 
 void QgsLightSource::resolveReferences( const QgsProject & )
 {
 
+}
+
+QgsPropertiesDefinition QgsLightSource::propertyDefinitions()
+{
+  static std::once_flag initialized;
+  std::call_once( initialized, [ = ]( )
+  {
+    initPropertyDefinitions();
+  } );
+  return sPropertyDefinitions;
 }
 
 void QgsLightSource::writeCommonProperties( QDomElement &element, QDomDocument &doc, const QgsReadWriteContext & ) const
@@ -37,5 +50,16 @@ void QgsLightSource::readCommonProperties( const QDomElement &element, const Qgs
   const QDomElement elemDataDefinedProperties = element.firstChildElement( QStringLiteral( "data-defined-properties" ) );
   if ( !elemDataDefinedProperties.isNull() )
     mDataDefinedProperties.readXml( elemDataDefinedProperties, propertyDefinitions() );
+}
+
+void QgsLightSource::initPropertyDefinitions()
+{
+  const QString origin = QStringLiteral( "lighting" );
+
+  sPropertyDefinitions = QgsPropertiesDefinition
+  {
+    { QgsLightSource::Color, QgsPropertyDefinition( "Color", QObject::tr( "Color" ), QgsPropertyDefinition::ColorNoAlpha, origin ) },
+    { QgsLightSource::Intensity, QgsPropertyDefinition( "Intensity", QObject::tr( "Intensity" ), QgsPropertyDefinition::DoublePositive, origin ) },
+  };
 }
 

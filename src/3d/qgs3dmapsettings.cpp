@@ -208,7 +208,7 @@ void Qgs3DMapSettings::readXml( const QDomElement &elem, const QgsReadWriteConte
       while ( !elemPointLight.isNull() )
       {
         QgsPointLightsFromLayerSettings settings;
-        settings.readXml( elemPointLight );
+        settings.readXml( elemPointLight, context );
         mPointLightsFromLayer << settings;
         elemPointLight = elemPointLight.nextSiblingElement( QStringLiteral( "point-light-from-layer" ) );
       }
@@ -391,7 +391,7 @@ QDomElement Qgs3DMapSettings::writeXml( QDomDocument &doc, const QgsReadWriteCon
     QDomElement elemPointLightsFromLayer = doc.createElement( QStringLiteral( "point-lights-from-layer" ) );
     for ( const QgsPointLightsFromLayerSettings &pointLight : std::as_const( mPointLightsFromLayer ) )
     {
-      QDomElement elemPointLight = pointLight.writeXml( doc );
+      QDomElement elemPointLight = pointLight.writeXml( doc, context );
       elemPointLightsFromLayer.appendChild( elemPointLight );
     }
     elem.appendChild( elemPointLightsFromLayer );
@@ -487,6 +487,12 @@ void Qgs3DMapSettings::resolveReferences( const QgsProject &project )
   {
     mPointLightsFromLayer[i].resolveReferences( project );
   }
+}
+
+void Qgs3DMapSettings::setOrigin( const QgsVector3D &origin )
+{
+  mOrigin = origin;
+  emit originChanged();
 }
 
 QgsVector3D Qgs3DMapSettings::mapToWorldCoordinates( const QgsVector3D &mapCoords ) const

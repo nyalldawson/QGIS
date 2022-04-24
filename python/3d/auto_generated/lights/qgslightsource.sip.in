@@ -25,6 +25,13 @@ Base class for light sources in 3d scenes.
 %End
   public:
 
+    enum Property
+    {
+      Color,
+      Intensity,
+    };
+
+
     virtual ~QgsLightSource();
 
 
@@ -45,6 +52,30 @@ Reads configuration from a DOM element previously written using :py:func:`~QgsLi
     virtual void resolveReferences( const QgsProject &project );
 %Docstring
 After reading from XML, resolve references to any layers that have been read as layer IDs.
+%End
+
+    QgsPropertyCollection &dataDefinedProperties();
+%Docstring
+Returns a reference to the object's property collection, used for data defined overrides.
+
+.. seealso:: :py:func:`setDataDefinedProperties`
+%End
+
+
+    void setDataDefinedProperties( const QgsPropertyCollection &collection );
+%Docstring
+Sets the object's property ``collection``, used for data defined overrides.
+
+Any existing properties will be discarded.
+
+.. seealso:: :py:func:`dataDefinedProperties`
+
+.. seealso:: Property
+%End
+
+    static QgsPropertiesDefinition propertyDefinitions();
+%Docstring
+Returns the definitions for data defined properties available for use in elevation properties.
 %End
 
   protected:

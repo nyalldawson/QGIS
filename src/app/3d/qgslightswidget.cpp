@@ -18,7 +18,8 @@
 #include "qgs3dmapsettings.h"
 #include "qgsapplication.h"
 #include "qgssettings.h"
-
+#include "qgspropertyoverridebutton.h"
+#include "qgsexpressioncontextutils.h"
 #include <QMessageBox>
 #include <QMenu>
 
@@ -63,6 +64,9 @@ QgsLightsWidget::QgsLightsWidget( QWidget *parent )
 
   btnAddLight->setMenu( addLightMenu );
 
+  initializeDataDefinedButton( mColorDDBtn, QgsLightSource::Property::Color );
+  initializeDataDefinedButton( mIntensityDDBtn, QgsLightSource::Property::Intensity );
+
   connect( btnRemoveLight, &QToolButton::clicked, this, &QgsLightsWidget::onRemoveLight );
 
   connect( spinPositionX, qOverload<double>( &QDoubleSpinBox::valueChanged ), this, &QgsLightsWidget::updateCurrentLightParameters );
@@ -91,6 +95,7 @@ QgsLightsWidget::QgsLightsWidget( QWidget *parent )
 
   mLightsListView->selectionModel()->select( mLightsModel->index( 0, 0 ), QItemSelectionModel::ClearAndSelect );
   selectedLightChanged( mLightsListView->selectionModel()->selection(), QItemSelection() );
+
 }
 
 void QgsLightsWidget::setLights( const QList<QgsPointLightSettings> &pointLights,
@@ -119,6 +124,13 @@ QList<QgsPointLightsFromLayerSettings> QgsLightsWidget::pointLightsFromLayer()
   return mLightsModel->pointLightsFromLayer();
 }
 
+QgsExpressionContext QgsLightsWidget::createExpressionContext() const
+{
+  QgsExpressionContext context;
+  context.appendScopes( QgsExpressionContextUtils::globalProjectLayerScopes( associatedLayer() ) );
+  return context;
+}
+
 void QgsLightsWidget::selectedLightChanged( const QItemSelection &selected, const QItemSelection & )
 {
   if ( selected.empty() )
@@ -133,17 +145,17 @@ void QgsLightsWidget::selectedLightChanged( const QItemSelection &selected, cons
   switch ( lightType )
   {
     case QgsLightsModel::Point:
-      mStackedWidget->setCurrentIndex( 1 );
+      mStackedWidget->setCurrentWidget( mPagePointLight );
       showSettingsForPointLight( mLightsModel->pointLights().at( listIndex ) );
       break;
 
     case QgsLightsModel::Directional:
-      mStackedWidget->setCurrentIndex( 2 );
+      mStackedWidget->setCurrentWidget( mPageDirectionalLight );
       showSettingsForDirectionalLight( mLightsModel->directionalLights().at( listIndex ) );
       break;
 
     case QgsLightsModel::PointFromLayer:
-      mStackedWidget->setCurrentIndex( 3 );
+      mStackedWidget->setCurrentWidget( mPagePointLightsFromLayer );
       showSettingsForPointLightFromLayer( mLightsModel->pointLightsFromLayer().at( listIndex ) );
       break;
   }
@@ -151,6 +163,7 @@ void QgsLightsWidget::selectedLightChanged( const QItemSelection &selected, cons
 
 void QgsLightsWidget::showSettingsForPointLight( const QgsPointLightSettings &light )
 {
+  mPropertyCollection = light.dataDefinedProperties();
   whileBlocking( spinPositionX )->setValue( light.position().x() );
   whileBlocking( spinPositionY )->setValue( light.position().y() );
   whileBlocking( spinPositionZ )->setValue( light.position().z() );
@@ -159,26 +172,84 @@ void QgsLightsWidget::showSettingsForPointLight( const QgsPointLightSettings &li
   whileBlocking( spinA0 )->setValue( light.constantAttenuation() );
   whileBlocking( spinA1 )->setValue( light.linearAttenuation() );
   whileBlocking( spinA2 )->setValue( light.quadraticAttenuation() );
+  updateDataDefinedButtons();
 }
 
 void QgsLightsWidget::showSettingsForDirectionalLight( const QgsDirectionalLightSettings &light )
 {
+  mPropertyCollection = light.dataDefinedProperties();
   mDirectionX = light.direction().x();
   mDirectionY = light.direction().y();
   mDirectionZ = light.direction().z();
   whileBlocking( btnDirectionalColor )->setColor( light.color() );
   whileBlocking( spinDirectionalIntensity )->setValue( light.intensity() );
   setAzimuthAltitude();
+  updateDataDefinedButtons();
 }
 
 void QgsLightsWidget::showSettingsForPointLightFromLayer( const QgsPointLightsFromLayerSettings &settings )
 {
+  mPropertyCollection = settings.dataDefinedProperties();
   whileBlocking( mComboPointLightLayer )->setLayer( settings.sourceLayer() );
   whileBlocking( btnColorFromLayer )->setColor( settings.color() );
   whileBlocking( spinIntensityFromLayer )->setValue( settings.intensity() );
   whileBlocking( spinA0FromLayer )->setValue( settings.constantAttenuation() );
   whileBlocking( spinA1FromLayer )->setValue( settings.linearAttenuation() );
   whileBlocking( spinA2FromLayer )->setValue( settings.quadraticAttenuation() );
+  updateDataDefinedButtons();
+}
+
+void QgsLightsWidget::updateProperty()
+{
+  QgsPropertyOverrideButton *button = qobject_cast<QgsPropertyOverrideButton *>( sender() );
+  QgsLightSource::Property key = static_cast<  QgsLightSource::Property >( button->propertyKey() );
+  mPropertyCollection.setProperty( key, button->toProperty() );
+
+  if ( mStackedWidget->currentWidget() == mPagePointLightsFromLayer )
+    updateCurrentPointLightFromLayerParameters();
+  else if ( mStackedWidget->currentWidget() == mPagePointLight )
+    updateCurrentLightParameters();
+  else if ( mStackedWidget->currentWidget() == mPageDirectionalLight )
+    updateCurrentDirectionalLightParameters();
+}
+
+void QgsLightsWidget::initializeDataDefinedButton( QgsPropertyOverrideButton *button, QgsLightSource::Property key )
+{
+  button->blockSignals( true );
+  button->init( key, mPropertyCollection, QgsLightSource::propertyDefinitions(), nullptr );
+  connect( button, &QgsPropertyOverrideButton::changed, this, &QgsLightsWidget::updateProperty );
+  button->registerExpressionContextGenerator( this );
+  button->blockSignals( false );
+}
+
+void QgsLightsWidget::updateDataDefinedButtons()
+{
+  const auto propertyOverrideButtons { findChildren< QgsPropertyOverrideButton * >() };
+  for ( QgsPropertyOverrideButton *button : propertyOverrideButtons )
+  {
+    updateDataDefinedButton( button );
+  }
+}
+
+void QgsLightsWidget::updateDataDefinedButton( QgsPropertyOverrideButton *button )
+{
+  if ( !button )
+    return;
+
+  if ( button->propertyKey() < 0 )
+    return;
+
+  QgsLightSource::Property key = static_cast< QgsLightSource::Property >( button->propertyKey() );
+  whileBlocking( button )->setToProperty( mPropertyCollection.property( key ) );
+  whileBlocking( button )->setVectorLayer( associatedLayer() );
+}
+
+QgsVectorLayer *QgsLightsWidget::associatedLayer() const
+{
+  if ( mStackedWidget->currentWidget() == mPagePointLightsFromLayer )
+    return qobject_cast< QgsVectorLayer * >( mComboPointLightLayer->currentLayer() );
+  else
+    return nullptr;
 }
 
 void QgsLightsWidget::updateCurrentLightParameters()
@@ -192,6 +263,7 @@ void QgsLightsWidget::updateCurrentLightParameters()
   light.setConstantAttenuation( spinA0->value() );
   light.setLinearAttenuation( spinA1->value() );
   light.setQuadraticAttenuation( spinA2->value() );
+  light.setDataDefinedProperties( mPropertyCollection );
 
   mLightsModel->setPointLightSettings( listIndex, light );
 }
@@ -208,6 +280,7 @@ void QgsLightsWidget::updateCurrentDirectionalLightParameters()
   light.setDirection( QgsVector3D( mDirectionX, mDirectionY, mDirectionZ ) );
   light.setColor( btnDirectionalColor->color() );
   light.setIntensity( spinDirectionalIntensity->value() );
+  light.setDataDefinedProperties( mPropertyCollection );
 
   mLightsModel->setDirectionalLightSettings( listIndex, light );
 }
@@ -224,6 +297,7 @@ void QgsLightsWidget::updateCurrentPointLightFromLayerParameters()
   light.setConstantAttenuation( spinA0FromLayer->value() );
   light.setLinearAttenuation( spinA1FromLayer->value() );
   light.setQuadraticAttenuation( spinA2FromLayer->value() );
+  light.setDataDefinedProperties( mPropertyCollection );
 
   mLightsModel->setPointLightFromLayerSettings( listIndex, light );
 }

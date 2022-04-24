@@ -17,6 +17,9 @@
 #include "qgssymbollayerutils.h"
 #include "qgs3dmapsettings.h"
 #include "qgsvectorlayer.h"
+#include "qgsexpressioncontext.h"
+#include "qgsexpressioncontextutils.h"
+#include "qgs3dutils.h"
 
 #include <QDomDocument>
 
@@ -31,10 +34,16 @@ QList<Qt3DCore::QEntity *> QgsPointLightsFromLayerSettings::createEntities( cons
   if ( !mSourceLayer )
     return res;
 
+  QgsExpressionContext exprContext( Qgs3DUtils::globalProjectLayerExpressionContext( mSourceLayer.get() ) );
+  exprContext.setFields( mSourceLayer->fields() );
+
+  mDataDefinedProperties.prepare( exprContext );
+
   QgsFeature feature;
   QgsFeatureRequest req;
   req.setDestinationCrs( map.crs(), map.transformContext() );
-  req.setNoAttributes();
+  req.setExpressionContext( exprContext );
+  req.setSubsetOfAttributes( mDataDefinedProperties.referencedFields(), mSourceLayer->fields() );
   req.setLimit( 50 ); // reasonable?
 
   QgsFeatureIterator it = mSourceLayer->getFeatures( req );
@@ -47,14 +56,26 @@ QList<Qt3DCore::QEntity *> QgsPointLightsFromLayerSettings::createEntities( cons
     if ( !point )
       continue;
 
+    exprContext.setFeature( feature );
+
     Qt3DCore::QEntity *lightEntity = new Qt3DCore::QEntity( parent );
     Qt3DCore::QTransform *lightTransform = new Qt3DCore::QTransform;
-    lightTransform->setTranslation( QVector3D( point->x() - map.origin().x(),
-                                    point->z(),
-                                    -( point->y() - map.origin().y() ) ) );
+    lightTransform->setTranslation( map.mapToWorldCoordinates( QgsVector3D( point->x(), point->y(), point->z() ) ).toVector3D() );
     Qt3DRender::QPointLight *light = new Qt3DRender::QPointLight;
-    light->setColor( color() );
-    light->setIntensity( intensity() );
+
+    QColor evalColor = color();
+    if ( mDataDefinedProperties.isActive( Property::Color ) )
+    {
+      evalColor = mDataDefinedProperties.valueAsColor( Property::Color, exprContext, evalColor );
+    }
+    light->setColor( evalColor );
+
+    double evalIntensity = intensity();
+    if ( mDataDefinedProperties.isActive( Property::Intensity ) )
+    {
+      evalIntensity = mDataDefinedProperties.valueAsDouble( Property::Intensity, exprContext, evalIntensity );
+    }
+    light->setIntensity( evalIntensity );
 
     light->setConstantAttenuation( constantAttenuation() );
     light->setLinearAttenuation( linearAttenuation() );
@@ -74,7 +95,7 @@ QList<Qt3DCore::QEntity *> QgsPointLightsFromLayerSettings::createEntities( cons
       originEntity->addComponent( trLightOriginCenter );
 
       Qt3DExtras::QPhongMaterial *materialLightOriginCenter = new Qt3DExtras::QPhongMaterial;
-      materialLightOriginCenter->setAmbient( color() );
+      materialLightOriginCenter->setAmbient( evalColor );
       originEntity->addComponent( materialLightOriginCenter );
 
       Qt3DExtras::QSphereMesh *rendererLightOriginCenter = new Qt3DExtras::QSphereMesh;
@@ -90,7 +111,7 @@ QList<Qt3DCore::QEntity *> QgsPointLightsFromLayerSettings::createEntities( cons
   return res;
 }
 
-QDomElement QgsPointLightsFromLayerSettings::writeXml( QDomDocument &doc ) const
+QDomElement QgsPointLightsFromLayerSettings::writeXml( QDomDocument &doc, const QgsReadWriteContext &context ) const
 {
   QDomElement elemLight = doc.createElement( QStringLiteral( "point-light-from-layer" ) );
   elemLight.setAttribute( QStringLiteral( "color" ), QgsSymbolLayerUtils::encodeColor( mColor ) );
@@ -108,10 +129,12 @@ QDomElement QgsPointLightsFromLayerSettings::writeXml( QDomDocument &doc ) const
     elemLight.setAttribute( QStringLiteral( "sourceLayer" ), QString() );
   }
 
+  writeCommonProperties( elemLight, doc, context );
+
   return elemLight;
 }
 
-void QgsPointLightsFromLayerSettings::readXml( const QDomElement &elem )
+void QgsPointLightsFromLayerSettings::readXml( const QDomElement &elem, const QgsReadWriteContext &context )
 {
   mColor = QgsSymbolLayerUtils::decodeColor( elem.attribute( QStringLiteral( "color" ) ) );
   mIntensity = elem.attribute( QStringLiteral( "intensity" ) ).toFloat();
@@ -121,6 +144,8 @@ void QgsPointLightsFromLayerSettings::readXml( const QDomElement &elem )
 
   const QString layerId = elem.attribute( QStringLiteral( "sourceLayer" ) );
   mSourceLayer = QgsVectorLayerRef( layerId );
+
+  readCommonProperties( elem, context );
 }
 
 void QgsPointLightsFromLayerSettings::resolveReferences( const QgsProject &project )

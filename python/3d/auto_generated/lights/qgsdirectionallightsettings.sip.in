@@ -58,15 +58,6 @@ Returns intensity of the light
 Sets intensity of the light
 %End
 
-    QDomElement writeXml( QDomDocument &doc ) const;
-%Docstring
-Writes configuration to a new DOM element and returns it
-%End
-    void readXml( const QDomElement &elem );
-%Docstring
-Reads configuration from a DOM element previously written using :py:func:`~QgsDirectionalLightSettings.writeXml`
-%End
-
     bool operator==( const QgsDirectionalLightSettings &other );
 
 };

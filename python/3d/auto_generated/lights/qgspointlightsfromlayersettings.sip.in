@@ -28,9 +28,9 @@ A light source where point lights are created corresponding to each feature in a
 Construct a point light with default values
 %End
 
-    virtual QDomElement writeXml( QDomDocument &doc ) const;
+    virtual QDomElement writeXml( QDomDocument &doc, const QgsReadWriteContext &context = QgsReadWriteContext() ) const;
 
-    virtual void readXml( const QDomElement &elem );
+    virtual void readXml( const QDomElement &elem, const QgsReadWriteContext &context = QgsReadWriteContext() );
 
     virtual void resolveReferences( const QgsProject &project );
 

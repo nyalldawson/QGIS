@@ -24,6 +24,8 @@
 #include "qgsdirectionallightsettings.h"
 #include "qgspointlightsfromlayersettings.h"
 
+class QgsPropertyOverrideButton;
+
 class QgsLightsModel : public QAbstractListModel
 {
     Q_OBJECT
@@ -75,7 +77,7 @@ class QgsLightsModel : public QAbstractListModel
  * Widget for configuration of lights in 3D map scene
  * \since QGIS 3.6
  */
-class QgsLightsWidget : public QWidget, private Ui::QgsLightsWidget
+class QgsLightsWidget : public QWidget, private Ui::QgsLightsWidget, private QgsExpressionContextGenerator
 {
     Q_OBJECT
   public:
@@ -89,6 +91,7 @@ class QgsLightsWidget : public QWidget, private Ui::QgsLightsWidget
     QList<QgsDirectionalLightSettings> directionalLights();
     QList<QgsPointLightsFromLayerSettings> pointLightsFromLayer();
 
+    QgsExpressionContext createExpressionContext() const override;
 
   signals:
     void directionalLightsCountChanged( int count );
@@ -113,11 +116,36 @@ class QgsLightsWidget : public QWidget, private Ui::QgsLightsWidget
     void showSettingsForDirectionalLight( const QgsDirectionalLightSettings &settings );
     void showSettingsForPointLightFromLayer( const QgsPointLightsFromLayerSettings &settings );
 
+  private slots:
+    void updateProperty();
+
   private:
     double mDirectionX = 0;
     double mDirectionY = -1;
     double mDirectionZ = 0;
     QgsLightsModel *mLightsModel = nullptr;
+
+    /**
+     * Registers a property override button, setting up its initial value, connections and description.
+     * \param button button to register
+     * \param key corresponding data defined property key
+     */
+    void initializeDataDefinedButton( QgsPropertyOverrideButton *button, QgsLightSource::Property key );
+
+    /**
+     * Updates all property override buttons to reflect the widgets's current properties.
+     */
+    void updateDataDefinedButtons();
+
+    /**
+     * Updates a specific property override \a button to reflect the widgets's current properties.
+     */
+    void updateDataDefinedButton( QgsPropertyOverrideButton *button );
+
+    QgsVectorLayer *associatedLayer() const;
+
+    QgsExpressionContext mContext;
+    QgsPropertyCollection mPropertyCollection;
 };
 
 

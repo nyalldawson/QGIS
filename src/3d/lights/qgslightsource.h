@@ -20,6 +20,7 @@
 
 #include "qgis_3d.h"
 #include "qgis_sip.h"
+#include "qgspropertycollection.h"
 #include "qgsreadwritecontext.h"
 
 #include <QList>
@@ -46,6 +47,16 @@ class _3D_EXPORT QgsLightSource SIP_ABSTRACT
 {
 
   public:
+
+    /**
+     * Data definable properties.
+     */
+    enum Property
+    {
+      Color, //! Light color
+      Intensity, //!< Light intensity
+    };
+
 
     virtual ~QgsLightSource();
 

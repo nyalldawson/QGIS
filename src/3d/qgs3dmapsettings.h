@@ -83,7 +83,7 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
      * Need to look into more advanced techniques like "relative to center" or "relative to eye"
      * to improve the precision.
      */
-    void setOrigin( const QgsVector3D &origin ) { mOrigin = origin; }
+    void setOrigin( const QgsVector3D &origin );
     //! Returns coordinates in map CRS at which 3D scene has origin (0,0,0)
     QgsVector3D origin() const { return mOrigin; }
 
@@ -725,6 +725,8 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
      * \since QGIS 3.15
      */
     void showLightSourceOriginsChanged();
+
+    void originChanged();
 
     //! Emitted when the flag whether labels are displayed on terrain tiles has changed
     void showLabelsChanged();
