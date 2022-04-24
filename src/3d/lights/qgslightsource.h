@@ -24,6 +24,7 @@
 #include <QList>
 
 class Qgs3DMapSettings;
+class QgsProject;
 class QDomElement;
 class QDomDocument;
 
@@ -38,7 +39,7 @@ namespace Qt3DCore
  * \ingroup 3d
  * \brief Base class for light sources in 3d scenes.
  *
- * \since QGIS 3.16
+ * \since QGIS 3.26
  */
 class _3D_EXPORT QgsLightSource SIP_ABSTRACT
 {
@@ -65,6 +66,11 @@ class _3D_EXPORT QgsLightSource SIP_ABSTRACT
      * \see writeXml()
      */
     virtual void readXml( const QDomElement &elem ) = 0;
+
+    /**
+     * After reading from XML, resolve references to any layers that have been read as layer IDs.
+     */
+    virtual void resolveReferences( const QgsProject &project );
 };
 
 

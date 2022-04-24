@@ -19,3 +19,8 @@
 #include "qgslightsource.h"
 
 QgsLightSource::~QgsLightSource() = default;
+
+void QgsLightSource::resolveReferences( const QgsProject & )
+{
+
+}

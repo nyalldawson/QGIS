@@ -12,6 +12,7 @@
 %Include auto_generated/lights/qgsdirectionallightsettings.sip
 %Include auto_generated/lights/qgslightsource.sip
 %Include auto_generated/lights/qgspointlightsettings.sip
+%Include auto_generated/lights/qgspointlightsfromlayersettings.sip
 %Include auto_generated/materials/qgsabstractmaterialsettings.sip
 %Include auto_generated/materials/qgsgoochmaterialsettings.sip
 %Include auto_generated/materials/qgsmaterialregistry.sip

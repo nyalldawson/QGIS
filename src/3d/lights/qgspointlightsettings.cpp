@@ -26,7 +26,7 @@
 
 QList<Qt3DCore::QEntity *> QgsPointLightSettings::createEntities( const Qgs3DMapSettings &map, Qt3DCore::QEntity *parent ) const
 {
-  Qt3DCore::QEntity *lightEntity = new Qt3DCore::QEntity;
+  Qt3DCore::QEntity *lightEntity = new Qt3DCore::QEntity( parent );
   Qt3DCore::QTransform *lightTransform = new Qt3DCore::QTransform;
   lightTransform->setTranslation( QVector3D( position().x(),
                                   position().y(),
@@ -42,13 +42,12 @@ QList<Qt3DCore::QEntity *> QgsPointLightSettings::createEntities( const Qgs3DMap
 
   lightEntity->addComponent( light );
   lightEntity->addComponent( lightTransform );
-  lightEntity->setParent( parent );
 
   QList<Qt3DCore::QEntity *> res { lightEntity };
 
   if ( map.showLightSourceOrigins() )
   {
-    Qt3DCore::QEntity *originEntity = new Qt3DCore::QEntity;
+    Qt3DCore::QEntity *originEntity = new Qt3DCore::QEntity( parent );
 
     Qt3DCore::QTransform *trLightOriginCenter = new Qt3DCore::QTransform;
     trLightOriginCenter->setTranslation( lightTransform->translation() );
@@ -63,7 +62,6 @@ QList<Qt3DCore::QEntity *> QgsPointLightSettings::createEntities( const Qgs3DMap
     originEntity->addComponent( rendererLightOriginCenter );
 
     originEntity->setEnabled( true );
-    originEntity->setParent( parent );
 
     res << originEntity;
   }

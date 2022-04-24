@@ -14,7 +14,6 @@
 
 
 
-
 class Qgs3DMapSettings : QObject, QgsTemporalRangeObject
 {
 %Docstring(signature="appended")
@@ -483,6 +482,13 @@ Returns list of directional lights defined in the scene
 .. versionadded:: 3.16
 %End
 
+    QList<QgsPointLightsFromLayerSettings> pointLightsFromLayers() const;
+%Docstring
+Returns list of point lights from layer features defined in the scene.
+
+.. versionadded:: 3.26
+%End
+
     void setPointLights( const QList<QgsPointLightSettings> &pointLights );
 %Docstring
 Sets list of point lights defined in the scene
@@ -495,6 +501,13 @@ Sets list of point lights defined in the scene
 Sets list of directional lights defined in the scene
 
 .. versionadded:: 3.16
+%End
+
+    void setPointLightsFromLayers( const QList<QgsPointLightsFromLayerSettings> &pointLights );
+%Docstring
+Sets list of point lights from layer features defined in the scene.
+
+.. versionadded:: 3.26
 %End
 
     float fieldOfView() const;
@@ -801,6 +814,13 @@ Emitted when depth map debugging has changed
 Emitted when the list of point lights changes
 
 .. versionadded:: 3.6
+%End
+
+    void lightSourcesChanged();
+%Docstring
+Emitted when any of the light source settings in the map changes.
+
+.. versionadded:: 3.26
 %End
 
     void directionalLightsChanged();

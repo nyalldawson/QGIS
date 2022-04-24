@@ -22,6 +22,7 @@
 
 #include "qgspointlightsettings.h"
 #include "qgsdirectionallightsettings.h"
+#include "qgspointlightsfromlayersettings.h"
 
 class QgsLightsModel : public QAbstractListModel
 {
@@ -31,7 +32,8 @@ class QgsLightsModel : public QAbstractListModel
     enum LightType
     {
       Point,
-      Directional
+      Directional,
+      PointFromLayer
     };
 
     enum Role
@@ -48,20 +50,25 @@ class QgsLightsModel : public QAbstractListModel
 
     void setPointLights( const QList<QgsPointLightSettings> &lights );
     void setDirectionalLights( const QList<QgsDirectionalLightSettings> &lights );
+    void setPointLightsFromLayer( const QList<QgsPointLightsFromLayerSettings> &lights );
 
     QList<QgsPointLightSettings> pointLights() const;
     QList<QgsDirectionalLightSettings> directionalLights() const;
+    QList<QgsPointLightsFromLayerSettings> pointLightsFromLayer() const;
 
     void setPointLightSettings( int index, const QgsPointLightSettings &light );
     void setDirectionalLightSettings( int index, const QgsDirectionalLightSettings &light );
+    void setPointLightFromLayerSettings( int index, const QgsPointLightsFromLayerSettings &light );
 
     QModelIndex addPointLight( const QgsPointLightSettings &light );
     QModelIndex addDirectionalLight( const QgsDirectionalLightSettings &light );
+    QModelIndex addPointLightFromLayer( const QgsPointLightsFromLayerSettings &light );
 
   private:
 
     QList<QgsPointLightSettings> mPointLights;
     QList<QgsDirectionalLightSettings> mDirectionalLights;
+    QList<QgsPointLightsFromLayerSettings> mPointLightsFromLayer;
 };
 
 /**
@@ -75,10 +82,13 @@ class QgsLightsWidget : public QWidget, private Ui::QgsLightsWidget
     explicit QgsLightsWidget( QWidget *parent = nullptr );
 
     void setLights( const QList<QgsPointLightSettings> &pointLights,
-                    const QList<QgsDirectionalLightSettings> &directionalLights );
+                    const QList<QgsDirectionalLightSettings> &directionalLights,
+                    const QList < QgsPointLightsFromLayerSettings > &pointLightsFromLayer );
 
     QList<QgsPointLightSettings> pointLights();
     QList<QgsDirectionalLightSettings> directionalLights();
+    QList<QgsPointLightsFromLayerSettings> pointLightsFromLayer();
+
 
   signals:
     void directionalLightsCountChanged( int count );
@@ -92,13 +102,16 @@ class QgsLightsWidget : public QWidget, private Ui::QgsLightsWidget
     void onRemoveLight();
 
     void updateCurrentDirectionalLightParameters();
+    void updateCurrentPointLightFromLayerParameters();
     void onAddDirectionalLight();
+    void onAddPointLightFromLayer();
     void setAzimuthAltitude();
     void onDirectionChange();
   private:
 
     void showSettingsForPointLight( const QgsPointLightSettings &settings );
     void showSettingsForDirectionalLight( const QgsDirectionalLightSettings &settings );
+    void showSettingsForPointLightFromLayer( const QgsPointLightsFromLayerSettings &settings );
 
   private:
     double mDirectionX = 0;

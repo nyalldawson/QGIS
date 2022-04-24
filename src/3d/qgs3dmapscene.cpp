@@ -128,8 +128,7 @@ Qgs3DMapScene::Qgs3DMapScene( const Qgs3DMapSettings &map, QgsAbstract3DEngine *
   connect( &map, &Qgs3DMapSettings::maxTerrainScreenErrorChanged, this, &Qgs3DMapScene::createTerrain );
   connect( &map, &Qgs3DMapSettings::maxTerrainGroundErrorChanged, this, &Qgs3DMapScene::createTerrain );
   connect( &map, &Qgs3DMapSettings::terrainShadingChanged, this, &Qgs3DMapScene::createTerrain );
-  connect( &map, &Qgs3DMapSettings::pointLightsChanged, this, &Qgs3DMapScene::updateLights );
-  connect( &map, &Qgs3DMapSettings::directionalLightsChanged, this, &Qgs3DMapScene::updateLights );
+  connect( &map, &Qgs3DMapSettings::lightSourcesChanged, this, &Qgs3DMapScene::updateLights );
   connect( &map, &Qgs3DMapSettings::showLightSourceOriginsChanged, this, &Qgs3DMapScene::updateLights );
   connect( &map, &Qgs3DMapSettings::fieldOfViewChanged, this, &Qgs3DMapScene::updateCameraLens );
   connect( &map, &Qgs3DMapSettings::projectionTypeChanged, this, &Qgs3DMapScene::updateCameraLens );
@@ -667,6 +666,12 @@ void Qgs3DMapScene::updateLights()
   for ( const QgsDirectionalLightSettings &directionalLightSettings : newDirectionalLights )
   {
     mLightEntities.append( directionalLightSettings.createEntities( mMap, this ) );
+  }
+
+  const auto newPointLightsFromLayer = mMap.pointLightsFromLayers();
+  for ( const QgsPointLightsFromLayerSettings &settings : newPointLightsFromLayer )
+  {
+    mLightEntities.append( settings.createEntities( mMap, this ) );
   }
 
   onShadowSettingsChanged();

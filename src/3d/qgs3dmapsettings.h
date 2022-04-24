@@ -29,6 +29,7 @@
 #include "qgsphongmaterialsettings.h"
 #include "qgspointlightsettings.h"
 #include "qgsdirectionallightsettings.h"
+#include "qgspointlightsfromlayersettings.h"
 #include "qgsterraingenerator.h"
 #include "qgsvector3d.h"
 #include "qgsskyboxsettings.h"
@@ -40,7 +41,6 @@ class QgsMapLayer;
 class QgsRasterLayer;
 
 class QgsAbstract3DRenderer;
-
 
 class QgsReadWriteContext;
 class QgsProject;
@@ -447,6 +447,12 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
     QList<QgsDirectionalLightSettings> directionalLights() const { return mDirectionalLights; }
 
     /**
+     * Returns list of point lights from layer features defined in the scene.
+     * \since QGIS 3.26
+     */
+    QList<QgsPointLightsFromLayerSettings> pointLightsFromLayers() const { return mPointLightsFromLayer; }
+
+    /**
      * Sets list of point lights defined in the scene
      * \since QGIS 3.6
      */
@@ -457,6 +463,12 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
      * \since QGIS 3.16
      */
     void setDirectionalLights( const QList<QgsDirectionalLightSettings> &directionalLights );
+
+    /**
+     * Sets list of point lights from layer features defined in the scene.
+     * \since QGIS 3.26
+     */
+    void setPointLightsFromLayers( const QList<QgsPointLightsFromLayerSettings> &pointLights );
 
     /**
      * Returns the camera lens' field of view
@@ -754,6 +766,12 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
     void pointLightsChanged();
 
     /**
+     * Emitted when any of the light source settings in the map changes.
+     * \since QGIS 3.26
+     */
+    void lightSourcesChanged();
+
+    /**
      * Emitted when the list of directional lights changes
      * \since QGIS 3.16
      */
@@ -840,6 +858,7 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
     bool mShowLabels = false; //!< Whether to display labels on terrain tiles
     QList<QgsPointLightSettings> mPointLights;  //!< List of point lights defined for the scene
     QList<QgsDirectionalLightSettings> mDirectionalLights;  //!< List of directional lights defined for the scene
+    QList<QgsPointLightsFromLayerSettings> mPointLightsFromLayer;
     float mFieldOfView = 45.0f; //<! Camera lens field of view value
     Qt3DRender::QCameraLens::ProjectionType mProjectionType = Qt3DRender::QCameraLens::PerspectiveProjection;  //<! Camera lens projection type
     QgsCameraController::NavigationMode mCameraNavigationMode = QgsCameraController::NavigationMode::TerrainBasedNavigation;

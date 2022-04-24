@@ -50,6 +50,7 @@ set(QGIS_3D_SRCS
   lights/qgsdirectionallightsettings.cpp
   lights/qgslightsource.cpp
   lights/qgspointlightsettings.cpp
+  lights/qgspointlightsfromlayersettings.cpp
 
   materials/qgsabstractmaterialsettings.cpp
   materials/qgsgoochmaterialsettings.cpp
@@ -130,6 +131,7 @@ set(QGIS_3D_HDRS
   lights/qgsdirectionallightsettings.h
   lights/qgslightsource.h
   lights/qgspointlightsettings.h
+  lights/qgspointlightsfromlayersettings.h
 
   materials/qgsabstractmaterialsettings.h
   materials/qgsgoochmaterialsettings.h
