@@ -169,7 +169,7 @@ void Qgs3DMapSettings::readXml( const QDomElement &elem, const QgsReadWriteConte
       while ( !elemPointLight.isNull() )
       {
         QgsPointLightSettings pointLight;
-        pointLight.readXml( elemPointLight );
+        pointLight.readXml( elemPointLight, context );
         mPointLights << pointLight;
         elemPointLight = elemPointLight.nextSiblingElement( QStringLiteral( "point-light" ) );
       }
@@ -192,7 +192,7 @@ void Qgs3DMapSettings::readXml( const QDomElement &elem, const QgsReadWriteConte
       while ( !elemDirectionalLight.isNull() )
       {
         QgsDirectionalLightSettings directionalLight;
-        directionalLight.readXml( elemDirectionalLight );
+        directionalLight.readXml( elemDirectionalLight, context );
         mDirectionalLights << directionalLight;
         elemDirectionalLight = elemDirectionalLight.nextSiblingElement( QStringLiteral( "directional-light" ) );
       }
@@ -374,7 +374,7 @@ QDomElement Qgs3DMapSettings::writeXml( QDomDocument &doc, const QgsReadWriteCon
   QDomElement elemPointLights = doc.createElement( QStringLiteral( "point-lights" ) );
   for ( const QgsPointLightSettings &pointLight : std::as_const( mPointLights ) )
   {
-    QDomElement elemPointLight = pointLight.writeXml( doc );
+    QDomElement elemPointLight = pointLight.writeXml( doc, context );
     elemPointLights.appendChild( elemPointLight );
   }
   elem.appendChild( elemPointLights );
@@ -382,7 +382,7 @@ QDomElement Qgs3DMapSettings::writeXml( QDomDocument &doc, const QgsReadWriteCon
   QDomElement elemDirectionalLights = doc.createElement( QStringLiteral( "directional-lights" ) );
   for ( const QgsDirectionalLightSettings &directionalLight : std::as_const( mDirectionalLights ) )
   {
-    QDomElement elemDirectionalLight = directionalLight.writeXml( doc );
+    QDomElement elemDirectionalLight = directionalLight.writeXml( doc, context );
     elemDirectionalLights.appendChild( elemDirectionalLight );
   }
   elem.appendChild( elemDirectionalLights );

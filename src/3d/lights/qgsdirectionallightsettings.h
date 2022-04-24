@@ -37,8 +37,8 @@ class _3D_EXPORT QgsDirectionalLightSettings : public QgsLightSource
     QgsDirectionalLightSettings() = default;
 
     QList<Qt3DCore::QEntity *> createEntities( const Qgs3DMapSettings &map, Qt3DCore::QEntity *parent ) const override SIP_SKIP;
-    QDomElement writeXml( QDomDocument &doc ) const override;
-    void readXml( const QDomElement &elem ) override;
+    QDomElement writeXml( QDomDocument &doc, const QgsReadWriteContext &context = QgsReadWriteContext() ) const override;
+    void readXml( const QDomElement &elem, const QgsReadWriteContext &context = QgsReadWriteContext() ) override;
 
     //! Returns the direction of the light in degrees
     QgsVector3D direction() const { return mDirection; }

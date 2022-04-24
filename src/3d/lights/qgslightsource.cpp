@@ -24,3 +24,18 @@ void QgsLightSource::resolveReferences( const QgsProject & )
 {
 
 }
+
+void QgsLightSource::writeCommonProperties( QDomElement &element, QDomDocument &doc, const QgsReadWriteContext & ) const
+{
+  QDomElement elemDataDefinedProperties = doc.createElement( QStringLiteral( "data-defined-properties" ) );
+  mDataDefinedProperties.writeXml( elemDataDefinedProperties, propertyDefinitions() );
+  element.appendChild( elemDataDefinedProperties );
+}
+
+void QgsLightSource::readCommonProperties( const QDomElement &element, const QgsReadWriteContext & )
+{
+  const QDomElement elemDataDefinedProperties = element.firstChildElement( QStringLiteral( "data-defined-properties" ) );
+  if ( !elemDataDefinedProperties.isNull() )
+    mDataDefinedProperties.readXml( elemDataDefinedProperties, propertyDefinitions() );
+}
+

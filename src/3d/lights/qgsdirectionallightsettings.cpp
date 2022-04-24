@@ -37,7 +37,7 @@ QList<Qt3DCore::QEntity *> QgsDirectionalLightSettings::createEntities( const Qg
   return {lightEntity};
 }
 
-QDomElement QgsDirectionalLightSettings::writeXml( QDomDocument &doc ) const
+QDomElement QgsDirectionalLightSettings::writeXml( QDomDocument &doc, const QgsReadWriteContext &context ) const
 {
   QDomElement elemLight = doc.createElement( QStringLiteral( "directional-light" ) );
   elemLight.setAttribute( QStringLiteral( "x" ), mDirection.x() );
@@ -45,16 +45,18 @@ QDomElement QgsDirectionalLightSettings::writeXml( QDomDocument &doc ) const
   elemLight.setAttribute( QStringLiteral( "z" ), mDirection.z() );
   elemLight.setAttribute( QStringLiteral( "color" ), QgsSymbolLayerUtils::encodeColor( mColor ) );
   elemLight.setAttribute( QStringLiteral( "intensity" ), mIntensity );
+  writeCommonProperties( elemLight, doc, context );
   return elemLight;
 }
 
-void QgsDirectionalLightSettings::readXml( const QDomElement &elem )
+void QgsDirectionalLightSettings::readXml( const QDomElement &elem, const QgsReadWriteContext &context )
 {
   mDirection.set( elem.attribute( QStringLiteral( "x" ) ).toFloat(),
                   elem.attribute( QStringLiteral( "y" ) ).toFloat(),
                   elem.attribute( QStringLiteral( "z" ) ).toFloat() );
   mColor = QgsSymbolLayerUtils::decodeColor( elem.attribute( QStringLiteral( "color" ) ) );
   mIntensity = elem.attribute( QStringLiteral( "intensity" ) ).toFloat();
+  readCommonProperties( elem, context );
 }
 
 bool QgsDirectionalLightSettings::operator==( const QgsDirectionalLightSettings &other )

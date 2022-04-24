@@ -26,6 +26,10 @@ Definition of a directional light in a 3D map scene
 Construct a directional light with default values
 %End
 
+    virtual QDomElement writeXml( QDomDocument &doc, const QgsReadWriteContext &context = QgsReadWriteContext() ) const;
+
+    virtual void readXml( const QDomElement &elem, const QgsReadWriteContext &context = QgsReadWriteContext() );
+
 
     QgsVector3D direction() const;
 %Docstring

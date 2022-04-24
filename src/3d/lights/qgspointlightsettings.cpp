@@ -69,7 +69,7 @@ QList<Qt3DCore::QEntity *> QgsPointLightSettings::createEntities( const Qgs3DMap
   return res;
 }
 
-QDomElement QgsPointLightSettings::writeXml( QDomDocument &doc ) const
+QDomElement QgsPointLightSettings::writeXml( QDomDocument &doc, const QgsReadWriteContext &context ) const
 {
   QDomElement elemLight = doc.createElement( QStringLiteral( "point-light" ) );
   elemLight.setAttribute( QStringLiteral( "x" ), mPosition.x() );
@@ -80,10 +80,11 @@ QDomElement QgsPointLightSettings::writeXml( QDomDocument &doc ) const
   elemLight.setAttribute( QStringLiteral( "attenuation-0" ), mConstantAttenuation );
   elemLight.setAttribute( QStringLiteral( "attenuation-1" ), mLinearAttenuation );
   elemLight.setAttribute( QStringLiteral( "attenuation-2" ), mQuadraticAttenuation );
+  writeCommonProperties( elemLight, doc, context );
   return elemLight;
 }
 
-void QgsPointLightSettings::readXml( const QDomElement &elem )
+void QgsPointLightSettings::readXml( const QDomElement &elem, const QgsReadWriteContext &context )
 {
   mPosition.set( elem.attribute( QStringLiteral( "x" ) ).toDouble(),
                  elem.attribute( QStringLiteral( "y" ) ).toDouble(),
@@ -93,6 +94,7 @@ void QgsPointLightSettings::readXml( const QDomElement &elem )
   mConstantAttenuation = elem.attribute( QStringLiteral( "attenuation-0" ) ).toDouble();
   mLinearAttenuation = elem.attribute( QStringLiteral( "attenuation-1" ) ).toDouble();
   mQuadraticAttenuation = elem.attribute( QStringLiteral( "attenuation-2" ) ).toDouble();
+  readCommonProperties( elem, context );
 }
 
 bool QgsPointLightSettings::operator==( const QgsPointLightSettings &other )

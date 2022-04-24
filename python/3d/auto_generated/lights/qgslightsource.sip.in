@@ -28,14 +28,14 @@ Base class for light sources in 3d scenes.
     virtual ~QgsLightSource();
 
 
-    virtual QDomElement writeXml( QDomDocument &doc ) const = 0;
+    virtual QDomElement writeXml( QDomDocument &doc, const QgsReadWriteContext &context = QgsReadWriteContext() ) const = 0;
 %Docstring
 Writes the light source's configuration to a new DOM element and returns it.
 
 .. seealso:: :py:func:`readXml`
 %End
 
-    virtual void readXml( const QDomElement &elem ) = 0;
+    virtual void readXml( const QDomElement &elem, const QgsReadWriteContext &context = QgsReadWriteContext() ) = 0;
 %Docstring
 Reads configuration from a DOM element previously written using :py:func:`~QgsLightSource.writeXml`.
 
@@ -46,6 +46,25 @@ Reads configuration from a DOM element previously written using :py:func:`~QgsLi
 %Docstring
 After reading from XML, resolve references to any layers that have been read as layer IDs.
 %End
+
+  protected:
+
+
+
+    void writeCommonProperties( QDomElement &element, QDomDocument &doc, const QgsReadWriteContext &context ) const;
+%Docstring
+Writes common class properties to a DOM ``element``, to be used later with :py:func:`~QgsLightSource.readXml`.
+
+.. seealso:: :py:func:`readCommonProperties`
+%End
+
+    void readCommonProperties( const QDomElement &element, const QgsReadWriteContext &context );
+%Docstring
+Reads common class properties from a DOM ``element`` previously written by :py:func:`~QgsLightSource.writeXml`.
+
+.. seealso:: :py:func:`writeCommonProperties`
+%End
+
 };
 
 
