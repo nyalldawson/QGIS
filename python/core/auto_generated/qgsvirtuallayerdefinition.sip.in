@@ -196,13 +196,38 @@ Gets the type of the geometry
 Sets the type of the geometry
 %End
 
-    long geometrySrid() const;
+ long geometrySrid() const /Deprecated/;
 %Docstring
 Gets the SRID of the geometry
+
+.. deprecated::
+   use :py:func:`~QgsVirtualLayerDefinition.crs` instead.
 %End
-    void setGeometrySrid( long srid );
+
+ void setGeometrySrid( long srid );
 %Docstring
-Sets the SRID of the geometry
+Sets the SRID of the geometry.
+
+.. deprecated::
+   use :py:func:`~QgsVirtualLayerDefinition.setCrs` instead.
+%End
+
+    QgsCoordinateReferenceSystem crs() const;
+%Docstring
+Returns the coordinate reference system of the layer.
+
+.. seealso:: :py:func:`setCrs`
+
+.. versionadded:: 3.28
+%End
+
+    void setCrs( const QgsCoordinateReferenceSystem &crs );
+%Docstring
+Sets the ``crs`` (coordinate reference system) of the layer.
+
+.. seealso:: :py:func:`crs`
+
+.. versionadded:: 3.28
 %End
 
     QgsFields fields() const;

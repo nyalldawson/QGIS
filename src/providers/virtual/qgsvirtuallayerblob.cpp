@@ -16,6 +16,7 @@ email                : hugo dot mercier at oslandia dot com
  ***************************************************************************/
 
 #include "qgsvirtuallayerblob.h"
+#include "qgscoordinatereferencesystem.h"
 #include <cstring>
 #include <limits>
 
@@ -63,7 +64,7 @@ void SpatialiteBlobHeader::writeTo( char *p ) const
 
 //
 // Convert a QgsGeometry into a SpatiaLite geometry BLOB
-void qgsGeometryToSpatialiteBlob( const QgsGeometry &geom, int32_t srid, char *&blob, int &size )
+void qgsGeometryToSpatialiteBlob( const QgsGeometry &geom, const QgsCoordinateReferenceSystem &crs, char *&blob, int &size )
 {
   const int header_len = SpatialiteBlobHeader::LENGTH;
 
@@ -80,7 +81,10 @@ void qgsGeometryToSpatialiteBlob( const QgsGeometry &geom, int32_t srid, char *&
   // write the header
   SpatialiteBlobHeader pHeader;
   const QgsRectangle bbox = const_cast<QgsGeometry &>( geom ).boundingBox(); // boundingBox should be const
-  pHeader.srid = srid;
+
+  // TODO -- this is bad, we should be storing the auth:code string or WKT definition instead
+  pHeader.srid = crs.isValid() ? crs.postgisSrid() : 0;
+
   pHeader.mbrMinX = bbox.xMinimum();
   pHeader.mbrMinY = bbox.yMinimum();
   pHeader.mbrMaxX = bbox.xMaximum();

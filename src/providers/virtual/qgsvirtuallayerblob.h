@@ -21,6 +21,8 @@ email                : hugo dot mercier at oslandia dot com
 
 #include "qgsgeometry.h"
 
+class QgsCoordinateReferenceSystem;
+
 // BLOB header
 // name    size    value
 // start     1      00
@@ -55,7 +57,7 @@ struct SpatialiteBlobHeader
  * Convert a QgsGeometry into a SpatiaLite geometry BLOB
  * The blob will be allocated and must be handled by the caller
  */
-void qgsGeometryToSpatialiteBlob( const QgsGeometry &geom, int32_t srid, char *&blob, int &size );
+void qgsGeometryToSpatialiteBlob( const QgsGeometry &geom, const QgsCoordinateReferenceSystem &crs, char *&blob, int &size );
 
 /**
  * Returns the bounding box of a SpatiaLite geometry blob

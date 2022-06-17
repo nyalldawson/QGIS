@@ -99,7 +99,7 @@ class QgsVirtualLayerSourceSelect : public QgsAbstractDataSourceWidget, private 
     };
 
     QgsVirtualLayerDefinition getVirtualLayerDef();
-    long mSrid = 0;
+    QgsCoordinateReferenceSystem mCrs;
     QStringList mProviderList;
     void addEmbeddedLayer( const QString &name, const QString &provider, const QString &encoding, const QString &source );
     QgsLayerTreeView *mTreeView = nullptr;

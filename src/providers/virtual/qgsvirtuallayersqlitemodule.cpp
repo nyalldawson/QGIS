@@ -83,21 +83,15 @@ void invalidateTable( void *b );
 struct VTable
 {
     // minimal set of members (see sqlite3.h)
-    const sqlite3_module *pModule;  /* The module for this virtual table */
-    int nRef;                       /* NO LONGER USED */
-    char *zErrMsg;                  /* Error message from sqlite3_mprintf() */
+    const sqlite3_module *pModule = nullptr;  /* The module for this virtual table */
+    int nRef = 0;                       /* NO LONGER USED */
+    char *zErrMsg = nullptr;                  /* Error message from sqlite3_mprintf() */
 
     VTable( sqlite3 *db, QgsVectorLayer *layer )
-      : pModule( nullptr )
-      , nRef( 0 )
-      , zErrMsg( nullptr )
-      , mSql( db )
+      : mSql( db )
       , mLayer( layer )
       , mSlotToFunction( invalidateTable, this )
       , mName( layer->name() )
-      , mPkColumn( -1 )
-      , mCrs( -1 )
-      , mValid( true )
     {
       if ( mLayer )
       {
@@ -107,15 +101,9 @@ struct VTable
     }
 
     VTable( sqlite3 *db, const QString &provider, const QString &source, const QString &name, const QString &encoding )
-      : pModule( nullptr )
-      , nRef( 0 )
-      , zErrMsg( nullptr )
-      , mSql( db )
+      : mSql( db )
       , mName( name )
       , mEncoding( encoding )
-      , mPkColumn( -1 )
-      , mCrs( -1 )
-      , mValid( true )
     {
       QgsDataProvider::ProviderOptions providerOptions;
       mProvider = qobject_cast<QgsVectorDataProvider *>( QgsProviderRegistry::instance()->createProvider( provider, source, providerOptions ) );
@@ -147,7 +135,7 @@ struct VTable
 
     QString creationString() const { return mCreationStr; }
 
-    long crs() const { return mCrs; }
+    QgsCoordinateReferenceSystem crs() const { return mCrs; }
 
     sqlite3 *sql() { return mSql; }
 
@@ -179,14 +167,14 @@ struct VTable
     QString mEncoding;
 
     // primary key column (default = -1: none)
-    int mPkColumn;
+    int mPkColumn = -1;
 
     // CREATE TABLE string
     QString mCreationStr;
 
-    long mCrs;
+    QgsCoordinateReferenceSystem mCrs;
 
-    bool mValid;
+    bool mValid = true;
 
     QgsFields mFields;
 
@@ -243,7 +231,7 @@ struct VTable
 
       mCreationStr = "CREATE TABLE vtable (" + sqlFields.join( QLatin1Char( ',' ) ) + ")";
 
-      mCrs = provider->crs().postgisSrid();
+      mCrs = provider->crs();
     }
 };
 
@@ -837,7 +825,7 @@ void qgisFunctionWrapper( sqlite3_context *ctxt, int nArgs, sqlite3_value **args
       {
         char *blob = nullptr;
         int size = 0;
-        qgsGeometryToSpatialiteBlob( ret.value<QgsGeometry>(), /*srid*/0, blob, size );
+        qgsGeometryToSpatialiteBlob( ret.value<QgsGeometry>(), QgsCoordinateReferenceSystem(), blob, size );
         sqlite3_result_blob( ctxt, blob, size, deleteGeometryBlob );
       }
       else if ( ret.canConvert<QgsInterval>() )

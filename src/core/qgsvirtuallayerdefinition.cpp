@@ -107,7 +107,7 @@ QgsVirtualLayerDefinition QgsVirtualLayerDefinition::fromUrl( const QUrl &url )
     {
       // geometry field definition, optional
       // geometry_column(:wkb_type:srid)?
-      const QRegularExpression reGeom( "(" + columnNameRx + ")(?::([a-zA-Z0-9]+):(\\d+))?" );
+      const QRegularExpression reGeom( "(" + columnNameRx + ")(?::([a-zA-Z0-9]+):(.*))?" );
       const QRegularExpressionMatch match = reGeom.match( value );
       if ( match.hasMatch() )
       {
@@ -121,7 +121,22 @@ QgsVirtualLayerDefinition QgsVirtualLayerDefinition::fromUrl( const QUrl &url )
             wkbType = static_cast<QgsWkbTypes::Type>( match.captured( 2 ).toLong() );
           }
           def.setGeometryWkbType( wkbType );
-          def.setGeometrySrid( match.captured( 3 ).toLong() );
+
+          bool isLong = false;
+          QgsCoordinateReferenceSystem crs;
+          const long srid = match.captured( 3 ).toLong( &isLong );
+          if ( isLong )
+          {
+            Q_NOWARN_DEPRECATED_PUSH
+            crs.createFromSrid( srid );
+            Q_NOWARN_DEPRECATED_POP
+          }
+          else
+          {
+            crs = QgsCoordinateReferenceSystem( match.captured( 3 ) );
+          }
+
+          def.setCrs( crs );
         }
       }
     }
@@ -212,7 +227,15 @@ QUrl QgsVirtualLayerDefinition::toUrl() const
   else if ( !geometryField().isEmpty() )
   {
     if ( hasDefinedGeometry() )
-      urlQuery.addQueryItem( QStringLiteral( "geometry" ), QStringLiteral( "%1:%2:%3" ).arg( geometryField() ). arg( geometryWkbType() ).arg( geometrySrid() ).toUtf8() );
+    {
+      QString geometryDef;
+      if ( crs().srsid() >= USER_CRS_START_ID || crs().authid().isEmpty() )
+        geometryDef = crs().toWkt( QgsCoordinateReferenceSystem::WKT_PREFERRED );
+      else
+        geometryDef = crs().authid();
+
+      urlQuery.addQueryItem( QStringLiteral( "geometry" ), QStringLiteral( "%1:%2:%3" ).arg( geometryField() ). arg( geometryWkbType() ).arg( geometryDef ) );
+    }
     else
       urlQuery.addQueryItem( QStringLiteral( "geometry" ), geometryField() );
   }
@@ -259,6 +282,23 @@ void QgsVirtualLayerDefinition::addSource( const QString &name, const QString &r
 void QgsVirtualLayerDefinition::addSource( const QString &name, const QString &source, const QString &provider, const QString &encoding )
 {
   mSourceLayers.append( SourceLayer( name, source, provider, encoding ) );
+}
+
+void QgsVirtualLayerDefinition::setGeometrySrid( long srid )
+{
+  Q_NOWARN_DEPRECATED_PUSH
+  mCrs.createFromSrid( srid );
+  Q_NOWARN_DEPRECATED_POP
+}
+
+QgsCoordinateReferenceSystem QgsVirtualLayerDefinition::crs() const
+{
+  return mCrs;
+}
+
+void QgsVirtualLayerDefinition::setCrs( const QgsCoordinateReferenceSystem &crs )
+{
+  mCrs = crs;
 }
 
 bool QgsVirtualLayerDefinition::hasSourceLayer( const QString &name ) const

@@ -20,6 +20,8 @@ email                : hugo dot mercier at oslandia dot com
 #include "qgis_core.h"
 #include "qgsfields.h"
 #include "qgswkbtypes.h"
+#include "qgscoordinatereferencesystem.h"
+#include "qgis_sip.h"
 
 /**
  * \ingroup core
@@ -164,10 +166,34 @@ class CORE_EXPORT QgsVirtualLayerDefinition
     //! Sets the type of the geometry
     void setGeometryWkbType( QgsWkbTypes::Type t ) { mGeometryWkbType = t; }
 
-    //! Gets the SRID of the geometry
-    long geometrySrid() const { return mGeometrySrid; }
-    //! Sets the SRID of the geometry
-    void setGeometrySrid( long srid ) { mGeometrySrid = srid; }
+    /**
+     * Gets the SRID of the geometry
+     * \deprecated use crs() instead.
+     */
+    Q_DECL_DEPRECATED long geometrySrid() const SIP_DEPRECATED { return mCrs.postgisSrid(); }
+
+    /**
+     * Sets the SRID of the geometry.
+     *
+     * \deprecated use setCrs() instead.
+     */
+    Q_DECL_DEPRECATED void setGeometrySrid( long srid );
+
+    /**
+     * Returns the coordinate reference system of the layer.
+     *
+     * \see setCrs()
+     * \since QGIS 3.28
+     */
+    QgsCoordinateReferenceSystem crs() const;
+
+    /**
+     * Sets the \a crs (coordinate reference system) of the layer.
+     *
+     * \see crs()
+     * \since QGIS 3.28
+     */
+    void setCrs( const QgsCoordinateReferenceSystem &crs );
 
     //! Gets field definitions
     QgsFields fields() const { return mFields; }
@@ -207,7 +233,7 @@ class CORE_EXPORT QgsVirtualLayerDefinition
     QgsFields mFields;
     bool mLazy = false;
     QgsWkbTypes::Type mGeometryWkbType = QgsWkbTypes::Unknown;
-    long mGeometrySrid = 0;
+    QgsCoordinateReferenceSystem mCrs;
     QString mSubsetString;
 };
 

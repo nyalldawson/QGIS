@@ -80,7 +80,7 @@ namespace QgsVirtualLayerQueryParser
 
     // look for special comments in SQL
     // a column name followed by /*:type*/
-    const QRegularExpression rx( "([a-zA-Z_\x80-\xFF][a-zA-Z0-9_\x80-\xFF]*)\\s*/\\*:(int|real|text|((?:multi)?(?:point|linestring|polygon)):(\\d+))\\s*\\*/", QRegularExpression::CaseInsensitiveOption );
+    const thread_local QRegularExpression rx( "([a-zA-Z_\x80-\xFF][a-zA-Z0-9_\x80-\xFF]*)\\s*/\\*:(int|real|text|((?:multi)?(?:point|linestring|polygon)):(.*))\\s*\\*/", QRegularExpression::CaseInsensitiveOption );
     int pos = 0;
 
     QRegularExpressionMatch match = rx.match( query, pos );
@@ -100,7 +100,21 @@ namespace QgsVirtualLayerQueryParser
       {
         // there should be 2 more captures
         def.setGeometry( QgsWkbTypes::parseType( match.captured( 3 ) ) );
-        def.setSrid( static_cast<QgsWkbTypes::Type>( match.captured( 4 ).toLong() ) );
+
+        QgsCoordinateReferenceSystem crs;
+        bool isLong = false;
+        long srid = match.captured( 4 ).toLong( &isLong );
+        if ( isLong )
+        {
+          Q_NOWARN_DEPRECATED_PUSH
+          crs.createFromSrid( srid );
+          Q_NOWARN_DEPRECATED_POP
+        }
+        else
+        {
+          crs = QgsCoordinateReferenceSystem( match.captured( 4 ) );
+        }
+        def.setCrs( crs );
       }
       defs[column] = def;
 
@@ -114,7 +128,7 @@ namespace QgsVirtualLayerQueryParser
   void setColumnDefType( const QString &columnType, ColumnDef &d )
   {
     // geometry type
-    const QRegularExpression geometryTypeRx( "\\(([0-9]+),([0-9]+)\\)" );
+    const thread_local QRegularExpression geometryTypeRx( "\\(([0-9]+),(.*)\\)" );
 
     // see qgsvirtuallayersqlitemodule for possible declared types
     // the type returned by PRAGMA table_info will be either
@@ -134,9 +148,22 @@ namespace QgsVirtualLayerQueryParser
       if ( match.hasMatch() )
       {
         const QgsWkbTypes::Type type = static_cast<QgsWkbTypes::Type>( match.captured( 1 ).toLong() );
-        const long srid = match.captured( 2 ).toLong();
+
+        bool isLong = false;
+        const long srid = match.captured( 2 ).toLong( &isLong );
+        QgsCoordinateReferenceSystem crs;
+        if ( isLong )
+        {
+          Q_NOWARN_DEPRECATED_PUSH
+          crs.createFromSrid( srid );
+          Q_NOWARN_DEPRECATED_POP
+        }
+        else
+        {
+          crs = QgsCoordinateReferenceSystem( match.captured( 2 ) );
+        }
         d.setGeometry( type );
-        d.setSrid( srid );
+        d.setCrs( crs );
       }
     }
   }
@@ -246,7 +273,13 @@ namespace QgsVirtualLayerQueryParser
               if ( p.first != QgsWkbTypes::NoGeometry )
               {
                 tableDef[colIdx].setGeometry( p.first );
-                tableDef[colIdx].setSrid( p.second );
+
+                QgsCoordinateReferenceSystem crs;
+                Q_NOWARN_DEPRECATED_PUSH
+                crs.createFromSrid( p.second );
+                Q_NOWARN_DEPRECATED_POP
+
+                tableDef[colIdx].setCrs( crs );
               }
               else
               {

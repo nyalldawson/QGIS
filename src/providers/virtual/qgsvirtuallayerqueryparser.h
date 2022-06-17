@@ -19,6 +19,7 @@ email                : hugo dot mercier at oslandia dot com
 
 #include "qgis.h"
 #include "qgswkbtypes.h"
+#include "qgscoordinatereferencesystem.h"
 
 struct sqlite3;
 
@@ -34,17 +35,17 @@ namespace QgsVirtualLayerQueryParser
    * Type used to define a column
    *
    * It can hold a name and a type.
-   * The type can be a 'scalar' type (int, double, string) or a geometry type (WKB) and an SRID
+   * The type can be a 'scalar' type (int, double, string) or a geometry type (WKB) and a CRS
    */
   class ColumnDef
   {
     public:
       ColumnDef() = default;
-      ColumnDef( const QString &name, QgsWkbTypes::Type aWkbType, long aSrid )
+      ColumnDef( const QString &name, QgsWkbTypes::Type aWkbType, const QgsCoordinateReferenceSystem &crs )
         : mName( name )
         , mType( QVariant::UserType )
         , mWkbType( aWkbType )
-        , mSrid( aSrid )
+        , mCrs( crs )
       {}
       ColumnDef( const QString &name, QVariant::Type aType )
         : mName( name )
@@ -57,8 +58,8 @@ namespace QgsVirtualLayerQueryParser
 
       bool isGeometry() const { return mType == QVariant::UserType; }
       void setGeometry( QgsWkbTypes::Type wkbType ) { mType = QVariant::UserType; mWkbType = wkbType; }
-      long srid() const { return mSrid; }
-      void setSrid( long srid ) { mSrid = srid; }
+      QgsCoordinateReferenceSystem crs() const { return mCrs; }
+      void setCrs( const QgsCoordinateReferenceSystem &crs ) { mCrs = crs; }
 
       void setScalarType( QVariant::Type t ) { mType = t; mWkbType = QgsWkbTypes::NoGeometry; }
       QVariant::Type scalarType() const { return mType; }
@@ -68,7 +69,7 @@ namespace QgsVirtualLayerQueryParser
       QString mName;
       QVariant::Type mType = QVariant::Invalid;
       QgsWkbTypes::Type mWkbType = QgsWkbTypes::Unknown;
-      long mSrid = -1;
+      QgsCoordinateReferenceSystem mCrs;
   };
 
   /**

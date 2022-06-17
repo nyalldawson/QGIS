@@ -174,7 +174,7 @@ void QgsVirtualLayerSourceSelect::layerComboChanged( int idx )
   else if ( def.hasDefinedGeometry() )
   {
     mGeometryRadio->setChecked( true );
-    mSrid = def.geometrySrid();
+    mCrs = def.crs();
     Q_NOWARN_DEPRECATED_PUSH
     const QgsCoordinateReferenceSystem crs( def.geometrySrid() );
     Q_NOWARN_DEPRECATED_POP
@@ -199,18 +199,14 @@ void QgsVirtualLayerSourceSelect::layerComboChanged( int idx )
 void QgsVirtualLayerSourceSelect::browseCRS()
 {
   QgsProjectionSelectionDialog crsSelector( this );
-  Q_NOWARN_DEPRECATED_PUSH
-  const QgsCoordinateReferenceSystem crs( mSrid );
-  Q_NOWARN_DEPRECATED_POP
-  crsSelector.setCrs( crs );
-  if ( !crs.isValid() )
+  crsSelector.setCrs( mCrs );
+  if ( !mCrs.isValid() )
     crsSelector.showNoCrsForLayerMessage();
 
   if ( crsSelector.exec() )
   {
     mCRS->setText( crsSelector.crs().authid() );
-    const QgsCoordinateReferenceSystem newCrs = crsSelector.crs();
-    mSrid = newCrs.postgisSrid();
+    mCrs = crsSelector.crs();
   }
 }
 
@@ -235,7 +231,7 @@ QgsVirtualLayerDefinition QgsVirtualLayerSourceSelect::getVirtualLayerDef()
     const QgsWkbTypes::Type t = mGeometryType->currentIndex() > -1 ? static_cast<QgsWkbTypes::Type>( mGeometryType->currentData().toLongLong() ) : QgsWkbTypes::NoGeometry;
     def.setGeometryWkbType( t );
     def.setGeometryField( mGeometryField->text() );
-    def.setGeometrySrid( mSrid );
+    def.setCrs( mCrs );
   }
 
   // add embedded layers

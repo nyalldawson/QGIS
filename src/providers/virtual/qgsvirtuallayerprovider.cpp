@@ -86,12 +86,7 @@ QgsVirtualLayerProvider::QgsVirtualLayerProvider( QString const &uri,
     return;
   }
 
-  if ( mDefinition.geometrySrid() != -1 )
-  {
-    Q_NOWARN_DEPRECATED_PUSH
-    mCrs = QgsCoordinateReferenceSystem( mDefinition.geometrySrid() );
-    Q_NOWARN_DEPRECATED_POP
-  }
+  mCrs = mDefinition.crs();
 }
 
 void QgsVirtualLayerProvider::reloadProviderData()
@@ -360,7 +355,7 @@ bool QgsVirtualLayerProvider::createIt()
         ColumnDef g;
         g.setName( mDefinition.geometryField() );
         g.setGeometry( mDefinition.geometryWkbType() );
-        g.setSrid( mDefinition.geometrySrid() );
+        g.setCrs( mDefinition.crs() );
         gFields << g;
       }
       // default type: string
@@ -384,7 +379,7 @@ bool QgsVirtualLayerProvider::createIt()
         {
           mDefinition.setGeometryField( gFields[0].name() );
           mDefinition.setGeometryWkbType( gFields[0].wkbType() );
-          mDefinition.setGeometrySrid( gFields[0].srid() );
+          mDefinition.setCrs( gFields[0].crs() );
         }
       }
       // a geometry field is named, but has no type yet
@@ -398,7 +393,7 @@ bool QgsVirtualLayerProvider::createIt()
           {
             // override the geometry type
             mDefinition.setGeometryWkbType( gFields[i].wkbType() );
-            mDefinition.setGeometrySrid( gFields[i].srid() );
+            mDefinition.setCrs( gFields[i].crs() );
             found = true;
             break;
           }
@@ -445,7 +440,7 @@ bool QgsVirtualLayerProvider::createIt()
       {
         mDefinition.setGeometryField( QStringLiteral( "geometry" ) );
         mDefinition.setGeometryWkbType( c.wkbType() );
-        mDefinition.setGeometrySrid( c.srid() );
+        mDefinition.setCrs( c.crs() );
       }
     }
     mDefinition.setFields( tfields );
