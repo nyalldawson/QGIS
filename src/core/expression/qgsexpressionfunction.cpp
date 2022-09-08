@@ -4757,6 +4757,26 @@ static QVariant fcnHausdorffDistance( const QVariantList &values, const QgsExpre
   return res > -1 ? QVariant( res ) : QVariant();
 }
 
+static QVariant fcnFrechetDistance( const QVariantList &values, const QgsExpressionContext *, QgsExpression *parent, const QgsExpressionNodeFunction * )
+{
+  const QgsGeometry g1 = QgsExpressionUtils::getGeometry( values.at( 0 ), parent );
+  const QgsGeometry g2 = QgsExpressionUtils::getGeometry( values.at( 1 ), parent );
+
+  double res = -1;
+  if ( values.length() == 3 && values.at( 2 ).isValid() )
+  {
+    double densify = QgsExpressionUtils::getDoubleValue( values.at( 2 ), parent );
+    densify = std::clamp( densify, 0.0, 1.0 );
+    res = g1.frechetDistanceDensify( g2, densify );
+  }
+  else
+  {
+    res = g1.frechetDistance( g2 );
+  }
+
+  return res > -1 ? QVariant( res ) : QVariant();
+}
+
 static QVariant fcnIntersection( const QVariantList &values, const QgsExpressionContext *, QgsExpression *parent, const QgsExpressionNodeFunction * )
 {
   QgsGeometry fGeom = QgsExpressionUtils::getGeometry( values.at( 0 ), parent );
@@ -8136,6 +8156,9 @@ const QList<QgsExpressionFunction *> &QgsExpression::Functions()
         << new QgsStaticExpressionFunction( QStringLiteral( "hausdorff_distance" ), QgsExpressionFunction::ParameterList() << QgsExpressionFunction::Parameter( QStringLiteral( "geometry1" ) ) << QgsExpressionFunction::Parameter( QStringLiteral( "geometry2" ) )
                                             << QgsExpressionFunction::Parameter( QStringLiteral( "densify_fraction" ), true ),
                                             fcnHausdorffDistance, QStringLiteral( "GeometryGroup" ) )
+        << new QgsStaticExpressionFunction( QStringLiteral( "frechet_distance" ), QgsExpressionFunction::ParameterList() << QgsExpressionFunction::Parameter( QStringLiteral( "geometry1" ) ) << QgsExpressionFunction::Parameter( QStringLiteral( "geometry2" ) )
+                                            << QgsExpressionFunction::Parameter( QStringLiteral( "densify_fraction" ), true ),
+                                            fcnFrechetDistance, QStringLiteral( "GeometryGroup" ) )
         << new QgsStaticExpressionFunction( QStringLiteral( "intersection" ), QgsExpressionFunction::ParameterList() << QgsExpressionFunction::Parameter( QStringLiteral( "geometry1" ) )
                                             << QgsExpressionFunction::Parameter( QStringLiteral( "geometry2" ) ),
                                             fcnIntersection, QStringLiteral( "GeometryGroup" ) )
