@@ -142,7 +142,9 @@ void QgsExpressionTreeView::setLayer( QgsVectorLayer *layer )
   //TODO - remove existing layer scope from context
 
   if ( mLayer )
+  {
     mExpressionContext << QgsExpressionContextUtils::layerScope( mLayer );
+  }
 
   loadFieldNames();
 }
