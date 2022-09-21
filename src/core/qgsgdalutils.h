@@ -173,6 +173,15 @@ class CORE_EXPORT QgsGdalUtils
      */
     static bool vrtMatchesLayerType( const QString &vrtPath, QgsMapLayerType type );
 
+    /**
+     * Attempts to parse a GDAL band name as a date time value.
+     *
+     * This method can resolve eg NetCDF band names to their corresponding date time values.
+     *
+     * \since QGIS 3.30
+     */
+    static bool parseNetCdfBandName( const QString &name, QDateTime &referenceTime, QgsUnitTypes::TemporalUnit &unit );
+
     friend class TestQgsGdalUtils;
 };
 

@@ -548,4 +548,84 @@ bool QgsGdalUtils::vrtMatchesLayerType( const QString &vrtPath, QgsMapLayerType 
   CPLPopErrorHandler();
   return static_cast< bool >( hDriver );
 }
+
+bool QgsGdalUtils::parseNetCdfBandName( const QString &name, QDateTime &referenceTime, QgsUnitTypes::TemporalUnit &unit )
+{
+  const QStringList parts = name.split( ' ' );
+  if ( parts.size() < 3 )
+    return false;
+
+  referenceTime = QDateTime::fromString( parts.at( 2 ) );
+  if ( !referenceTime.isValid() )
+    return false;
+
+  if ( parts.at( 1 ).compare( QLatin1String( "since" ), Qt::CaseInsensitive ) != 0 )
+    return false;
+
+  const QString timeUnit = parts.at( 0 );
+  if ( timeUnit.compare( QLatin1String( "millisec" ), Qt::CaseInsensitive ) == 0 ||
+       timeUnit.compare( QLatin1String( "msec" ), Qt::CaseInsensitive ) == 0 ||
+       timeUnit.compare( QLatin1String( "millisecs" ), Qt::CaseInsensitive ) == 0 ||
+       timeUnit.compare( QLatin1String( "msecs" ), Qt::CaseInsensitive ) == 0 )
+  {
+    unit = QgsUnitTypes::TemporalMilliseconds;
+    return true;
+  }
+  else if ( timeUnit.compare( QLatin1String( "second" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "seconds" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "sec" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "secs" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "s" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "se" ), Qt::CaseInsensitive ) == 0 )
+  {
+    unit = QgsUnitTypes::TemporalSeconds;
+    return true;
+  }
+  else if ( timeUnit.compare( QLatin1String( "minute" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "minutes" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "min" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "mins" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "mi" ), Qt::CaseInsensitive ) == 0 )
+  {
+    unit = QgsUnitTypes::TemporalMinutes;
+    return true;
+  }
+  else if ( timeUnit.compare( QLatin1String( "hour" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "hours" ), Qt::CaseInsensitive ) == 0 )
+  {
+    unit = QgsUnitTypes::TemporalHours;
+    return true;
+  }
+  else if ( timeUnit.compare( QLatin1String( "day" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "days" ), Qt::CaseInsensitive ) == 0 )
+  {
+    unit = QgsUnitTypes::TemporalDays;
+    return true;
+  }
+  else if ( timeUnit.compare( QLatin1String( "week" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "weeks" ), Qt::CaseInsensitive ) == 0 )
+  {
+    unit = QgsUnitTypes::TemporalWeeks;
+    return true;
+  }
+  else if ( timeUnit.compare( QLatin1String( "month" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "months" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "mon" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "mons" ), Qt::CaseInsensitive ) == 0 )
+  {
+    unit = QgsUnitTypes::TemporalMonths;
+    return true;
+  }
+  else if ( timeUnit.compare( QLatin1String( "year" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "years" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "yr" ), Qt::CaseInsensitive ) == 0 ||
+            timeUnit.compare( QLatin1String( "yrs" ), Qt::CaseInsensitive ) == 0 )
+  {
+    unit = QgsUnitTypes::TemporalYears;
+    return true;
+  }
+
+  return false;
+}
+
 #endif
