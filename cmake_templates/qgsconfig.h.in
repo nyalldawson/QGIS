@@ -116,5 +116,7 @@
 
 #cmakedefine HAVE_CRASH_HANDLER
 
+#cmakedefine HAVE_R
+
 #endif
 
