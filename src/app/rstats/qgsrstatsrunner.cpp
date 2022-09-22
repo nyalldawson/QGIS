@@ -14,6 +14,7 @@
 QgsRStatsRunner::QgsRStatsRunner()
 {
   mRSession = std::make_unique< RInside >( 0, nullptr, false, false, true );
+  mRSession->set_callbacks( this );
 
   const QString userPath = QgsApplication::qgisSettingsDirPath() + QStringLiteral( "r_libs" );
   if ( !QFile::exists( userPath ) )
@@ -50,12 +51,20 @@ QVariant QgsRStatsRunner::execCommand( const QString &command, QString &error )
         return QVariant();
 
       case LGLSXP:
-        return Rcpp::as<bool>( res );
+      {
+        const int resInt = Rcpp::as<int>( res );
+        if ( resInt < 0 )
+          return QVariant();
+        else
+          return static_cast< bool >( resInt );
+      }
 
       case INTSXP:
+        // handle NA_integer_ as NA!
         return Rcpp::as<int>( res );
 
       case REALSXP:
+        // handle nan as NA
         return Rcpp::as<double>( res );
 
       case STRSXP:
