@@ -18,6 +18,7 @@
 #include "qgsrstatsrunner.h"
 #include "qgisapp.h"
 #include "qgsdockablewidgethelper.h"
+#include "qgscodeeditor.h"
 
 #include <QVBoxLayout>
 #include <QLineEdit>
@@ -43,8 +44,10 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
   vl->addWidget( toolBar );
 
   mOutput = new QTextBrowser();
+  mOutput->setFont( QgsCodeEditor::getMonospaceFont() );
   vl->addWidget( mOutput, 1 );
   mInputEdit = new QLineEdit();
+  mInputEdit->setFont( QgsCodeEditor::getMonospaceFont() );
   vl->addWidget( mInputEdit );
   connect( mInputEdit, &QLineEdit::returnPressed, this, [ = ]
   {
