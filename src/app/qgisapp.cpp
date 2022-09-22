@@ -1595,8 +1595,7 @@ QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, bool skipBadLayers
 
 #ifdef HAVE_R
   mRStatsRunner = new QgsRStatsRunner();
-  QgsRStatsConsole *rConsole = new QgsRStatsConsole( nullptr, mRStatsRunner );
-  rConsole->show();
+  mRStatsConsole = new QgsRStatsConsole( nullptr, mRStatsRunner );
 #endif
 
   // Update recent project list (as possible custom project storages are now registered by plugins)
@@ -1959,6 +1958,8 @@ QgisApp::~QgisApp()
 #endif
 
 #ifdef HAVE_R
+  delete mRStatsConsole;
+  mRStatsConsole = nullptr;
   delete mRStatsRunner;
   mRStatsRunner = nullptr;
 #endif
