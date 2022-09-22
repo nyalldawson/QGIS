@@ -195,6 +195,10 @@ class QgsLegendFilterButton;
 class QgsGeoreferencerMainWindow;
 #endif
 
+#ifdef HAVE_R
+class QgsRStatsConsole;
+#endif
+
 /**
  * \class QgisApp
  * \brief Main window for the QGIS application
@@ -2518,7 +2522,7 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
 
     QgsPythonUtils *mPythonUtils = nullptr;
 
-        QgsRStatsRunner *mRStatsRunner = nullptr;
+    QgsRStatsRunner *mRStatsRunner = nullptr;
 
     static QgisApp *sInstance;
 
@@ -2527,6 +2531,10 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
 
     QgsBrowserDockWidget *mBrowserWidget = nullptr;
     QgsBrowserDockWidget *mBrowserWidget2 = nullptr;
+
+#ifdef HAVE_R
+    QgsRStatsConsole *mRConsole = nullptr;
+#endif
 
     QgsTemporalControllerDockWidget *mTemporalControllerWidget = nullptr;
 

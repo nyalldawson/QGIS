@@ -33,20 +33,32 @@ class QgsRStatsRunner: public QObject, public Callbacks
     QgsRStatsRunner();
     ~QgsRStatsRunner();
 
-    QVariant execCommand( const QString& command, QString& error );
+    QVariant execCommand( const QString &command, QString &error );
 
-    void WriteConsole( const std::string& line, int type ) override {
-        emit consoleMessage( QString::fromStdString( line ) );
+    void WriteConsole( const std::string &line, int type ) override
+    {
+      emit consoleMessage( QString::fromStdString( line ) );
     };
 
-    virtual bool has_WriteConsole() {
-        return true;
+    bool has_WriteConsole() override
+    {
+      return true;
     };
 
+    void ShowMessage( const char *message ) override
+    {
+      emit showMessage( QString( message ) );
+    }
+
+    bool has_ShowMessage() override
+    {
+      return true;
+    }
 
   signals:
 
-    void consoleMessage( const QString& message );
+    void consoleMessage( const QString &message );
+    void showMessage( const QString &message );
 
   private:
 
