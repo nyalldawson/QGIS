@@ -418,11 +418,32 @@ if (POSTGRES_FOUND)
 endif()
 
 if(HAVE_R)
+add_compile_definitions(RINSIDE_CALLBACKS=1)
+  EXEC_PROGRAM(Rscript
+      ARGS  ${CMAKE_SOURCE_DIR}/external/r_inside/src/tools/RInsideAutoloads.r
+      OUTPUT_VARIABLE R_INSIDE_AUTOLOADS)
+   file(WRITE  ${CMAKE_SOURCE_DIR}/external/r_inside/inst/include/RInsideAutoloads.h "${R_INSIDE_AUTOLOADS}")
+
+   EXEC_PROGRAM(Rscript
+       ARGS  ${CMAKE_SOURCE_DIR}/external/r_inside/src/tools/RInsideEnvVars.r
+       OUTPUT_VARIABLE R_INSIDE_ENV_VARS )
+    file(WRITE ${CMAKE_SOURCE_DIR}/external/r_inside/inst/include/RInsideEnvVars.h "${R_INSIDE_ENV_VARS}")
+
   set(QGIS_APP_SRCS
     ${QGIS_APP_SRCS}
     rstats/qgsrstatsrunner.cpp
     rstats/qgsrstatsconsole.cpp
+
+
+
+      ${CMAKE_SOURCE_DIR}/external/r_inside/src/MemBuf.cpp
+      ${CMAKE_SOURCE_DIR}/external/r_inside/src/RInside.cpp
+      ${CMAKE_SOURCE_DIR}/external/r_inside/src/RInside_C.cpp
+      ${CMAKE_SOURCE_DIR}/external/r_inside/src/RcppExports.cpp
+      ${CMAKE_SOURCE_DIR}/external/r_inside/src/compiler.cpp
   )
+
+
 endif()
 
 # Test data dir for QgsAppScreenShots
@@ -725,27 +746,31 @@ endif()
 #  )
 #target_link_libraries(qgis_app rcpp_lib)
 
-  execute_process(COMMAND Rscript -e "RInside:::CxxFlags()"
-                  OUTPUT_VARIABLE R_INSIDE_INCLUDE_DIRS)
-                string(REGEX REPLACE "^-I" "" R_INSIDE_INCLUDE_DIRS "${R_INSIDE_INCLUDE_DIRS}")
-                string(STRIP ${R_INSIDE_INCLUDE_DIRS} R_INSIDE_INCLUDE_DIRS )
-                target_include_directories(qgis_app SYSTEM PUBLIC
-                  ${R_INSIDE_INCLUDE_DIRS}
-                  )
+  #execute_process(COMMAND Rscript -e "RInside:::CxxFlags()"
+ #                 OUTPUT_VARIABLE R_INSIDE_INCLUDE_DIRS)
+   #             string(REGEX REPLACE "^-I" "" R_INSIDE_INCLUDE_DIRS "${R_INSIDE_INCLUDE_DIRS}")
+     #           string(STRIP ${R_INSIDE_INCLUDE_DIRS} R_INSIDE_INCLUDE_DIRS )
+      ##          target_include_directories(qgis_app SYSTEM PUBLIC
+     #             ${R_INSIDE_INCLUDE_DIRS}
+            #      )
 
-                execute_process(COMMAND Rscript -e "RInside:::LdFlags()"
-                                OUTPUT_VARIABLE R_INSIDE_LIBS)
-                if (${R_INSIDE_LIBS} MATCHES "[-][L]([^ ;])+")
-                    string(SUBSTRING ${CMAKE_MATCH_0} ${NUM_TRUNC_CHARS} -1 R_INSIDE_LIBS_L)
-                                message(STATUS "Found R-inside libs: ${R_INSIDE_LIBS_L}")
-                    target_link_directories(qgis_app PUBLIC ${R_INSIDE_LIBS_L})
-                endif()
+            #    execute_process(COMMAND Rscript -e "RInside:::LdFlags()"
+             #                   OUTPUT_VARIABLE R_INSIDE_LIBS)
+            #    if (${R_INSIDE_LIBS} MATCHES "[-][L]([^ ;])+")
+           ##         string(SUBSTRING ${CMAKE_MATCH_0} ${NUM_TRUNC_CHARS} -1 R_INSIDE_LIBS_L)
+            #                    message(STATUS "Found R-inside libs: ${R_INSIDE_LIBS_L}")
+            #        target_link_directories(qgis_app PUBLIC ${R_INSIDE_LIBS_L})
+             #   endif()
 
-                if (${R_INSIDE_LIBS} MATCHES "[-][l][R]([^;])+")
-                    string(SUBSTRING ${CMAKE_MATCH_0} ${NUM_TRUNC_CHARS} -1 R_INSIDE_LIBS_l)
-                                                  message(STATUS "Found R-inside libs: ${R_INSIDE_LIBS_l}")
-                    target_link_libraries(qgis_app  ${R_INSIDE_LIBS_l})
-                endif()
+             #   if (${R_INSIDE_LIBS} MATCHES "[-][l][R]([^;])+")
+            #        string(SUBSTRING ${CMAKE_MATCH_0} ${NUM_TRUNC_CHARS} -1 R_INSIDE_LIBS_l)
+            #                                      message(STATUS "Found R-inside libs: ${R_INSIDE_LIBS_l}")
+            #        target_link_libraries(qgis_app  ${R_INSIDE_LIBS_l})
+             #   endif()
+
+             target_include_directories(qgis_app PUBLIC
+               ${CMAKE_SOURCE_DIR}/external/r_inside/inst/include
+               )
 
 endif()
 

@@ -18,19 +18,35 @@
 #define QGSRSTATSRUNNER_H
 
 #include <memory>
+#include <QObject>
+#include "Callbacks.h"
 
 class RInside;
 class QVariant;
 class QString;
 
-class QgsRStatsRunner
+class QgsRStatsRunner: public QObject, public Callbacks
 {
+    Q_OBJECT
   public:
 
     QgsRStatsRunner();
     ~QgsRStatsRunner();
 
     QVariant execCommand( const QString& command, QString& error );
+
+    void WriteConsole( const std::string& line, int type ) override {
+        emit consoleMessage( QString::fromStdString( line ) );
+    };
+
+    virtual bool has_WriteConsole() {
+        return true;
+    };
+
+
+  signals:
+
+    void consoleMessage( const QString& message );
 
   private:
 
