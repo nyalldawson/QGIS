@@ -194,6 +194,11 @@ if(WITH_CORE)
     endif()
   endif()
 
+  set (WITH_R FALSE CACHE BOOL "Determines whether the inbuilt R integration should be built")
+  if(WITH_R)
+    set(HAVE_R TRUE)  # used in qgisconfig.h
+  endif()
+
   # server disabled default because it needs FastCGI (which is optional dependency)
   set (WITH_SERVER FALSE CACHE BOOL "Determines whether QGIS server should be built")
   if(WITH_SERVER)
