@@ -409,10 +409,19 @@ else()
   set(QWTPOLAR_INCLUDE_DIR "")
 endif()
 
+
 if (POSTGRES_FOUND)
   if(HAVE_PGCONFIG)
     add_definitions(-DHAVE_PGCONFIG=1)
   endif()
+endif()
+
+if(HAVE_R)
+  set(QGIS_APP_SRCS
+    ${QGIS_APP_SRCS}
+    rstats/qgsrstatsrunner.cpp
+    rstats/qgsrstatsconsole.cpp
+  )
 endif()
 
 # Test data dir for QgsAppScreenShots
@@ -654,6 +663,89 @@ endif()
 
 if (WITH_PDAL)
   target_link_libraries(qgis_app ${PDAL_LIBRARIES})
+endif()
+
+if (WITH_R)
+  execute_process(COMMAND R RHOME
+                  OUTPUT_VARIABLE R_HOME)
+  set(NUM_TRUNC_CHARS 2)
+
+  execute_process(COMMAND R CMD config --cppflags
+                  OUTPUT_VARIABLE R_INCLUDE_DIRS)
+  string(REGEX REPLACE "^-I" "" R_INCLUDE_DIRS "${R_INCLUDE_DIRS}")
+  string(STRIP ${R_INCLUDE_DIRS} R_INCLUDE_DIRS )
+  target_include_directories(qgis_app SYSTEM PUBLIC
+    ${R_INCLUDE_DIRS}
+    )
+
+  execute_process(COMMAND R CMD config --ldflags
+                  OUTPUT_VARIABLE RLDFLAGS)
+  if (${RLDFLAGS} MATCHES "[-][L]([^ ;])+")
+      string(SUBSTRING ${CMAKE_MATCH_0} ${NUM_TRUNC_CHARS} -1 RLDFLAGS_L)
+      string(STRIP ${RLDFLAGS_L} R_LIB_DIR )
+      message(STATUS "Found R libs: ${R_LIB_DIR}")
+      #target_link_directories(qgis_app PUBLIC ${R_LIB_DIR})
+target_link_libraries(qgis_app /usr/lib64/R/lib/libR.so)
+endif()
+
+  if (${RLDFLAGS} MATCHES "[-][l]([^;])+")
+      string(SUBSTRING ${CMAKE_MATCH_0} ${NUM_TRUNC_CHARS} -1 RLDFLAGS_l)
+      string(STRIP ${RLDFLAGS_l} RLDFLAGS_l )
+  endif()
+
+  execute_process(COMMAND Rscript -e "Rcpp:::CxxFlags()"
+                  OUTPUT_VARIABLE R_CPP_INCLUDE_DIRS)
+  string(REGEX REPLACE "^-I" "" R_CPP_INCLUDE_DIRS "${R_CPP_INCLUDE_DIRS}")
+  string(STRIP ${R_CPP_INCLUDE_DIRS} R_CPP_INCLUDE_DIRS )
+  string(REGEX REPLACE "^\"" "" R_CPP_INCLUDE_DIRS "${R_CPP_INCLUDE_DIRS}")
+  string(REGEX REPLACE "\"$" "" R_CPP_INCLUDE_DIRS "${R_CPP_INCLUDE_DIRS}")
+  target_include_directories(qgis_app SYSTEM PUBLIC
+    ${R_CPP_INCLUDE_DIRS}
+    )
+
+ # execute_process(COMMAND Rscript -e "Rcpp:::LdFlags()"
+ #                 OUTPUT_VARIABLE R_CPP_LIBS)
+ # if (${R_CPP_LIBS} MATCHES "[-][L]([^ ;])+")
+  #    string(SUBSTRING ${CMAKE_MATCH_0} ${NUM_TRUNC_CHARS} -1 R_CPP_LIBS_L)
+   #         message(STATUS "Found R cpp libs: ${R_CPP_LIBS_L}")
+      #target_link_directories(qgis_app PUBLIC ${R_CPP_LIBS_L} )
+  #endif()
+
+  if (${R_CPP_LIBS} MATCHES "[-][l][R]([^;])+")
+      string(SUBSTRING ${CMAKE_MATCH_0} ${NUM_TRUNC_CHARS} -1 R_CPP_LIBS_l)
+      message(STATUS "Found R cpp libs: ${R_CPP_LIBS_l}")
+      target_link_libraries(qgis_app ${R_CPP_LIBS_l})
+  endif()
+#  target_link_libraries(qgis_app /usr/lib64/R/library/Rcpp/libs/Rcpp.so)
+#  add_library(rcpp_lib SHARED IMPORTED)
+#  set_target_properties(rcpp_lib PROPERTIES
+#    IMPORTED_LOCATION /usr/lib64/R/library/Rcpp/libs/Rcpp.so
+#    IMPORTED_NO_SONAME FALSE
+#  )
+#target_link_libraries(qgis_app rcpp_lib)
+
+  execute_process(COMMAND Rscript -e "RInside:::CxxFlags()"
+                  OUTPUT_VARIABLE R_INSIDE_INCLUDE_DIRS)
+                string(REGEX REPLACE "^-I" "" R_INSIDE_INCLUDE_DIRS "${R_INSIDE_INCLUDE_DIRS}")
+                string(STRIP ${R_INSIDE_INCLUDE_DIRS} R_INSIDE_INCLUDE_DIRS )
+                target_include_directories(qgis_app SYSTEM PUBLIC
+                  ${R_INSIDE_INCLUDE_DIRS}
+                  )
+
+                execute_process(COMMAND Rscript -e "RInside:::LdFlags()"
+                                OUTPUT_VARIABLE R_INSIDE_LIBS)
+                if (${R_INSIDE_LIBS} MATCHES "[-][L]([^ ;])+")
+                    string(SUBSTRING ${CMAKE_MATCH_0} ${NUM_TRUNC_CHARS} -1 R_INSIDE_LIBS_L)
+                                message(STATUS "Found R-inside libs: ${R_INSIDE_LIBS_L}")
+                    target_link_directories(qgis_app PUBLIC ${R_INSIDE_LIBS_L})
+                endif()
+
+                if (${R_INSIDE_LIBS} MATCHES "[-][l][R]([^;])+")
+                    string(SUBSTRING ${CMAKE_MATCH_0} ${NUM_TRUNC_CHARS} -1 R_INSIDE_LIBS_l)
+                                                  message(STATUS "Found R-inside libs: ${R_INSIDE_LIBS_l}")
+                    target_link_libraries(qgis_app  ${R_INSIDE_LIBS_l})
+                endif()
+
 endif()
 
 if(MSVC)
