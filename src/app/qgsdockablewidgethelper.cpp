@@ -228,6 +228,8 @@ void QgsDockableWidgetHelper::toggleDockMode( bool docked )
     mDock->setWindowTitle( mWindowTitle );
     mDock->setWidget( mWidget );
     mDock->setProperty( "dock_uuid", mUuid );
+    if ( !mDockObjectName.isEmpty() )
+      mDock->setObjectName( mDockObjectName );
     setupDockWidget();
 
     connect( mDock, &QgsDockWidget::closed, this, [ = ]()
@@ -284,6 +286,13 @@ void QgsDockableWidgetHelper::setWindowTitle( const QString &title )
   {
     mDock->setWindowTitle( title );
   }
+}
+
+void QgsDockableWidgetHelper::setDockObjectName( const QString &name )
+{
+  mDockObjectName = name;
+  if ( mDock )
+    mDock->setObjectName( mDockObjectName );
 }
 
 void QgsDockableWidgetHelper::setupDockWidget( const QStringList &tabSiblings )
