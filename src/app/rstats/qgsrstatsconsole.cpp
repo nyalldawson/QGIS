@@ -43,8 +43,16 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
     }
     else
     {
-      mOutput->append( out.toString() );
+      if ( !out.isValid() )
+        mOutput->append( "NA" );
+      else
+        mOutput->append( out.toString() );
     }
+  } );
+
+  connect( mRunner, &QgsRStatsRunner::consoleMessage, this, [ = ]( const QString & message )
+  {
+    mOutput->append( message );
   } );
 
   vl->addWidget( run );
