@@ -22,17 +22,20 @@
 class QgsRStatsRunner;
 class QLineEdit;
 class QTextBrowser;
+class QgsDockableWidgetHelper;
 
 class QgsRStatsConsole: public QWidget
 {
   public:
-    QgsRStatsConsole( QWidget* parent, QgsRStatsRunner* runner );
-
+    QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner );
+    ~QgsRStatsConsole() override;
   private:
 
-    QgsRStatsRunner* mRunner = nullptr;
-    QLineEdit* mInputEdit = nullptr;
-    QTextBrowser* mOutput = nullptr;
+    QgsRStatsRunner *mRunner = nullptr;
+    QLineEdit *mInputEdit = nullptr;
+    QTextBrowser *mOutput = nullptr;
+    QgsDockableWidgetHelper *mDockableWidgetHelper = nullptr;
+
 };
 
 #endif // QGSRSTATSCONSOLE_H
