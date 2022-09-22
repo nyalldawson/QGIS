@@ -25,6 +25,7 @@ class RInside;
 class QVariant;
 class QString;
 
+
 class QgsRStatsRunner: public QObject, public Callbacks
 {
     Q_OBJECT
