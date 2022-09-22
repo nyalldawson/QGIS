@@ -80,6 +80,7 @@ class QgsPrintLayout;
 class QgsProviderRegistry;
 class QgsProviderSublayerDetails;
 class QgsPythonUtils;
+class QgsRStatsRunner;
 class QgsRasterLayer;
 class QgsRectangle;
 class QgsRuntimeProfiler;
@@ -2516,6 +2517,8 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     bool mSaveRollbackInProgress = false;
 
     QgsPythonUtils *mPythonUtils = nullptr;
+
+        QgsRStatsRunner *mRStatsRunner = nullptr;
 
     static QgisApp *sInstance;
 
