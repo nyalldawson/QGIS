@@ -68,6 +68,8 @@ class APP_EXPORT QgsDockableWidgetHelper : public QObject
     //! Returns the displayed title of the dialog and the dock widget
     QString windowTitle() const { return mWindowTitle; }
 
+    void setDockObjectName( const QString &name );
+
     /**
      * Create a tool button for docking/undocking the widget
      * \note The ownership of the tool button is managed by the caller
@@ -103,6 +105,8 @@ class APP_EXPORT QgsDockableWidgetHelper : public QObject
 
     QString mWindowTitle;
     QMainWindow *mOwnerWindow = nullptr;
+
+    QString mDockObjectName;
 
     QStringList mTabifyWith;
     bool mRaiseTab = false;
