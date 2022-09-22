@@ -4,12 +4,55 @@
 #include <RInside.h>
 #include <Rcpp.h>
 
-
+#include "qgisapp.h"
 #include "qgslogger.h"
 #include <QVariant>
 #include <QString>
 #include <QFile>
 #include <QDir>
+
+class QgsApplicationRWrapper
+{
+  public:
+    QgsApplicationRWrapper() {}
+
+    int version() const { return Qgis::versionInt(); }
+
+    std::string activeLayer() const
+    {
+      return QgisApp::instance()->activeLayer() ?
+             QgisApp::instance()->activeLayer()->name().toStdString() : std::string{};
+    }
+
+
+};
+
+// The function which is called when running QGIS$...
+SEXP Dollar( Rcpp::XPtr<QgsApplicationRWrapper> obj, std::string name )
+{
+  if ( name == "versionInt" )
+  {
+    return Rcpp::wrap( obj->version() );
+  }
+  else if ( name == "activeLayer" )
+  {
+    return Rcpp::wrap( obj->activeLayer() );
+  }
+  else
+  {
+    return NULL;
+  }
+}
+
+
+// The function listing the elements of QGIS
+Rcpp::CharacterVector Names( Rcpp::XPtr<QgsApplicationRWrapper> )
+{
+  Rcpp::CharacterVector ret;
+  ret.push_back( "versionInt" );
+  ret.push_back( "activeLayer" );
+  return ret;
+}
 
 QgsRStatsRunner::QgsRStatsRunner()
 {
@@ -25,6 +68,11 @@ QgsRStatsRunner::QgsRStatsRunner()
   execCommand( QStringLiteral( ".libPaths(\"%1\")" ).arg( userPath ), error );
 
 
+  Rcpp::XPtr<QgsApplicationRWrapper> wr( new QgsApplicationRWrapper() );
+  wr.attr( "class" ) = "QGIS";
+  mRSession->assign( wr, "QGIS" );
+  mRSession->assign( Rcpp::InternalFunction( & Dollar ), "$.QGIS" );
+  mRSession->assign( Rcpp::InternalFunction( & Names ), "names.QGIS" );
 
   //( *mRSession )["val"] = 5;
   //mRSession->parseEvalQ( "val2<-7" );
