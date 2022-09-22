@@ -46,8 +46,7 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
   vl->addWidget( mOutput, 1 );
   mInputEdit = new QLineEdit();
   vl->addWidget( mInputEdit );
-  QPushButton *run = new QPushButton( "go" );
-  connect( run, &QPushButton::clicked, this, [ = ]
+  connect( mInputEdit, &QLineEdit::returnPressed, this, [ = ]
   {
     const QString command = mInputEdit->text();
     QString error;
@@ -76,7 +75,6 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
     mOutput->append( message );
   } );
 
-  vl->addWidget( run );
   setLayout( vl );
 }
 
