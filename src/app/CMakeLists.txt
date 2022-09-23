@@ -695,7 +695,7 @@ if (WITH_R)
   )
   target_link_libraries(qgis_app
     ${R_LIB}
-    ${RCpp_LIB}
+    Rcpp
   )
 endif()
 
