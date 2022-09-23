@@ -196,6 +196,16 @@ if(WITH_CORE)
 
   set (WITH_R FALSE CACHE BOOL "Determines whether the inbuilt R integration should be built")
   if(WITH_R)
+    find_package(R)
+    if (NOT ${R_FOUND})
+      message(FATAL_ERROR "R library not found")
+    endif()
+
+    find_package(RCpp)
+    if (NOT ${RCpp_FOUND})
+      message(FATAL_ERROR "Rcpp library not found")
+    endif()
+
     set(HAVE_R TRUE)  # used in qgisconfig.h
   endif()
 
