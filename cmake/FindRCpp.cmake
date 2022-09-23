@@ -32,5 +32,8 @@ if(RCpp_FOUND)
   message(STATUS "Found Rcpp library: ${RCpp_LIB}")
 endif()
 
+add_library(Rcpp UNKNOWN IMPORTED)
+set_property(TARGET Rcpp PROPERTY IMPORTED_LOCATION "${RCpp_LIB}")
+
 mark_as_advanced(RCpp_INCLUDE_DIR)
 mark_as_advanced(RCpp_LIB)
