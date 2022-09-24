@@ -57,18 +57,18 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
     const QString command = mInputEdit->text();
     mOutput->append( QStringLiteral( "> " ) + command );
     mRunner->execCommand( command );
-#if 0
-    if ( !out.isValid() )
-      mOutput->append( "NA" );
-    else
-      mOutput->append( out.toString() );
-#endif
-
   } );
 
   connect( mRunner, &QgsRStatsRunner::errorOccurred, this, [ = ]( const QString & error )
   {
     mOutput->setHtml( mOutput->toHtml() + QStringLiteral( "<p style=\"color: red\">%1</p>" ).arg( error ) );
+  } );
+  connect( mRunner, &QgsRStatsRunner::commandFinished, this, [ = ]( const QVariant & result )
+  {
+    if ( !result.isValid() )
+      mOutput->append( "NA" );
+    else
+      mOutput->append( result.toString() );
   } );
 
   connect( mRunner, &QgsRStatsRunner::consoleMessage, this, [ = ]( const QString & message, int type )
