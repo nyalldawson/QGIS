@@ -56,11 +56,15 @@ class QgsRStatsSession: public QObject, public Callbacks
       return true;
     }
 
+    bool busy() const { return mBusy; }
+
   public slots:
 
     void execCommand( const QString &command );
 
   signals:
+
+    void busyChanged( bool busy );
 
     void consoleMessage( const QString &message );
     void showMessage( const QString &message );
@@ -68,6 +72,7 @@ class QgsRStatsSession: public QObject, public Callbacks
   private:
 
     std::unique_ptr< RInside > mRSession;
+    bool mBusy = false;
 
 };
 
@@ -81,11 +86,13 @@ class QgsRStatsRunner: public QObject
     ~QgsRStatsRunner();
 
     QVariant execCommand( const QString &command, QString &error );
+    bool busy() const;
 
   signals:
 
     void consoleMessage( const QString &message );
     void showMessage( const QString &message );
+    void busyChanged( bool busy );
 
   private:
 
