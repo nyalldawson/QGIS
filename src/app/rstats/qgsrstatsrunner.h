@@ -19,20 +19,20 @@
 
 #include <memory>
 #include <QObject>
+#include <QThread>
 #include "Callbacks.h"
 
 class RInside;
 class QVariant;
 class QString;
 
-
-class QgsRStatsRunner: public QObject, public Callbacks
+class QgsRStatsSession: public QObject, public Callbacks
 {
     Q_OBJECT
   public:
 
-    QgsRStatsRunner();
-    ~QgsRStatsRunner();
+    QgsRStatsSession();
+    ~QgsRStatsSession() override;
 
     QVariant execCommand( const QString &command, QString &error );
 
@@ -56,6 +56,10 @@ class QgsRStatsRunner: public QObject, public Callbacks
       return true;
     }
 
+  public slots:
+
+    void execCommand( const QString &command );
+
   signals:
 
     void consoleMessage( const QString &message );
@@ -64,6 +68,29 @@ class QgsRStatsRunner: public QObject, public Callbacks
   private:
 
     std::unique_ptr< RInside > mRSession;
+
+};
+
+
+class QgsRStatsRunner: public QObject
+{
+    Q_OBJECT
+  public:
+
+    QgsRStatsRunner();
+    ~QgsRStatsRunner();
+
+    QVariant execCommand( const QString &command, QString &error );
+
+  signals:
+
+    void consoleMessage( const QString &message );
+    void showMessage( const QString &message );
+
+  private:
+
+    QThread mSessionThread;
+    std::unique_ptr<QgsRStatsSession> mSession;
 };
 
 #endif // QGSRSTATSRUNNER_H
