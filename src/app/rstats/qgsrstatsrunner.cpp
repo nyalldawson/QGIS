@@ -151,9 +151,11 @@ void QgsRStatsSession::execCommand( const QString &command )
   mBusy = true;
   emit busyChanged( true );
   QString error;
-  execCommand( command, error );
+  const QVariant res = execCommand( command, error );
   if ( ! error.isEmpty() )
     emit errorOccurred( error );
+  else
+    emit commandFinished( res );
 
   mBusy = false;
   emit busyChanged( false );
@@ -174,6 +176,7 @@ QgsRStatsRunner::QgsRStatsRunner()
   connect( mSession.get(), &QgsRStatsSession::showMessage, this, &QgsRStatsRunner::showMessage );
   connect( mSession.get(), &QgsRStatsSession::errorOccurred, this, &QgsRStatsRunner::errorOccurred );
   connect( mSession.get(), &QgsRStatsSession::busyChanged, this, &QgsRStatsRunner::busyChanged );
+  connect( mSession.get(), &QgsRStatsSession::commandFinished, this, &QgsRStatsRunner::commandFinished );
 }
 
 QgsRStatsRunner::~QgsRStatsRunner()
