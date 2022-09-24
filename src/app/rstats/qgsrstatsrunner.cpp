@@ -144,8 +144,15 @@ QVariant QgsRStatsSession::execCommand( const QString &command, QString &error )
 
 void QgsRStatsSession::execCommand( const QString &command )
 {
+  if ( mBusy )
+    return;
+
+  mBusy = true;
+  emit busyChanged( true );
   QString error;
   execCommand( command, error );
+  mBusy = false;
+  emit busyChanged( false );
 }
 
 
@@ -161,10 +168,12 @@ QgsRStatsRunner::QgsRStatsRunner()
 
   connect( mSession.get(), &QgsRStatsSession::consoleMessage, this, &QgsRStatsRunner::consoleMessage );
   connect( mSession.get(), &QgsRStatsSession::showMessage, this, &QgsRStatsRunner::showMessage );
+  connect( mSession.get(), &QgsRStatsSession::busyChanged, this, &QgsRStatsRunner::busyChanged );
 }
 
 QgsRStatsRunner::~QgsRStatsRunner()
 {
+  // todo -- gracefully shut down session!
   mSessionThread.quit();
   mSessionThread.wait();
 }
@@ -175,4 +184,9 @@ QVariant QgsRStatsRunner::execCommand( const QString &command, QString &error )
   QMetaObject::invokeMethod( mSession.get(), "execCommand", Qt::QueuedConnection,
                              Q_ARG( QString, command ) );
   return QVariant();
+}
+
+bool QgsRStatsRunner::busy() const
+{
+  return mSession->busy();
 }

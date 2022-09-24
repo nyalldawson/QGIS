@@ -51,6 +51,9 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
   vl->addWidget( mInputEdit );
   connect( mInputEdit, &QLineEdit::returnPressed, this, [ = ]
   {
+    if ( mRunner->busy() )
+      return;
+
     const QString command = mInputEdit->text();
     QString error;
     mOutput->append( QStringLiteral( "> " ) + command );
@@ -76,6 +79,11 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
   connect( mRunner, &QgsRStatsRunner::showMessage, this, [ = ]( const QString & message )
   {
     mOutput->append( message );
+  } );
+
+  connect( mRunner, &QgsRStatsRunner::busyChanged, this, [ = ]( bool busy )
+  {
+    mInputEdit->setEnabled( !busy );
   } );
 
   setLayout( vl );
