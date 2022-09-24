@@ -38,7 +38,7 @@ class QgsRStatsSession: public QObject, public Callbacks
 
     void WriteConsole( const std::string &line, int type ) override
     {
-      emit consoleMessage( QString::fromStdString( line ) );
+      emit consoleMessage( QString::fromStdString( line ), type );
     };
 
     bool has_WriteConsole() override
@@ -66,8 +66,9 @@ class QgsRStatsSession: public QObject, public Callbacks
 
     void busyChanged( bool busy );
 
-    void consoleMessage( const QString &message );
+    void consoleMessage( const QString &message, int type );
     void showMessage( const QString &message );
+    void errorOccurred( const QString &error );
 
   private:
 
@@ -85,13 +86,14 @@ class QgsRStatsRunner: public QObject
     QgsRStatsRunner();
     ~QgsRStatsRunner();
 
-    QVariant execCommand( const QString &command, QString &error );
+    void execCommand( const QString &command );
     bool busy() const;
 
   signals:
 
-    void consoleMessage( const QString &message );
+    void consoleMessage( const QString &message, int type );
     void showMessage( const QString &message );
+    void errorOccurred( const QString &error );
     void busyChanged( bool busy );
 
   private:

@@ -96,7 +96,6 @@ QVariant QgsRStatsSession::execCommand( const QString &command, QString &error )
   try
   {
     SEXP res = mRSession->parseEval( command.toStdString() );
-
     switch ( TYPEOF( res ) )
     {
       case NILSXP:
@@ -129,6 +128,8 @@ QVariant QgsRStatsSession::execCommand( const QString &command, QString &error )
         QgsDebugMsg( "Unhandledtype!!!" );
         return QVariant();
     }
+
+    return QVariant();
   }
   catch ( std::exception &ex )
   {
@@ -151,6 +152,9 @@ void QgsRStatsSession::execCommand( const QString &command )
   emit busyChanged( true );
   QString error;
   execCommand( command, error );
+  if ( ! error.isEmpty() )
+    emit errorOccurred( error );
+
   mBusy = false;
   emit busyChanged( false );
 }
@@ -168,6 +172,7 @@ QgsRStatsRunner::QgsRStatsRunner()
 
   connect( mSession.get(), &QgsRStatsSession::consoleMessage, this, &QgsRStatsRunner::consoleMessage );
   connect( mSession.get(), &QgsRStatsSession::showMessage, this, &QgsRStatsRunner::showMessage );
+  connect( mSession.get(), &QgsRStatsSession::errorOccurred, this, &QgsRStatsRunner::errorOccurred );
   connect( mSession.get(), &QgsRStatsSession::busyChanged, this, &QgsRStatsRunner::busyChanged );
 }
 
@@ -178,12 +183,11 @@ QgsRStatsRunner::~QgsRStatsRunner()
   mSessionThread.wait();
 }
 
-QVariant QgsRStatsRunner::execCommand( const QString &command, QString &error )
+void QgsRStatsRunner::execCommand( const QString &command )
 {
-  // todo error handling, result handling...
+  // todo result handling...
   QMetaObject::invokeMethod( mSession.get(), "execCommand", Qt::QueuedConnection,
                              Q_ARG( QString, command ) );
-  return QVariant();
 }
 
 bool QgsRStatsRunner::busy() const
