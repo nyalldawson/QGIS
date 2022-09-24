@@ -54,7 +54,10 @@ Rcpp::CharacterVector Names( Rcpp::XPtr<QgsApplicationRWrapper> )
   return ret;
 }
 
-QgsRStatsRunner::QgsRStatsRunner()
+//
+// QgsRStatsSession
+//
+QgsRStatsSession::QgsRStatsSession()
 {
   mRSession = std::make_unique< RInside >( 0, nullptr, false, false, true );
   mRSession->set_callbacks( this );
@@ -74,8 +77,8 @@ QgsRStatsRunner::QgsRStatsRunner()
   mRSession->assign( Rcpp::InternalFunction( & Dollar ), "$.QGIS" );
   mRSession->assign( Rcpp::InternalFunction( & Names ), "names.QGIS" );
 
-  //( *mRSession )["val"] = 5;
-  //mRSession->parseEvalQ( "val2<-7" );
+//( *mRSession )["val"] = 5;
+//mRSession->parseEvalQ( "val2<-7" );
 
 //  double aDouble = Rcpp::as<double>( mRSession->parseEval( "1+2" ) );
 // std::string aString = Rcpp::as<std::string>( mRSession->parseEval( "'asdasdas'" ) );
@@ -84,10 +87,11 @@ QgsRStatsRunner::QgsRStatsRunner()
 //  QgsDebugMsg( QString::fromStdString( Rcpp::as<std::string>( R.parseEval( "cat(txt)" ) ) ) );
 // QgsDebugMsg( QString::fromStdString( Rcpp::as<std::string>( mRSession->parseEval( "as.character(val+2)" ) ) ) );
 // QgsDebugMsg( QStringLiteral( "val as double: %1" ).arg( Rcpp::as<double>( mRSession->parseEval( "val+val2" ) ) ) );
-
 }
 
-QVariant QgsRStatsRunner::execCommand( const QString &command, QString &error )
+QgsRStatsSession::~QgsRStatsSession() = default;
+
+QVariant QgsRStatsSession::execCommand( const QString &command, QString &error )
 {
   try
   {
@@ -135,6 +139,40 @@ QVariant QgsRStatsRunner::execCommand( const QString &command, QString &error )
     std::cerr << "Unknown exception caught" << std::endl;
   }
   return QVariant();
+
 }
 
-QgsRStatsRunner::~QgsRStatsRunner() = default;
+void QgsRStatsSession::execCommand( const QString &command )
+{
+  QString error;
+  execCommand( command, error );
+}
+
+
+//
+// QgsRStatsRunner
+//
+
+QgsRStatsRunner::QgsRStatsRunner()
+{
+  mSession = std::make_unique<QgsRStatsSession>();
+  mSession->moveToThread( &mSessionThread );
+  mSessionThread.start();
+
+  connect( mSession.get(), &QgsRStatsSession::consoleMessage, this, &QgsRStatsRunner::consoleMessage );
+  connect( mSession.get(), &QgsRStatsSession::showMessage, this, &QgsRStatsRunner::showMessage );
+}
+
+QgsRStatsRunner::~QgsRStatsRunner()
+{
+  mSessionThread.quit();
+  mSessionThread.wait();
+}
+
+QVariant QgsRStatsRunner::execCommand( const QString &command, QString &error )
+{
+  // todo error handling, result handling...
+  QMetaObject::invokeMethod( mSession.get(), "execCommand", Qt::QueuedConnection,
+                             Q_ARG( QString, command ) );
+  return QVariant();
+}
