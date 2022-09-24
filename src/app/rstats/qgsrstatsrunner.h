@@ -69,6 +69,7 @@ class QgsRStatsSession: public QObject, public Callbacks
     void consoleMessage( const QString &message, int type );
     void showMessage( const QString &message );
     void errorOccurred( const QString &error );
+    void commandFinished( const QVariant &result );
 
   private:
 
@@ -95,6 +96,7 @@ class QgsRStatsRunner: public QObject
     void showMessage( const QString &message );
     void errorOccurred( const QString &error );
     void busyChanged( bool busy );
+    void commandFinished( const QVariant &result );
 
   private:
 
