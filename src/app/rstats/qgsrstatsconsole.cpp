@@ -55,25 +55,28 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
       return;
 
     const QString command = mInputEdit->text();
-    QString error;
     mOutput->append( QStringLiteral( "> " ) + command );
-    const QVariant out = mRunner->execCommand( command, error );
-    if ( !error.isEmpty() )
-    {
-      mOutput->setHtml( mOutput->toHtml() + QStringLiteral( "<p style=\"color: red\">%1</p>" ).arg( error ) );
-    }
+    mRunner->execCommand( command );
+#if 0
+    if ( !out.isValid() )
+      mOutput->append( "NA" );
     else
-    {
-      if ( !out.isValid() )
-        mOutput->append( "NA" );
-      else
-        mOutput->append( out.toString() );
-    }
+      mOutput->append( out.toString() );
+#endif
+
   } );
 
-  connect( mRunner, &QgsRStatsRunner::consoleMessage, this, [ = ]( const QString & message )
+  connect( mRunner, &QgsRStatsRunner::errorOccurred, this, [ = ]( const QString & error )
   {
-    mOutput->append( message );
+    mOutput->setHtml( mOutput->toHtml() + QStringLiteral( "<p style=\"color: red\">%1</p>" ).arg( error ) );
+  } );
+
+  connect( mRunner, &QgsRStatsRunner::consoleMessage, this, [ = ]( const QString & message, int type )
+  {
+    if ( type == 0 )
+      mOutput->append( message );
+    else
+      mOutput->setHtml( mOutput->toHtml() + QStringLiteral( "<p style=\"color: red\">%1</p>" ).arg( message ) );
   } );
 
   connect( mRunner, &QgsRStatsRunner::showMessage, this, [ = ]( const QString & message )
