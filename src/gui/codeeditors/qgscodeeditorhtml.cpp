@@ -30,7 +30,6 @@ QgsCodeEditorHTML::QgsCodeEditorHTML( QWidget *parent )
   {
     setTitle( tr( "HTML Editor" ) );
   }
-  setFoldingVisible( true );
   QgsCodeEditorHTML::initializeLexer();
 }
 
@@ -68,5 +67,7 @@ void QgsCodeEditorHTML::initializeLexer()
   lexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::DoubleQuote ), QsciLexerHTML::HTMLDoubleQuotedString );
 
   setLexer( lexer );
+
+  setFoldingVisible( true );
   runPostLexerConfigurationTasks();
 }

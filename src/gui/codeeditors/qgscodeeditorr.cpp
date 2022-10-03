@@ -29,7 +29,6 @@ QgsCodeEditorR::QgsCodeEditorR( QWidget *parent )
   {
     setTitle( tr( "R Editor" ) );
   }
-  setFoldingVisible( true );
   QgsCodeEditorR::initializeLexer();
 }
 
@@ -68,6 +67,8 @@ void QgsCodeEditorR::initializeLexer()
   setLexer( lexer );
   setLineNumbersVisible( true );
   runPostLexerConfigurationTasks();
+
+  setFoldingVisible( true );
 }
 
 /// @cond PRIVATE

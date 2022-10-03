@@ -29,7 +29,6 @@ QgsCodeEditorCSS::QgsCodeEditorCSS( QWidget *parent )
   {
     setTitle( tr( "CSS Editor" ) );
   }
-  setFoldingVisible( true );
   QgsCodeEditorCSS::initializeLexer();
 }
 
@@ -69,6 +68,7 @@ void QgsCodeEditorCSS::initializeLexer()
   lexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::Identifier ), QsciLexerCSS::CSS3Property );
 
   setLexer( lexer );
+  setFoldingVisible( true );
 
   runPostLexerConfigurationTasks();
 }

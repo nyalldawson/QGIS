@@ -29,7 +29,6 @@ QgsCodeEditorJson::QgsCodeEditorJson( QWidget *parent )
   {
     setTitle( tr( "JSON Editor" ) );
   }
-  setFoldingVisible( true );
   QgsCodeEditorJson::initializeLexer();
 }
 
@@ -61,6 +60,8 @@ void QgsCodeEditorJson::initializeLexer()
   lexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::Error ), QsciLexerJSON::Error );
 
   setLexer( lexer );
+
+  setFoldingVisible( true );
   setLineNumbersVisible( true );
   runPostLexerConfigurationTasks();
 }
