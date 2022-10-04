@@ -18,6 +18,7 @@
 #include "qgsrstatsrunner.h"
 #include "qgisapp.h"
 #include "qgsdockablewidgethelper.h"
+#include "qgscodeeditorr.h"
 #include "qgscodeeditor.h"
 
 #include <QVBoxLayout>
@@ -43,8 +44,7 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
   vl->setContentsMargins( 0, 0, 0, 0 );
   vl->addWidget( toolBar );
 
-  mOutput = new QTextBrowser();
-  mOutput->setFont( QgsCodeEditor::getMonospaceFont() );
+  mOutput = new QgsCodeEditorR();
   vl->addWidget( mOutput, 1 );
   mInputEdit = new QLineEdit();
   mInputEdit->setFont( QgsCodeEditor::getMonospaceFont() );
@@ -55,26 +55,26 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
       return;
 
     const QString command = mInputEdit->text();
-    mOutput->append( QStringLiteral( "> " ) + command );
+    mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + QStringLiteral( "> " ) + command );
     mRunner->execCommand( command );
   } );
 
   connect( mRunner, &QgsRStatsRunner::errorOccurred, this, [ = ]( const QString & error )
   {
-    mOutput->setHtml( mOutput->toHtml() + QStringLiteral( "<p style=\"color: red\">%1</p>" ).arg( error ) );
+    mOutput->setText( mOutput->text() + QStringLiteral( "<p style=\"color: red\">%1</p>" ).arg( error ) );
   } );
 
   connect( mRunner, &QgsRStatsRunner::consoleMessage, this, [ = ]( const QString & message, int type )
   {
     if ( type == 0 )
-      mOutput->append( message );
+      mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + message );
     else
-      mOutput->setHtml( mOutput->toHtml() + QStringLiteral( "<p style=\"color: red\">%1</p>" ).arg( message ) );
+      mOutput->setText( mOutput->text() + QStringLiteral( "<p style=\"color: red\">%1</p>" ).arg( message ) );
   } );
 
   connect( mRunner, &QgsRStatsRunner::showMessage, this, [ = ]( const QString & message )
   {
-    mOutput->append( message );
+    mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + message );
   } );
 
   connect( mRunner, &QgsRStatsRunner::busyChanged, this, [ = ]( bool busy )
