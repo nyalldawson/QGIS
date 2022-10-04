@@ -67,9 +67,7 @@ QgsRStatsSession::QgsRStatsSession()
   {
     QDir().mkpath( userPath );
   }
-  QString error;
-  execCommand( QStringLiteral( ".libPaths(\"%1\")" ).arg( userPath ), error );
-
+  execCommandNR( QStringLiteral( ".libPaths(\"%1\")" ).arg( userPath ) );
 
   Rcpp::XPtr<QgsApplicationRWrapper> wr( new QgsApplicationRWrapper() );
   wr.attr( "class" ) = "QGIS";
@@ -105,63 +103,68 @@ std::string QgsRStatsSession::sexpToString( const SEXP exp )
   return outcome;
 }
 
-QVariant QgsRStatsSession::execCommand( const QString &command, QString &error )
+QVariant QgsRStatsSession::sexpToVariant( const SEXP exp )
+{
+  switch ( TYPEOF( exp ) )
+  {
+    case NILSXP:
+      return QVariant();
+
+    case LGLSXP:
+    {
+      if ( LENGTH( exp ) == 1 )
+      {
+        const int expInt = Rcpp::as<int>( exp );
+        if ( expInt < 0 )
+          return QVariant();
+        else
+          return static_cast< bool >( expInt );
+      }
+      else
+        return QVariant();
+
+    }
+
+    case INTSXP:
+      // handle NA_integer_ as NA!
+      if ( LENGTH( exp ) == 1 )
+        return Rcpp::as<int>( exp );
+      else
+        return QVariant();
+
+    case REALSXP:
+      // handle nan as NA
+      if ( LENGTH( exp ) == 1 )
+        return Rcpp::as<double>( exp );
+      else
+        return QVariant();
+
+    case STRSXP:
+      if ( LENGTH( exp ) == 1 )
+        return QString::fromStdString( Rcpp::as<std::string>( exp ) );
+      else
+        return QVariant();
+
+    //case RAWSXP:
+    //  return R::rawPointer( exp );
+
+    default:
+      QgsDebugMsg( "Unhandledtype!!!" );
+      return QVariant();
+  }
+
+  return QVariant();
+}
+
+void QgsRStatsSession::execCommandPrivate( const QString &command, QString &error, QVariant *res, std::string *output )
 {
   try
   {
-    SEXP res = mRSession->parseEval( command.toStdString() );
-
-    WriteConsole( sexpToString( res ), 0 );
-
-    switch ( TYPEOF( res ) )
-    {
-      case NILSXP:
-        return QVariant();
-
-      case LGLSXP:
-      {
-        if ( LENGTH( res ) == 1 )
-        {
-          const int resInt = Rcpp::as<int>( res );
-          if ( resInt < 0 )
-            return QVariant();
-          else
-            return static_cast< bool >( resInt );
-        }
-        else
-          return QVariant();
-
-      }
-
-      case INTSXP:
-        // handle NA_integer_ as NA!
-        if ( LENGTH( res ) == 1 )
-          return Rcpp::as<int>( res );
-        else
-          return QVariant();
-
-      case REALSXP:
-        // handle nan as NA
-        if ( LENGTH( res ) == 1 )
-          return Rcpp::as<double>( res );
-        else
-          return QVariant();
-
-      case STRSXP:
-        if ( LENGTH( res ) == 1 )
-          return QString::fromStdString( Rcpp::as<std::string>( res ) );
-        else
-          return QVariant();
-
-      //case RAWSXP:
-      //  return R::rawPointer( res );
-
-      default:
-        QgsDebugMsg( "Unhandledtype!!!" );
-        return QVariant();
-    }
-
-    return QVariant();
+    const SEXP sexpRes = mRSession->parseEval( command.toStdString() );
+    if ( res )
+      *res = sexpToVariant( sexpRes );
+    if ( output )
+      *output = sexpToString( sexpRes );
   }
   catch ( std::exception &ex )
   {
@@ -171,7 +174,25 @@ QVariant QgsRStatsSession::execCommand( const QString &command, QString &error )
   {
     std::cerr << "Unknown exception caught" << std::endl;
   }
-  return QVariant();
+  if ( res )
+    *res = QVariant();
+}
+
+void QgsRStatsSession::execCommandNR( const QString &command )
+{
+  if ( mBusy )
+    return;
+
+  mBusy = true;
+  emit busyChanged( true );
+  QString error;
+  execCommandPrivate( command, error );
+
+  if ( ! error.isEmpty() )
+    emit errorOccurred( error );
+
+  mBusy = false;
+  emit busyChanged( false );
 }
 
 void QgsRStatsSession::execCommand( const QString &command )
@@ -182,7 +203,12 @@ void QgsRStatsSession::execCommand( const QString &command )
   mBusy = true;
   emit busyChanged( true );
   QString error;
-  const QVariant res = execCommand( command, error );
+  QVariant res;
+  std::string output;
+  execCommandPrivate( command, error, &res, &output );
+
+  emit consoleMessage( QString::fromStdString( output ), 0 );
+
   if ( ! error.isEmpty() )
     emit errorOccurred( error );
   else
