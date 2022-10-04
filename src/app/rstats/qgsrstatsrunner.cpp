@@ -91,6 +91,20 @@ QgsRStatsSession::QgsRStatsSession()
 
 QgsRStatsSession::~QgsRStatsSession() = default;
 
+std::string QgsRStatsSession::sexpToString(const SEXP exp)
+{
+    Rcpp::StringVector lines = Rcpp::StringVector(Rf_eval(Rf_lang2(Rf_install("capture.output"), exp), R_GlobalEnv));
+    std::string outcome = "";
+    for (auto it = lines.begin(); it != lines.end(); it++)
+    {
+        Rcpp::String line(it->get());
+        outcome.append(line);
+        if (it < lines.end() - 1)
+            outcome.append("\n");
+    }
+    return outcome;
+}
+
 QVariant QgsRStatsSession::execCommand( const QString &command, QString &error )
 {
   try
