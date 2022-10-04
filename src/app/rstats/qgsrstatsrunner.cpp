@@ -110,6 +110,9 @@ QVariant QgsRStatsSession::execCommand( const QString &command, QString &error )
   try
   {
     SEXP res = mRSession->parseEval( command.toStdString() );
+
+    WriteConsole(sexpToString(res), 0);
+
     switch ( TYPEOF( res ) )
     {
       case NILSXP:
