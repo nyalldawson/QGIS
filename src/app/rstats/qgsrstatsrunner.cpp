@@ -91,18 +91,18 @@ QgsRStatsSession::QgsRStatsSession()
 
 QgsRStatsSession::~QgsRStatsSession() = default;
 
-std::string QgsRStatsSession::sexpToString(const SEXP exp)
+std::string QgsRStatsSession::sexpToString( const SEXP exp )
 {
-    Rcpp::StringVector lines = Rcpp::StringVector(Rf_eval(Rf_lang2(Rf_install("capture.output"), exp), R_GlobalEnv));
-    std::string outcome = "";
-    for (auto it = lines.begin(); it != lines.end(); it++)
-    {
-        Rcpp::String line(it->get());
-        outcome.append(line);
-        if (it < lines.end() - 1)
-            outcome.append("\n");
-    }
-    return outcome;
+  Rcpp::StringVector lines = Rcpp::StringVector( Rf_eval( Rf_lang2( Rf_install( "capture.output" ), exp ), R_GlobalEnv ) );
+  std::string outcome = "";
+  for ( auto it = lines.begin(); it != lines.end(); it++ )
+  {
+    Rcpp::String line( it->get() );
+    outcome.append( line );
+    if ( it < lines.end() - 1 )
+      outcome.append( "\n" );
+  }
+  return outcome;
 }
 
 QVariant QgsRStatsSession::execCommand( const QString &command, QString &error )
@@ -111,7 +111,7 @@ QVariant QgsRStatsSession::execCommand( const QString &command, QString &error )
   {
     SEXP res = mRSession->parseEval( command.toStdString() );
 
-    WriteConsole(sexpToString(res), 0);
+    WriteConsole( sexpToString( res ), 0 );
 
     switch ( TYPEOF( res ) )
     {
@@ -120,38 +120,38 @@ QVariant QgsRStatsSession::execCommand( const QString &command, QString &error )
 
       case LGLSXP:
       {
-        if (LENGTH(res) == 1)
+        if ( LENGTH( res ) == 1 )
         {
-            const int resInt = Rcpp::as<int>( res );
-            if ( resInt < 0 )
-              return QVariant();
-            else
-              return static_cast< bool >( resInt );
+          const int resInt = Rcpp::as<int>( res );
+          if ( resInt < 0 )
+            return QVariant();
+          else
+            return static_cast< bool >( resInt );
         }
         else
-            return QVariant();
+          return QVariant();
 
       }
 
       case INTSXP:
         // handle NA_integer_ as NA!
-        if (LENGTH(res) == 1)
-            return Rcpp::as<int>( res );
+        if ( LENGTH( res ) == 1 )
+          return Rcpp::as<int>( res );
         else
-            return QVariant();
+          return QVariant();
 
       case REALSXP:
         // handle nan as NA
-        if (LENGTH(res) == 1)
-            return Rcpp::as<double>( res );
+        if ( LENGTH( res ) == 1 )
+          return Rcpp::as<double>( res );
         else
-            return QVariant();
+          return QVariant();
 
       case STRSXP:
-        if (LENGTH(res) == 1)
-            return QString::fromStdString( Rcpp::as<std::string>( res ) );
+        if ( LENGTH( res ) == 1 )
+          return QString::fromStdString( Rcpp::as<std::string>( res ) );
         else
-            return QVariant();
+          return QVariant();
 
       //case RAWSXP:
       //  return R::rawPointer( res );
@@ -172,7 +172,6 @@ QVariant QgsRStatsSession::execCommand( const QString &command, QString &error )
     std::cerr << "Unknown exception caught" << std::endl;
   }
   return QVariant();
-
 }
 
 void QgsRStatsSession::execCommand( const QString &command )
