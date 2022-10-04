@@ -120,23 +120,38 @@ QVariant QgsRStatsSession::execCommand( const QString &command, QString &error )
 
       case LGLSXP:
       {
-        const int resInt = Rcpp::as<int>( res );
-        if ( resInt < 0 )
-          return QVariant();
+        if (LENGTH(res) == 1)
+        {
+            const int resInt = Rcpp::as<int>( res );
+            if ( resInt < 0 )
+              return QVariant();
+            else
+              return static_cast< bool >( resInt );
+        }
         else
-          return static_cast< bool >( resInt );
+            return QVariant();
+
       }
 
       case INTSXP:
         // handle NA_integer_ as NA!
-        return Rcpp::as<int>( res );
+        if (LENGTH(res) == 1)
+            return Rcpp::as<int>( res );
+        else
+            return QVariant();
 
       case REALSXP:
         // handle nan as NA
-        return Rcpp::as<double>( res );
+        if (LENGTH(res) == 1)
+            return Rcpp::as<double>( res );
+        else
+            return QVariant();
 
       case STRSXP:
-        return QString::fromStdString( Rcpp::as<std::string>( res ) );
+        if (LENGTH(res) == 1)
+            return QString::fromStdString( Rcpp::as<std::string>( res ) );
+        else
+            return QVariant();
 
       //case RAWSXP:
       //  return R::rawPointer( res );
