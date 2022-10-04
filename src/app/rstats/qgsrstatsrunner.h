@@ -34,7 +34,7 @@ class QgsRStatsSession: public QObject, public Callbacks
     QgsRStatsSession();
     ~QgsRStatsSession() override;
 
-    QVariant execCommand( const QString &command, QString &error );
+    void execCommandNR( const QString &command );
 
     void WriteConsole( const std::string &line, int type ) override
     {
@@ -72,11 +72,13 @@ class QgsRStatsSession: public QObject, public Callbacks
     void commandFinished( const QVariant &result );
 
   private:
+    void execCommandPrivate( const QString &command, QString &error, QVariant *res = nullptr, std::string *output = nullptr );
 
     std::unique_ptr< RInside > mRSession;
     bool mBusy = false;
 
-    std::string sexpToString(const SEXP exp);
+    static std::string sexpToString( const SEXP exp );
+    static QVariant sexpToVariant( const SEXP exp );
 };
 
 
