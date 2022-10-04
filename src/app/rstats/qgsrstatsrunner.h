@@ -76,6 +76,7 @@ class QgsRStatsSession: public QObject, public Callbacks
     std::unique_ptr< RInside > mRSession;
     bool mBusy = false;
 
+    std::string sexpToString(const SEXP exp);
 };
 
 
