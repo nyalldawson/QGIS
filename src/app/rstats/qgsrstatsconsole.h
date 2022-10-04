@@ -23,6 +23,7 @@ class QgsRStatsRunner;
 class QLineEdit;
 class QTextBrowser;
 class QgsDockableWidgetHelper;
+class QgsCodeEditorR;
 
 class QgsRStatsConsole: public QWidget
 {
@@ -33,7 +34,7 @@ class QgsRStatsConsole: public QWidget
 
     QgsRStatsRunner *mRunner = nullptr;
     QLineEdit *mInputEdit = nullptr;
-    QTextBrowser *mOutput = nullptr;
+    QgsCodeEditorR *mOutput = nullptr;
     QgsDockableWidgetHelper *mDockableWidgetHelper = nullptr;
 
 };
