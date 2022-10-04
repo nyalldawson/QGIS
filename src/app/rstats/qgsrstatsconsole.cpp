@@ -63,12 +63,13 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
   {
     mOutput->setHtml( mOutput->toHtml() + QStringLiteral( "<p style=\"color: red\">%1</p>" ).arg( error ) );
   } );
+
   connect( mRunner, &QgsRStatsRunner::commandFinished, this, [ = ]( const QVariant & result )
   {
-    if ( !result.isValid() )
-      mOutput->append( "NA" );
-    else
-      mOutput->append( result.toString() );
+    //if ( !result.isValid() )
+    //  mOutput->append( "NA" );
+    //else
+    //  mOutput->append( result.toString() );
   } );
 
   connect( mRunner, &QgsRStatsRunner::consoleMessage, this, [ = ]( const QString & message, int type )
