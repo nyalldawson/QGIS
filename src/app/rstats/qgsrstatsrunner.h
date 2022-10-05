@@ -36,25 +36,13 @@ class QgsRStatsSession: public QObject, public Callbacks
 
     void execCommandNR( const QString &command );
 
-    void WriteConsole( const std::string &line, int type ) override
-    {
-      emit consoleMessage( QString::fromStdString( line ), type );
-    };
+    void WriteConsole( const std::string &line, int type ) override;;
 
-    bool has_WriteConsole() override
-    {
-      return true;
-    };
+    bool has_WriteConsole() override;;
 
-    void ShowMessage( const char *message ) override
-    {
-      emit showMessage( QString( message ) );
-    }
+    void ShowMessage( const char *message ) override;
 
-    bool has_ShowMessage() override
-    {
-      return true;
-    }
+    bool has_ShowMessage() override;
 
     bool busy() const { return mBusy; }
 
@@ -72,10 +60,11 @@ class QgsRStatsSession: public QObject, public Callbacks
     void commandFinished( const QVariant &result );
 
   private:
-    void execCommandPrivate( const QString &command, QString &error, QVariant *res = nullptr, std::string *output = nullptr );
+    void execCommandPrivate( const QString &command, QString &error, QVariant *res = nullptr, QString *output = nullptr );
 
     std::unique_ptr< RInside > mRSession;
     bool mBusy = false;
+    bool mEncounteredErrorMessageType = false;
 
     static std::string sexpToString( const SEXP exp );
     static QVariant sexpToVariant( const SEXP exp );

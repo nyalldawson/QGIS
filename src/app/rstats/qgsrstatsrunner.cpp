@@ -91,6 +91,26 @@ QgsRStatsSession::~QgsRStatsSession() = default;
 
 std::string QgsRStatsSession::sexpToString( const SEXP exp )
 {
+  switch ( TYPEOF( exp ) )
+  {
+    case EXPRSXP:
+    case CLOSXP:
+    case ENVSXP:
+    case LANGSXP:
+      // these types can't be converted to StringVector, will raise exceptions
+      return {};
+
+    case LGLSXP:
+    case INTSXP:
+    case REALSXP:
+    case STRSXP:
+      break; // we know these types are fine to convert to StringVector
+
+    default:
+      QgsDebugMsg( QStringLiteral( "Possibly unsafe type: %1" ).arg( TYPEOF( exp ) ) );
+      break;
+  }
+
   Rcpp::StringVector lines = Rcpp::StringVector( Rf_eval( Rf_lang2( Rf_install( "capture.output" ), exp ), R_GlobalEnv ) );
   std::string outcome = "";
   for ( auto it = lines.begin(); it != lines.end(); it++ )
@@ -148,15 +168,22 @@ QVariant QgsRStatsSession::sexpToVariant( const SEXP exp )
     //case RAWSXP:
     //  return R::rawPointer( exp );
 
+    case EXPRSXP:
+    case CLOSXP:
+    case ENVSXP:
+    case LANGSXP:
+      // these types can't possibly be converted to variants
+      return QVariant();
+
     default:
-      QgsDebugMsg( "Unhandledtype!!!" );
+      QgsDebugMsg( QStringLiteral( "Unhandled type: %1" ).arg( TYPEOF( exp ) ) );
       return QVariant();
   }
 
   return QVariant();
 }
 
-void QgsRStatsSession::execCommandPrivate( const QString &command, QString &error, QVariant *res, std::string *output )
+void QgsRStatsSession::execCommandPrivate( const QString &command, QString &error, QVariant *res, QString *output )
 {
   try
   {
@@ -164,7 +191,7 @@ void QgsRStatsSession::execCommandPrivate( const QString &command, QString &erro
     if ( res )
       *res = sexpToVariant( sexpRes );
     if ( output )
-      *output = sexpToString( sexpRes );
+      *output = QString::fromStdString( sexpToString( sexpRes ) );
   }
   catch ( std::exception &ex )
   {
@@ -185,14 +212,41 @@ void QgsRStatsSession::execCommandNR( const QString &command )
 
   mBusy = true;
   emit busyChanged( true );
+
+  mEncounteredErrorMessageType = false;
   QString error;
   execCommandPrivate( command, error );
 
-  if ( ! error.isEmpty() )
+  if ( ! error.isEmpty() && !mEncounteredErrorMessageType )
     emit errorOccurred( error );
 
   mBusy = false;
   emit busyChanged( false );
+}
+
+void QgsRStatsSession::WriteConsole( const std::string &line, int type )
+{
+  if ( type > 0 )
+    mEncounteredErrorMessageType = true;
+
+  const QString message = QString::fromStdString( line );
+  emit consoleMessage( message, type );
+}
+
+bool QgsRStatsSession::has_WriteConsole()
+{
+  return true;
+}
+
+void QgsRStatsSession::ShowMessage( const char *message )
+{
+  const QString messageString( message );
+  emit showMessage( messageString );
+}
+
+bool QgsRStatsSession::has_ShowMessage()
+{
+  return true;
 }
 
 void QgsRStatsSession::execCommand( const QString &command )
@@ -204,15 +258,21 @@ void QgsRStatsSession::execCommand( const QString &command )
   emit busyChanged( true );
   QString error;
   QVariant res;
-  std::string output;
+  QString output;
+  mEncounteredErrorMessageType = false;
   execCommandPrivate( command, error, &res, &output );
 
-  emit consoleMessage( QString::fromStdString( output ), 0 );
-
   if ( ! error.isEmpty() )
-    emit errorOccurred( error );
+  {
+    if ( !mEncounteredErrorMessageType )
+      emit errorOccurred( error );
+  }
   else
+  {
+    if ( !output.isEmpty() )
+      emit consoleMessage( output, 0 );
     emit commandFinished( res );
+  }
 
   mBusy = false;
   emit busyChanged( false );
