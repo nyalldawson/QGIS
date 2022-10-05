@@ -26,6 +26,7 @@
 #include <QTextBrowser>
 #include <QPushButton>
 #include <QToolBar>
+#include <QSplitter>
 
 QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
   : QWidget( parent )
@@ -44,17 +45,24 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
   vl->setContentsMargins( 0, 0, 0, 0 );
   vl->addWidget( toolBar );
 
-  mOutput = new QgsCodeEditorR();
-  vl->addWidget( mOutput, 1 );
-  mInputEdit = new QLineEdit();
+  QSplitter *splitter = new QSplitter();
+  splitter->setOrientation( Qt::Vertical );
+  splitter->setHandleWidth( 3 );
+  splitter->setChildrenCollapsible( false );
+
+  mOutput = new QgsROutputWidget();
+  splitter->addWidget( mOutput );
+  mInputEdit = new QgsInteractiveRWidget();
   mInputEdit->setFont( QgsCodeEditor::getMonospaceFont() );
-  vl->addWidget( mInputEdit );
-  connect( mInputEdit, &QLineEdit::returnPressed, this, [ = ]
+  splitter->addWidget( mInputEdit );
+
+  vl->addWidget( splitter );
+
+  connect( mInputEdit, &QgsInteractiveRWidget::runCommand, this, [ = ]( const QString & command )
   {
     if ( mRunner->busy() )
       return;
 
-    const QString command = mInputEdit->text();
     mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + QStringLiteral( "> " ) + command );
     mRunner->execCommand( command );
   } );
@@ -90,4 +98,72 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
 QgsRStatsConsole::~QgsRStatsConsole()
 {
   delete mDockableWidgetHelper;
+}
+
+QgsInteractiveRWidget::QgsInteractiveRWidget( QWidget *parent )
+  : QgsCodeEditorR( parent )
+{
+  displayPrompt( false );
+
+  // Don't want to see the horizontal scrollbar at all
+  SendScintilla( QsciScintilla::SCI_SETHSCROLLBAR, 0 );
+
+  setWrapMode( QsciScintilla::WrapCharacter );
+  SendScintilla( QsciScintilla::SCI_EMPTYUNDOBUFFER );
+
+  QgsInteractiveRWidget::initializeLexer();
+}
+
+void QgsInteractiveRWidget::keyPressEvent( QKeyEvent *event )
+{
+  switch ( event->key() )
+  {
+    case Qt::Key_Return:
+    case Qt::Key_Enter:
+      emit runCommand( text() );
+      clear();
+      displayPrompt( false );
+      break;
+
+    default:
+      QgsCodeEditorR::keyPressEvent( event );
+  }
+}
+
+void QgsInteractiveRWidget::initializeLexer()
+{
+  QgsCodeEditorR::initializeLexer();
+  setCaretLineVisible( false );
+  setLineNumbersVisible( false ); // NO linenumbers for the input line
+  setFoldingVisible( false );
+  // Margin 1 is used for the '>' prompt (console input)
+  setMarginLineNumbers( 1, true );
+  setMarginWidth( 1, "00" );
+  setMarginType( 1, QsciScintilla::MarginType::TextMarginRightJustified );
+  setMarginsBackgroundColor( color( QgsCodeEditorColorScheme::ColorRole::Background ) );
+  setEdgeMode( QsciScintilla::EdgeNone );
+}
+
+void QgsInteractiveRWidget::displayPrompt( bool more )
+{
+  const QString prompt = !more ? ">" : "+";
+  SendScintilla( QsciScintilla::SCI_MARGINSETTEXT, static_cast< uintptr_t >( 0 ), prompt.toUtf8().constData() );
+}
+
+QgsROutputWidget::QgsROutputWidget( QWidget *parent )
+  : QgsCodeEditorR( parent )
+{
+
+  // Don't want to see the horizontal scrollbar at all
+  SendScintilla( QsciScintilla::SCI_SETHSCROLLBAR, 0 );
+
+  setWrapMode( QsciScintilla::WrapCharacter );
+
+  QgsROutputWidget::initializeLexer();
+}
+
+void QgsROutputWidget::initializeLexer()
+{
+  QgsCodeEditorR::initializeLexer();
+  setFoldingVisible( false );
 }
