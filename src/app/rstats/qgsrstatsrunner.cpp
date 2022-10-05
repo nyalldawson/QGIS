@@ -224,31 +224,6 @@ void QgsRStatsSession::execCommandNR( const QString &command )
   emit busyChanged( false );
 }
 
-void QgsRStatsSession::WriteConsole( const std::string &line, int type )
-{
-  if ( type > 0 )
-    mEncounteredErrorMessageType = true;
-
-  const QString message = QString::fromStdString( line );
-  emit consoleMessage( message, type );
-}
-
-bool QgsRStatsSession::has_WriteConsole()
-{
-  return true;
-}
-
-void QgsRStatsSession::ShowMessage( const char *message )
-{
-  const QString messageString( message );
-  emit showMessage( messageString );
-}
-
-bool QgsRStatsSession::has_ShowMessage()
-{
-  return true;
-}
-
 void QgsRStatsSession::execCommand( const QString &command )
 {
   if ( mBusy )
@@ -277,6 +252,32 @@ void QgsRStatsSession::execCommand( const QString &command )
   mBusy = false;
   emit busyChanged( false );
 }
+
+void QgsRStatsSession::WriteConsole( const std::string &line, int type )
+{
+  if ( type > 0 )
+    mEncounteredErrorMessageType = true;
+
+  const QString message = QString::fromStdString( line );
+  emit consoleMessage( message, type );
+}
+
+bool QgsRStatsSession::has_WriteConsole()
+{
+  return true;
+}
+
+void QgsRStatsSession::ShowMessage( const char *message )
+{
+  const QString messageString( message );
+  emit showMessage( messageString );
+}
+
+bool QgsRStatsSession::has_ShowMessage()
+{
+  return true;
+}
+
 
 
 //
