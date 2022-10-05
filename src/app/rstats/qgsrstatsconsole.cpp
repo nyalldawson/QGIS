@@ -50,7 +50,7 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
   splitter->setHandleWidth( 3 );
   splitter->setChildrenCollapsible( false );
 
-  mOutput = new QgsROutputWidget();
+  mOutput = new QgsCodeEditorR( nullptr, QgsCodeEditor::Mode::OutputDisplay );
   splitter->addWidget( mOutput );
   mInputEdit = new QgsInteractiveRWidget();
   mInputEdit->setFont( QgsCodeEditor::getMonospaceFont() );
@@ -101,15 +101,9 @@ QgsRStatsConsole::~QgsRStatsConsole()
 }
 
 QgsInteractiveRWidget::QgsInteractiveRWidget( QWidget *parent )
-  : QgsCodeEditorR( parent )
+  : QgsCodeEditorR( parent, QgsCodeEditor::Mode::CommandInput )
 {
   displayPrompt( false );
-
-  // Don't want to see the horizontal scrollbar at all
-  SendScintilla( QsciScintilla::SCI_SETHSCROLLBAR, 0 );
-
-  setWrapMode( QsciScintilla::WrapCharacter );
-  SendScintilla( QsciScintilla::SCI_EMPTYUNDOBUFFER );
 
   QgsInteractiveRWidget::initializeLexer();
 }
@@ -133,9 +127,9 @@ void QgsInteractiveRWidget::keyPressEvent( QKeyEvent *event )
 void QgsInteractiveRWidget::initializeLexer()
 {
   QgsCodeEditorR::initializeLexer();
+
   setCaretLineVisible( false );
   setLineNumbersVisible( false ); // NO linenumbers for the input line
-  setFoldingVisible( false );
   // Margin 1 is used for the '>' prompt (console input)
   setMarginLineNumbers( 1, true );
   setMarginWidth( 1, "00" );
@@ -148,22 +142,4 @@ void QgsInteractiveRWidget::displayPrompt( bool more )
 {
   const QString prompt = !more ? ">" : "+";
   SendScintilla( QsciScintilla::SCI_MARGINSETTEXT, static_cast< uintptr_t >( 0 ), prompt.toUtf8().constData() );
-}
-
-QgsROutputWidget::QgsROutputWidget( QWidget *parent )
-  : QgsCodeEditorR( parent )
-{
-
-  // Don't want to see the horizontal scrollbar at all
-  SendScintilla( QsciScintilla::SCI_SETHSCROLLBAR, 0 );
-
-  setWrapMode( QsciScintilla::WrapCharacter );
-
-  QgsROutputWidget::initializeLexer();
-}
-
-void QgsROutputWidget::initializeLexer()
-{
-  QgsCodeEditorR::initializeLexer();
-  setFoldingVisible( false );
 }

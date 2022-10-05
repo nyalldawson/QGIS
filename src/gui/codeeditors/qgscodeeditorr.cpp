@@ -22,14 +22,13 @@
 #include <Qsci/qscilexerjson.h>
 
 
-QgsCodeEditorR::QgsCodeEditorR( QWidget *parent )
-  : QgsCodeEditor( parent )
+QgsCodeEditorR::QgsCodeEditorR( QWidget *parent, Mode mode )
+  : QgsCodeEditor( parent, QString(), false, false, QgsCodeEditor::Flag::CodeFolding, mode )
 {
   if ( !parent )
   {
     setTitle( tr( "R Editor" ) );
   }
-  setFoldingVisible( true );
   QgsCodeEditorR::initializeLexer();
 }
 
