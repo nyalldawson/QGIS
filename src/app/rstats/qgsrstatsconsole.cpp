@@ -61,15 +61,15 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
 
   connect( mRunner, &QgsRStatsRunner::errorOccurred, this, [ = ]( const QString & error )
   {
-    mOutput->setText( mOutput->text() + QStringLiteral( "<p style=\"color: red\">%1</p>" ).arg( error ) );
+    mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + error );
   } );
 
   connect( mRunner, &QgsRStatsRunner::consoleMessage, this, [ = ]( const QString & message, int type )
   {
     if ( type == 0 )
       mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + message );
-    else
-      mOutput->setText( mOutput->text() + QStringLiteral( "<p style=\"color: red\">%1</p>" ).arg( message ) );
+    else // TODO should we format errors differently?
+      mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + message );
   } );
 
   connect( mRunner, &QgsRStatsRunner::showMessage, this, [ = ]( const QString & message )
