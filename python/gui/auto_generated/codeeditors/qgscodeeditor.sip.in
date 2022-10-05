@@ -188,7 +188,7 @@ Clears all warning messages from the editor.
 .. versionadded:: 3.16
 %End
 
-    Mode mode() const;
+    QgsCodeEditor::Mode mode() const;
 %Docstring
 Returns the code editor mode.
 

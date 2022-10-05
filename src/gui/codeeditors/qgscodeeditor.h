@@ -213,7 +213,7 @@ class GUI_EXPORT QgsCodeEditor : public QsciScintilla
      *
      * \since QGIS 3.30
      */
-    Mode mode() const { return mMode; }
+    QgsCodeEditor::Mode mode() const { return mMode; }
 
   protected:
 
