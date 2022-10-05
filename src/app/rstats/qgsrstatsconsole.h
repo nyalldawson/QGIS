@@ -19,22 +19,53 @@
 
 #include <QWidget>
 
+#include "qgscodeeditorr.h"
+
 class QgsRStatsRunner;
 class QLineEdit;
 class QTextBrowser;
 class QgsDockableWidgetHelper;
-class QgsCodeEditorR;
+
+class QgsInteractiveRWidget : public QgsCodeEditorR
+{
+    Q_OBJECT
+  public:
+
+    QgsInteractiveRWidget( QWidget *parent = nullptr );
+
+  signals:
+
+    void runCommand( const QString &command );
+
+  protected:
+
+    void keyPressEvent( QKeyEvent *event ) override;
+
+    void initializeLexer() override;
+    void displayPrompt( bool more = false );
+
+};
+
+class QgsROutputWidget : public QgsCodeEditorR
+{
+    Q_OBJECT
+  public:
+    QgsROutputWidget( QWidget *parent = nullptr );
+  protected:
+    void initializeLexer() override;
+};
 
 class QgsRStatsConsole: public QWidget
 {
   public:
     QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner );
     ~QgsRStatsConsole() override;
+
   private:
 
     QgsRStatsRunner *mRunner = nullptr;
-    QLineEdit *mInputEdit = nullptr;
-    QgsCodeEditorR *mOutput = nullptr;
+    QgsInteractiveRWidget *mInputEdit = nullptr;
+    QgsROutputWidget *mOutput = nullptr;
     QgsDockableWidgetHelper *mDockableWidgetHelper = nullptr;
 
 };
