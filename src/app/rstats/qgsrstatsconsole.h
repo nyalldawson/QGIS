@@ -46,15 +46,6 @@ class QgsInteractiveRWidget : public QgsCodeEditorR
 
 };
 
-class QgsROutputWidget : public QgsCodeEditorR
-{
-    Q_OBJECT
-  public:
-    QgsROutputWidget( QWidget *parent = nullptr );
-  protected:
-    void initializeLexer() override;
-};
-
 class QgsRStatsConsole: public QWidget
 {
   public:
@@ -65,7 +56,7 @@ class QgsRStatsConsole: public QWidget
 
     QgsRStatsRunner *mRunner = nullptr;
     QgsInteractiveRWidget *mInputEdit = nullptr;
-    QgsROutputWidget *mOutput = nullptr;
+    QgsCodeEditorR *mOutput = nullptr;
     QgsDockableWidgetHelper *mDockableWidgetHelper = nullptr;
 
 };
