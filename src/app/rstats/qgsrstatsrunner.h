@@ -50,6 +50,8 @@ class QgsRStatsSession: public QObject, public Callbacks
 
     void execCommand( const QString &command );
 
+    void showStartupMessage();
+
   signals:
 
     void busyChanged( bool busy );
@@ -81,6 +83,7 @@ class QgsRStatsRunner: public QObject
 
     void execCommand( const QString &command );
     bool busy() const;
+    void showStartupMessage();
 
   signals:
 
