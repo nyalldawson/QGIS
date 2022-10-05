@@ -68,7 +68,9 @@ void QgsCodeEditorCSS::initializeLexer()
   lexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::Identifier ), QsciLexerCSS::CSS3Property );
 
   setLexer( lexer );
-  setFoldingVisible( true );
+
+  if ( mode() == QgsCodeEditor::Mode::ScriptEditor )
+    setFoldingVisible( true );
 
   runPostLexerConfigurationTasks();
 }

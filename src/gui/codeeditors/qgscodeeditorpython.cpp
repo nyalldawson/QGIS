@@ -170,7 +170,9 @@ void QgsCodeEditorPython::initializeLexer()
   }
 
   setLineNumbersVisible( true );
-  setFoldingVisible( true );
+  if ( mode() == QgsCodeEditor::Mode::ScriptEditor )
+    setFoldingVisible( true );
+
   setIndentationsUseTabs( false );
   setIndentationGuides( true );
 

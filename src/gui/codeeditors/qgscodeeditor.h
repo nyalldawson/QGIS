@@ -45,18 +45,32 @@ class GUI_EXPORT QgsCodeEditor : public QsciScintilla
   public:
 
     /**
+     * Code editor modes.
+     *
+     * \since QGIS 3.30
+     */
+    enum class Mode
+    {
+      ScriptEditor, //!< Standard mode, allows for display and edit of entire scripts
+      OutputDisplay, //!< Read only mode for display of command outputs
+      CommandInput, //!< Command input mode
+    };
+    Q_ENUM( Mode )
+
+    /**
      * Margin roles.
      *
      * This enum contains the roles which the different numbered margins are used for.
      *
      * \since QGIS 3.16
      */
-    enum MarginRole
-    {
+    enum class MarginRole SIP_MONKEYPATCH_SCOPEENUM_UNNEST( QgsCodeEditor, MarginRole ) : int
+      {
       LineNumbers = 0, //!< Line numbers
       ErrorIndicators = 1, //!< Error indicators
       FoldingControls = 2, //!< Folding controls
     };
+    Q_ENUM( MarginRole )
 
     /**
      * Construct a new code editor.
@@ -67,13 +81,13 @@ class GUI_EXPORT QgsCodeEditor : public QsciScintilla
      * \param margin FALSE: Enable margin for code editor (deprecated)
      * \since QGIS 2.6
      */
-    QgsCodeEditor( QWidget *parent SIP_TRANSFERTHIS = nullptr, const QString &title = QString(), bool folding = false, bool margin = false );
+    QgsCodeEditor( QWidget * parent SIP_TRANSFERTHIS = nullptr, const QString & title = QString(), bool folding = false, bool margin = false, QgsCodeEditor::Mode mode = QgsCodeEditor::Mode::ScriptEditor );
 
     /**
      * Set the widget title
      * \param title widget title
      */
-    void setTitle( const QString &title );
+    void setTitle( const QString & title );
 
     /**
      * Set margin visible state
@@ -194,6 +208,13 @@ class GUI_EXPORT QgsCodeEditor : public QsciScintilla
      */
     void clearWarnings();
 
+    /**
+     * Returns the code editor mode.
+     *
+     * \since QGIS 3.30
+     */
+    Mode mode() const { return mMode; }
+
   protected:
 
     bool isFixedPitch( const QFont &font );
@@ -238,6 +259,8 @@ class GUI_EXPORT QgsCodeEditor : public QsciScintilla
     QString mWidgetTitle;
     bool mFolding;
     bool mMargin;
+
+    QgsCodeEditor::Mode mMode = QgsCodeEditor::Mode::ScriptEditor;
 
     bool mUseDefaultSettings = true;
     // used if above is false, inplace of values taken from QSettings:

@@ -69,11 +69,12 @@ QMap< QgsCodeEditorColorScheme::ColorRole, QString > QgsCodeEditor::sColorRoleTo
 };
 
 
-QgsCodeEditor::QgsCodeEditor( QWidget *parent, const QString &title, bool folding, bool margin )
+QgsCodeEditor::QgsCodeEditor( QWidget *parent, const QString &title, bool folding, bool margin, QgsCodeEditor::Mode mode )
   : QsciScintilla( parent )
   , mWidgetTitle( title )
   , mFolding( folding )
   , mMargin( margin )
+  , mMode( mode )
 {
   if ( !parent && mWidgetTitle.isEmpty() )
   {
@@ -90,9 +91,9 @@ QgsCodeEditor::QgsCodeEditor( QWidget *parent, const QString &title, bool foldin
   SendScintilla( SCI_SETMULTIPASTE, 1 );
   SendScintilla( SCI_SETVIRTUALSPACEOPTIONS, SCVS_RECTANGULARSELECTION );
 
-  SendScintilla( SCI_SETMARGINTYPEN, QgsCodeEditor::MarginRole::ErrorIndicators, SC_MARGIN_SYMBOL );
-  SendScintilla( SCI_SETMARGINMASKN, QgsCodeEditor::MarginRole::ErrorIndicators, 1 << MARKER_NUMBER );
-  setMarginWidth( QgsCodeEditor::MarginRole::ErrorIndicators, 0 );
+  SendScintilla( SCI_SETMARGINTYPEN, static_cast< int >( QgsCodeEditor::MarginRole::ErrorIndicators ), SC_MARGIN_SYMBOL );
+  SendScintilla( SCI_SETMARGINMASKN, static_cast< int >( QgsCodeEditor::MarginRole::ErrorIndicators ), 1 << MARKER_NUMBER );
+  setMarginWidth( static_cast< int >( QgsCodeEditor::MarginRole::ErrorIndicators ), 0 );
   setAnnotationDisplay( QsciScintilla::AnnotationBoxed );
 
   connect( QgsGui::instance(), &QgsGui::optionsChanged, this, [ = ]
@@ -100,6 +101,31 @@ QgsCodeEditor::QgsCodeEditor( QWidget *parent, const QString &title, bool foldin
     setSciWidget();
     initializeLexer();
   } );
+
+  switch ( mMode )
+  {
+    case QgsCodeEditor::Mode::ScriptEditor:
+      break;
+
+    case QgsCodeEditor::Mode::OutputDisplay:
+    {
+      // Don't want to see the horizontal scrollbar at all
+      SendScintilla( QsciScintilla::SCI_SETHSCROLLBAR, 0 );
+
+      setWrapMode( QsciScintilla::WrapCharacter );
+      break;
+    }
+
+    case QgsCodeEditor::Mode::CommandInput:
+    {
+      // Don't want to see the horizontal scrollbar at all
+      SendScintilla( QsciScintilla::SCI_SETHSCROLLBAR, 0 );
+
+      setWrapMode( QsciScintilla::WrapCharacter );
+      SendScintilla( QsciScintilla::SCI_EMPTYUNDOBUFFER );
+      break;
+    }
+  }
 }
 
 // Workaround a bug in QScintilla 2.8.X
@@ -232,7 +258,7 @@ void QgsCodeEditor::setSciWidget()
   setLineNumbersVisible( false );
   setFoldingVisible( false );
 
-  setMarginWidth( QgsCodeEditor::MarginRole::ErrorIndicators, 0 );
+  setMarginWidth( static_cast< int >( QgsCodeEditor::MarginRole::ErrorIndicators ), 0 );
 
   setMarginsForegroundColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::MarginForeground ) );
   setMarginsBackgroundColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::MarginBackground ) );
@@ -270,15 +296,15 @@ void QgsCodeEditor::setMarginVisible( bool margin )
     marginFont.setPointSize( 10 );
     setMarginLineNumbers( 0, true );
     setMarginsFont( marginFont );
-    setMarginWidth( QgsCodeEditor::MarginRole::LineNumbers, QStringLiteral( "00000" ) );
+    setMarginWidth( static_cast< int >( QgsCodeEditor::MarginRole::LineNumbers ), QStringLiteral( "00000" ) );
     setMarginsForegroundColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::MarginForeground ) );
     setMarginsBackgroundColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::MarginBackground ) );
   }
   else
   {
-    setMarginWidth( QgsCodeEditor::MarginRole::LineNumbers, 0 );
-    setMarginWidth( QgsCodeEditor::MarginRole::ErrorIndicators, 0 );
-    setMarginWidth( QgsCodeEditor::MarginRole::FoldingControls, 0 );
+    setMarginWidth( static_cast< int >( QgsCodeEditor::MarginRole::LineNumbers ), 0 );
+    setMarginWidth( static_cast< int >( QgsCodeEditor::MarginRole::ErrorIndicators ), 0 );
+    setMarginWidth( static_cast< int >( QgsCodeEditor::MarginRole::FoldingControls ), 0 );
   }
 }
 
@@ -288,22 +314,22 @@ void QgsCodeEditor::setLineNumbersVisible( bool visible )
   {
     QFont marginFont = lexerFont();
     marginFont.setPointSize( 10 );
-    setMarginLineNumbers( QgsCodeEditor::MarginRole::LineNumbers, true );
+    setMarginLineNumbers( static_cast< int >( QgsCodeEditor::MarginRole::LineNumbers ), true );
     setMarginsFont( marginFont );
-    setMarginWidth( QgsCodeEditor::MarginRole::LineNumbers, QStringLiteral( "00000" ) );
+    setMarginWidth( static_cast< int >( QgsCodeEditor::MarginRole::LineNumbers ), QStringLiteral( "00000" ) );
     setMarginsForegroundColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::MarginForeground ) );
     setMarginsBackgroundColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::MarginBackground ) );
   }
   else
   {
-    setMarginLineNumbers( QgsCodeEditor::MarginRole::LineNumbers, false );
-    setMarginWidth( QgsCodeEditor::MarginRole::LineNumbers, 0 );
+    setMarginLineNumbers( static_cast< int >( QgsCodeEditor::MarginRole::LineNumbers ), false );
+    setMarginWidth( static_cast< int >( QgsCodeEditor::MarginRole::LineNumbers ), 0 );
   }
 }
 
 bool QgsCodeEditor::lineNumbersVisible() const
 {
-  return marginLineNumbers( QgsCodeEditor::MarginRole::LineNumbers );
+  return marginLineNumbers( static_cast< int >( QgsCodeEditor::MarginRole::LineNumbers ) );
 }
 
 void QgsCodeEditor::setFoldingVisible( bool folding )
@@ -311,7 +337,7 @@ void QgsCodeEditor::setFoldingVisible( bool folding )
   mFolding = folding;
   if ( folding )
   {
-    setMarginWidth( QgsCodeEditor::MarginRole::FoldingControls, "0" );
+    setMarginWidth( static_cast< int >( QgsCodeEditor::MarginRole::FoldingControls ), "0" );
     setMarginsForegroundColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::MarginForeground ) );
     setMarginsBackgroundColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::MarginBackground ) );
     setFolding( QsciScintilla::PlainFoldStyle );
@@ -319,7 +345,7 @@ void QgsCodeEditor::setFoldingVisible( bool folding )
   else
   {
     setFolding( QsciScintilla::NoFoldStyle );
-    setMarginWidth( QgsCodeEditor::MarginRole::FoldingControls, 0 );
+    setMarginWidth( static_cast< int >( QgsCodeEditor::MarginRole::FoldingControls ), 0 );
   }
 }
 
@@ -489,7 +515,7 @@ void QgsCodeEditor::setCustomAppearance( const QString &scheme, const QMap<QgsCo
 
 void QgsCodeEditor::addWarning( const int lineNumber, const QString &warning )
 {
-  setMarginWidth( QgsCodeEditor::MarginRole::ErrorIndicators, "000" );
+  setMarginWidth( static_cast< int >( QgsCodeEditor::MarginRole::ErrorIndicators ), "000" );
   markerAdd( lineNumber, MARKER_NUMBER );
   QFont font = lexerFont();
   font.setItalic( true );
@@ -509,6 +535,6 @@ void QgsCodeEditor::clearWarnings()
     markerDelete( line );
     clearAnnotations( line );
   }
-  setMarginWidth( QgsCodeEditor::MarginRole::ErrorIndicators, 0 );
+  setMarginWidth( static_cast< int >( QgsCodeEditor::MarginRole::ErrorIndicators ), 0 );
   mWarningLines.clear();
 }

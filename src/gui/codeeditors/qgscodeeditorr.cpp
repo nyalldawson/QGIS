@@ -22,8 +22,8 @@
 #include <Qsci/qscilexerjson.h>
 
 
-QgsCodeEditorR::QgsCodeEditorR( QWidget *parent )
-  : QgsCodeEditor( parent )
+QgsCodeEditorR::QgsCodeEditorR( QWidget *parent, Mode mode )
+  : QgsCodeEditor( parent, QString(), false, false, mode )
 {
   if ( !parent )
   {
@@ -68,7 +68,8 @@ void QgsCodeEditorR::initializeLexer()
   setLineNumbersVisible( true );
   runPostLexerConfigurationTasks();
 
-  setFoldingVisible( true );
+  if ( mode() == QgsCodeEditor::Mode::ScriptEditor )
+    setFoldingVisible( true );
 }
 
 /// @cond PRIVATE

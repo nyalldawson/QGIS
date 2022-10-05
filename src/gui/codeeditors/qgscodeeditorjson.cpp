@@ -61,7 +61,9 @@ void QgsCodeEditorJson::initializeLexer()
 
   setLexer( lexer );
 
-  setFoldingVisible( true );
+  if ( mode() == QgsCodeEditor::Mode::ScriptEditor )
+    setFoldingVisible( true );
+
   setLineNumbersVisible( true );
   runPostLexerConfigurationTasks();
 }

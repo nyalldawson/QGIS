@@ -30,14 +30,21 @@ A text editor based on QScintilla2.
 %End
   public:
 
-    enum MarginRole
+    enum class Mode
     {
+      ScriptEditor,
+      OutputDisplay,
+      CommandInput,
+    };
+
+    enum class MarginRole
+      {
       LineNumbers,
       ErrorIndicators,
       FoldingControls,
     };
 
-    QgsCodeEditor( QWidget *parent /TransferThis/ = 0, const QString &title = QString(), bool folding = false, bool margin = false );
+    QgsCodeEditor( QWidget * parent /TransferThis/ = 0, const QString & title = QString(), bool folding = false, bool margin = false, QgsCodeEditor::Mode mode = QgsCodeEditor::Mode::ScriptEditor );
 %Docstring
 Construct a new code editor.
 
@@ -49,7 +56,7 @@ Construct a new code editor.
 .. versionadded:: 2.6
 %End
 
-    void setTitle( const QString &title );
+    void setTitle( const QString & title );
 %Docstring
 Set the widget title
 
@@ -179,6 +186,13 @@ Clears all warning messages from the editor.
 .. seealso:: :py:func:`addWarning`
 
 .. versionadded:: 3.16
+%End
+
+    Mode mode() const;
+%Docstring
+Returns the code editor mode.
+
+.. versionadded:: 3.30
 %End
 
   protected:
