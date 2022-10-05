@@ -83,6 +83,8 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
   } );
 
   setLayout( vl );
+
+  mRunner->showStartupMessage();
 }
 
 QgsRStatsConsole::~QgsRStatsConsole()

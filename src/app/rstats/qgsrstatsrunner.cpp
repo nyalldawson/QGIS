@@ -84,7 +84,43 @@ QgsRStatsSession::QgsRStatsSession()
 // R.parseEvalQ( "cat(txt)" );
 //  QgsDebugMsg( QString::fromStdString( Rcpp::as<std::string>( R.parseEval( "cat(txt)" ) ) ) );
 // QgsDebugMsg( QString::fromStdString( Rcpp::as<std::string>( mRSession->parseEval( "as.character(val+2)" ) ) ) );
-// QgsDebugMsg( QStringLiteral( "val as double: %1" ).arg( Rcpp::as<double>( mRSession->parseEval( "val+val2" ) ) ) );
+  // QgsDebugMsg( QStringLiteral( "val as double: %1" ).arg( Rcpp::as<double>( mRSession->parseEval( "val+val2" ) ) ) );
+}
+
+void QgsRStatsSession::showStartupMessage()
+{
+  QVariant versionString;
+  QString error;
+  execCommandPrivate( QStringLiteral( "R.version$version.string" ), error, &versionString );
+  QVariant nicknameString;
+  execCommandPrivate( QStringLiteral( "R.version$nickname" ), error, &nicknameString );
+  QVariant platformString;
+  execCommandPrivate( QStringLiteral( "R.version$platform" ), error, &platformString );
+  QVariant yearString;
+  execCommandPrivate( QStringLiteral( "R.version$year" ), error, &yearString );
+  QVariant sizeInt;
+  execCommandPrivate( QStringLiteral( ".Machine$sizeof.pointer" ), error, &sizeInt );
+
+  emit showMessage( QStringLiteral( "%1 -- %2" ).arg( versionString.toString(), nicknameString.toString() ) );
+  emit showMessage( QStringLiteral( "Copyright (C) %1 The R Foundation for Statistical Computing" ).arg( yearString.toString() ) );
+  const int bits = sizeInt.toInt() == 8 ? 64 : 32;
+  emit showMessage( QStringLiteral( "Platform: %1 (%2-bit)" ).arg( platformString.toString() ).arg( bits ) );
+  emit showMessage( QString() );
+
+  emit showMessage( QStringLiteral( "R is free software and comes with ABSOLUTELY NO WARRANTY." ) );
+  emit showMessage( QStringLiteral( "You are welcome to redistribute it under certain conditions." ) );
+  emit showMessage( QStringLiteral( "Type 'license()' or 'licence()' for distribution details." ) );
+  emit showMessage( QString() );
+
+  emit showMessage( QStringLiteral( "R is a collaborative project with many contributors." ) );
+  emit showMessage( QStringLiteral( "Type 'contributors()' for more information and" ) );
+  emit showMessage( QStringLiteral( "'citation()' on how to cite R or R packages in publications." ) );
+  emit showMessage( QString() );
+
+  // TODO -- these don't actually work!
+  // emit showMessage( QStringLiteral( "Type 'demo()' for some demos, 'help()' for on-line help, or" ) );
+  // emit showMessage( QStringLiteral( "'help.start()' for an HTML browser interface to help." ) );
+  emit showMessage( QString() );
 }
 
 QgsRStatsSession::~QgsRStatsSession() = default;
@@ -105,6 +141,9 @@ std::string QgsRStatsSession::sexpToString( const SEXP exp )
     case REALSXP:
     case STRSXP:
       break; // we know these types are fine to convert to StringVector
+
+    case NILSXP:
+      return "NULL";
 
     default:
       QgsDebugMsg( QStringLiteral( "Possibly unsafe type: %1" ).arg( TYPEOF( exp ) ) );
@@ -201,8 +240,6 @@ void QgsRStatsSession::execCommandPrivate( const QString &command, QString &erro
   {
     std::cerr << "Unknown exception caught" << std::endl;
   }
-  if ( res )
-    *res = QVariant();
 }
 
 void QgsRStatsSession::execCommandNR( const QString &command )
@@ -314,4 +351,9 @@ void QgsRStatsRunner::execCommand( const QString &command )
 bool QgsRStatsRunner::busy() const
 {
   return mSession->busy();
+}
+
+void QgsRStatsRunner::showStartupMessage()
+{
+  QMetaObject::invokeMethod( mSession.get(), "showStartupMessage", Qt::QueuedConnection );
 }
