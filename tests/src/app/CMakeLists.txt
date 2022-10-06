@@ -55,6 +55,10 @@ if (WITH_BINDINGS)
   set(TESTS ${TESTS} testqgisapppython.cpp)
 endif()
 
+if (WITH_R)
+  set(TESTS ${TESTS} testqgsrstats.cpp)
+endif()
+
 foreach(TESTSRC ${TESTS})
   add_qgis_test(${TESTSRC} MODULE app LINKEDLIBRARIES qgis_app)
 endforeach(TESTSRC)
