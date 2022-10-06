@@ -10,6 +10,7 @@
 #include <QString>
 #include <QFile>
 #include <QDir>
+#include "qgsproviderregistry.h"
 
 class QgsApplicationRWrapper
 {
@@ -54,6 +55,183 @@ Rcpp::CharacterVector Names( Rcpp::XPtr<QgsApplicationRWrapper> )
   return ret;
 }
 
+Rcpp::NumericVector activeLayerNumericField(const std::string fieldName)
+{
+    Rcpp::NumericVector result;
+
+    QgsMapLayer *layer = QgisApp::instance()->activeLayer();
+    QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer *>( layer );
+
+    if ( !vlayer || (vlayer->dataProvider()->featureCount() < 1))
+      return result;
+
+    int fieldIndex = vlayer->fields().lookupField(QString::fromStdString(fieldName));
+
+    if (fieldIndex < 0)
+        return result;
+
+    QgsField field = vlayer->fields().field(fieldIndex);
+
+    if (!(field.type() == QVariant::Double || field.type() == QVariant::Int))
+        return result;
+
+    result = Rcpp::NumericVector(vlayer->dataProvider()->featureCount(), 0);
+
+    QgsFeature feature;
+
+    int i = 0;
+    QgsFeatureIterator it = vlayer->dataProvider()->getFeatures( QgsFeatureRequest() );
+
+    while ( it.nextFeature( feature ) )
+    {
+        result[i] = feature.attribute(fieldIndex).toDouble();
+        i++;
+    }
+
+    return result;
+}
+
+Rcpp::DataFrame activeLayerTable(){
+
+    Rcpp::DataFrame result = Rcpp::DataFrame();
+    QgsMapLayer *layer = QgisApp::instance()->activeLayer();
+    QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer *>( layer );
+
+    int featureCount = vlayer->dataProvider()->featureCount();
+
+    if ( !vlayer || ( featureCount < 1))
+      return result;
+
+    QgsFields fields = vlayer->fields();
+
+    for (int i =0; i < fields.count(); i++){
+
+        QgsField field = fields.at(i);
+        Rcpp::RObject column;
+        bool addColumn = false;
+
+        switch(field.type())
+        {
+            case QVariant::Bool:
+            {
+                column = Rcpp::LogicalVector(featureCount);
+                addColumn = true;
+                break;
+            }
+            case QVariant::Int:
+            {
+                column = Rcpp::IntegerVector(featureCount);
+                addColumn = true;
+                break;
+            }
+            case QVariant::Double:
+            {
+                column = Rcpp::DoubleVector(featureCount);
+                addColumn = true;
+                break;
+            }
+            case QVariant::LongLong:
+            {
+                column = Rcpp::DoubleVector(featureCount);
+                addColumn = true;
+                break;
+            }
+            case QVariant::String:
+            {
+                column = Rcpp::StringVector(featureCount);
+                addColumn = true;
+                break;
+            }
+            default:
+                break;
+        }
+
+        if (addColumn)
+            result.push_back(column, field.name().toStdString());
+    }
+
+    QgsFeature feature;
+    QgsFeatureIterator it = vlayer->dataProvider()->getFeatures( QgsFeatureRequest() );
+    int featureNumber = 0;
+
+    while ( it.nextFeature( feature ) )
+    {
+        int settingColumn = 0;
+
+        for (int i = 0; i < fields.count(); i ++)
+        {
+            QgsField field = fields.at(i);
+
+            switch (field.type())
+            {
+                case QVariant::Bool:
+                {
+                    Rcpp::LogicalVector column = result[settingColumn];
+                    column[featureNumber] = feature.attribute(i).toBool();
+                    break;
+                }
+                case QVariant::Int:
+                {
+                    Rcpp::IntegerVector column = result[settingColumn];
+                    column[featureNumber] = feature.attribute(i).toInt();
+                    break;
+                }
+                case QVariant::LongLong:
+                {
+                    Rcpp::DoubleVector column = result[settingColumn];
+                    bool ok;
+                    double val = feature.attribute(i).toDouble(&ok);
+                    if (ok)
+                        column[featureNumber] = val;
+                    else
+                        column[featureNumber] = R_NaReal;
+                    break;
+                 }
+                case QVariant::Double:
+                {
+                    Rcpp::DoubleVector column = result[settingColumn];
+                    column[featureNumber] = feature.attribute(i).toDouble();
+                    break;
+                }
+                case QVariant::String:
+                {
+                    Rcpp::StringVector column = result[settingColumn];
+                    column[featureNumber] = feature.attribute(i).toString().toStdString();
+                    break;
+                }
+                default:
+                    break;
+            }
+            settingColumn++;
+        }
+        featureNumber++;
+    }
+    return result;
+}
+
+SEXP activeLayerToSf(){
+
+    QgsMapLayer *layer = QgisApp::instance()->activeLayer();
+    QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer *>( layer );
+
+    if ( !vlayer)
+      return R_NilValue;
+
+    if (vlayer->dataProvider()->name() != QStringLiteral("ogr"))
+        return R_NilValue;
+
+    const QVariantMap parts = QgsProviderRegistry::instance()->decodeUri( layer->dataProvider()->name(), layer->source() );
+    std::string path = parts[ QStringLiteral( "path" ) ].toString().toStdString();
+    std::string layerName = parts[ QStringLiteral( "layerName" ) ].toString().toStdString();
+
+    if (path.empty())
+        return R_NilValue;
+
+    Rcpp::Function st_read("st_read");
+
+    return st_read(path, layerName);
+}
+
 //
 // QgsRStatsSession
 //
@@ -74,6 +252,9 @@ QgsRStatsSession::QgsRStatsSession()
   mRSession->assign( wr, "QGIS" );
   mRSession->assign( Rcpp::InternalFunction( & Dollar ), "$.QGIS" );
   mRSession->assign( Rcpp::InternalFunction( & Names ), "names.QGIS" );
+  mRSession->assign( Rcpp::InternalFunction( & activeLayerNumericField ), "activeLayerNumericField" );
+  mRSession->assign( Rcpp::InternalFunction( & activeLayerTable ), "activeLayerTable" );
+  mRSession->assign( Rcpp::InternalFunction( & activeLayerToSf ), "readActiveLayerToSf" );
 
 //( *mRSession )["val"] = 5;
 //mRSession->parseEvalQ( "val2<-7" );
