@@ -55,181 +55,184 @@ Rcpp::CharacterVector Names( Rcpp::XPtr<QgsApplicationRWrapper> )
   return ret;
 }
 
-Rcpp::NumericVector activeLayerNumericField(const std::string fieldName)
+Rcpp::NumericVector activeLayerNumericField( const std::string fieldName )
 {
-    Rcpp::NumericVector result;
+  Rcpp::NumericVector result;
 
-    QgsMapLayer *layer = QgisApp::instance()->activeLayer();
-    QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer *>( layer );
+  QgsMapLayer *layer = QgisApp::instance()->activeLayer();
+  QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer *>( layer );
 
-    if ( !vlayer || (vlayer->dataProvider()->featureCount() < 1))
-      return result;
-
-    int fieldIndex = vlayer->fields().lookupField(QString::fromStdString(fieldName));
-
-    if (fieldIndex < 0)
-        return result;
-
-    QgsField field = vlayer->fields().field(fieldIndex);
-
-    if (!(field.type() == QVariant::Double || field.type() == QVariant::Int))
-        return result;
-
-    result = Rcpp::NumericVector(vlayer->dataProvider()->featureCount(), 0);
-
-    QgsFeature feature;
-
-    int i = 0;
-    QgsFeatureIterator it = vlayer->dataProvider()->getFeatures( QgsFeatureRequest() );
-
-    while ( it.nextFeature( feature ) )
-    {
-        result[i] = feature.attribute(fieldIndex).toDouble();
-        i++;
-    }
-
+  if ( !vlayer || ( vlayer->dataProvider()->featureCount() < 1 ) )
     return result;
+
+  int fieldIndex = vlayer->fields().lookupField( QString::fromStdString( fieldName ) );
+
+  if ( fieldIndex < 0 )
+    return result;
+
+  QgsField field = vlayer->fields().field( fieldIndex );
+
+  if ( !( field.type() == QVariant::Double || field.type() == QVariant::Int ) )
+    return result;
+
+  result = Rcpp::NumericVector( vlayer->dataProvider()->featureCount(), 0 );
+
+  QgsFeature feature;
+
+  int i = 0;
+  QgsFeatureIterator it = vlayer->dataProvider()->getFeatures( QgsFeatureRequest() );
+
+  while ( it.nextFeature( feature ) )
+  {
+    result[i] = feature.attribute( fieldIndex ).toDouble();
+    i++;
+  }
+
+  return result;
 }
 
-Rcpp::DataFrame activeLayerTable(){
+Rcpp::DataFrame activeLayerTable()
+{
 
-    Rcpp::DataFrame result = Rcpp::DataFrame();
-    QgsMapLayer *layer = QgisApp::instance()->activeLayer();
-    QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer *>( layer );
+  Rcpp::DataFrame result = Rcpp::DataFrame();
+  QgsMapLayer *layer = QgisApp::instance()->activeLayer();
+  QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer *>( layer );
 
-    int featureCount = vlayer->dataProvider()->featureCount();
+  int featureCount = vlayer->dataProvider()->featureCount();
 
-    if ( !vlayer || ( featureCount < 1))
-      return result;
-
-    QgsFields fields = vlayer->fields();
-
-    for (int i =0; i < fields.count(); i++){
-
-        QgsField field = fields.at(i);
-        Rcpp::RObject column;
-        bool addColumn = false;
-
-        switch(field.type())
-        {
-            case QVariant::Bool:
-            {
-                column = Rcpp::LogicalVector(featureCount);
-                addColumn = true;
-                break;
-            }
-            case QVariant::Int:
-            {
-                column = Rcpp::IntegerVector(featureCount);
-                addColumn = true;
-                break;
-            }
-            case QVariant::Double:
-            {
-                column = Rcpp::DoubleVector(featureCount);
-                addColumn = true;
-                break;
-            }
-            case QVariant::LongLong:
-            {
-                column = Rcpp::DoubleVector(featureCount);
-                addColumn = true;
-                break;
-            }
-            case QVariant::String:
-            {
-                column = Rcpp::StringVector(featureCount);
-                addColumn = true;
-                break;
-            }
-            default:
-                break;
-        }
-
-        if (addColumn)
-            result.push_back(column, field.name().toStdString());
-    }
-
-    QgsFeature feature;
-    QgsFeatureIterator it = vlayer->dataProvider()->getFeatures( QgsFeatureRequest() );
-    int featureNumber = 0;
-
-    while ( it.nextFeature( feature ) )
-    {
-        int settingColumn = 0;
-
-        for (int i = 0; i < fields.count(); i ++)
-        {
-            QgsField field = fields.at(i);
-
-            switch (field.type())
-            {
-                case QVariant::Bool:
-                {
-                    Rcpp::LogicalVector column = result[settingColumn];
-                    column[featureNumber] = feature.attribute(i).toBool();
-                    break;
-                }
-                case QVariant::Int:
-                {
-                    Rcpp::IntegerVector column = result[settingColumn];
-                    column[featureNumber] = feature.attribute(i).toInt();
-                    break;
-                }
-                case QVariant::LongLong:
-                {
-                    Rcpp::DoubleVector column = result[settingColumn];
-                    bool ok;
-                    double val = feature.attribute(i).toDouble(&ok);
-                    if (ok)
-                        column[featureNumber] = val;
-                    else
-                        column[featureNumber] = R_NaReal;
-                    break;
-                 }
-                case QVariant::Double:
-                {
-                    Rcpp::DoubleVector column = result[settingColumn];
-                    column[featureNumber] = feature.attribute(i).toDouble();
-                    break;
-                }
-                case QVariant::String:
-                {
-                    Rcpp::StringVector column = result[settingColumn];
-                    column[featureNumber] = feature.attribute(i).toString().toStdString();
-                    break;
-                }
-                default:
-                    break;
-            }
-            settingColumn++;
-        }
-        featureNumber++;
-    }
+  if ( !vlayer || ( featureCount < 1 ) )
     return result;
+
+  QgsFields fields = vlayer->fields();
+
+  for ( int i = 0; i < fields.count(); i++ )
+  {
+
+    QgsField field = fields.at( i );
+    Rcpp::RObject column;
+    bool addColumn = false;
+
+    switch ( field.type() )
+    {
+      case QVariant::Bool:
+      {
+        column = Rcpp::LogicalVector( featureCount );
+        addColumn = true;
+        break;
+      }
+      case QVariant::Int:
+      {
+        column = Rcpp::IntegerVector( featureCount );
+        addColumn = true;
+        break;
+      }
+      case QVariant::Double:
+      {
+        column = Rcpp::DoubleVector( featureCount );
+        addColumn = true;
+        break;
+      }
+      case QVariant::LongLong:
+      {
+        column = Rcpp::DoubleVector( featureCount );
+        addColumn = true;
+        break;
+      }
+      case QVariant::String:
+      {
+        column = Rcpp::StringVector( featureCount );
+        addColumn = true;
+        break;
+      }
+      default:
+        break;
+    }
+
+    if ( addColumn )
+      result.push_back( column, field.name().toStdString() );
+  }
+
+  QgsFeature feature;
+  QgsFeatureIterator it = vlayer->dataProvider()->getFeatures( QgsFeatureRequest() );
+  int featureNumber = 0;
+
+  while ( it.nextFeature( feature ) )
+  {
+    int settingColumn = 0;
+
+    for ( int i = 0; i < fields.count(); i ++ )
+    {
+      QgsField field = fields.at( i );
+
+      switch ( field.type() )
+      {
+        case QVariant::Bool:
+        {
+          Rcpp::LogicalVector column = result[settingColumn];
+          column[featureNumber] = feature.attribute( i ).toBool();
+          break;
+        }
+        case QVariant::Int:
+        {
+          Rcpp::IntegerVector column = result[settingColumn];
+          column[featureNumber] = feature.attribute( i ).toInt();
+          break;
+        }
+        case QVariant::LongLong:
+        {
+          Rcpp::DoubleVector column = result[settingColumn];
+          bool ok;
+          double val = feature.attribute( i ).toDouble( &ok );
+          if ( ok )
+            column[featureNumber] = val;
+          else
+            column[featureNumber] = R_NaReal;
+          break;
+        }
+        case QVariant::Double:
+        {
+          Rcpp::DoubleVector column = result[settingColumn];
+          column[featureNumber] = feature.attribute( i ).toDouble();
+          break;
+        }
+        case QVariant::String:
+        {
+          Rcpp::StringVector column = result[settingColumn];
+          column[featureNumber] = feature.attribute( i ).toString().toStdString();
+          break;
+        }
+        default:
+          break;
+      }
+      settingColumn++;
+    }
+    featureNumber++;
+  }
+  return result;
 }
 
-SEXP activeLayerToSf(){
+SEXP activeLayerToSf()
+{
 
-    QgsMapLayer *layer = QgisApp::instance()->activeLayer();
-    QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer *>( layer );
+  QgsMapLayer *layer = QgisApp::instance()->activeLayer();
+  QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer *>( layer );
 
-    if ( !vlayer)
-      return R_NilValue;
+  if ( !vlayer )
+    return R_NilValue;
 
-    if (vlayer->dataProvider()->name() != QStringLiteral("ogr"))
-        return R_NilValue;
+  if ( vlayer->dataProvider()->name() != QStringLiteral( "ogr" ) )
+    return R_NilValue;
 
-    const QVariantMap parts = QgsProviderRegistry::instance()->decodeUri( layer->dataProvider()->name(), layer->source() );
-    std::string path = parts[ QStringLiteral( "path" ) ].toString().toStdString();
-    std::string layerName = parts[ QStringLiteral( "layerName" ) ].toString().toStdString();
+  const QVariantMap parts = QgsProviderRegistry::instance()->decodeUri( layer->dataProvider()->name(), layer->source() );
+  std::string path = parts[ QStringLiteral( "path" ) ].toString().toStdString();
+  std::string layerName = parts[ QStringLiteral( "layerName" ) ].toString().toStdString();
 
-    if (path.empty())
-        return R_NilValue;
+  if ( path.empty() )
+    return R_NilValue;
 
-    Rcpp::Function st_read("st_read");
+  Rcpp::Function st_read( "st_read" );
 
-    return st_read(path, layerName);
+  return st_read( path, layerName );
 }
 
 //
@@ -306,7 +309,7 @@ void QgsRStatsSession::showStartupMessage()
 
 QgsRStatsSession::~QgsRStatsSession() = default;
 
-std::string QgsRStatsSession::sexpToString( const SEXP exp )
+QString QgsRStatsSession::sexpToString( const SEXP exp )
 {
   switch ( TYPEOF( exp ) )
   {
@@ -315,7 +318,13 @@ std::string QgsRStatsSession::sexpToString( const SEXP exp )
     case ENVSXP:
     case LANGSXP:
       // these types can't be converted to StringVector, will raise exceptions
-      return {};
+      return QString();
+
+    case CHARSXP:
+    {
+      // special case
+      return QStringLiteral( "[1] \"%1\"" ).arg( QString::fromStdString( Rcpp::as<std::string>( exp ) ) );
+    }
 
     case LGLSXP:
     case INTSXP:
@@ -340,11 +349,22 @@ std::string QgsRStatsSession::sexpToString( const SEXP exp )
     if ( it < lines.end() - 1 )
       outcome.append( "\n" );
   }
-  return outcome;
+  return QString::fromStdString( outcome );
 }
 
 QVariant QgsRStatsSession::sexpToVariant( const SEXP exp )
 {
+  const int length = LENGTH( exp );
+  if ( length == 0 )
+  {
+    if ( TYPEOF( exp ) == NILSXP )
+      return QVariant();
+    else if ( TYPEOF( exp ) == CHARSXP )
+      return QString( "" );
+    else
+      return QVariantList();
+  }
+
   switch ( TYPEOF( exp ) )
   {
     case NILSXP:
@@ -352,7 +372,23 @@ QVariant QgsRStatsSession::sexpToVariant( const SEXP exp )
 
     case LGLSXP:
     {
-      if ( LENGTH( exp ) == 1 )
+      if ( length > 1 )
+      {
+        const Rcpp::LogicalVector logicalVector( exp );
+
+        QVariantList res;
+        res.reserve( length );
+        for ( int i = 0; i < length; i++ )
+        {
+          const int expInt = logicalVector[i];
+          if ( expInt < 0 )
+            res << QVariant();
+          else
+            res << static_cast< bool >( expInt );
+        }
+        return res;
+      }
+      else
       {
         const int expInt = Rcpp::as<int>( exp );
         if ( expInt < 0 )
@@ -360,30 +396,73 @@ QVariant QgsRStatsSession::sexpToVariant( const SEXP exp )
         else
           return static_cast< bool >( expInt );
       }
-      else
-        return QVariant();
-
     }
 
     case INTSXP:
-      // handle NA_integer_ as NA!
-      if ( LENGTH( exp ) == 1 )
-        return Rcpp::as<int>( exp );
+    {
+      if ( length > 1 )
+      {
+        const Rcpp::IntegerVector intVector( exp );
+
+        QVariantList res;
+        res.reserve( length );
+        for ( int i = 0; i < length; i++ )
+        {
+          const int elementInt = intVector[i];
+          res << ( elementInt == NA_INTEGER ? QVariant() : QVariant( elementInt ) );
+        }
+        return res;
+      }
       else
-        return QVariant();
+      {
+        const int res = Rcpp::as<int>( exp );
+        return res == NA_INTEGER ? QVariant() : QVariant( res );
+      }
+    }
 
     case REALSXP:
-      // handle nan as NA
-      if ( LENGTH( exp ) == 1 )
-        return Rcpp::as<double>( exp );
+    {
+      if ( length > 1 )
+      {
+        const Rcpp::DoubleVector realVector( exp );
+
+        QVariantList res;
+        res.reserve( length );
+        for ( int i = 0; i < length; i++ )
+        {
+          const double elementReal = realVector[i];
+          res << ( std::isnan( elementReal ) ? QVariant() : QVariant( elementReal ) );
+        }
+        return res;
+      }
       else
-        return QVariant();
+      {
+        const double res = Rcpp::as<double>( exp );
+        return std::isnan( res ) ? QVariant() : res;
+      }
+    }
 
     case STRSXP:
-      if ( LENGTH( exp ) == 1 )
-        return QString::fromStdString( Rcpp::as<std::string>( exp ) );
+      if ( length > 1 )
+      {
+        const Rcpp::StringVector stringVector( exp );
+
+        QVariantList res;
+        res.reserve( length );
+        for ( int i = 0; i < length; i++ )
+        {
+          const char *elementString = stringVector[i];
+          res << QVariant( QString( elementString ) );
+        }
+        return res;
+      }
       else
-        return QVariant();
+      {
+        return QString::fromStdString( Rcpp::as<std::string>( exp ) );
+      }
+
+    case CHARSXP:
+      return QString::fromStdString( Rcpp::as<std::string>( exp ) );
 
     //case RAWSXP:
     //  return R::rawPointer( exp );
@@ -411,7 +490,7 @@ void QgsRStatsSession::execCommandPrivate( const QString &command, QString &erro
     if ( res )
       *res = sexpToVariant( sexpRes );
     if ( output )
-      *output = QString::fromStdString( sexpToString( sexpRes ) );
+      *output = sexpToString( sexpRes );
   }
   catch ( std::exception &ex )
   {

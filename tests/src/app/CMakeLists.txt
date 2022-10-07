@@ -7,7 +7,6 @@ include_directories(
 )
 
 
-
 set(TESTS
   testqgisapp.cpp
   testqgsappbrowserproviders.cpp
@@ -56,6 +55,7 @@ if (WITH_BINDINGS)
 endif()
 
 if (WITH_R)
+  add_compile_definitions(RINSIDE_CALLBACKS=1)
   set(TESTS ${TESTS} testqgsrstats.cpp)
 endif()
 
