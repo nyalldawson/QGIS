@@ -51,6 +51,7 @@ void QgsProxyProgressTask::setProxyProgress( double progress )
 
 void QgsProxyProgressTask::cancel()
 {
+  mCanceled = true;
   emit canceled();
 
   QgsTask::cancel();
@@ -60,8 +61,8 @@ void QgsProxyProgressTask::cancel()
 // QgsScopedProxyProgressTask
 //
 
-QgsScopedProxyProgressTask::QgsScopedProxyProgressTask( const QString &description )
-  : mTask( new QgsProxyProgressTask( description ) )
+QgsScopedProxyProgressTask::QgsScopedProxyProgressTask( const QString &description, bool canCancel )
+  : mTask( new QgsProxyProgressTask( description, canCancel ) )
 {
   QgsApplication::taskManager()->addTask( mTask );
 }
@@ -74,4 +75,9 @@ QgsScopedProxyProgressTask::~QgsScopedProxyProgressTask()
 void QgsScopedProxyProgressTask::setProgress( double progress )
 {
   mTask->setProxyProgress( progress );
+}
+
+bool QgsScopedProxyProgressTask::isCanceled() const
+{
+  return mTask->isCanceled();
 }

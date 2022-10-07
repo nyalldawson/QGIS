@@ -62,6 +62,13 @@ class CORE_EXPORT QgsProxyProgressTask : public QgsTask
      */
     void setProxyProgress( double progress );
 
+    /**
+     * Returns TRUE if the task has been canceled.
+     *
+     * \since QGIS 3.30
+     */
+    bool isCanceled() const { return mCanceled; }
+
     void cancel() override;
 
   signals:
@@ -79,6 +86,7 @@ class CORE_EXPORT QgsProxyProgressTask : public QgsTask
     QMutex mNotFinishedMutex;
     bool mAlreadyFinished = false;
     bool mResult = true;
+    bool mCanceled = false;
 
 };
 
@@ -98,7 +106,7 @@ class CORE_EXPORT QgsScopedProxyProgressTask
     /**
      * Constructor for QgsScopedProxyProgressTask, with the specified \a description.
      */
-    QgsScopedProxyProgressTask( const QString &description );
+    QgsScopedProxyProgressTask( const QString &description, bool canCancel = false );
 
     ~QgsScopedProxyProgressTask();
 
@@ -106,6 +114,13 @@ class CORE_EXPORT QgsScopedProxyProgressTask
      * Sets the \a progress (from 0 to 100) for the proxied operation.
      */
     void setProgress( double progress );
+
+    /**
+     * Returns TRUE if the task has been canceled.
+     *
+     * \since QGIS 3.30
+     */
+    bool isCanceled() const;
 
   private:
 

@@ -51,6 +51,13 @@ Sets the ``progress`` (from 0 to 100) for the proxied operation.
 This method is safe to call from the main thread.
 %End
 
+    bool isCanceled() const;
+%Docstring
+Returns ``True`` if the task has been canceled.
+
+.. versionadded:: 3.30
+%End
+
     virtual void cancel();
 
 
@@ -81,7 +88,7 @@ when it goes out of scope.
 %End
   public:
 
-    QgsScopedProxyProgressTask( const QString &description );
+    QgsScopedProxyProgressTask( const QString &description, bool canCancel = false );
 %Docstring
 Constructor for QgsScopedProxyProgressTask, with the specified ``description``.
 %End
@@ -91,6 +98,13 @@ Constructor for QgsScopedProxyProgressTask, with the specified ``description``.
     void setProgress( double progress );
 %Docstring
 Sets the ``progress`` (from 0 to 100) for the proxied operation.
+%End
+
+    bool isCanceled() const;
+%Docstring
+Returns ``True`` if the task has been canceled.
+
+.. versionadded:: 3.30
 %End
 
 };
