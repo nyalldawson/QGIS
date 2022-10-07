@@ -41,6 +41,7 @@ class TestQgsRStats : public QObject
     void cleanupTestCase();// will be called after the last testfunction was executed.
     void testSexpToVariant();
     void testSexpToString();
+    void testVariantToSexp();
 
   private:
     QString mTestDataDir;
@@ -148,6 +149,29 @@ void TestQgsRStats::testSexpToString()
   QCOMPARE( QgsRStatsSession::sexpToString( Rcpp::wrap( vString[3] ) ), QStringLiteral( "[1] \"\"" ) );
   QCOMPARE( QgsRStatsSession::sexpToString( Rcpp::wrap( std::string( "test" ) ) ), QStringLiteral( "[1] \"test\"" ) );
   QCOMPARE( QgsRStatsSession::sexpToString( Rcpp::wrap( vString ) ), QStringLiteral( "[1] \"string 1\" \"string2\"  \"\"         \"\"        " ) );
+}
+
+void TestQgsRStats::testVariantToSexp()
+{
+  QCOMPARE( QgsRStatsSession::variantToSexp( QVariant() ), R_NilValue );
+
+  QCOMPARE( Rcpp::as<int>( QgsRStatsSession::variantToSexp( QVariant( QVariant::Bool ) ) ), NA_LOGICAL );
+  QCOMPARE( Rcpp::as<int>( QgsRStatsSession::variantToSexp( QVariant( true ) ) ), 1 );
+  QCOMPARE( Rcpp::as<int>( QgsRStatsSession::variantToSexp( QVariant( false ) ) ), 0 );
+
+  QCOMPARE( Rcpp::as<int>( QgsRStatsSession::variantToSexp( QVariant( QVariant::Int ) ) ), NA_INTEGER );
+  QCOMPARE( Rcpp::as<int>( QgsRStatsSession::variantToSexp( QVariant( 100 ) ) ), 100 );
+  QCOMPARE( Rcpp::as<int>( QgsRStatsSession::variantToSexp( QVariant( 0 ) ) ), 0 );
+  QCOMPARE( Rcpp::as<int>( QgsRStatsSession::variantToSexp( QVariant( -100 ) ) ), -100 );
+
+  QVERIFY( std::isnan( Rcpp::as<double>( QgsRStatsSession::variantToSexp( QVariant( QVariant::Double ) ) ) ) );
+  QCOMPARE( Rcpp::as<double>( QgsRStatsSession::variantToSexp( QVariant( 100.2 ) ) ), 100.2 );
+  QCOMPARE( Rcpp::as<double>( QgsRStatsSession::variantToSexp( QVariant( 0.0 ) ) ), 0.0 );
+  QCOMPARE( Rcpp::as<double>( QgsRStatsSession::variantToSexp( QVariant( -100.2 ) ) ), -100.2 );
+
+  QCOMPARE( Rcpp::as<std::string>( QgsRStatsSession::variantToSexp( QVariant( QVariant::String ) ) ), "" );
+  QCOMPARE( Rcpp::as<std::string>( QgsRStatsSession::variantToSexp( QVariant( QStringLiteral( "test string" ) ) ) ), "test string" );
+  QCOMPARE( Rcpp::as<std::string>( QgsRStatsSession::variantToSexp( QVariant( QString( "" ) ) ) ), "" );
 }
 
 QGSTEST_MAIN( TestQgsRStats )

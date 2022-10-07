@@ -59,6 +59,11 @@ class APP_EXPORT QgsRStatsSession: public QObject, public Callbacks
      */
     static QVariant sexpToVariant( const SEXP exp );
 
+    /**
+     * Converts a variant to a SEXP.
+     */
+    static SEXP variantToSexp( const QVariant &variant );
+
   public slots:
 
     void execCommand( const QString &command );
