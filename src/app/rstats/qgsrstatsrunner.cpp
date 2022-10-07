@@ -318,6 +318,7 @@ QString QgsRStatsSession::sexpToString( const SEXP exp )
     case CLOSXP:
     case ENVSXP:
     case LANGSXP:
+    case S4SXP:
       // these types can't be converted to StringVector, will raise exceptions
       return QString();
 
@@ -331,10 +332,12 @@ QString QgsRStatsSession::sexpToString( const SEXP exp )
     case INTSXP:
     case REALSXP:
     case STRSXP:
+    case EXTPTRSXP:
+    case VECSXP:
       break; // we know these types are fine to convert to StringVector
 
     case NILSXP:
-      return "NULL";
+      return QStringLiteral( "NULL" );
 
     default:
       QgsDebugMsg( QStringLiteral( "Possibly unsafe type: %1" ).arg( TYPEOF( exp ) ) );
@@ -355,6 +358,21 @@ QString QgsRStatsSession::sexpToString( const SEXP exp )
 
 QVariant QgsRStatsSession::sexpToVariant( const SEXP exp )
 {
+  switch ( TYPEOF( exp ) )
+  {
+    case S4SXP:
+    case LANGSXP:
+    case SYMSXP:
+    case EXTPTRSXP:
+    case CLOSXP:
+      // not safe to call LENGTH on!
+      return QVariant();
+
+    default:
+      break;
+  }
+
+  QgsDebugMsg( QStringLiteral( "Handing type: %1" ).arg( TYPEOF( exp ) ) );
   const int length = LENGTH( exp );
   if ( length == 0 )
   {
