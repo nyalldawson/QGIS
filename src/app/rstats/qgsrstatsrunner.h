@@ -25,6 +25,7 @@
 
 #include "qgis_app.h"
 
+
 class RInside;
 class QVariant;
 class QString;

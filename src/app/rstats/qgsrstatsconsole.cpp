@@ -87,7 +87,7 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
 
   connect( mRunner, &QgsRStatsRunner::busyChanged, this, [ = ]( bool busy )
   {
-    mInputEdit->setEnabled( !busy );
+    //mInputEdit->setEnabled( !busy );
   } );
 
   setLayout( vl );
