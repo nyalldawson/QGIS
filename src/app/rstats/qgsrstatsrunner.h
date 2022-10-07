@@ -18,15 +18,18 @@
 #define QGSRSTATSRUNNER_H
 
 #include <memory>
+
 #include <QObject>
 #include <QThread>
 #include "Callbacks.h"
+
+#include "qgis_app.h"
 
 class RInside;
 class QVariant;
 class QString;
 
-class QgsRStatsSession: public QObject, public Callbacks
+class APP_EXPORT QgsRStatsSession: public QObject, public Callbacks
 {
     Q_OBJECT
   public:
@@ -45,6 +48,16 @@ class QgsRStatsSession: public QObject, public Callbacks
     bool has_ShowMessage() override;
 
     bool busy() const { return mBusy; }
+
+    /**
+     * Converts a SEXP object to a string.
+     */
+    static QString sexpToString( const SEXP exp );
+
+    /**
+     * Converts a SEXP object to a QVariant.
+     */
+    static QVariant sexpToVariant( const SEXP exp );
 
   public slots:
 
@@ -68,8 +81,7 @@ class QgsRStatsSession: public QObject, public Callbacks
     bool mBusy = false;
     bool mEncounteredErrorMessageType = false;
 
-    static std::string sexpToString( const SEXP exp );
-    static QVariant sexpToVariant( const SEXP exp );
+
 };
 
 
