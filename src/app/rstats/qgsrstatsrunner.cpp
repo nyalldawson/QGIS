@@ -6,6 +6,7 @@
 
 #include "qgisapp.h"
 #include "qgslogger.h"
+#include "qgsvariantutils.h"
 #include <QVariant>
 #include <QString>
 #include <QFile>
@@ -480,6 +481,44 @@ QVariant QgsRStatsSession::sexpToVariant( const SEXP exp )
   }
 
   return QVariant();
+}
+
+SEXP QgsRStatsSession::variantToSexp( const QVariant &variant )
+{
+  switch ( variant.type() )
+  {
+    case QVariant::Invalid:
+      return R_NilValue;
+
+    case QVariant::Bool:
+      if ( QgsVariantUtils::isNull( variant ) )
+        return Rcpp::wrap( NA_LOGICAL );
+
+      return Rcpp::wrap( variant.toBool() ? 1 : 0 );
+
+    case QVariant::Int:
+      if ( QgsVariantUtils::isNull( variant ) )
+        return Rcpp::wrap( NA_INTEGER );
+
+      return Rcpp::wrap( variant.toInt() );
+
+    case QVariant::Double:
+      if ( QgsVariantUtils::isNull( variant ) )
+        return Rcpp::wrap( std::numeric_limits< double >::quiet_NaN() );
+
+      return Rcpp::wrap( variant.toDouble() );
+
+    case QVariant::String:
+      return Rcpp::wrap( variant.toString().toStdString() );
+
+    case QVariant::UserType:
+      QgsDebugMsg( QStringLiteral( "unsupported user variant type %1" ).arg( QMetaType::typeName( variant.userType() ) ) );
+      return nullptr;
+
+    default:
+      QgsDebugMsg( QStringLiteral( "unsupported variant type %1" ).arg( QVariant::typeToName( variant.type() ) ) );
+      return nullptr;
+  }
 }
 
 void QgsRStatsSession::execCommandPrivate( const QString &command, QString &error, QVariant *res, QString *output )
