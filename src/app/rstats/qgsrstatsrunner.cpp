@@ -220,6 +220,127 @@ class MapLayerWrapper
       return result;
     }
 
+    Rcpp::NumericVector toNumericVector( const std::string &fieldName, bool selectedOnly )
+    {
+      Rcpp::NumericVector result;
+
+      bool prepared = false;
+      QgsFields fields;
+      long long featureCount = -1;
+      std::unique_ptr< QgsVectorLayerFeatureSource > source;
+      std::unique_ptr< QgsScopedProxyProgressTask > task;
+      QgsFeatureIds selectedFeatureIds;
+
+      auto prepareOnMainThread = [&prepared, &fields, &featureCount, &source, &task, selectedOnly, &selectedFeatureIds, this]
+      {
+        Q_ASSERT_X( QThread::currentThread() == qApp->thread(), "toDataFrame", "prepareOnMainThread must be run on the main thread" );
+
+        prepared = false;
+        if ( QgsMapLayer *layer = QgsProject::instance()->mapLayer( mLayerId ) )
+        {
+          if ( QgsVectorLayer *vlayer = qobject_cast< QgsVectorLayer * >( layer ) )
+          {
+            fields = vlayer->fields();
+            source = std::make_unique< QgsVectorLayerFeatureSource >( vlayer );
+            if ( selectedOnly )
+            {
+              selectedFeatureIds = vlayer->selectedFeatureIds();
+              featureCount  = selectedFeatureIds.size();
+            }
+            else
+            {
+              featureCount = vlayer->featureCount();
+            }
+          }
+        }
+        prepared = true;
+
+        task = std::make_unique< QgsScopedProxyProgressTask >( QObject::tr( "Creating R dataframe" ), true );
+      };
+
+      QMetaObject::invokeMethod( qApp, prepareOnMainThread, Qt::BlockingQueuedConnection );
+      if ( !prepared )
+        return result;
+
+      const int fieldIndex = fields.lookupField( QString::fromStdString( fieldName ) );
+      if ( fieldIndex < 0 )
+        return result;
+
+      const QgsField field = fields.at( fieldIndex );
+      if ( !( field.type() == QVariant::Double || field.type() == QVariant::Int ) )
+        return result;
+
+      result = Rcpp::NumericVector( featureCount, 0 );
+      if ( selectedOnly && selectedFeatureIds.empty() )
+        return result;
+
+      std::size_t i = 0;
+
+      QgsFeature feature;
+      QgsFeatureRequest req;
+      req.setFlags( QgsFeatureRequest::NoGeometry );
+      req.setSubsetOfAttributes( {fieldIndex} );
+      if ( selectedOnly )
+        req.setFilterFids( selectedFeatureIds );
+
+      QgsFeatureIterator it = source->getFeatures( req );
+
+      int prevProgress = 0;
+      while ( it.nextFeature( feature ) )
+      {
+        const int progress = 100 * static_cast< double>( i ) / featureCount;
+        if ( progress > prevProgress )
+        {
+          task->setProgress( progress );
+          prevProgress = progress;
+        }
+
+        if ( task->isCanceled() )
+          break;
+
+        result[i] = feature.attribute( fieldIndex ).toDouble();
+        i++;
+      }
+
+      return result;
+    }
+
+    SEXP toSf()
+    {
+      bool prepared = false;
+      QString path;
+      QString layerName;
+      auto prepareOnMainThread = [&prepared, &path, &layerName, this]
+      {
+        Q_ASSERT_X( QThread::currentThread() == qApp->thread(), "toSf", "prepareOnMainThread must be run on the main thread" );
+
+        prepared = false;
+        if ( QgsMapLayer *layer = QgsProject::instance()->mapLayer( mLayerId ) )
+        {
+          if ( QgsVectorLayer *vlayer = qobject_cast< QgsVectorLayer * >( layer ) )
+          {
+            if ( vlayer->dataProvider()->name() != QStringLiteral( "ogr" ) )
+              return;
+
+            const QVariantMap parts = QgsProviderRegistry::instance()->decodeUri( layer->dataProvider()->name(), layer->source() );
+            path = parts[ QStringLiteral( "path" ) ].toString();
+            layerName = parts[ QStringLiteral( "layerName" ) ].toString();
+            prepared = true;
+          }
+        }
+      };
+
+      QMetaObject::invokeMethod( qApp, prepareOnMainThread, Qt::BlockingQueuedConnection );
+      if ( !prepared )
+        return R_NilValue;
+
+      if ( path.isEmpty() )
+        return R_NilValue;
+
+      Rcpp::Function st_read( "st_read" );
+
+      return st_read( path.toStdString(), layerName.toStdString() );
+    }
 
   private:
 
@@ -243,6 +364,15 @@ SEXP MapLayerWrapperToDataFrame( Rcpp::XPtr<MapLayerWrapper> obj, bool selectedO
   return obj->toDataFrame( selectedOnly );
 }
 
+SEXP MapLayerWrapperToNumericVector( Rcpp::XPtr<MapLayerWrapper> obj, const std::string &field, bool selectedOnly )
+{
+  return obj->toNumericVector( field, selectedOnly );
+}
+
+SEXP MapLayerWrapperToSf( Rcpp::XPtr<MapLayerWrapper> obj )
+{
+  return obj->toSf();
+}
 
 SEXP MapLayerWrapperByName( std::string name )
 {
@@ -316,6 +446,14 @@ SEXP Dollar( Rcpp::XPtr<QgsApplicationRWrapper> obj, std::string name )
   {
     return Rcpp::InternalFunction( & MapLayerWrapperToDataFrame );
   }
+  else if ( name == "toNumericVector" )
+  {
+    return Rcpp::InternalFunction( & MapLayerWrapperToNumericVector );
+  }
+  else if ( name == "toSf" )
+  {
+    return Rcpp::InternalFunction( & MapLayerWrapperToSf );
+  }
   else
   {
     return NULL;
@@ -332,68 +470,13 @@ Rcpp::CharacterVector Names( Rcpp::XPtr<QgsApplicationRWrapper> )
   ret.push_back( "layerId" );
   ret.push_back( "featureCount" );
   ret.push_back( "mapLayerByName" );
+  ret.push_back( "toDataFrame" );
+  ret.push_back( "toNumericVector" );
+  ret.push_back( "toSf" );
   return ret;
 }
 
-Rcpp::NumericVector activeLayerNumericField( const std::string fieldName )
-{
-  Rcpp::NumericVector result;
 
-  QgsMapLayer *layer = QgisApp::instance()->activeLayer();
-  QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer *>( layer );
-
-  if ( !vlayer || ( vlayer->dataProvider()->featureCount() < 1 ) )
-    return result;
-
-  int fieldIndex = vlayer->fields().lookupField( QString::fromStdString( fieldName ) );
-
-  if ( fieldIndex < 0 )
-    return result;
-
-  QgsField field = vlayer->fields().field( fieldIndex );
-
-  if ( !( field.type() == QVariant::Double || field.type() == QVariant::Int ) )
-    return result;
-
-  result = Rcpp::NumericVector( vlayer->dataProvider()->featureCount(), 0 );
-
-  QgsFeature feature;
-
-  int i = 0;
-  QgsFeatureIterator it = vlayer->dataProvider()->getFeatures( QgsFeatureRequest() );
-
-  while ( it.nextFeature( feature ) )
-  {
-    result[i] = feature.attribute( fieldIndex ).toDouble();
-    i++;
-  }
-
-  return result;
-}
-
-SEXP activeLayerToSf()
-{
-
-  QgsMapLayer *layer = QgisApp::instance()->activeLayer();
-  QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer *>( layer );
-
-  if ( !vlayer )
-    return R_NilValue;
-
-  if ( vlayer->dataProvider()->name() != QStringLiteral( "ogr" ) )
-    return R_NilValue;
-
-  const QVariantMap parts = QgsProviderRegistry::instance()->decodeUri( layer->dataProvider()->name(), layer->source() );
-  std::string path = parts[ QStringLiteral( "path" ) ].toString().toStdString();
-  std::string layerName = parts[ QStringLiteral( "layerName" ) ].toString().toStdString();
-
-  if ( path.empty() )
-    return R_NilValue;
-
-  Rcpp::Function st_read( "st_read" );
-
-  return st_read( path, layerName );
-}
 
 //
 // QgsRStatsSession
@@ -418,10 +501,12 @@ QgsRStatsSession::QgsRStatsSession()
   QString error;
   execCommandPrivate( QStringLiteral( R"""(
   QGIS <- list(
-    toDataFrame=function(layer, selectedOnly=FALSE) { .QGISPrivate$toDataFrame(layer, selectedOnly) },
     versionInt=function() { .QGISPrivate$versionInt },
     mapLayerByName=function(name) { .QGISPrivate$mapLayerByName(name) },
     activeLayer=function() { .QGISPrivate$activeLayer }
+    toDataFrame=function(layer, selectedOnly=FALSE) { .QGISPrivate$toDataFrame(layer, selectedOnly) },
+    toNumericVector=function(layer, field, selectedOnly=FALSE) { .QGISPrivate$toNumericVector(layer, field, selectedOnly) },
+    toSf=function(layer) { .QGISPrivate$toSf(layer) },
   )
   class(QGIS) <- "QGIS"
   )""" ), error );
@@ -430,11 +515,6 @@ QgsRStatsSession::QgsRStatsSession()
   {
     QgsDebugMsg( error );
   }
-
-  /*
-  mRSession->assign( Rcpp::InternalFunction( & activeLayerNumericField ), "activeLayerNumericField" );
-  mRSession->assign( Rcpp::InternalFunction( & activeLayerToSf ), "readActiveLayerToSf" );
-  */
 }
 
 void QgsRStatsSession::showStartupMessage()
