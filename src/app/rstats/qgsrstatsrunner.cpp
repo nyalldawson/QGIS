@@ -86,9 +86,11 @@ class MapLayerWrapper
       if ( !prepared )
         return result;
 
-      for ( const QgsField &field : fields )
+      QList< int > attributesToFetch;
+      for ( int index = 0; index < fields.count(); ++index )
       {
         Rcpp::RObject column;
+        const QgsField field = fields.at( index );
 
         switch ( field.type() )
         {
@@ -123,23 +125,35 @@ class MapLayerWrapper
         }
 
         result.push_back( column, field.name().toStdString() );
+        attributesToFetch.append( index );
       }
 
       QgsFeature feature;
       QgsFeatureRequest req;
       req.setFlags( QgsFeatureRequest::NoGeometry );
+      req.setSubsetOfAttributes( attributesToFetch );
       QgsFeatureIterator it = source->getFeatures( req );
       std::size_t featureNumber = 0;
 
+      int prevProgress = 0;
       while ( it.nextFeature( feature ) )
       {
-        task->setProgress( 100 * static_cast< double>( featureNumber ) / featureCount );
+        const int progress = 100 * static_cast< double>( featureNumber ) / featureCount;
+        if ( progress > prevProgress )
+        {
+          task->setProgress( progress );
+          prevProgress = progress;
+        }
+
         if ( task->isCanceled() )
           break;
 
         int settingColumn = 0;
 
-        for ( int i = 0; i < fields.count(); i ++ )
+        const QgsAttributes attributes = feature.attributes();
+        const QVariant *attributeData = attributes.constData();
+
+        for ( int i = 0; i < fields.count(); i ++, attributeData++ )
         {
           QgsField field = fields.at( i );
 
@@ -148,20 +162,20 @@ class MapLayerWrapper
             case QVariant::Bool:
             {
               Rcpp::LogicalVector column = result[settingColumn];
-              column[featureNumber] = feature.attribute( i ).toBool();
+              column[featureNumber] = attributeData->toBool();
               break;
             }
             case QVariant::Int:
             {
               Rcpp::IntegerVector column = result[settingColumn];
-              column[featureNumber] = feature.attribute( i ).toInt();
+              column[featureNumber] = attributeData->toInt();
               break;
             }
             case QVariant::LongLong:
             {
               Rcpp::DoubleVector column = result[settingColumn];
               bool ok;
-              double val = feature.attribute( i ).toDouble( &ok );
+              double val = attributeData->toDouble( &ok );
               if ( ok )
                 column[featureNumber] = val;
               else
@@ -171,13 +185,13 @@ class MapLayerWrapper
             case QVariant::Double:
             {
               Rcpp::DoubleVector column = result[settingColumn];
-              column[featureNumber] = feature.attribute( i ).toDouble();
+              column[featureNumber] = attributeData->toDouble();
               break;
             }
             case QVariant::String:
             {
               Rcpp::StringVector column = result[settingColumn];
-              column[featureNumber] = feature.attribute( i ).toString().toStdString();
+              column[featureNumber] = attributeData->toString().toStdString();
               break;
             }
 
