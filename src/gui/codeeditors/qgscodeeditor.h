@@ -215,6 +215,31 @@ class GUI_EXPORT QgsCodeEditor : public QsciScintilla
      */
     QgsCodeEditor::Mode mode() const { return mMode; }
 
+    /**
+     * Returns TRUE if the cursor is on the last line of the document.
+     *
+     * \since QGIS 3.30
+     */
+    bool isCursorOnLastLine() const;
+
+  public slots:
+
+    /**
+     * Moves the cursor to the start of the document and scrolls to ensure
+     * it is visible.
+     *
+     * \since QGIS 3.30
+     */
+    virtual void moveCursorToStart();
+
+    /**
+     * Moves the cursor to the end of the document and scrolls to ensure
+     * it is visible.
+     *
+     * \since QGIS 3.30
+     */
+    virtual void moveCursorToEnd();
+
   protected:
 
     bool isFixedPitch( const QFont &font );
