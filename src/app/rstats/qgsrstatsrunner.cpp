@@ -433,26 +433,8 @@ QgsRStatsSession::QgsRStatsSession()
 
   /*
   mRSession->assign( Rcpp::InternalFunction( & activeLayerNumericField ), "activeLayerNumericField" );
-  mRSession->assign( Rcpp::InternalFunction( & activeLayerTable ), "activeLayerTable" );
   mRSession->assign( Rcpp::InternalFunction( & activeLayerToSf ), "readActiveLayerToSf" );
   */
-
-
-
-  QString error;
-
-  //execCommandPrivate( QStringLiteral( "loadModule(\"QgsRLayerWrapper\", TRUE)" ), error );
-
-//( *mRSession )["val"] = 5;
-//mRSession->parseEvalQ( "val2<-7" );
-
-//  double aDouble = Rcpp::as<double>( mRSession->parseEval( "1+2" ) );
-// std::string aString = Rcpp::as<std::string>( mRSession->parseEval( "'asdasdas'" ) );
-
-// R.parseEvalQ( "cat(txt)" );
-//  QgsDebugMsg( QString::fromStdString( Rcpp::as<std::string>( R.parseEval( "cat(txt)" ) ) ) );
-// QgsDebugMsg( QString::fromStdString( Rcpp::as<std::string>( mRSession->parseEval( "as.character(val+2)" ) ) ) );
-  // QgsDebugMsg( QStringLiteral( "val as double: %1" ).arg( Rcpp::as<double>( mRSession->parseEval( "val+val2" ) ) ) );
 }
 
 void QgsRStatsSession::showStartupMessage()
