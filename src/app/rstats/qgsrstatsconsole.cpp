@@ -64,12 +64,14 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
       return;
 
     mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + QStringLiteral( "> " ) + command );
+    mOutput->moveCursorToEnd();
     mRunner->execCommand( command );
   } );
 
   connect( mRunner, &QgsRStatsRunner::errorOccurred, this, [ = ]( const QString & error )
   {
     mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + error );
+    mOutput->moveCursorToEnd();
   } );
 
   connect( mRunner, &QgsRStatsRunner::consoleMessage, this, [ = ]( const QString & message, int type )
@@ -78,11 +80,13 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
       mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + message );
     else // TODO should we format errors differently?
       mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + message );
+    mOutput->moveCursorToEnd();
   } );
 
   connect( mRunner, &QgsRStatsRunner::showMessage, this, [ = ]( const QString & message )
   {
     mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + message );
+    mOutput->moveCursorToEnd();
   } );
 
   connect( mRunner, &QgsRStatsRunner::busyChanged, this, [ = ]( bool busy )
