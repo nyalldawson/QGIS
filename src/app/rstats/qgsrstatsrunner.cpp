@@ -54,7 +54,7 @@ class MapLayerWrapper
       return res;
     }
 
-    Rcpp::DataFrame toDataFrame() const
+    Rcpp::DataFrame toDataFrame( bool selectedOnly ) const
     {
       Rcpp::DataFrame result = Rcpp::DataFrame();
 
@@ -63,7 +63,8 @@ class MapLayerWrapper
       long long featureCount = -1;
       std::unique_ptr< QgsVectorLayerFeatureSource > source;
       std::unique_ptr< QgsScopedProxyProgressTask > task;
-      auto prepareOnMainThread = [&prepared, &fields, &featureCount, &source, &task, this]
+      QgsFeatureIds selectedFeatureIds;
+      auto prepareOnMainThread = [&prepared, &fields, &featureCount, &source, &task, selectedOnly, &selectedFeatureIds, this]
       {
         Q_ASSERT_X( QThread::currentThread() == qApp->thread(), "toDataFrame", "prepareOnMainThread must be run on the main thread" );
 
@@ -72,9 +73,17 @@ class MapLayerWrapper
         {
           if ( QgsVectorLayer *vlayer = qobject_cast< QgsVectorLayer * >( layer ) )
           {
-            featureCount = vlayer->featureCount();
             fields = vlayer->fields();
             source = std::make_unique< QgsVectorLayerFeatureSource >( vlayer );
+            if ( selectedOnly )
+            {
+              selectedFeatureIds = vlayer->selectedFeatureIds();
+              featureCount  = selectedFeatureIds.size();
+            }
+            else
+            {
+              featureCount = vlayer->featureCount();
+            }
           }
         }
         prepared = true;
@@ -128,10 +137,16 @@ class MapLayerWrapper
         attributesToFetch.append( index );
       }
 
+      if ( selectedOnly && selectedFeatureIds.empty() )
+        return result;
+
       QgsFeature feature;
       QgsFeatureRequest req;
       req.setFlags( QgsFeatureRequest::NoGeometry );
       req.setSubsetOfAttributes( attributesToFetch );
+      if ( selectedOnly )
+        req.setFilterFids( selectedFeatureIds );
+
       QgsFeatureIterator it = source->getFeatures( req );
       std::size_t featureNumber = 0;
 
@@ -223,9 +238,9 @@ SEXP MapLayerWrapperFeatureCount( Rcpp::XPtr<MapLayerWrapper> obj )
   return Rcpp::wrap( obj->featureCount() );
 }
 
-SEXP MapLayerWrapperToDataFrame( Rcpp::XPtr<MapLayerWrapper> obj )
+SEXP MapLayerWrapperToDataFrame( Rcpp::XPtr<MapLayerWrapper> obj, bool selectedOnly )
 {
-  return obj->toDataFrame();
+  return obj->toDataFrame( selectedOnly );
 }
 
 
@@ -396,10 +411,26 @@ QgsRStatsSession::QgsRStatsSession()
   execCommandNR( QStringLiteral( ".libPaths(\"%1\")" ).arg( userPath ) );
 
   Rcpp::XPtr<QgsApplicationRWrapper> wr( new QgsApplicationRWrapper() );
-  wr.attr( "class" ) = "QGIS";
-  mRSession->assign( wr, "QGIS" );
-  mRSession->assign( Rcpp::InternalFunction( & Dollar ), "$.QGIS" );
-  mRSession->assign( Rcpp::InternalFunction( & Names ), "names.QGIS" );
+  wr.attr( "class" ) = ".QGISPrivate";
+  mRSession->assign( wr, ".QGISPrivate" );
+  mRSession->assign( Rcpp::InternalFunction( & Dollar ), "$..QGISPrivate" );
+
+  QString error;
+  execCommandPrivate( QStringLiteral( R"""(
+  QGIS <- list(
+    toDataFrame=function(layer, selectedOnly=FALSE) { .QGISPrivate$toDataFrame(layer, selectedOnly) },
+    versionInt=function() { .QGISPrivate$versionInt },
+    mapLayerByName=function(name) { .QGISPrivate$mapLayerByName(name) },
+    activeLayer=function() { .QGISPrivate$activeLayer }
+  )
+  class(QGIS) <- "QGIS"
+  )""" ), error );
+
+  if ( !error.isEmpty() )
+  {
+    QgsDebugMsg( error );
+  }
+
   /*
   mRSession->assign( Rcpp::InternalFunction( & activeLayerNumericField ), "activeLayerNumericField" );
   mRSession->assign( Rcpp::InternalFunction( & activeLayerTable ), "activeLayerTable" );
@@ -517,6 +548,7 @@ QVariant QgsRStatsSession::sexpToVariant( const SEXP exp )
     case SYMSXP:
     case EXTPTRSXP:
     case CLOSXP:
+    case ENVSXP:
       // not safe to call LENGTH on!
       return QVariant();
 
