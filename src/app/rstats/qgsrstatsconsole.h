@@ -33,6 +33,8 @@ class QgsInteractiveRWidget : public QgsCodeEditorR
 
     QgsInteractiveRWidget( QWidget *parent = nullptr );
 
+    void clear() override;
+
   signals:
 
     void runCommand( const QString &command );
