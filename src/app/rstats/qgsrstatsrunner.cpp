@@ -503,10 +503,10 @@ QgsRStatsSession::QgsRStatsSession()
   QGIS <- list(
     versionInt=function() { .QGISPrivate$versionInt },
     mapLayerByName=function(name) { .QGISPrivate$mapLayerByName(name) },
-    activeLayer=function() { .QGISPrivate$activeLayer }
+    activeLayer=function() { .QGISPrivate$activeLayer },
     toDataFrame=function(layer, selectedOnly=FALSE) { .QGISPrivate$toDataFrame(layer, selectedOnly) },
     toNumericVector=function(layer, field, selectedOnly=FALSE) { .QGISPrivate$toNumericVector(layer, field, selectedOnly) },
-    toSf=function(layer) { .QGISPrivate$toSf(layer) },
+    toSf=function(layer) { .QGISPrivate$toSf(layer) }
   )
   class(QGIS) <- "QGIS"
   )""" ), error );
