@@ -564,6 +564,8 @@ QString QgsRStatsSession::sexpToString( const SEXP exp )
     case ENVSXP:
     case LANGSXP:
     case S4SXP:
+    case PROMSXP:
+    case DOTSXP:
       // these types can't be converted to StringVector, will raise exceptions
       return QString();
 
@@ -605,20 +607,35 @@ QVariant QgsRStatsSession::sexpToVariant( const SEXP exp )
 {
   switch ( TYPEOF( exp ) )
   {
+    // these types are not safe to call LENGTH on, and don't make sense to convert to a variant anyway
     case S4SXP:
     case LANGSXP:
     case SYMSXP:
     case EXTPTRSXP:
     case CLOSXP:
     case ENVSXP:
-      // not safe to call LENGTH on!
+    case PROMSXP:
+    case DOTSXP:
+    case BCODESXP:
+    case WEAKREFSXP:
+    case 26: // ???
       return QVariant();
 
+    // confirmed safe types, handled in depth below
+    case NILSXP:
+    case LGLSXP:
+    case INTSXP:
+    case REALSXP:
+    case STRSXP:
+    case CHARSXP:
+    case EXPRSXP:
+      break;
+
     default:
+      QgsDebugMsg( QStringLiteral( "Trying to convert potentially unsafe SEXP type %1 to variant... watch out!" ).arg( TYPEOF( exp ) ) );
       break;
   }
 
-  QgsDebugMsg( QStringLiteral( "Handing type: %1" ).arg( TYPEOF( exp ) ) );
   const int length = LENGTH( exp );
   if ( length == 0 )
   {
@@ -733,10 +750,17 @@ QVariant QgsRStatsSession::sexpToVariant( const SEXP exp )
     //  return R::rawPointer( exp );
 
     case EXPRSXP:
+      // we don't have any variant type which matches this one
+      return QVariant();
+
+    case S4SXP:
+    case LANGSXP:
+    case SYMSXP:
+    case EXTPTRSXP:
     case CLOSXP:
     case ENVSXP:
-    case LANGSXP:
-      // these types can't possibly be converted to variants
+    case PROMSXP:
+      // unreachable, handled earlier
       return QVariant();
 
     default:

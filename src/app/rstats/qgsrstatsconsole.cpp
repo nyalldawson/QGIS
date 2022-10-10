@@ -63,6 +63,7 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
     if ( mRunner->busy() )
       return;
 
+    mInputEdit->clear();
     mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + QStringLiteral( "> " ) + command );
     mOutput->moveCursorToEnd();
     mRunner->execCommand( command );
@@ -112,6 +113,12 @@ QgsInteractiveRWidget::QgsInteractiveRWidget( QWidget *parent )
   QgsInteractiveRWidget::initializeLexer();
 }
 
+void QgsInteractiveRWidget::clear()
+{
+  QgsCodeEditorR::clear();
+  displayPrompt( false );
+}
+
 void QgsInteractiveRWidget::keyPressEvent( QKeyEvent *event )
 {
   switch ( event->key() )
@@ -119,8 +126,7 @@ void QgsInteractiveRWidget::keyPressEvent( QKeyEvent *event )
     case Qt::Key_Return:
     case Qt::Key_Enter:
       emit runCommand( text() );
-      clear();
-      displayPrompt( false );
+
       break;
 
     default:
