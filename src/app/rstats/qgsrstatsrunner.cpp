@@ -348,158 +348,162 @@ class MapLayerWrapper
 
 };
 
-SEXP sfToQGIS(SEXP data)
+SEXP dfToQGIS(SEXP data)
 {
     if (!Rcpp::is<Rcpp::DataFrame>(data))
         return Rcpp::wrap(false);
 
     bool prepared = false;
-    QgsVectorLayer *layer = nullptr;
+    QgsVectorLayer *resultLayer = nullptr;
 
-    auto prepareOnMainThread = [&prepared, &data, &layer]
+    auto prepareOnMainThread = [&prepared, &data, &resultLayer]
     {
-      Q_ASSERT_X( QThread::currentThread() == qApp->thread(), "sfToQGIS", "prepareOnMainThread must be run on the main thread" );
+      Q_ASSERT_X( QThread::currentThread() == qApp->thread(), "dfToQGIS", "prepareOnMainThread must be run on the main thread" );
 
         Rcpp::DataFrame df = Rcpp::as<Rcpp::DataFrame>(data);
 
-        bool is_sf = df.inherits("sf");
-        bool has_sf_colum_attr = df.hasAttribute("sf_column");
+        bool isDdataFrame = df.inherits("data.frame");
 
-        Rcpp::StringVector field_names = df.names();
+        if (!isDdataFrame)
+            return;
+
+        bool isSf = df.inherits("sf");
+        bool hasSfColumAttribute = df.hasAttribute("sf_column");
+
+        if (!isSf)
+            return;
+
+        Rcpp::StringVector dfColumnNames = df.names();
 
         QgsFields fields = QgsFields();
 
         for (int i=0; i < df.ncol(); i++ ){
 
             QgsField field;
-            bool add_field = false;
-
-            QString field_name = QString::fromStdString(Rcpp::as<std::string>(field_names(i)));
+            bool addCurrentField = false;
+            QString fieldName = QString::fromStdString(Rcpp::as<std::string>(dfColumnNames(i)));
 
             switch (TYPEOF(df[i])){
                 case (LGLSXP):
                 {
-                    field = QgsField(field_name, QVariant::Bool);
-                    add_field = true;
+                    field = QgsField(fieldName, QVariant::Bool);
+                    addCurrentField = true;
                     break;
                 }
                 case (INTSXP):
                 {
-                    field = QgsField(field_name, QVariant::Int);
-                    add_field = true;
+                    field = QgsField(fieldName, QVariant::Int);
+                    addCurrentField = true;
                     break;
                 }
                 case (REALSXP):
                 {
-                    field = QgsField(field_name, QVariant::Double);
-                    add_field = true;
+                    field = QgsField(fieldName, QVariant::Double);
+                    addCurrentField = true;
                     break;
                 }
                 case (STRSXP):
                 {
-                    field = QgsField(field_name, QVariant::String);
-                    add_field = true;
+                    field = QgsField(fieldName, QVariant::String);
+                    addCurrentField = true;
                     break;
                 }
             }
-            if (add_field)
+            if (addCurrentField)
                 fields.append(field);
         }
 
-        QgsWkbTypes::Type wkb_type;
+        QgsWkbTypes::Type wkbType;
         QgsCoordinateReferenceSystem crs;
-        std::string geometry_column_name;
+        std::string geometryColumnName;
 
-        if (has_sf_colum_attr)
+        if (hasSfColumAttribute)
         {
             Rcpp::Function st_geometry_type = Rcpp::Function("st_geometry_type");
-            Rcpp::StringVector geometry_type = st_geometry_type(data, Rcpp::Named("by_geometry") = false);
-            QString type = QString::fromStdString(Rcpp::as<std::string>(geometry_type[0]));
-            wkb_type = QgsGeometry::fromWkt(QString("%1 ()").arg(type)).wkbType();
+            Rcpp::StringVector geometryTypeList = st_geometry_type(data, Rcpp::Named("by_geometry") = false);
+            QString geometryTypeNameString = QString::fromStdString(Rcpp::as<std::string>(geometryTypeList[0]));
+            wkbType = QgsGeometry::fromWkt(QString("%1 ()").arg(geometryTypeNameString)).wkbType();
 
             Rcpp::Function st_crs = Rcpp::Function("st_crs");
-            Rcpp::List list_crs = st_crs(data);
-            Rcpp::StringVector crs_wkt = list_crs["wkt"];
-            QString wkt = QString::fromStdString(Rcpp::as<std::string>(crs_wkt[0]));
+            Rcpp::List crsList = st_crs(data);
+            Rcpp::StringVector crsWkt = crsList["wkt"];
+            QString wkt = QString::fromStdString(Rcpp::as<std::string>(crsWkt[0]));
             crs = QgsCoordinateReferenceSystem::fromWkt(wkt);
 
-            geometry_column_name = Rcpp::as<std::string>(df.attr("sf_column"));
+            geometryColumnName = Rcpp::as<std::string>(df.attr("sf_column"));
         }
         else {
-            wkb_type = QgsWkbTypes::NoGeometry;
+            wkbType = QgsWkbTypes::NoGeometry;
         }
 
-        layer = QgsMemoryProviderUtils::createMemoryLayer( QStringLiteral( "R_layer" ), fields, wkb_type, crs);
+        resultLayer = QgsMemoryProviderUtils::createMemoryLayer( QStringLiteral( "R_layer" ), fields, wkbType, crs);
 
         Rcpp::StringVector geometries;
+        Rcpp::List geometriesWKB;
 
-        if (has_sf_colum_attr)
+        if (hasSfColumAttribute)
         {
             Rcpp::Function st_as_text = Rcpp::Function("st_as_text");
-            SEXP call = Rf_lang3( R_DollarSymbol, df, Rf_mkString(geometry_column_name.c_str()));
-            geometries = st_as_text(Rf_eval( call, R_GlobalEnv ));
-
-            //QgsDebugMsg(QString("Geometries length: %1").arg(geometries.length()));
-            //QgsDebugMsg(QString("Geometry 0: %1").arg(QString::fromStdString(Rcpp::as<std::string>(geometries[0]))));
+            SEXP geometryColumnCall = Rf_lang3( R_DollarSymbol, df, Rf_mkString(geometryColumnName.c_str()));
+            geometries = st_as_text(Rf_eval( geometryColumnCall, R_GlobalEnv ));
         }
 
-
+        QgsFeatureList features = QgsFeatureList();
+        features.reserve(df.nrows());
 
         for (int i=0; i < df.nrows(); i++)
         {
             QgsFeature feature;
-            QgsAttributes feature_attributes;
-
-            //if (!Rf_isNull(geometries[i]))
-            //    QgsDebugMsg(QString("%1").arg(QString::fromStdString(Rcpp::as<std::string>(geometries[i]))));
-
-            QgsDebugMsg(QString("Adding feature: %1").arg(i));
+            QgsAttributes featureAttributes;
+            featureAttributes.reserve(fields.count());
+            int currentAttributeField = 0;
 
             for (int j=0; j < df.ncol(); j++)
             {
-                //std::string wkt = Rcpp::as<std::string>(geometries[i]);
-                //QgsDebugMsg(QString("Column: %1").arg(QString::fromStdString(Rcpp::as<std::string>(field_names(j)))));
-
                 switch (TYPEOF(df[j])){
                     case (LGLSXP):
                     {
                         Rcpp::LogicalVector column = Rcpp::as<Rcpp::LogicalVector>(df(j));
-                        feature_attributes.append(column(i));
+                        featureAttributes.insert(currentAttributeField, column(i));
+                        currentAttributeField++;
                         break;
                     }
                     case (INTSXP):
                     {
-                    Rcpp::IntegerVector column = Rcpp::as<Rcpp::IntegerVector>(df(j));
-                    feature_attributes.append(column(i));
+                        Rcpp::IntegerVector column = Rcpp::as<Rcpp::IntegerVector>(df(j));
+                        featureAttributes.insert(currentAttributeField, column(i));
+                        currentAttributeField++;
                         break;
                     }
                     case (REALSXP):
                     {
-                    Rcpp::DoubleVector column = Rcpp::as<Rcpp::DoubleVector>(df(j));
-                    feature_attributes.append(column(i));
+                        Rcpp::DoubleVector column = Rcpp::as<Rcpp::DoubleVector>(df(j));
+                        featureAttributes.insert(currentAttributeField, column(i));
+                        currentAttributeField++;
                         break;
                     }
                     case (STRSXP):
                     {
-                    Rcpp::StringVector column = Rcpp::as<Rcpp::StringVector>(df(j));
-                    feature_attributes.append(QString::fromStdString(Rcpp::as<std::string>(column(i))));
+                        Rcpp::StringVector column = Rcpp::as<Rcpp::StringVector>(df(j));
+                        featureAttributes.insert(currentAttributeField, QString::fromStdString(Rcpp::as<std::string>(column(i))));
+                        currentAttributeField++;
                         break;
                     }
                 }
             }
-            feature.setAttributes(feature_attributes);
+            feature.setAttributes(featureAttributes);
 
-            QgsDebugMsg(QString("Feature attr aded %1").arg(i));
-
-            if (has_sf_colum_attr)
+            if (hasSfColumAttribute)
             {
                 std::string wkt = Rcpp::as<std::string>(geometries[i]);
                 QgsGeometry geom = QgsGeometry::fromWkt(QString::fromStdString(wkt));
                 feature.setGeometry(geom);
             }
 
-            layer->dataProvider()->addFeature(feature);
+            features.insert(i, feature);
         }
+
+        resultLayer->dataProvider()->addFeatures(features);
         prepared = true;
     };
 
@@ -508,7 +512,7 @@ SEXP sfToQGIS(SEXP data)
     if ( !prepared )
       return Rcpp::wrap(false);
 
-    QgsProject::instance()->addMapLayer(layer);
+    QgsProject::instance()->addMapLayer(resultLayer);
     return Rcpp::wrap(true);
 }
 
@@ -616,9 +620,9 @@ SEXP Dollar( Rcpp::XPtr<QgsApplicationRWrapper> obj, std::string name )
   {
     return Rcpp::InternalFunction( & MapLayerWrapperToSf );
   }
-  else if (name == "sfToQGIS")
+  else if (name == "dfToQGIS")
   {
-    return Rcpp::InternalFunction( & sfToQGIS );
+    return Rcpp::InternalFunction( & dfToQGIS );
   }
   else
   {
@@ -639,7 +643,7 @@ Rcpp::CharacterVector Names( Rcpp::XPtr<QgsApplicationRWrapper> )
   ret.push_back( "toDataFrame" );
   ret.push_back( "toNumericVector" );
   ret.push_back( "toSf" );
-  ret.push_back( "sfToQGIS" );
+  ret.push_back( "dfToQGIS" );
   return ret;
 }
 
@@ -674,7 +678,7 @@ QgsRStatsSession::QgsRStatsSession()
     toDataFrame=function(layer, selectedOnly=FALSE) { .QGISPrivate$toDataFrame(layer, selectedOnly) },
     toNumericVector=function(layer, field, selectedOnly=FALSE) { .QGISPrivate$toNumericVector(layer, field, selectedOnly) },
     toSf=function(layer) { .QGISPrivate$toSf(layer) },
-    sfToQGIS=function(df) { .QGISPrivate$sfToQGIS(df) }
+    dfToQGIS=function(df) { .QGISPrivate$dfToQGIS(df) }
   )
   class(QGIS) <- "QGIS"
   )""" ), error );
