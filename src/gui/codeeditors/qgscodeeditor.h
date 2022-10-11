@@ -302,8 +302,6 @@ private:
      QgsCodeEditor::Flags mFlags;
      QgsCodeEditor::Mode mMode = QgsCodeEditor::Mode::ScriptEditor;
 
-     QgsCodeEditor::Mode mMode = QgsCodeEditor::Mode::ScriptEditor;
-
      bool mUseDefaultSettings = true;
      // used if above is false, inplace of values taken from QSettings:
      bool mOverrideColors = false;
