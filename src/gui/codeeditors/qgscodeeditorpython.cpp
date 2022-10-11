@@ -30,16 +30,20 @@
 #include <Qsci/qscilexerpython.h>
 #include <QDesktopServices>
 
-QgsCodeEditorPython::QgsCodeEditorPython( QWidget *parent, const QList<QString> &filenames )
-  : QgsCodeEditor( parent )
-  , mAPISFilesList( filenames )
+QgsCodeEditorPython::QgsCodeEditorPython(QWidget *parent, const QList<QString> &filenames)
+    : QgsCodeEditor(parent,
+                    QString(),
+                    false,
+                    false,
+                    QgsCodeEditor::Flag::CodeFolding),
+      mAPISFilesList(filenames)
 {
-  if ( !parent )
+  if (!parent)
   {
-    setTitle( tr( "Python Editor" ) );
+    setTitle(tr("Python Editor"));
   }
 
-  setCaretWidth( 2 );
+  setCaretWidth(2);
 
   QgsCodeEditorPython::initializeLexer();
 }
@@ -47,178 +51,175 @@ QgsCodeEditorPython::QgsCodeEditorPython( QWidget *parent, const QList<QString> 
 void QgsCodeEditorPython::initializeLexer()
 {
   // current line
-  setEdgeMode( QsciScintilla::EdgeLine );
-  setEdgeColumn( 80 );
-  setEdgeColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::Edge ) );
+  setEdgeMode(QsciScintilla::EdgeLine);
+  setEdgeColumn(80);
+  setEdgeColor(lexerColor(QgsCodeEditorColorScheme::ColorRole::Edge));
 
-  setWhitespaceVisibility( QsciScintilla::WsVisibleAfterIndent );
+  setWhitespaceVisibility(QsciScintilla::WsVisibleAfterIndent);
 
   QFont font = lexerFont();
-  const QColor defaultColor = lexerColor( QgsCodeEditorColorScheme::ColorRole::Default );
+  const QColor defaultColor = lexerColor(QgsCodeEditorColorScheme::ColorRole::Default);
 
-  QsciLexerPython *pyLexer = new QgsQsciLexerPython( this );
+  QsciLexerPython *pyLexer = new QgsQsciLexerPython(this);
 
-  pyLexer->setIndentationWarning( QsciLexerPython::Inconsistent );
-  pyLexer->setFoldComments( true );
-  pyLexer->setFoldQuotes( true );
+  pyLexer->setIndentationWarning(QsciLexerPython::Inconsistent);
+  pyLexer->setFoldComments(true);
+  pyLexer->setFoldQuotes(true);
 
-  pyLexer->setDefaultFont( font );
-  pyLexer->setDefaultColor( defaultColor );
-  pyLexer->setDefaultPaper( lexerColor( QgsCodeEditorColorScheme::ColorRole::Background ) );
-  pyLexer->setFont( font, -1 );
+  pyLexer->setDefaultFont(font);
+  pyLexer->setDefaultColor(defaultColor);
+  pyLexer->setDefaultPaper(lexerColor(QgsCodeEditorColorScheme::ColorRole::Background));
+  pyLexer->setFont(font, -1);
 
-  font.setItalic( true );
-  pyLexer->setFont( font, QsciLexerPython::Comment );
-  pyLexer->setFont( font, QsciLexerPython::CommentBlock );
+  font.setItalic(true);
+  pyLexer->setFont(font, QsciLexerPython::Comment);
+  pyLexer->setFont(font, QsciLexerPython::CommentBlock);
 
-  font.setItalic( false );
-  font.setBold( true );
-  pyLexer->setFont( font, QsciLexerPython::SingleQuotedString );
-  pyLexer->setFont( font, QsciLexerPython::DoubleQuotedString );
+  font.setItalic(false);
+  font.setBold(true);
+  pyLexer->setFont(font, QsciLexerPython::SingleQuotedString);
+  pyLexer->setFont(font, QsciLexerPython::DoubleQuotedString);
 
-  pyLexer->setColor( defaultColor, QsciLexerPython::Default );
-  pyLexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::Class ), QsciLexerPython::ClassName );
-  pyLexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::Method ), QsciLexerPython::FunctionMethodName );
-  pyLexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::Number ), QsciLexerPython::Number );
-  pyLexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::Operator ), QsciLexerPython::Operator );
-  pyLexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::Identifier ), QsciLexerPython::Identifier );
-  pyLexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::Comment ), QsciLexerPython::Comment );
-  pyLexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::CommentBlock ), QsciLexerPython::CommentBlock );
-  pyLexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::Keyword ), QsciLexerPython::Keyword );
-  pyLexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::Decoration ), QsciLexerPython::Decorator );
-  pyLexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::SingleQuote ), QsciLexerPython::SingleQuotedString );
-  pyLexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::DoubleQuote ), QsciLexerPython::DoubleQuotedString );
-  pyLexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::TripleSingleQuote ), QsciLexerPython::TripleSingleQuotedString );
-  pyLexer->setColor( lexerColor( QgsCodeEditorColorScheme::ColorRole::TripleDoubleQuote ), QsciLexerPython::TripleDoubleQuotedString );
+  pyLexer->setColor(defaultColor, QsciLexerPython::Default);
+  pyLexer->setColor(lexerColor(QgsCodeEditorColorScheme::ColorRole::Class), QsciLexerPython::ClassName);
+  pyLexer->setColor(lexerColor(QgsCodeEditorColorScheme::ColorRole::Method), QsciLexerPython::FunctionMethodName);
+  pyLexer->setColor(lexerColor(QgsCodeEditorColorScheme::ColorRole::Number), QsciLexerPython::Number);
+  pyLexer->setColor(lexerColor(QgsCodeEditorColorScheme::ColorRole::Operator), QsciLexerPython::Operator);
+  pyLexer->setColor(lexerColor(QgsCodeEditorColorScheme::ColorRole::Identifier), QsciLexerPython::Identifier);
+  pyLexer->setColor(lexerColor(QgsCodeEditorColorScheme::ColorRole::Comment), QsciLexerPython::Comment);
+  pyLexer->setColor(lexerColor(QgsCodeEditorColorScheme::ColorRole::CommentBlock), QsciLexerPython::CommentBlock);
+  pyLexer->setColor(lexerColor(QgsCodeEditorColorScheme::ColorRole::Keyword), QsciLexerPython::Keyword);
+  pyLexer->setColor(lexerColor(QgsCodeEditorColorScheme::ColorRole::Decoration), QsciLexerPython::Decorator);
+  pyLexer->setColor(lexerColor(QgsCodeEditorColorScheme::ColorRole::SingleQuote), QsciLexerPython::SingleQuotedString);
+  pyLexer->setColor(lexerColor(QgsCodeEditorColorScheme::ColorRole::DoubleQuote), QsciLexerPython::DoubleQuotedString);
+  pyLexer->setColor(lexerColor(QgsCodeEditorColorScheme::ColorRole::TripleSingleQuote), QsciLexerPython::TripleSingleQuotedString);
+  pyLexer->setColor(lexerColor(QgsCodeEditorColorScheme::ColorRole::TripleDoubleQuote), QsciLexerPython::TripleDoubleQuotedString);
 
-  QsciAPIs *apis = new QsciAPIs( pyLexer );
+  QsciAPIs *apis = new QsciAPIs(pyLexer);
 
   const QgsSettings settings;
 
-  if ( mAPISFilesList.isEmpty() )
+  if (mAPISFilesList.isEmpty())
   {
-    if ( settings.value( QStringLiteral( "pythonConsole/preloadAPI" ), true ).toBool() )
+    if (settings.value(QStringLiteral("pythonConsole/preloadAPI"), true).toBool())
     {
-      mPapFile = QgsApplication::pkgDataPath() + QStringLiteral( "/python/qsci_apis/pyqgis.pap" );
-      apis->loadPrepared( mPapFile );
+      mPapFile = QgsApplication::pkgDataPath() + QStringLiteral("/python/qsci_apis/pyqgis.pap");
+      apis->loadPrepared(mPapFile);
     }
-    else if ( settings.value( QStringLiteral( "pythonConsole/usePreparedAPIFile" ), false ).toBool() )
+    else if (settings.value(QStringLiteral("pythonConsole/usePreparedAPIFile"), false).toBool())
     {
-      apis->loadPrepared( settings.value( QStringLiteral( "pythonConsole/preparedAPIFile" ) ).toString() );
+      apis->loadPrepared(settings.value(QStringLiteral("pythonConsole/preparedAPIFile")).toString());
     }
     else
     {
-      const QStringList apiPaths = settings.value( QStringLiteral( "pythonConsole/userAPI" ) ).toStringList();
-      for ( const QString &path : apiPaths )
+      const QStringList apiPaths = settings.value(QStringLiteral("pythonConsole/userAPI")).toStringList();
+      for (const QString &path : apiPaths)
       {
-        if ( !QFileInfo::exists( path ) )
+        if (!QFileInfo::exists(path))
         {
-          QgsDebugMsg( QStringLiteral( "The apis file %1 was not found" ).arg( path ) );
+          QgsDebugMsg(QStringLiteral("The apis file %1 was not found").arg(path));
         }
         else
         {
-          apis->load( path );
+          apis->load(path);
         }
       }
       apis->prepare();
-      pyLexer->setAPIs( apis );
+      pyLexer->setAPIs(apis);
     }
   }
-  else if ( mAPISFilesList.length() == 1 && mAPISFilesList[0].right( 3 ) == QLatin1String( "pap" ) )
+  else if (mAPISFilesList.length() == 1 && mAPISFilesList[0].right(3) == QLatin1String("pap"))
   {
-    if ( !QFileInfo::exists( mAPISFilesList[0] ) )
+    if (!QFileInfo::exists(mAPISFilesList[0]))
     {
-      QgsDebugMsg( QStringLiteral( "The apis file %1 not found" ).arg( mAPISFilesList.at( 0 ) ) );
+      QgsDebugMsg(QStringLiteral("The apis file %1 not found").arg(mAPISFilesList.at(0)));
       return;
     }
     mPapFile = mAPISFilesList[0];
-    apis->loadPrepared( mPapFile );
+    apis->loadPrepared(mPapFile);
   }
   else
   {
-    for ( const QString &path : mAPISFilesList )
+    for (const QString &path : mAPISFilesList)
     {
-      if ( !QFileInfo::exists( path ) )
+      if (!QFileInfo::exists(path))
       {
-        QgsDebugMsg( QStringLiteral( "The apis file %1 was not found" ).arg( path ) );
+        QgsDebugMsg(QStringLiteral("The apis file %1 was not found").arg(path));
       }
       else
       {
-        apis->load( path );
+        apis->load(path);
       }
     }
     apis->prepare();
-    pyLexer->setAPIs( apis );
+    pyLexer->setAPIs(apis);
   }
-  setLexer( pyLexer );
+  setLexer(pyLexer);
 
-  const int threshold = settings.value( QStringLiteral( "pythonConsole/autoCompThreshold" ), 2 ).toInt();
-  setAutoCompletionThreshold( threshold );
-  if ( !settings.value( "pythonConsole/autoCompleteEnabled", true ).toBool() )
+  const int threshold = settings.value(QStringLiteral("pythonConsole/autoCompThreshold"), 2).toInt();
+  setAutoCompletionThreshold(threshold);
+  if (!settings.value("pythonConsole/autoCompleteEnabled", true).toBool())
   {
-    setAutoCompletionSource( AcsNone );
+    setAutoCompletionSource(AcsNone);
   }
   else
   {
-    const QString autoCompleteSource = settings.value( QStringLiteral( "pythonConsole/autoCompleteSource" ), QStringLiteral( "fromAPI" ) ).toString();
-    if ( autoCompleteSource == QLatin1String( "fromDoc" ) )
-      setAutoCompletionSource( AcsDocument );
-    else if ( autoCompleteSource == QLatin1String( "fromDocAPI" ) )
-      setAutoCompletionSource( AcsAll );
+    const QString autoCompleteSource = settings.value(QStringLiteral("pythonConsole/autoCompleteSource"), QStringLiteral("fromAPI")).toString();
+    if (autoCompleteSource == QLatin1String("fromDoc"))
+      setAutoCompletionSource(AcsDocument);
+    else if (autoCompleteSource == QLatin1String("fromDocAPI"))
+      setAutoCompletionSource(AcsAll);
     else
-      setAutoCompletionSource( AcsAPIs );
+      setAutoCompletionSource(AcsAPIs);
   }
 
-  setLineNumbersVisible( true );
-  if ( mode() == QgsCodeEditor::Mode::ScriptEditor )
-    setFoldingVisible( true );
-
-  setIndentationsUseTabs( false );
-  setIndentationGuides( true );
+  setLineNumbersVisible(true);
+  setIndentationsUseTabs(false);
+  setIndentationGuides(true);
 
   runPostLexerConfigurationTasks();
 }
 
 void QgsCodeEditorPython::autoComplete()
 {
-  switch ( autoCompletionSource() )
+  switch (autoCompletionSource())
   {
-    case AcsDocument:
-      autoCompleteFromDocument();
-      break;
+  case AcsDocument:
+    autoCompleteFromDocument();
+    break;
 
-    case AcsAPIs:
-      autoCompleteFromAPIs();
-      break;
+  case AcsAPIs:
+    autoCompleteFromAPIs();
+    break;
 
-    case AcsAll:
-      autoCompleteFromAll();
-      break;
+  case AcsAll:
+    autoCompleteFromAll();
+    break;
 
-    case AcsNone:
-      break;
+  case AcsNone:
+    break;
   }
 }
 
-void QgsCodeEditorPython::loadAPIs( const QList<QString> &filenames )
+void QgsCodeEditorPython::loadAPIs(const QList<QString> &filenames)
 {
   mAPISFilesList = filenames;
-  //QgsDebugMsg( QStringLiteral( "The apis files: %1" ).arg( mAPISFilesList[0] ) );
+  // QgsDebugMsg( QStringLiteral( "The apis files: %1" ).arg( mAPISFilesList[0] ) );
   initializeLexer();
 }
 
-bool QgsCodeEditorPython::loadScript( const QString &script )
+bool QgsCodeEditorPython::loadScript(const QString &script)
 {
-  QgsDebugMsgLevel( QStringLiteral( "The script file: %1" ).arg( script ), 2 );
-  QFile file( script );
-  if ( !file.open( QIODevice::ReadOnly ) )
+  QgsDebugMsgLevel(QStringLiteral("The script file: %1").arg(script), 2);
+  QFile file(script);
+  if (!file.open(QIODevice::ReadOnly))
   {
     return false;
   }
 
-  QTextStream in( &file );
+  QTextStream in(&file);
 
-  setText( in.readAll().trimmed() );
+  setText(in.readAll().trimmed());
   file.close();
 
   initializeLexer();
@@ -227,34 +228,33 @@ bool QgsCodeEditorPython::loadScript( const QString &script )
 
 void QgsCodeEditorPython::searchSelectedTextInPyQGISDocs()
 {
-  if ( !hasSelectedText() )
+  if (!hasSelectedText())
     return;
 
   QString text = selectedText();
-  text = text.replace( QLatin1String( ">>> " ), QString() ).replace( QLatin1String( "... " ), QString() ).trimmed(); // removing prompts
-  const QString version = QString( Qgis::version() ).split( '.' ).mid( 0, 2 ).join( '.' );
-  QDesktopServices::openUrl( QUrl( QStringLiteral( "https://qgis.org/pyqgis/%1/search.html?q=%2" ).arg( version, text ) ) );
+  text = text.replace(QLatin1String(">>> "), QString()).replace(QLatin1String("... "), QString()).trimmed(); // removing prompts
+  const QString version = QString(Qgis::version()).split('.').mid(0, 2).join('.');
+  QDesktopServices::openUrl(QUrl(QStringLiteral("https://qgis.org/pyqgis/%1/search.html?q=%2").arg(version, text)));
 }
 
 ///@cond PRIVATE
 //
 // QgsQsciLexerPython
 //
-QgsQsciLexerPython::QgsQsciLexerPython( QObject *parent )
-  : QsciLexerPython( parent )
+QgsQsciLexerPython::QgsQsciLexerPython(QObject *parent)
+    : QsciLexerPython(parent)
 {
-
 }
 
-const char *QgsQsciLexerPython::keywords( int set ) const
+const char *QgsQsciLexerPython::keywords(int set) const
 {
-  if ( set == 1 )
+  if (set == 1)
   {
     return "True False and as assert break class continue def del elif else except exec "
            "finally for from global if import in is lambda None not or pass "
            "print raise return try while with yield";
   }
 
-  return QsciLexerPython::keywords( set );
+  return QsciLexerPython::keywords(set);
 }
 ///@endcond PRIVATE

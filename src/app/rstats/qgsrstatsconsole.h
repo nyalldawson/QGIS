@@ -13,7 +13,6 @@
  *                                                                         *
  ***************************************************************************/
 
-
 #ifndef QGSRSTATSCONSOLE_H
 #define QGSRSTATSCONSOLE_H
 
@@ -28,37 +27,34 @@ class QgsDockableWidgetHelper;
 
 class QgsInteractiveRWidget : public QgsCodeEditorR
 {
-    Q_OBJECT
-  public:
+  Q_OBJECT
+public:
+  QgsInteractiveRWidget(QWidget *parent = nullptr);
 
-    QgsInteractiveRWidget( QWidget *parent = nullptr );
+  void clear() override;
 
-  signals:
+signals:
 
-    void runCommand( const QString &command );
+  void runCommand(const QString &command);
 
-  protected:
+protected:
+  void keyPressEvent(QKeyEvent *event) override;
 
-    void keyPressEvent( QKeyEvent *event ) override;
-
-    void initializeLexer() override;
-    void displayPrompt( bool more = false );
-
+  void initializeLexer() override;
+  void displayPrompt(bool more = false);
 };
 
-class QgsRStatsConsole: public QWidget
+class QgsRStatsConsole : public QWidget
 {
-  public:
-    QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner );
-    ~QgsRStatsConsole() override;
+public:
+  QgsRStatsConsole(QWidget *parent, QgsRStatsRunner *runner);
+  ~QgsRStatsConsole() override;
 
-  private:
-
-    QgsRStatsRunner *mRunner = nullptr;
-    QgsInteractiveRWidget *mInputEdit = nullptr;
-    QgsCodeEditorR *mOutput = nullptr;
-    QgsDockableWidgetHelper *mDockableWidgetHelper = nullptr;
-
+private:
+  QgsRStatsRunner *mRunner = nullptr;
+  QgsInteractiveRWidget *mInputEdit = nullptr;
+  QgsCodeEditorR *mOutput = nullptr;
+  QgsDockableWidgetHelper *mDockableWidgetHelper = nullptr;
 };
 
 #endif // QGSRSTATSCONSOLE_H

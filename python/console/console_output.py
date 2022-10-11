@@ -65,7 +65,7 @@ class writeOut(QObject):
         if self.out:
             self.out.write(m)
 
-        self.moveCursorToEnd()
+        self.sO.moveCursorToEnd()
 
         if self.style != "_traceback":
             self.sO.repaint()

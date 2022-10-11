@@ -26,9 +26,7 @@
 
 #include <QMap>
 
-
-SIP_IF_MODULE( HAVE_QSCI_SIP )
-
+SIP_IF_MODULE(HAVE_QSCI_SIP)
 
 class QWidget;
 
@@ -40,267 +38,288 @@ class QWidget;
  */
 class GUI_EXPORT QgsCodeEditor : public QsciScintilla
 {
-    Q_OBJECT
+     Q_OBJECT
 
-  public:
+public:
+     /**
+      * Code editor modes.
+      *
+      * \since QGIS 3.30
+      */
+     enum class Mode
+     {
+          ScriptEditor,  //!< Standard mode, allows for display and edit of entire scripts
+          OutputDisplay, //!< Read only mode for display of command outputs
+          CommandInput,  //!< Command input mode
+     };
+     Q_ENUM(Mode)
 
-    /**
-     * Code editor modes.
-     *
-     * \since QGIS 3.30
-     */
-    enum class Mode
-    {
-      ScriptEditor, //!< Standard mode, allows for display and edit of entire scripts
-      OutputDisplay, //!< Read only mode for display of command outputs
-      CommandInput, //!< Command input mode
-    };
-    Q_ENUM( Mode )
+     /**
+      * Margin roles.
+      *
+      * This enum contains the roles which the different numbered margins are used for.
+      *
+      * \since QGIS 3.16
+      */
+     enum class MarginRole SIP_MONKEYPATCH_SCOPEENUM_UNNEST(QgsCodeEditor, MarginRole) : int{
+         LineNumbers = 0,     //!< Line numbers
+         ErrorIndicators = 1, //!< Error indicators
+         FoldingControls = 2, //!< Folding controls
+     };
+     Q_ENUM(MarginRole)
 
-    /**
-     * Margin roles.
-     *
-     * This enum contains the roles which the different numbered margins are used for.
-     *
-     * \since QGIS 3.16
-     */
-    enum class MarginRole SIP_MONKEYPATCH_SCOPEENUM_UNNEST( QgsCodeEditor, MarginRole ) : int
-      {
-      LineNumbers = 0, //!< Line numbers
-      ErrorIndicators = 1, //!< Error indicators
-      FoldingControls = 2, //!< Folding controls
-    };
-    Q_ENUM( MarginRole )
+     /**
+      * \brief Flags controlling behavior of code editor
+      *
+      * \since QGIS 3.28
+      */
+     enum class Flag : int
+     {
+          CodeFolding = 1 << 0, //!< Indicates that code folding should be enabled for the editor
+     };
+     Q_ENUM(Flag)
 
-    /**
-     * Construct a new code editor.
-     *
-     * \param parent The parent QWidget
-     * \param title The title to show in the code editor dialog
-     * \param folding FALSE: Enable folding for code editor
-     * \param margin FALSE: Enable margin for code editor (deprecated)
-     * \since QGIS 2.6
-     */
-    QgsCodeEditor( QWidget * parent SIP_TRANSFERTHIS = nullptr, const QString & title = QString(), bool folding = false, bool margin = false, QgsCodeEditor::Mode mode = QgsCodeEditor::Mode::ScriptEditor );
+     /**
+      * \brief Flags controlling behavior of code editor
+      *
+      * \since QGIS 3.28
+      */
+     Q_DECLARE_FLAGS(Flags, Flag)
+     Q_FLAG(Flags)
 
-    /**
-     * Set the widget title
-     * \param title widget title
-     */
-    void setTitle( const QString & title );
+     /**
+      * Construct a new code editor.
+      *
+      * \param parent The parent QWidget
+      * \param title The title to show in the code editor dialog
+      * \param folding FALSE: Enable folding for code editor (deprecated, use \a flags instead)
+      * \param margin FALSE: Enable margin for code editor (deprecated)
+      * \param flags flags controlling behavior of code editor (since QGIS 3.28)
+      * \param mode code editor mode (since QGIS 3.30)
+      * \since QGIS 2.6
+      */
+     QgsCodeEditor(QWidget *parent SIP_TRANSFERTHIS = nullptr, const QString &title = QString(), bool folding = false, bool margin = false, QgsCodeEditor::Flags flags = QgsCodeEditor::Flags(), QgsCodeEditor::Mode mode = QgsCodeEditor::Mode::ScriptEditor);
 
-    /**
-     * Set margin visible state
-     * \param margin Set margin in the editor
-     * \deprecated Use base class methods for individual margins instead, or setLineNumbersVisible()
-     */
-    Q_DECL_DEPRECATED void setMarginVisible( bool margin ) SIP_DEPRECATED;
+     /**
+      * Set the widget title
+      * \param title widget title
+      */
+     void setTitle(const QString &title);
 
-    /**
-     * Returns whether margins are in a visible state
-     * \deprecated Use base class methods for individual margins instead, or lineNumbersVisible()
-     */
-    Q_DECL_DEPRECATED bool marginVisible() SIP_DEPRECATED { return mMargin; }
+     /**
+      * Set margin visible state
+      * \param margin Set margin in the editor
+      * \deprecated Use base class methods for individual margins instead, or setLineNumbersVisible()
+      */
+     Q_DECL_DEPRECATED void setMarginVisible(bool margin) SIP_DEPRECATED;
 
-    /**
-     * Sets whether line numbers should be visible in the editor.
-     *
-     * Defaults to FALSE.
-     *
-     * \see lineNumbersVisible()
-     * \since QGIS 3.16
-     */
-    void setLineNumbersVisible( bool visible );
+     /**
+      * Returns whether margins are in a visible state
+      * \deprecated Use base class methods for individual margins instead, or lineNumbersVisible()
+      */
+     Q_DECL_DEPRECATED bool marginVisible() SIP_DEPRECATED { return mMargin; }
 
-    /**
-     * Returns whether line numbers are visible in the editor.
-     *
-     * \see setLineNumbersVisible()
-     * \since QGIS 3.16
-     */
-    bool lineNumbersVisible() const;
+     /**
+      * Sets whether line numbers should be visible in the editor.
+      *
+      * Defaults to FALSE.
+      *
+      * \see lineNumbersVisible()
+      * \since QGIS 3.16
+      */
+     void setLineNumbersVisible(bool visible);
 
-    /**
-     * Set whether the folding controls are visible in the editor.
-     * \see foldingVisible()
-     */
-    void setFoldingVisible( bool folding );
+     /**
+      * Returns whether line numbers are visible in the editor.
+      *
+      * \see setLineNumbersVisible()
+      * \since QGIS 3.16
+      */
+     bool lineNumbersVisible() const;
 
-    /**
-     * Returns TRUE if the folding controls are visible in the editor.
-     * \see setFoldingVisible()
-     */
-    bool foldingVisible() { return mFolding; }
+     /**
+      * Set whether the folding controls are visible in the editor.
+      * \see foldingVisible()
+      */
+     void setFoldingVisible(bool folding);
 
-    /**
-     * Insert text at cursor position, or replace any selected text if user has
-     * made a selection.
-     * \param text The text to be inserted
-     */
-    void insertText( const QString &text );
+     /**
+      * Returns TRUE if the folding controls are visible in the editor.
+      * \see setFoldingVisible()
+      */
+     bool foldingVisible();
 
-    /**
-     * Returns the default color for the specified \a role.
-     *
-     * The optional \a theme argument can be used to specify a color \a theme. A blank
-     * \a theme indicates the default color scheme.
-     *
-     * Available themes are stored in QgsCodeEditorColorSchemeRegistry, and can be retrieved
-     * via QgsGui::codeEditorColorSchemeRegistry().
-     *
-     * \since QGIS 3.16
-     */
-    static QColor defaultColor( QgsCodeEditorColorScheme::ColorRole role, const QString &theme = QString() );
+     /**
+      * Insert text at cursor position, or replace any selected text if user has
+      * made a selection.
+      * \param text The text to be inserted
+      */
+     void insertText(const QString &text);
 
-    /**
-     * Returns the color to use in the editor for the specified \a role.
-     *
-     * This color will be the default theme color for the role, unless the user has manually
-     * selected a custom color scheme for the editor.
-     *
-     * \see setColor()
-     * \since QGIS 3.16
-     */
-    static QColor color( QgsCodeEditorColorScheme::ColorRole role );
+     /**
+      * Returns the default color for the specified \a role.
+      *
+      * The optional \a theme argument can be used to specify a color \a theme. A blank
+      * \a theme indicates the default color scheme.
+      *
+      * Available themes are stored in QgsCodeEditorColorSchemeRegistry, and can be retrieved
+      * via QgsGui::codeEditorColorSchemeRegistry().
+      *
+      * \since QGIS 3.16
+      */
+     static QColor defaultColor(QgsCodeEditorColorScheme::ColorRole role, const QString &theme = QString());
 
-    /**
-     * Sets the \a color to use in the editor for the specified \a role.
-     *
-     * This color will be stored as the new default color for the role, to be used for all code editors.
-     *
-     * Set \a color to an invalid QColor in order to clear the stored color value and reset it to
-     * the default color.
-     *
-     * \see color()
-     * \since QGIS 3.16
-     */
-    static void setColor( QgsCodeEditorColorScheme::ColorRole role, const QColor &color );
+     /**
+      * Returns the color to use in the editor for the specified \a role.
+      *
+      * This color will be the default theme color for the role, unless the user has manually
+      * selected a custom color scheme for the editor.
+      *
+      * \see setColor()
+      * \since QGIS 3.16
+      */
+     static QColor color(QgsCodeEditorColorScheme::ColorRole role);
 
-    /**
-     * Returns the monospaced font to use for code editors.
-     *
-     * \since QGIS 3.16
-     */
-    static QFont getMonospaceFont();
+     /**
+      * Sets the \a color to use in the editor for the specified \a role.
+      *
+      * This color will be stored as the new default color for the role, to be used for all code editors.
+      *
+      * Set \a color to an invalid QColor in order to clear the stored color value and reset it to
+      * the default color.
+      *
+      * \see color()
+      * \since QGIS 3.16
+      */
+     static void setColor(QgsCodeEditorColorScheme::ColorRole role, const QColor &color);
 
-    /**
-     * Sets a custom appearance for the widget, disconnecting it from using the standard appearance
-     * taken from QSettings.
-     *
-     * \note Not available in Python bindings
-     * \since QGIS 3.16
-     */
-    void setCustomAppearance( const QString &scheme = QString(), const QMap< QgsCodeEditorColorScheme::ColorRole, QColor > &customColors = QMap< QgsCodeEditorColorScheme::ColorRole, QColor >(), const QString &fontFamily = QString(), int fontSize = 0 ) SIP_SKIP;
+     /**
+      * Returns the monospaced font to use for code editors.
+      *
+      * \since QGIS 3.16
+      */
+     static QFont getMonospaceFont();
 
-    /**
-     * Adds a \a warning message and indicator to the specified a \a lineNumber.
-     *
-     * \see clearWarnings()
-     * \since QGIS 3.16
-     */
-    void addWarning( int lineNumber, const QString &warning );
+     /**
+      * Sets a custom appearance for the widget, disconnecting it from using the standard appearance
+      * taken from QSettings.
+      *
+      * \note Not available in Python bindings
+      * \since QGIS 3.16
+      */
+     void setCustomAppearance(const QString &scheme = QString(), const QMap<QgsCodeEditorColorScheme::ColorRole, QColor> &customColors = QMap<QgsCodeEditorColorScheme::ColorRole, QColor>(), const QString &fontFamily = QString(), int fontSize = 0) SIP_SKIP;
 
-    /**
-     * Clears all warning messages from the editor.
-     *
-     * \see addWarning()
-     * \since QGIS 3.16
-     */
-    void clearWarnings();
+     /**
+      * Adds a \a warning message and indicator to the specified a \a lineNumber.
+      *
+      * \see clearWarnings()
+      * \since QGIS 3.16
+      */
+     void addWarning(int lineNumber, const QString &warning);
 
-    /**
-     * Returns the code editor mode.
-     *
-     * \since QGIS 3.30
-     */
-    QgsCodeEditor::Mode mode() const { return mMode; }
+     /**
+      * Clears all warning messages from the editor.
+      *
+      * \see addWarning()
+      * \since QGIS 3.16
+      */
+     void clearWarnings();
 
-    /**
-     * Returns TRUE if the cursor is on the last line of the document.
-     *
-     * \since QGIS 3.30
-     */
-    bool isCursorOnLastLine() const;
+     /**
+      * Returns the code editor mode.
+      *
+      * \since QGIS 3.30
+      */
+     QgsCodeEditor::Mode mode() const { return mMode; }
 
-  public slots:
+     /**
+      * Returns TRUE if the cursor is on the last line of the document.
+      *
+      * \since QGIS 3.28
+      */
+     bool isCursorOnLastLine() const;
 
-    /**
-     * Moves the cursor to the start of the document and scrolls to ensure
-     * it is visible.
-     *
-     * \since QGIS 3.30
-     */
-    virtual void moveCursorToStart();
+public slots:
 
-    /**
-     * Moves the cursor to the end of the document and scrolls to ensure
-     * it is visible.
-     *
-     * \since QGIS 3.30
-     */
-    virtual void moveCursorToEnd();
+     /**
+      * Moves the cursor to the start of the document and scrolls to ensure
+      * it is visible.
+      *
+      * \since QGIS 3.28
+      */
+     virtual void moveCursorToStart();
 
-  protected:
+     /**
+      * Moves the cursor to the end of the document and scrolls to ensure
+      * it is visible.
+      *
+      * \since QGIS 3.28
+      */
+     virtual void moveCursorToEnd();
 
-    bool isFixedPitch( const QFont &font );
+protected:
+     bool isFixedPitch(const QFont &font);
 
-    void focusOutEvent( QFocusEvent *event ) override;
-    void keyPressEvent( QKeyEvent *event ) override;
+     void focusOutEvent(QFocusEvent *event) override;
+     void keyPressEvent(QKeyEvent *event) override;
 
-    /**
-     * Called when the dialect specific code lexer needs to be initialized (or reinitialized).
-     *
-     * The default implementation does nothing.
-     *
-     * \since QGIS 3.16
-     */
-    virtual void initializeLexer();
+     /**
+      * Called when the dialect specific code lexer needs to be initialized (or reinitialized).
+      *
+      * The default implementation does nothing.
+      *
+      * \since QGIS 3.16
+      */
+     virtual void initializeLexer();
 
-    /**
-     * Returns the color to use in the lexer for the specified \a role.
-     *
-     * \since QGIS 3.16
-     */
-    QColor lexerColor( QgsCodeEditorColorScheme::ColorRole role ) const;
+     /**
+      * Returns the color to use in the lexer for the specified \a role.
+      *
+      * \since QGIS 3.16
+      */
+     QColor lexerColor(QgsCodeEditorColorScheme::ColorRole role) const;
 
-    /**
-     * Returns the font to use in the lexer.
-     *
-     * \since QGIS 3.16
-     */
-    QFont lexerFont() const;
+     /**
+      * Returns the font to use in the lexer.
+      *
+      * \since QGIS 3.16
+      */
+     QFont lexerFont() const;
 
-    /**
-     * Performs tasks which must be run after a lexer has been set for the widget.
-     *
-     * \since QGIS 3.16
-     */
-    void runPostLexerConfigurationTasks();
+     /**
+      * Performs tasks which must be run after a lexer has been set for the widget.
+      *
+      * \since QGIS 3.16
+      */
+     void runPostLexerConfigurationTasks();
 
-  private:
+private:
+     void setSciWidget();
+     void updateFolding();
 
-    void setSciWidget();
+     QString mWidgetTitle;
+     bool mMargin = false;
+     QgsCodeEditor::Flags mFlags;
+     QgsCodeEditor::Mode mMode = QgsCodeEditor::Mode::ScriptEditor;
 
-    QString mWidgetTitle;
-    bool mFolding;
-    bool mMargin;
+     QgsCodeEditor::Mode mMode = QgsCodeEditor::Mode::ScriptEditor;
 
-    QgsCodeEditor::Mode mMode = QgsCodeEditor::Mode::ScriptEditor;
+     bool mUseDefaultSettings = true;
+     // used if above is false, inplace of values taken from QSettings:
+     bool mOverrideColors = false;
+     QString mColorScheme;
+     QMap<QgsCodeEditorColorScheme::ColorRole, QColor> mCustomColors;
+     QString mFontFamily;
+     int mFontSize = 0;
 
-    bool mUseDefaultSettings = true;
-    // used if above is false, inplace of values taken from QSettings:
-    bool mOverrideColors = false;
-    QString mColorScheme;
-    QMap< QgsCodeEditorColorScheme::ColorRole, QColor > mCustomColors;
-    QString mFontFamily;
-    int mFontSize = 0;
+     QVector<int> mWarningLines;
 
-    QVector< int > mWarningLines;
+     static QMap<QgsCodeEditorColorScheme::ColorRole, QString> sColorRoleToSettingsKey;
 
-    static QMap< QgsCodeEditorColorScheme::ColorRole, QString > sColorRoleToSettingsKey;
-
-    static constexpr int MARKER_NUMBER = 6;
+     static constexpr int MARKER_NUMBER = 6;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(QgsCodeEditor::Flags)
 
 // clazy:excludeall=qstring-allocations
 
