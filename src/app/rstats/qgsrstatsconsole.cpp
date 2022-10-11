@@ -84,9 +84,10 @@ QgsRStatsConsole::QgsRStatsConsole(QWidget *parent, QgsRStatsRunner *runner)
     mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + message );
     mOutput->moveCursorToEnd(); });
 
-  connect(mRunner, &QgsRStatsRunner::busyChanged, this, [=](bool busy)
-          {
-    //mInputEdit->setEnabled( !busy ); });
+  connect( mRunner, &QgsRStatsRunner::busyChanged, this, [ = ]( bool busy )
+  {
+    //mInputEdit->setEnabled( !busy );
+  } );
 
   setLayout(vl);
 
