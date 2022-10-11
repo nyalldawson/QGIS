@@ -17,7 +17,7 @@
 
 #include "qgsproviderregistry.h"
 #include "qgsvectorlayerfeatureiterator.h"
-
+#include "qgsrasterlayer.h"
 
 class MapLayerWrapper
 {
@@ -342,6 +342,94 @@ class MapLayerWrapper
       return st_read( path.toStdString(), layerName.toStdString() );
     }
 
+    Rcpp::LogicalVector isVectorLayer()
+    {
+      bool prepared;
+      bool isVectorLayer = false;
+
+      auto prepareOnMainThread = [&isVectorLayer, &prepared, this]
+      {
+        Q_ASSERT_X( QThread::currentThread() == qApp->thread(), "isVectorLayer", "prepareOnMainThread must be run on the main thread" );
+
+        prepared = false;
+        if ( QgsMapLayer *layer = QgsProject::instance()->mapLayer( mLayerId ) )
+        {
+          if ( QgsVectorLayer *vlayer = qobject_cast< QgsVectorLayer * >( layer ) )
+          {
+            isVectorLayer = true;
+          }
+        }
+        prepared = true;
+      };
+
+      QMetaObject::invokeMethod( qApp, prepareOnMainThread, Qt::BlockingQueuedConnection );
+      if ( !prepared )
+        return false;
+
+      return isVectorLayer;
+    }
+
+    Rcpp::LogicalVector isRasterLayer()
+    {
+      bool prepared;
+      bool isRasterLayer = false;
+
+      auto prepareOnMainThread = [&isRasterLayer, &prepared, this]
+      {
+        Q_ASSERT_X( QThread::currentThread() == qApp->thread(), "isRasterLayer", "prepareOnMainThread must be run on the main thread" );
+
+        prepared = false;
+        if ( QgsMapLayer *layer = QgsProject::instance()->mapLayer( mLayerId ) )
+        {
+          if ( QgsRasterLayer *rlayer = qobject_cast< QgsRasterLayer * >( layer ) )
+          {
+            isRasterLayer = true;
+          }
+        }
+        prepared = true;
+      };
+
+      QMetaObject::invokeMethod( qApp, prepareOnMainThread, Qt::BlockingQueuedConnection );
+      if ( !prepared )
+        return false;
+
+      return isRasterLayer;
+    }
+
+    SEXP toRaster()
+    {
+      if ( ! this->isRasterLayer()( 0 ) )
+        return R_NilValue;
+
+      bool prepared = false;
+      QString rasterPath;
+
+      auto prepareOnMainThread = [&rasterPath, &prepared, this]
+      {
+        Q_ASSERT_X( QThread::currentThread() == qApp->thread(), "isRasterLayer", "prepareOnMainThread must be run on the main thread" );
+
+        if ( QgsMapLayer *layer = QgsProject::instance()->mapLayer( mLayerId ) )
+        {
+          if ( QgsRasterLayer *rlayer = qobject_cast< QgsRasterLayer * >( layer ) )
+          {
+            rasterPath = rlayer->dataProvider()->dataSourceUri();
+          }
+        }
+        prepared = true;
+      };
+
+      QMetaObject::invokeMethod( qApp, prepareOnMainThread, Qt::BlockingQueuedConnection );
+      if ( !prepared )
+        return R_NilValue;
+
+      if ( rasterPath.isEmpty() )
+        return R_NilValue;
+
+      Rcpp::Function raster( "raster" );
+
+      return raster( rasterPath.toStdString() );
+    }
+
   private:
 
     QString mLayerId;
@@ -372,6 +460,21 @@ SEXP MapLayerWrapperToNumericVector( Rcpp::XPtr<MapLayerWrapper> obj, const std:
 SEXP MapLayerWrapperToSf( Rcpp::XPtr<MapLayerWrapper> obj )
 {
   return obj->toSf();
+}
+
+SEXP MapLayerWrapperToRaster( Rcpp::XPtr<MapLayerWrapper> obj )
+{
+  return obj->toRaster();
+}
+
+SEXP MapLayerWrapperIsVectorLayer( Rcpp::XPtr<MapLayerWrapper> obj )
+{
+  return obj->isVectorLayer();
+}
+
+SEXP MapLayerWrapperIsRasterLayer( Rcpp::XPtr<MapLayerWrapper> obj )
+{
+  return obj->isRasterLayer();
 }
 
 SEXP MapLayerWrapperByName( std::string name )
@@ -450,9 +553,21 @@ SEXP Dollar( Rcpp::XPtr<QgsApplicationRWrapper> obj, std::string name )
   {
     return Rcpp::InternalFunction( & MapLayerWrapperToNumericVector );
   }
+  else if ( name == "isVectorLayer" )
+  {
+    return Rcpp::InternalFunction( & MapLayerWrapperIsVectorLayer );
+  }
+  else if ( name == "isRasterLayer" )
+  {
+    return Rcpp::InternalFunction( & MapLayerWrapperIsRasterLayer );
+  }
   else if ( name == "toSf" )
   {
     return Rcpp::InternalFunction( & MapLayerWrapperToSf );
+  }
+  else if ( name == "toRaster" )
+  {
+    return Rcpp::InternalFunction( & MapLayerWrapperToRaster );
   }
   else
   {
@@ -473,6 +588,9 @@ Rcpp::CharacterVector Names( Rcpp::XPtr<QgsApplicationRWrapper> )
   ret.push_back( "toDataFrame" );
   ret.push_back( "toNumericVector" );
   ret.push_back( "toSf" );
+  ret.push_back( "toRaster" );
+  ret.push_back( "isVectorLayer" );
+  ret.push_back( "isRasterLayer" );
   return ret;
 }
 
@@ -506,7 +624,10 @@ QgsRStatsSession::QgsRStatsSession()
     activeLayer=function() { .QGISPrivate$activeLayer },
     toDataFrame=function(layer, selectedOnly=FALSE) { .QGISPrivate$toDataFrame(layer, selectedOnly) },
     toNumericVector=function(layer, field, selectedOnly=FALSE) { .QGISPrivate$toNumericVector(layer, field, selectedOnly) },
-    toSf=function(layer) { .QGISPrivate$toSf(layer) }
+    toSf=function(layer) { .QGISPrivate$toSf(layer) },
+    toRaster=function(layer) {.QGISPrivate$toRaster(layer)},
+    isVectorLayer=function(layer) { .QGISPrivate$isVectorLayer(layer) },
+    isRasterLayer=function(layer) { .QGISPrivate$isRasterLayer(layer) }
   )
   class(QGIS) <- "QGIS"
   )""" ), error );
