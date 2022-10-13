@@ -335,7 +335,7 @@ public:
     if (path.isEmpty())
       return R_NilValue;
 
-    Rcpp::Function st_read("st_read");
+    Rcpp::Function st_read("st_read", Rcpp::Environment::namespace_env( "sf" ) );
 
     return st_read(path.toStdString(), layerName.toStdString());
   }
@@ -414,12 +414,12 @@ SEXP dfToQGIS( SEXP data )
 
     if ( hasSfColumAttribute )
     {
-      Rcpp::Function st_geometry_type = Rcpp::Function( "st_geometry_type" );
+      Rcpp::Function st_geometry_type = Rcpp::Function( "st_geometry_type", Rcpp::Environment::namespace_env( "sf" ) );
       Rcpp::StringVector geometryTypeList = st_geometry_type( df, Rcpp::Named( "by_geometry" ) = false );
       QString geometryTypeNameString = QString::fromStdString( Rcpp::as<std::string>( geometryTypeList[0] ) );
       wkbType = QgsGeometry::fromWkt( QString( "%1 ()" ).arg( geometryTypeNameString ) ).wkbType();
 
-      Rcpp::Function st_crs = Rcpp::Function( "st_crs" );
+      Rcpp::Function st_crs = Rcpp::Function( "st_crs", Rcpp::Environment::namespace_env( "sf" ) );
       Rcpp::List crsList = st_crs( df );
       Rcpp::StringVector crsWkt = crsList["wkt"];
       QString wkt = QString::fromStdString( Rcpp::as<std::string>( crsWkt[0] ) );
