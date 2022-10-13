@@ -456,7 +456,6 @@ SEXP dfToQGIS( SEXP data )
 
   QgsFeatureList features = QgsFeatureList();
 
-
   for ( int i = 0; i < df.nrows(); i++ )
   {
 
