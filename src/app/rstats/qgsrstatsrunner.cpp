@@ -446,11 +446,12 @@ SEXP dfToQGIS( SEXP data )
   Rcpp::StringVector geometries;
   Rcpp::List geometriesWKB;
 
-  if ( hasSfColumAttribute )
+  if ( isSf && hasSfColumAttribute )
   {
-    Rcpp::Function st_as_text = Rcpp::Function( "st_as_text" );
+    Rcpp::Function st_as_binary = Rcpp::Function( "st_as_binary", Rcpp::Environment::namespace_env( "sf" ) );
+    Rcpp::Function wkb_translate_wkt = Rcpp::Function( "wkb_translate_wkt", Rcpp::Environment::namespace_env( "wk" ) );
     SEXP geometryColumnCall = Rf_lang3( R_DollarSymbol, df, Rf_mkString( geometryColumnName.c_str() ) );
-    geometries = st_as_text( Rf_eval( geometryColumnCall, R_GlobalEnv ) );
+    geometries = wkb_translate_wkt(st_as_binary( Rf_eval( geometryColumnCall, R_GlobalEnv ) ));
   }
 
   QgsFeatureList features = QgsFeatureList();
