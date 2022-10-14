@@ -37,11 +37,12 @@ class QgsInteractiveRWidget : public QgsCodeEditorR
 
   signals:
 
-    void runCommand( const QString &command );
+    void execCommand( const QString &command );
 
   protected:
 
     void keyPressEvent( QKeyEvent *event ) override;
+    void runCommandImpl( const QString &command ) override;
 
     void initializeLexer() override;
     void displayPrompt( bool more = false );

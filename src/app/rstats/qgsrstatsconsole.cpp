@@ -58,7 +58,7 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
 
   vl->addWidget( splitter );
 
-  connect( mInputEdit, &QgsInteractiveRWidget::runCommand, this, [ = ]( const QString & command )
+  connect( mInputEdit, &QgsInteractiveRWidget::execCommand, this, [ = ]( const QString & command )
   {
     if ( mRunner->busy() )
       return;
@@ -125,13 +125,18 @@ void QgsInteractiveRWidget::keyPressEvent( QKeyEvent *event )
   {
     case Qt::Key_Return:
     case Qt::Key_Enter:
-      emit runCommand( text() );
+      runCommand( text() );
 
       break;
 
     default:
       QgsCodeEditorR::keyPressEvent( event );
   }
+}
+
+void QgsInteractiveRWidget::runCommandImpl( const QString &command )
+{
+  emit execCommand( command );
 }
 
 void QgsInteractiveRWidget::initializeLexer()
