@@ -20,6 +20,7 @@
 #include "qgsdockablewidgethelper.h"
 #include "qgscodeeditorr.h"
 #include "qgscodeeditor.h"
+#include "qgsapplication.h"
 
 #include <QVBoxLayout>
 #include <QLineEdit>
@@ -54,6 +55,8 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
   splitter->addWidget( mOutput );
   mInputEdit = new QgsInteractiveRWidget();
   mInputEdit->setInterpreter( mRunner );
+  mInputEdit->setHistoryFilePath( QgsApplication::qgisSettingsDirPath() + QStringLiteral( "/r_console_history.txt" ) );
+
   splitter->addWidget( mInputEdit );
 
   vl->addWidget( splitter );
@@ -103,6 +106,8 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
 
 QgsRStatsConsole::~QgsRStatsConsole()
 {
+  mInputEdit->writeHistoryFile();
+
   delete mDockableWidgetHelper;
 }
 
@@ -110,20 +115,6 @@ QgsInteractiveRWidget::QgsInteractiveRWidget( QWidget *parent )
   : QgsCodeEditorR( parent, QgsCodeEditor::Mode::CommandInput )
 {
   QgsInteractiveRWidget::initializeLexer();
-}
-
-void QgsInteractiveRWidget::keyPressEvent( QKeyEvent *event )
-{
-  switch ( event->key() )
-  {
-    case Qt::Key_Return:
-    case Qt::Key_Enter:
-      runCommand( text() );
-      break;
-
-    default:
-      QgsCodeEditorR::keyPressEvent( event );
-  }
 }
 
 void QgsInteractiveRWidget::initializeLexer()

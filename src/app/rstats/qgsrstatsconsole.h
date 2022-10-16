@@ -33,14 +33,10 @@ class QgsInteractiveRWidget : public QgsCodeEditorR
 
     QgsInteractiveRWidget( QWidget *parent = nullptr );
 
-  signals:
-
-    void execCommand( const QString &command );
 
   protected:
 
     void keyPressEvent( QKeyEvent *event ) override;
-    void runCommandImpl( const QString &command ) override;
 
     void initializeLexer() override;
 
