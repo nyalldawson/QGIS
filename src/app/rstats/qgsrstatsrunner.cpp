@@ -930,6 +930,8 @@ QgsRStatsRunner::~QgsRStatsRunner()
 
 int QgsRStatsRunner::execCommandImpl( const QString &command )
 {
+  emit commandStarted( command );
+
   // todo result handling...
   QMetaObject::invokeMethod( mSession.get(), "execCommand", Qt::QueuedConnection,
                              Q_ARG( QString, command ) );

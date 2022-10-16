@@ -61,17 +61,11 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
 
   vl->addWidget( splitter );
 
-#if 0
-  connect( mInputEdit, &QgsInteractiveRWidget::execCommand, this, [ = ]( const QString & command )
+  connect( mRunner, &QgsRStatsRunner::commandStarted, this, [ = ]( const QString & command )
   {
-    if ( mRunner->busy() )
-      return;
-
     mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + QStringLiteral( "> " ) + command );
     mOutput->moveCursorToEnd();
-    mRunner->execCommand( command );
   } );
-#endif
 
   connect( mRunner, &QgsRStatsRunner::errorOccurred, this, [ = ]( const QString & error )
   {

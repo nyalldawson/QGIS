@@ -113,6 +113,7 @@ class QgsRStatsRunner: public QObject, public QgsCodeInterpreter
     void showMessage( const QString &message );
     void errorOccurred( const QString &error );
     void busyChanged( bool busy );
+    void commandStarted( const QString &command );
     void commandFinished( const QVariant &result );
 
   protected:
