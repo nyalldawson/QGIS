@@ -53,21 +53,22 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
   mOutput = new QgsCodeEditorR( nullptr, QgsCodeEditor::Mode::OutputDisplay );
   splitter->addWidget( mOutput );
   mInputEdit = new QgsInteractiveRWidget();
-  mInputEdit->setFont( QgsCodeEditor::getMonospaceFont() );
+  mInputEdit->setInterpreter( mRunner );
   splitter->addWidget( mInputEdit );
 
   vl->addWidget( splitter );
 
+#if 0
   connect( mInputEdit, &QgsInteractiveRWidget::execCommand, this, [ = ]( const QString & command )
   {
     if ( mRunner->busy() )
       return;
 
-    mInputEdit->clear();
     mOutput->append( ( mOutput->text().isEmpty() ? QString() : QString( '\n' ) ) + QStringLiteral( "> " ) + command );
     mOutput->moveCursorToEnd();
     mRunner->execCommand( command );
   } );
+#endif
 
   connect( mRunner, &QgsRStatsRunner::errorOccurred, this, [ = ]( const QString & error )
   {
@@ -108,15 +109,7 @@ QgsRStatsConsole::~QgsRStatsConsole()
 QgsInteractiveRWidget::QgsInteractiveRWidget( QWidget *parent )
   : QgsCodeEditorR( parent, QgsCodeEditor::Mode::CommandInput )
 {
-  displayPrompt( false );
-
   QgsInteractiveRWidget::initializeLexer();
-}
-
-void QgsInteractiveRWidget::clear()
-{
-  QgsCodeEditorR::clear();
-  displayPrompt( false );
 }
 
 void QgsInteractiveRWidget::keyPressEvent( QKeyEvent *event )
@@ -126,17 +119,11 @@ void QgsInteractiveRWidget::keyPressEvent( QKeyEvent *event )
     case Qt::Key_Return:
     case Qt::Key_Enter:
       runCommand( text() );
-
       break;
 
     default:
       QgsCodeEditorR::keyPressEvent( event );
   }
-}
-
-void QgsInteractiveRWidget::runCommandImpl( const QString &command )
-{
-  emit execCommand( command );
 }
 
 void QgsInteractiveRWidget::initializeLexer()

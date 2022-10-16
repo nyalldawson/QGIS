@@ -928,11 +928,12 @@ QgsRStatsRunner::~QgsRStatsRunner()
   mSessionThread.wait();
 }
 
-void QgsRStatsRunner::execCommand( const QString &command )
+int QgsRStatsRunner::execCommandImpl( const QString &command )
 {
   // todo result handling...
   QMetaObject::invokeMethod( mSession.get(), "execCommand", Qt::QueuedConnection,
                              Q_ARG( QString, command ) );
+  return 0;
 }
 
 bool QgsRStatsRunner::busy() const
@@ -943,4 +944,10 @@ bool QgsRStatsRunner::busy() const
 void QgsRStatsRunner::showStartupMessage()
 {
   QMetaObject::invokeMethod( mSession.get(), "showStartupMessage", Qt::QueuedConnection );
+}
+
+QString QgsRStatsRunner::promptForState( int state ) const
+{
+  return state == 0 ? ">" : "+";
+
 }

@@ -33,8 +33,6 @@ class QgsInteractiveRWidget : public QgsCodeEditorR
 
     QgsInteractiveRWidget( QWidget *parent = nullptr );
 
-    void clear() override;
-
   signals:
 
     void execCommand( const QString &command );
@@ -45,7 +43,6 @@ class QgsInteractiveRWidget : public QgsCodeEditorR
     void runCommandImpl( const QString &command ) override;
 
     void initializeLexer() override;
-    void displayPrompt( bool more = false );
 
 };
 

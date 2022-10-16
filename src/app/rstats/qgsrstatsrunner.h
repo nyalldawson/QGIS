@@ -30,6 +30,9 @@ class RInside;
 class QVariant;
 class QString;
 
+#include "qgscodeeditor.h"
+
+
 class APP_EXPORT QgsRStatsSession: public QObject, public Callbacks
 {
     Q_OBJECT
@@ -91,7 +94,7 @@ class APP_EXPORT QgsRStatsSession: public QObject, public Callbacks
 };
 
 
-class QgsRStatsRunner: public QObject
+class QgsRStatsRunner: public QObject, public QgsCodeInterpreter
 {
     Q_OBJECT
   public:
@@ -99,9 +102,10 @@ class QgsRStatsRunner: public QObject
     QgsRStatsRunner();
     ~QgsRStatsRunner();
 
-    void execCommand( const QString &command );
     bool busy() const;
     void showStartupMessage();
+
+    QString promptForState( int state ) const override;
 
   signals:
 
@@ -110,6 +114,10 @@ class QgsRStatsRunner: public QObject
     void errorOccurred( const QString &error );
     void busyChanged( bool busy );
     void commandFinished( const QVariant &result );
+
+  protected:
+
+    int execCommandImpl( const QString &command ) override;
 
   private:
 
