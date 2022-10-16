@@ -53,7 +53,7 @@ QgsRStatsConsole::QgsRStatsConsole( QWidget *parent, QgsRStatsRunner *runner )
 
   mOutput = new QgsCodeEditorR( nullptr, QgsCodeEditor::Mode::OutputDisplay );
   splitter->addWidget( mOutput );
-  mInputEdit = new QgsInteractiveRWidget();
+  mInputEdit = new QgsCodeEditorR( nullptr, QgsCodeEditor::Mode::CommandInput );
   mInputEdit->setInterpreter( mRunner );
   mInputEdit->setHistoryFilePath( QgsApplication::qgisSettingsDirPath() + QStringLiteral( "/r_console_history.txt" ) );
 
@@ -105,28 +105,3 @@ QgsRStatsConsole::~QgsRStatsConsole()
   delete mDockableWidgetHelper;
 }
 
-QgsInteractiveRWidget::QgsInteractiveRWidget( QWidget *parent )
-  : QgsCodeEditorR( parent, QgsCodeEditor::Mode::CommandInput )
-{
-  QgsInteractiveRWidget::initializeLexer();
-}
-
-void QgsInteractiveRWidget::initializeLexer()
-{
-  QgsCodeEditorR::initializeLexer();
-
-  setCaretLineVisible( false );
-  setLineNumbersVisible( false ); // NO linenumbers for the input line
-  // Margin 1 is used for the '>' prompt (console input)
-  setMarginLineNumbers( 1, true );
-  setMarginWidth( 1, "00" );
-  setMarginType( 1, QsciScintilla::MarginType::TextMarginRightJustified );
-  setMarginsBackgroundColor( color( QgsCodeEditorColorScheme::ColorRole::Background ) );
-  setEdgeMode( QsciScintilla::EdgeNone );
-}
-
-void QgsInteractiveRWidget::displayPrompt( bool more )
-{
-  const QString prompt = !more ? ">" : "+";
-  SendScintilla( QsciScintilla::SCI_MARGINSETTEXT, static_cast< uintptr_t >( 0 ), prompt.toUtf8().constData() );
-}
