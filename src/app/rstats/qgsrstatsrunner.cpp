@@ -397,7 +397,28 @@ class MapLayerWrapper
       return isRasterLayer;
     }
 
+    enum RasterPackage { raster, stars, terra};
+
     SEXP toRaster()
+    {
+      return this->toRasterDataObject( RasterPackage::raster );
+    }
+
+    SEXP toTerra()
+    {
+      return this->toRasterDataObject( RasterPackage::terra );
+    }
+
+    SEXP toStars()
+    {
+      return this->toRasterDataObject( RasterPackage::stars );
+    }
+
+  private:
+
+    QString mLayerId;
+
+    SEXP toRasterDataObject( RasterPackage rasterPackage )
     {
       if ( ! this->isRasterLayer()( 0 ) )
         return R_NilValue;
@@ -407,7 +428,7 @@ class MapLayerWrapper
 
       auto prepareOnMainThread = [&rasterPath, &prepared, this]
       {
-        Q_ASSERT_X( QThread::currentThread() == qApp->thread(), "isRasterLayer", "prepareOnMainThread must be run on the main thread" );
+        Q_ASSERT_X( QThread::currentThread() == qApp->thread(), "toRaster", "prepareOnMainThread must be run on the main thread" );
 
         if ( QgsMapLayer *layer = QgsProject::instance()->mapLayer( mLayerId ) )
         {
@@ -426,15 +447,27 @@ class MapLayerWrapper
       if ( rasterPath.isEmpty() )
         return R_NilValue;
 
-      Rcpp::Function raster( "raster", Rcpp::Environment::namespace_env( "raster" ) );
-
-      return raster( rasterPath.toStdString() );
+      switch ( rasterPackage )
+      {
+        case RasterPackage::raster:
+        {
+          Rcpp::Function raster( "raster", Rcpp::Environment::namespace_env( "raster" ) );
+          return raster( rasterPath.toStdString() );
+        }
+        case RasterPackage::terra:
+        {
+          Rcpp::Function rast( "rast", Rcpp::Environment::namespace_env( "terra" ) );
+          return rast( rasterPath.toStdString() );
+        }
+        case RasterPackage::stars:
+        {
+          Rcpp::Function read_stars( "read_stars", Rcpp::Environment::namespace_env( "stars" ) );
+          return read_stars( rasterPath.toStdString() );
+        }
+        default:
+          return Rcpp::wrap( rasterPath.toStdString() );
+      }
     }
-
-  private:
-
-    QString mLayerId;
-
 };
 
 
@@ -475,6 +508,16 @@ SEXP MapLayerWrapperByName( std::string name )
 SEXP MapLayerWrapperToRaster( Rcpp::XPtr<MapLayerWrapper> obj )
 {
   return obj->toRaster();
+}
+
+SEXP MapLayerWrapperToTerra( Rcpp::XPtr<MapLayerWrapper> obj )
+{
+  return obj->toTerra();
+}
+
+SEXP MapLayerWrapperToStars( Rcpp::XPtr<MapLayerWrapper> obj )
+{
+  return obj->toStars();
 }
 
 SEXP MapLayerWrapperIsVectorLayer( Rcpp::XPtr<MapLayerWrapper> obj )
@@ -569,6 +612,14 @@ SEXP Dollar( Rcpp::XPtr<QgsApplicationRWrapper> obj, std::string name )
   {
     return Rcpp::InternalFunction( & MapLayerWrapperToRaster );
   }
+  else if ( name == "toTerra" )
+  {
+    return Rcpp::InternalFunction( & MapLayerWrapperToTerra );
+  }
+  else if ( name == "toStars" )
+  {
+    return Rcpp::InternalFunction( & MapLayerWrapperToStars );
+  }
   else
   {
     return NULL;
@@ -589,6 +640,8 @@ Rcpp::CharacterVector Names( Rcpp::XPtr<QgsApplicationRWrapper> )
   ret.push_back( "toNumericVector" );
   ret.push_back( "toSf" );
   ret.push_back( "toRaster" );
+  ret.push_back( "toTerra" );
+  ret.push_back( "toStars" );
   ret.push_back( "isVectorLayer" );
   ret.push_back( "isRasterLayer" );
   return ret;
@@ -626,6 +679,8 @@ QgsRStatsSession::QgsRStatsSession()
     toNumericVector=function(layer, field, selectedOnly=FALSE) { .QGISPrivate$toNumericVector(layer, field, selectedOnly) },
     toSf=function(layer) { .QGISPrivate$toSf(layer) },
     toRaster=function(layer) {.QGISPrivate$toRaster(layer)},
+    toTerra=function(layer) {.QGISPrivate$toTerra(layer)},
+    toStars=function(layer) {.QGISPrivate$toStars(layer)},
     isVectorLayer=function(layer) { .QGISPrivate$isVectorLayer(layer) },
     isRasterLayer=function(layer) { .QGISPrivate$isRasterLayer(layer) }
   )
