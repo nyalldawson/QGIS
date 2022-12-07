@@ -150,7 +150,7 @@ class gdalcalc(GdalAlgorithm):
                 self.EXTENT_OPT,
                 self.tr('Handling of extent differences'),
                 options=[o.title() for o in self.EXTENT_OPTIONS],
-                defaultValue=0)
+                defaultValue=1)
             extent_opt_param.setHelp(self.tr('This option determines how to handle rasters with different extents'))
             self.addParameter(extent_opt_param)
 

@@ -672,7 +672,7 @@ class TestGdalRasterAlgorithms(unittest.TestCase, AlgorithmsTestBase.AlgorithmsT
                                         'FORMULA': formula,
                                         'OUTPUT': output}, context, feedback),
                 ['gdal_calc.py',
-                 '--overwrite --calc "{}" --format JPEG --type Float32 -A {} --A_band 1 --outfile {}'.format(formula, source, output)])
+                 '--overwrite --calc "{}" --format JPEG --type Float32 --extent=fail -A {} --A_band 1 --outfile {}'.format(formula, source, output)])
 
             if GdalUtils.version() >= 3030000:
                 extent = QgsReferencedRectangle(QgsRectangle(1, 2, 3, 4), QgsCoordinateReferenceSystem('EPSG:4326'))
@@ -683,7 +683,7 @@ class TestGdalRasterAlgorithms(unittest.TestCase, AlgorithmsTestBase.AlgorithmsT
                                             'PROJWIN': extent,
                                             'OUTPUT': output}, context, feedback),
                     ['gdal_calc.py',
-                     '--overwrite --calc "{}" --format JPEG --type Float32 --projwin 1.0 4.0 3.0 2.0 -A {} --A_band 1 --outfile {}'.format(formula, source, output)])
+                     '--overwrite --calc "{}" --format JPEG --type Float32 --extent=fail --projwin 1.0 4.0 3.0 2.0 -A {} --A_band 1 --outfile {}'.format(formula, source, output)])
 
                 # Inputs A and B share same pixel size and CRS
                 self.assertEqual(
@@ -727,7 +727,7 @@ class TestGdalRasterAlgorithms(unittest.TestCase, AlgorithmsTestBase.AlgorithmsT
                                         'FORMULA': formula,
                                         'OUTPUT': output}, context, feedback),
                 ['gdal_calc.py',
-                 '--overwrite --calc "{}" --format JPEG --type Float32 -A {} --A_band 1 --outfile {}'.format(formula, source, output)])
+                 '--overwrite --calc "{}" --format JPEG --type Float32 --extent=fail -A {} --A_band 1 --outfile {}'.format(formula, source, output)])
 
             # additional creation options
             formula = 'A*2'
@@ -738,7 +738,7 @@ class TestGdalRasterAlgorithms(unittest.TestCase, AlgorithmsTestBase.AlgorithmsT
                                         'OPTIONS': 'COMPRESS=JPEG|JPEG_QUALITY=75',
                                         'OUTPUT': output}, context, feedback),
                 ['gdal_calc.py',
-                 '--overwrite --calc "{}" --format JPEG --type Float32 -A {} --A_band 1 --co COMPRESS=JPEG --co JPEG_QUALITY=75 --outfile {}'.format(formula, source, output)])
+                 '--overwrite --calc "{}" --format JPEG --type Float32 --extent=fail -A {} --A_band 1 --co COMPRESS=JPEG --co JPEG_QUALITY=75 --outfile {}'.format(formula, source, output)])
 
             # additional parameters
             formula = 'A*2'
@@ -749,7 +749,7 @@ class TestGdalRasterAlgorithms(unittest.TestCase, AlgorithmsTestBase.AlgorithmsT
                                         'EXTRA': '--debug --quiet',
                                         'OUTPUT': output}, context, feedback),
                 ['gdal_calc.py',
-                 '--overwrite --calc "{}" --format JPEG --type Float32 -A {} --A_band 1 --debug --quiet --outfile {}'.format(formula, source, output)])
+                 '--overwrite --calc "{}" --format JPEG --type Float32 --extent=fail -A {} --A_band 1 --debug --quiet --outfile {}'.format(formula, source, output)])
 
     def testGdalInfo(self):
         context = QgsProcessingContext()
