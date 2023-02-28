@@ -147,6 +147,12 @@ QgsOptions::QgsOptions( QWidget *parent, Qt::WindowFlags fl, const QList<QgsOpti
   mTreeModel->appendRow( createItem( QCoreApplication::translate( "QgsOptionsBase", "Locator" ), tr( "Locator" ), u"search.svg"_s ) );
   mTreeModel->appendRow( createItem( QCoreApplication::translate( "QgsOptionsBase", "Acceleration" ), tr( "GPU acceleration" ), u"mIconGPU.svg"_s ) );
 
+  QStandardItem *controllersGroup = new QStandardItem( QCoreApplication::translate( "QgsOptionsBase", "Controllers" ) );
+  controllersGroup->setData( u"controllers"_s );
+  controllersGroup->setToolTip( tr( "Controllers and Input Devices" ) );
+  controllersGroup->setSelectable( false );
+  mTreeModel->appendRow( controllersGroup );
+
   mOptionsTreeView->setModel( mTreeModel );
 
   // stylesheet setup

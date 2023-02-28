@@ -193,6 +193,10 @@ using namespace Qt::StringLiterals;
 #include <GeographicLib/Constants.hpp>
 #endif
 
+#ifdef HAVE_QTGAMEPAD
+#include "options/qgsgamepadoptions.h"
+#endif
+
 #ifdef HAVE_GEOREFERENCER
 #include "georeferencer/qgsgeorefmainwindow.h"
 #endif
@@ -1965,6 +1969,10 @@ QgisApp::QgisApp(
 
 #ifdef HAVE_3D
   mOptionWidgetFactories.emplace_back( QgsScopedOptionsWidgetFactory( std::make_unique<Qgs3DOptionsFactory>() ) );
+#endif
+
+#ifdef HAVE_QTGAMEPAD
+  mOptionWidgetFactories.emplace_back( QgsScopedOptionsWidgetFactory( std::make_unique< QgsGamepadDeviceOptionsFactory >() ) );
 #endif
 
   mAppCanvasFiltering = new QgsAppCanvasFiltering( this );
