@@ -342,6 +342,10 @@
 %Include auto_generated/elevation/qgselevationprofilecanvas.sip
 %Include auto_generated/history/qgshistoryprovider.sip
 %Include auto_generated/history/qgshistoryproviderregistry.sip
+%If ( HAVE_QTGAMEPAD )
+%Include auto_generated/inputcontroller/qgsgamepadcontroller.sip
+%End
+%Include auto_generated/inputcontroller/qgsinputcontroller.sip
 %Include auto_generated/labeling/qgslabellineanchorwidget.sip
 %Include auto_generated/labeling/qgslabelobstaclesettingswidget.sip
 %Include auto_generated/labeling/qgslabelsettingswidgetbase.sip

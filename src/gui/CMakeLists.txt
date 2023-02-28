@@ -238,6 +238,9 @@ set(QGIS_GUI_SRCS
   history/qgshistoryprovider.cpp
   history/qgshistoryproviderregistry.cpp
 
+  inputcontroller/qgsgamepadcontroller.cpp
+  inputcontroller/qgsinputcontroller.cpp
+
   labeling/qgslabelengineconfigdialog.cpp
   labeling/qgslabelinggui.cpp
   labeling/qgslabelingwidget.cpp
@@ -1132,6 +1135,9 @@ set(QGIS_GUI_HDRS
   history/qgshistoryprovider.h
   history/qgshistoryproviderregistry.h
 
+  inputcontroller/qgsgamepadcontroller.h
+  inputcontroller/qgsinputcontroller.h
+
   labeling/qgslabelengineconfigdialog.h
   labeling/qgslabelinggui.h
   labeling/qgslabelingwidget.h
@@ -1463,7 +1469,6 @@ if (WITH_COPC)
   )
 endif()
 
-
 # disable deprecation warnings for classes re-exporting deprecated methods
 if(MSVC)
   set_source_files_properties(
@@ -1527,6 +1532,7 @@ target_include_directories(qgis_gui PUBLIC
   ${CMAKE_SOURCE_DIR}/src/gui/effects
   ${CMAKE_SOURCE_DIR}/src/gui/elevation
   ${CMAKE_SOURCE_DIR}/src/gui/history
+  ${CMAKE_SOURCE_DIR}/src/gui/inputcontroller
   ${CMAKE_SOURCE_DIR}/src/gui/labeling
   ${CMAKE_SOURCE_DIR}/src/gui/layertree
   ${CMAKE_SOURCE_DIR}/src/gui/layout
@@ -1632,6 +1638,12 @@ if (BUILD_WITH_QT6)
   target_link_libraries(qgis_gui
     Qt6::SvgWidgets
   )
+endif()
+
+if (WITH_QTGAMEPAD)
+    target_link_libraries(qgis_gui
+      ${QT_VERSION_BASE}::Gamepad
+    )
 endif()
 
 if (FORCE_STATIC_LIBS)
