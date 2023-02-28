@@ -322,6 +322,13 @@ if (WITH_SPATIALITE)
   )
 endif()
 
+if (WITH_QTGAMEPAD)
+    set(QGIS_APP_SRCS
+      ${QGIS_APP_SRCS}
+      options/qgsgamepadoptions.cpp
+    )
+endif()
+
 if (HAVE_GEOREFERENCER)
   set(QGIS_APP_SRCS
     ${QGIS_APP_SRCS}
@@ -620,6 +627,12 @@ target_link_libraries(qgis_app
   qgis_native
   libdxfrw
 )
+
+if (WITH_QTGAMEPAD)
+    target_link_libraries(qgis_app PRIVATE
+      ${QT_VERSION_BASE}::GamepadLegacy
+    )
+endif()
 
 target_compile_definitions(qgis_app PRIVATE "-DQT_NO_FOREACH")
 
