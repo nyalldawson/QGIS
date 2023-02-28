@@ -57,6 +57,12 @@ QgsGamepad2DMapController::QgsGamepad2DMapController( int gamepadDeviceId, QObje
   // also here we would make connections to the 2D map controller signals like zoomMap, depending on some
   // reasonable defaults and user defined QSettings
 
+  connect( mGamepad, &QGamepad::axisRightYChanged, this, [ = ]( double value )
+  {
+    // actually should be on a timer ;)
+    emit zoomMap( value + 1 );
+  } );
+
 }
 
 QgsGamepad2DMapController *QgsGamepad2DMapController::clone() const
@@ -225,7 +231,7 @@ QgsGamepad3DMapController::QgsGamepad3DMapController( int gamepadDeviceId, QObje
   connect( mGamepad, &QGamepad::buttonCenterChanged, this, &QgsGamepad3DMapController::buttonCenterChanged );
   connect( mGamepad, &QGamepad::buttonGuideChanged, this, &QgsGamepad3DMapController::buttonGuideChanged );
 
-  // also here we would make connections to the 2D map controller signals like zoomMap, depending on some
+  // also here we would make connections to the 3D map controller signals like zoomMap, depending on some
   // reasonable defaults and user defined QSettings
 }
 
