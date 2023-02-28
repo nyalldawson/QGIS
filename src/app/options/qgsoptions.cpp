@@ -135,6 +135,12 @@ QgsOptions::QgsOptions( QWidget *parent, Qt::WindowFlags fl, const QList<QgsOpti
   ideGroup->setSelectable( false );
   mTreeModel->appendRow( ideGroup );
 
+  QStandardItem *controllersGroup = new QStandardItem( QCoreApplication::translate( "QgsOptionsBase", "Controllers" ) );
+  controllersGroup->setData( QStringLiteral( "controllers" ) );
+  controllersGroup->setToolTip( tr( "Controllers and Input Devices" ) );
+  controllersGroup->setSelectable( false );
+  mTreeModel->appendRow( controllersGroup );
+
   mOptionsTreeView->setModel( mTreeModel );
 
   connect( cbxProjectDefaultNew, &QCheckBox::toggled, this, &QgsOptions::cbxProjectDefaultNew_toggled );

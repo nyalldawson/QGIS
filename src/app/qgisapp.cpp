@@ -152,6 +152,10 @@
 #include "qgsdirectionallightsettings.h"
 #endif
 
+#ifdef HAVE_QTGAMEPAD
+#include "options/qgsgamepadoptions.h"
+#endif
+
 #ifdef HAVE_GEOREFERENCER
 #include "georeferencer/qgsgeorefmainwindow.h"
 #endif
@@ -1901,6 +1905,10 @@ QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, bool skipBadLayers
   mOptionWidgetFactories.emplace_back( QgsScopedOptionsWidgetFactory( std::make_unique< QgsGpsDeviceOptionsFactory >() ) );
   mOptionWidgetFactories.emplace_back( QgsScopedOptionsWidgetFactory( std::make_unique< QgsCustomProjectionOptionsFactory >() ) );
   mOptionWidgetFactories.emplace_back( QgsScopedOptionsWidgetFactory( std::make_unique< QgsFontOptionsFactory >() ) );
+
+#ifdef HAVE_QTGAMEPAD
+  mOptionWidgetFactories.emplace_back( QgsScopedOptionsWidgetFactory( std::make_unique< QgsGamepadDeviceOptionsFactory >() ) );
+#endif
 
 #ifdef HAVE_3D
   mOptionWidgetFactories.emplace_back( QgsScopedOptionsWidgetFactory( std::make_unique< Qgs3DOptionsFactory >() ) );
