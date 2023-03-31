@@ -67,6 +67,13 @@ Calculate the scale denominator
 :return: scale denominator of current map view, e.g. 1000.0 for a 1:1000 map.
 %End
 
+    QSizeF calculateMapSize( double scale, QSize canvasSize ) const;
+%Docstring
+Calculates the size in map units given a ``scale`` and ``canvasSize``.
+
+.. versionadded:: 3.32
+%End
+
     QSizeF calculateImageSize( const QgsRectangle &mapExtent, double scale ) const;
 %Docstring
 Calculate the image size in pixel (physical) units

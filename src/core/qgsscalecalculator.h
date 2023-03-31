@@ -73,6 +73,13 @@ class CORE_EXPORT QgsScaleCalculator
     double calculate( const QgsRectangle &mapExtent, double canvasWidth ) const;
 
     /**
+     * Calculates the size in map units given a \a scale and \a canvasSize.
+     *
+     * \since QGIS 3.32
+     */
+    QSizeF calculateMapSize( double scale, QSize canvasSize ) const;
+
+    /**
      * Calculate the image size in pixel (physical) units
      * \param mapExtent QgsRectangle containing the current map extent
      * \param scale Scale denominator, e.g. 1000.0 for a 1:1000 map

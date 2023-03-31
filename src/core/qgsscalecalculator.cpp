@@ -20,6 +20,7 @@
 #include "qgslogger.h"
 #include "qgsscalecalculator.h"
 #include "qgsrectangle.h"
+#include "qgsunittypes.h"
 #include <QSizeF>
 
 QgsScaleCalculator::QgsScaleCalculator( double dpi, Qgis::DistanceUnit mapUnits )
@@ -65,6 +66,19 @@ double QgsScaleCalculator::calculate( const QgsRectangle &mapExtent, double canv
   return scale;
 }
 
+QSizeF QgsScaleCalculator::calculateMapSize( double scale, QSize canvasSize ) const
+{
+  if ( qgsDoubleNear( scale, 0.0 ) || qgsDoubleNear( mDpi, 0.0 ) )
+  {
+    QgsDebugMsg( QStringLiteral( "Can't calculate map size from the input values" ) );
+    return QSizeF();
+  }
+  double conversionFactor = 0;
+  double delta = 0;
+
+  calculateMetrics( mapExtent, delta, conversionFactor );
+}
+
 QSizeF QgsScaleCalculator::calculateImageSize( const QgsRectangle &mapExtent, double scale )  const
 {
   if ( qgsDoubleNear( scale, 0.0 ) || qgsDoubleNear( mDpi, 0.0 ) )
@@ -92,17 +106,23 @@ void QgsScaleCalculator::calculateMetrics( const QgsRectangle &mapExtent, double
   switch ( mMapUnits )
   {
     case Qgis::DistanceUnit::Meters:
-      // convert meters to inches
-      conversionFactor = 39.3700787;
-      break;
-    case Qgis::DistanceUnit::Feet:
-      conversionFactor = 12.0;
-      break;
+    case Qgis::DistanceUnit::Kilometers:
+    case Qgis::DistanceUnit::Centimeters:
+    case Qgis::DistanceUnit::Millimeters:
     case Qgis::DistanceUnit::NauticalMiles:
-      // convert nautical miles to inches
-      conversionFactor = 72913.4;
+    case Qgis::DistanceUnit::Yards:
+    case Qgis::DistanceUnit::Miles:
+    case Qgis::DistanceUnit::Feet:
+      // convert to inches
+      conversionFactor = QgsUnitTypes::fromUnitToUnitFactor( mMapUnits, Qgis::DistanceUnit::Feet ) * 12;
       break;
-    default:
+
+    case Qgis::DistanceUnit::Unknown:
+    {
+      QgsDebugMsg( QStringLiteral( "Calculating metrics on unknown units, assuming degrees" ) );
+      FALLTHROUGH
+    }
+
     case Qgis::DistanceUnit::Degrees:
       // degrees require conversion to meters first
       conversionFactor = 39.3700787;

@@ -240,7 +240,7 @@ void QgsMapSettings::updateDerived()
 
       mValid = ok;
 
-#if 1 // set visible extent taking rotation in consideration
+      // set visible extent taking rotation in consideration
       if ( mRotation )
       {
         const QgsPointXY p1 = mMapToPixel.toMapCoordinates( QPoint( 0, 0 ) );
@@ -253,7 +253,7 @@ void QgsMapSettings::updateDerived()
         dymax = std::max( p1.y(), std::max( p2.y(), std::max( p3.y(), p4.y() ) ) );
         mVisibleExtent.set( dxmin, dymin, dxmax, dymax );
       }
-#endif
+
       QgsDebugMsgLevel( QStringLiteral( "Map units per pixel (x,y) : %1, %2" ).arg( qgsDoubleToString( mapUnitsPerPixelX ), qgsDoubleToString( mapUnitsPerPixelY ) ), 5 );
       QgsDebugMsgLevel( QStringLiteral( "Adjusted map units per pixel (x,y) : %1, %2" ).arg( qgsDoubleToString( mVisibleExtent.width() / myWidth ), qgsDoubleToString( mVisibleExtent.height() / myHeight ) ), 5 );
 
@@ -262,6 +262,74 @@ void QgsMapSettings::updateDerived()
 
     case Qgis::MapViewConstraint::CenterRotationAndScale:
     {
+      if ( mCenter.isEmpty() || !std::isfinite( mCenter.x() ) || !std::isfinite( mCenter.y() ) )
+      {
+        mValid = false;
+        return;
+      }
+
+      const double height = mSize.height();
+      const double width = mSize.width();
+
+      if ( !width || !height )
+      {
+        mValid = false;
+        return;
+      }
+
+      // calculate the translation and scaling parameters
+      const double mapUnitsPerPixelY = mExtent.height() / myHeight;
+      const double mapUnitsPerPixelX = mExtent.width() / myWidth;
+      mMapUnitsPerPixel = mapUnitsPerPixelY > mapUnitsPerPixelX ? mapUnitsPerPixelY : mapUnitsPerPixelX;
+
+      // calculate the actual extent of the mapCanvas
+      double dxmin = mExtent.xMinimum(), dxmax = mExtent.xMaximum(),
+             dymin = mExtent.yMinimum(), dymax = mExtent.yMaximum(), whitespace;
+
+      if ( mapUnitsPerPixelY > mapUnitsPerPixelX )
+      {
+        whitespace = ( ( myWidth * mMapUnitsPerPixel ) - mExtent.width() ) * 0.5;
+        dxmin -= whitespace;
+        dxmax += whitespace;
+      }
+      else
+      {
+        whitespace = ( ( myHeight * mMapUnitsPerPixel ) - mExtent.height() ) * 0.5;
+        dymin -= whitespace;
+        dymax += whitespace;
+      }
+
+      mVisibleExtent.set( dxmin, dymin, dxmax, dymax );
+
+      // update the scale
+      mScaleCalculator.setDpi( mDpi * mDevicePixelRatio );
+      mScale = mScaleCalculator.calculate( mVisibleExtent, mSize.width() );
+
+      bool ok = true;
+      mMapToPixel.setParameters(
+        mapUnitsPerPixel(),
+        visibleExtent().center().x(),
+        visibleExtent().center().y(),
+        outputSize().width(),
+        outputSize().height(),
+        mRotation, &ok );
+
+      mValid = ok;
+
+      // set visible extent taking rotation in consideration
+      if ( mRotation )
+      {
+        const QgsPointXY p1 = mMapToPixel.toMapCoordinates( QPoint( 0, 0 ) );
+        const QgsPointXY p2 = mMapToPixel.toMapCoordinates( QPoint( 0, myHeight ) );
+        const QgsPointXY p3 = mMapToPixel.toMapCoordinates( QPoint( myWidth, 0 ) );
+        const QgsPointXY p4 = mMapToPixel.toMapCoordinates( QPoint( myWidth, myHeight ) );
+        dxmin = std::min( p1.x(), std::min( p2.x(), std::min( p3.x(), p4.x() ) ) );
+        dymin = std::min( p1.y(), std::min( p2.y(), std::min( p3.y(), p4.y() ) ) );
+        dxmax = std::max( p1.x(), std::max( p2.x(), std::max( p3.x(), p4.x() ) ) );
+        dymax = std::max( p1.y(), std::max( p2.y(), std::max( p3.y(), p4.y() ) ) );
+        mVisibleExtent.set( dxmin, dymin, dxmax, dymax );
+      }
+
       break;
     }
   }
