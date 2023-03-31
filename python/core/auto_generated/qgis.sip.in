@@ -1030,6 +1030,12 @@ The development version
     typedef QFlags<Qgis::CoordinateTransformationFlag> CoordinateTransformationFlags;
 
 
+    enum class MapViewConstraint
+    {
+      CenterRotationAndScale,
+      ExtentAndRotation,
+    };
+
     enum class MapSettingsFlag
       {
       Antialiasing,

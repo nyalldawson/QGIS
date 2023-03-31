@@ -1714,6 +1714,18 @@ class CORE_EXPORT Qgis
     Q_ENUM( CoordinateTransformationFlags )
 
     /**
+     * Available constraints which control the visible area of maps.
+     *
+     * \since QGIS 3.32
+     */
+    enum class MapViewConstraint
+    {
+      CenterRotationAndScale, //!< The map view is determined by a fixed map center point, rotation and scale. The visible extent will be derived from these properties.
+      ExtentAndRotation, //!< The map view is determined by a fixed extent and rotation. The map scale will be derived from these properties.
+    };
+    Q_ENUM( MapViewConstraint )
+
+    /**
      * Flags which adjust the way maps are rendered.
      *
      * \since QGIS 3.22

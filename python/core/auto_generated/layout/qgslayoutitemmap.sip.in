@@ -378,6 +378,26 @@ The caller takes responsibility for deleting the returned object.
     virtual void setFrameStrokeWidth( QgsLayoutMeasurement width );
 
 
+    Qgis::MapViewConstraint viewConstraint() const;
+%Docstring
+Returns the map item's view constraint, which determines the properties of the map which determine
+the visible area.
+
+.. seealso:: :py:func:`setViewConstraint`
+
+.. versionadded:: 3.32
+%End
+
+    void setViewConstraint( Qgis::MapViewConstraint constraint );
+%Docstring
+Sets the map item's view ``constraint``, which determines the properties of the map which determine
+the visible area.
+
+.. seealso:: :py:func:`viewConstraint`
+
+.. versionadded:: 3.32
+%End
+
     double scale() const;
 %Docstring
 Returns the map scale.

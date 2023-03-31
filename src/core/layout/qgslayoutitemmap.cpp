@@ -27,7 +27,7 @@
 #include "qgslayertree.h"
 #include "qgsmaplayerref.h"
 #include "qgsmaplayerlistutils_p.h"
-#include "qgsmaplayerstylemanager.h"
+#include "qgsmaplayerstyle.h"
 #include "qgsvectorlayer.h"
 #include "qgsexpressioncontext.h"
 #include "qgsapplication.h"
@@ -606,6 +606,8 @@ bool QgsLayoutItemMap::writePropertiesToElement( QDomElement &mapElem, QDomDocum
     mapElem.setAttribute( QStringLiteral( "drawCanvasItems" ), QStringLiteral( "false" ) );
   }
 
+  mapElem.setAttribute( QStringLiteral( "viewConstraint" ), qgsEnumValueToKey( mViewConstraint ) );
+
   //extent
   QDomElement extentElem = doc.createElement( QStringLiteral( "Extent" ) );
   extentElem.setAttribute( QStringLiteral( "xmin" ), qgsDoubleToString( mExtent.xMinimum() ) );
@@ -714,6 +716,8 @@ bool QgsLayoutItemMap::writePropertiesToElement( QDomElement &mapElem, QDomDocum
 bool QgsLayoutItemMap::readPropertiesFromElement( const QDomElement &itemElem, const QDomDocument &doc, const QgsReadWriteContext &context )
 {
   mUpdatesEnabled = false;
+
+  mViewConstraint = qgsEnumKeyToValue( itemElem.attribute( QStringLiteral( "viewConstraint" ) ), Qgis::MapViewConstraint::ExtentAndRotation );
 
   //extent
   QDomNodeList extentNodeList = itemElem.elementsByTagName( QStringLiteral( "Extent" ) );
@@ -1340,6 +1344,16 @@ void QgsLayoutItemMap::setFrameStrokeWidth( const QgsLayoutMeasurement width )
 {
   QgsLayoutItem::setFrameStrokeWidth( width );
   updateBoundingRect();
+}
+
+Qgis::MapViewConstraint QgsLayoutItemMap::viewConstraint() const
+{
+  return mViewConstraint;
+}
+
+void QgsLayoutItemMap::setViewConstraint( Qgis::MapViewConstraint constraint )
+{
+  mViewConstraint = constraint;
 }
 
 void QgsLayoutItemMap::drawMap( QPainter *painter, const QgsRectangle &extent, QSizeF size, double dpi )

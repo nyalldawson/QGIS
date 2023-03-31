@@ -1652,6 +1652,12 @@ Qgis.CoordinateTransformationFlag.__doc__ = 'Flags which adjust the coordinate t
 # --
 Qgis.CoordinateTransformationFlag.baseClass = Qgis
 Qgis.CoordinateTransformationFlags.baseClass = Qgis
+# monkey patching scoped based enum
+Qgis.MapViewConstraint.CenterRotationAndScale.__doc__ = "The map view is determined by a fixed map center point, rotation and scale. The visible extent will be derived from these properties."
+Qgis.MapViewConstraint.ExtentAndRotation.__doc__ = "The map view is determined by a fixed extent and rotation. The map scale will be derived from these properties."
+Qgis.MapViewConstraint.__doc__ = 'Available constraints which control the visible area of maps.\n\n.. versionadded:: 3.32\n\n' + '* ``CenterRotationAndScale``: ' + Qgis.MapViewConstraint.CenterRotationAndScale.__doc__ + '\n' + '* ``ExtentAndRotation``: ' + Qgis.MapViewConstraint.ExtentAndRotation.__doc__
+# --
+Qgis.MapViewConstraint.baseClass = Qgis
 QgsMapSettings.Flag = Qgis.MapSettingsFlag
 # monkey patching scoped based enum
 QgsMapSettings.Antialiasing = Qgis.MapSettingsFlag.Antialiasing

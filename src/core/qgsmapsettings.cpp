@@ -47,6 +47,12 @@ QgsMapSettings::QgsMapSettings()
   updateDerived();
 }
 
+void QgsMapSettings::setViewConstraint( Qgis::MapViewConstraint constraint )
+{
+  mViewConstraint = constraint;
+  updateDerived();
+}
+
 void QgsMapSettings::setMagnificationFactor( double factor, const QgsPointXY *center )
 {
   const double ratio = mMagnificationFactor / factor;
@@ -80,12 +86,35 @@ QgsRectangle QgsMapSettings::extent() const
 
 void QgsMapSettings::setExtent( const QgsRectangle &extent, bool magnified )
 {
+  mViewConstraint = Qgis::MapViewConstraint::ExtentAndRotation;
+
   QgsRectangle magnifiedExtent = extent;
 
   if ( !magnified )
     magnifiedExtent.scale( 1 / mMagnificationFactor );
 
   mExtent = magnifiedExtent;
+
+  updateDerived();
+}
+
+QgsPointXY QgsMapSettings::center() const
+{
+  switch ( mViewConstraint )
+  {
+    case Qgis::MapViewConstraint::CenterRotationAndScale:
+      return mCenter;
+
+    case Qgis::MapViewConstraint::ExtentAndRotation:
+      return extent().center();
+  }
+  BUILTIN_UNREACHABLE
+}
+
+void QgsMapSettings::setCenter( const QgsPointXY &center )
+{
+  mCenter = center;
+  mViewConstraint = Qgis::MapViewConstraint::CenterRotationAndScale;
 
   updateDerived();
 }
@@ -119,123 +148,134 @@ void QgsMapSettings::setRotation( double degrees )
 
 void QgsMapSettings::updateDerived()
 {
-  const QgsRectangle extent = mExtent;
-
-  if ( extent.isEmpty() || !extent.isFinite() )
+  switch ( mViewConstraint )
   {
-    mValid = false;
-    return;
-  }
-
-  // Don't allow zooms where the current extent is so small that it
-  // can't be accurately represented using a double (which is what
-  // currentExtent uses). Excluding 0 avoids a divide by zero and an
-  // infinite loop when rendering to a new canvas. Excluding extents
-  // greater than 1 avoids doing unnecessary calculations.
-
-  // The scheme is to compare the width against the mean x coordinate
-  // (and height against mean y coordinate) and only allow zooms where
-  // the ratio indicates that there is more than about 12 significant
-  // figures (there are about 16 significant figures in a double).
-
-  if ( extent.width()  > 0 &&
-       extent.height() > 0 &&
-       extent.width()  < 1 &&
-       extent.height() < 1 )
-  {
-    // Use abs() on the extent to avoid the case where the extent is
-    // symmetrical about 0.
-    const double xMean = ( std::fabs( extent.xMinimum() ) + std::fabs( extent.xMaximum() ) ) * 0.5;
-    const double yMean = ( std::fabs( extent.yMinimum() ) + std::fabs( extent.yMaximum() ) ) * 0.5;
-
-    const double xRange = extent.width() / xMean;
-    const double yRange = extent.height() / yMean;
-
-    static const double MIN_PROPORTION = 1e-12;
-    if ( xRange < MIN_PROPORTION || yRange < MIN_PROPORTION )
+    case Qgis::MapViewConstraint::ExtentAndRotation:
     {
-      mValid = false;
-      return;
+      const QgsRectangle extent = mExtent;
+
+      if ( extent.isEmpty() || !extent.isFinite() )
+      {
+        mValid = false;
+        return;
+      }
+
+      // Don't allow zooms where the current extent is so small that it
+      // can't be accurately represented using a double (which is what
+      // currentExtent uses). Excluding 0 avoids a divide by zero and an
+      // infinite loop when rendering to a new canvas. Excluding extents
+      // greater than 1 avoids doing unnecessary calculations.
+
+      // The scheme is to compare the width against the mean x coordinate
+      // (and height against mean y coordinate) and only allow zooms where
+      // the ratio indicates that there is more than about 12 significant
+      // figures (there are about 16 significant figures in a double).
+
+      if ( extent.width()  > 0 &&
+           extent.height() > 0 &&
+           extent.width()  < 1 &&
+           extent.height() < 1 )
+      {
+        // Use abs() on the extent to avoid the case where the extent is
+        // symmetrical about 0.
+        const double xMean = ( std::fabs( extent.xMinimum() ) + std::fabs( extent.xMaximum() ) ) * 0.5;
+        const double yMean = ( std::fabs( extent.yMinimum() ) + std::fabs( extent.yMaximum() ) ) * 0.5;
+
+        const double xRange = extent.width() / xMean;
+        const double yRange = extent.height() / yMean;
+
+        static const double MIN_PROPORTION = 1e-12;
+        if ( xRange < MIN_PROPORTION || yRange < MIN_PROPORTION )
+        {
+          mValid = false;
+          return;
+        }
+      }
+
+      const double myHeight = mSize.height();
+      const double myWidth = mSize.width();
+
+      if ( !myWidth || !myHeight )
+      {
+        mValid = false;
+        return;
+      }
+
+      // calculate the translation and scaling parameters
+      const double mapUnitsPerPixelY = mExtent.height() / myHeight;
+      const double mapUnitsPerPixelX = mExtent.width() / myWidth;
+      mMapUnitsPerPixel = mapUnitsPerPixelY > mapUnitsPerPixelX ? mapUnitsPerPixelY : mapUnitsPerPixelX;
+
+      // calculate the actual extent of the mapCanvas
+      double dxmin = mExtent.xMinimum(), dxmax = mExtent.xMaximum(),
+             dymin = mExtent.yMinimum(), dymax = mExtent.yMaximum(), whitespace;
+
+      if ( mapUnitsPerPixelY > mapUnitsPerPixelX )
+      {
+        whitespace = ( ( myWidth * mMapUnitsPerPixel ) - mExtent.width() ) * 0.5;
+        dxmin -= whitespace;
+        dxmax += whitespace;
+      }
+      else
+      {
+        whitespace = ( ( myHeight * mMapUnitsPerPixel ) - mExtent.height() ) * 0.5;
+        dymin -= whitespace;
+        dymax += whitespace;
+      }
+
+      mVisibleExtent.set( dxmin, dymin, dxmax, dymax );
+
+      // update the scale
+      mScaleCalculator.setDpi( mDpi * mDevicePixelRatio );
+      mScale = mScaleCalculator.calculate( mVisibleExtent, mSize.width() );
+
+      bool ok = true;
+      mMapToPixel.setParameters(
+        mapUnitsPerPixel(),
+        visibleExtent().center().x(),
+        visibleExtent().center().y(),
+        outputSize().width(),
+        outputSize().height(),
+        mRotation, &ok );
+
+      mValid = ok;
+
+#if 1 // set visible extent taking rotation in consideration
+      if ( mRotation )
+      {
+        const QgsPointXY p1 = mMapToPixel.toMapCoordinates( QPoint( 0, 0 ) );
+        const QgsPointXY p2 = mMapToPixel.toMapCoordinates( QPoint( 0, myHeight ) );
+        const QgsPointXY p3 = mMapToPixel.toMapCoordinates( QPoint( myWidth, 0 ) );
+        const QgsPointXY p4 = mMapToPixel.toMapCoordinates( QPoint( myWidth, myHeight ) );
+        dxmin = std::min( p1.x(), std::min( p2.x(), std::min( p3.x(), p4.x() ) ) );
+        dymin = std::min( p1.y(), std::min( p2.y(), std::min( p3.y(), p4.y() ) ) );
+        dxmax = std::max( p1.x(), std::max( p2.x(), std::max( p3.x(), p4.x() ) ) );
+        dymax = std::max( p1.y(), std::max( p2.y(), std::max( p3.y(), p4.y() ) ) );
+        mVisibleExtent.set( dxmin, dymin, dxmax, dymax );
+      }
+#endif
+      QgsDebugMsgLevel( QStringLiteral( "Map units per pixel (x,y) : %1, %2" ).arg( qgsDoubleToString( mapUnitsPerPixelX ), qgsDoubleToString( mapUnitsPerPixelY ) ), 5 );
+      QgsDebugMsgLevel( QStringLiteral( "Adjusted map units per pixel (x,y) : %1, %2" ).arg( qgsDoubleToString( mVisibleExtent.width() / myWidth ), qgsDoubleToString( mVisibleExtent.height() / myHeight ) ), 5 );
+
+      break;
+    }
+
+    case Qgis::MapViewConstraint::CenterRotationAndScale:
+    {
+      break;
     }
   }
 
-  const double myHeight = mSize.height();
-  const double myWidth = mSize.width();
-
-  if ( !myWidth || !myHeight )
-  {
-    mValid = false;
-    return;
-  }
-
-  // calculate the translation and scaling parameters
-  const double mapUnitsPerPixelY = mExtent.height() / myHeight;
-  const double mapUnitsPerPixelX = mExtent.width() / myWidth;
-  mMapUnitsPerPixel = mapUnitsPerPixelY > mapUnitsPerPixelX ? mapUnitsPerPixelY : mapUnitsPerPixelX;
-
-  // calculate the actual extent of the mapCanvas
-  double dxmin = mExtent.xMinimum(), dxmax = mExtent.xMaximum(),
-         dymin = mExtent.yMinimum(), dymax = mExtent.yMaximum(), whitespace;
-
-  if ( mapUnitsPerPixelY > mapUnitsPerPixelX )
-  {
-    whitespace = ( ( myWidth * mMapUnitsPerPixel ) - mExtent.width() ) * 0.5;
-    dxmin -= whitespace;
-    dxmax += whitespace;
-  }
-  else
-  {
-    whitespace = ( ( myHeight * mMapUnitsPerPixel ) - mExtent.height() ) * 0.5;
-    dymin -= whitespace;
-    dymax += whitespace;
-  }
-
-  mVisibleExtent.set( dxmin, dymin, dxmax, dymax );
-
-  // update the scale
-  mScaleCalculator.setDpi( mDpi * mDevicePixelRatio );
-  mScale = mScaleCalculator.calculate( mVisibleExtent, mSize.width() );
-
-  bool ok = true;
-  mMapToPixel.setParameters(
-    mapUnitsPerPixel(),
-    visibleExtent().center().x(),
-    visibleExtent().center().y(),
-    outputSize().width(),
-    outputSize().height(),
-    mRotation, &ok );
-
-  mValid = ok;
-
-#if 1 // set visible extent taking rotation in consideration
-  if ( mRotation )
-  {
-    const QgsPointXY p1 = mMapToPixel.toMapCoordinates( QPoint( 0, 0 ) );
-    const QgsPointXY p2 = mMapToPixel.toMapCoordinates( QPoint( 0, myHeight ) );
-    const QgsPointXY p3 = mMapToPixel.toMapCoordinates( QPoint( myWidth, 0 ) );
-    const QgsPointXY p4 = mMapToPixel.toMapCoordinates( QPoint( myWidth, myHeight ) );
-    dxmin = std::min( p1.x(), std::min( p2.x(), std::min( p3.x(), p4.x() ) ) );
-    dymin = std::min( p1.y(), std::min( p2.y(), std::min( p3.y(), p4.y() ) ) );
-    dxmax = std::max( p1.x(), std::max( p2.x(), std::max( p3.x(), p4.x() ) ) );
-    dymax = std::max( p1.y(), std::max( p2.y(), std::max( p3.y(), p4.y() ) ) );
-    mVisibleExtent.set( dxmin, dymin, dxmax, dymax );
-  }
-#endif
-
-  QgsDebugMsgLevel( QStringLiteral( "Map units per pixel (x,y) : %1, %2" ).arg( qgsDoubleToString( mapUnitsPerPixelX ), qgsDoubleToString( mapUnitsPerPixelY ) ), 5 );
   QgsDebugMsgLevel( QStringLiteral( "Pixmap dimensions (x,y) : %1, %2" ).arg( qgsDoubleToString( mSize.width() ), qgsDoubleToString( mSize.height() ) ), 5 );
   QgsDebugMsgLevel( QStringLiteral( "Extent dimensions (x,y) : %1, %2" ).arg( qgsDoubleToString( mExtent.width() ), qgsDoubleToString( mExtent.height() ) ), 5 );
   QgsDebugMsgLevel( mExtent.toString(), 5 );
-  QgsDebugMsgLevel( QStringLiteral( "Adjusted map units per pixel (x,y) : %1, %2" ).arg( qgsDoubleToString( mVisibleExtent.width() / myWidth ), qgsDoubleToString( mVisibleExtent.height() / myHeight ) ), 5 );
   QgsDebugMsgLevel( QStringLiteral( "Recalced pixmap dimensions (x,y) : %1, %2" ).arg( qgsDoubleToString( mVisibleExtent.width() / mMapUnitsPerPixel ), qgsDoubleToString( mVisibleExtent.height() / mMapUnitsPerPixel ) ), 5 );
   QgsDebugMsgLevel( QStringLiteral( "Scale (assuming meters as map units) = 1:%1" ).arg( qgsDoubleToString( mScale ) ), 5 );
   QgsDebugMsgLevel( QStringLiteral( "Rotation: %1 degrees" ).arg( mRotation ), 5 );
   QgsDebugMsgLevel( QStringLiteral( "Extent: %1" ).arg( mExtent.asWktCoordinates() ), 5 );
   QgsDebugMsgLevel( QStringLiteral( "Visible Extent: %1" ).arg( mVisibleExtent.asWktCoordinates() ), 5 );
   QgsDebugMsgLevel( QStringLiteral( "Magnification factor: %1" ).arg( mMagnificationFactor ), 5 );
-
 }
-
 
 QSize QgsMapSettings::outputSize() const
 {
@@ -459,6 +499,14 @@ double QgsMapSettings::mapUnitsPerPixel() const
 double QgsMapSettings::scale() const
 {
   return mScale;
+}
+
+void QgsMapSettings::setScale( double scale )
+{
+  mScale = scale;
+  mViewConstraint = Qgis::MapViewConstraint::CenterRotationAndScale;
+
+  updateDerived();
 }
 
 QgsCoordinateTransformContext QgsMapSettings::transformContext() const

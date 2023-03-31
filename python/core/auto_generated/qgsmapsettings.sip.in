@@ -60,6 +60,26 @@ ratio shall be set accordingly.
   public:
     QgsMapSettings();
 
+    Qgis::MapViewConstraint viewConstraint() const;
+%Docstring
+Returns the map's view constraint, which determines the properties of the map which determine
+the visible area.
+
+.. seealso:: :py:func:`setViewConstraint`
+
+.. versionadded:: 3.32
+%End
+
+    void setViewConstraint( Qgis::MapViewConstraint constraint );
+%Docstring
+Sets the map's view ``constraint``, which determines the properties of the map which determine
+the visible area.
+
+.. seealso:: :py:func:`viewConstraint`
+
+.. versionadded:: 3.32
+%End
+
     QgsRectangle extent() const;
 %Docstring
 Returns geographical coordinates of the rectangle that should be rendered.
@@ -73,11 +93,17 @@ Returns geographical coordinates of the rectangle that should be rendered.
 .. seealso:: :py:func:`visibleExtent`
 
 .. seealso:: :py:func:`setExtent`
+
+.. seealso:: :py:func:`center`
 %End
 
     void setExtent( const QgsRectangle &rect, bool magnified = true );
 %Docstring
 Sets the coordinates of the rectangle which should be rendered.
+
+.. note::
+
+   Calling this method will automatically set the :py:func:`~QgsMapSettings.viewConstraint` to :py:class:`Qgis`.MapViewConstraint.ExtentAndRotation.
 
 .. warning::
 
@@ -85,9 +111,35 @@ Sets the coordinates of the rectangle which should be rendered.
    from the specified extent, since the given extent may be expanded in order to match the
    aspect ratio of :py:func:`~QgsMapSettings.outputSize`. Use :py:func:`~QgsMapSettings.visibleExtent` to retrieve the actual extent to be rendered.
 
+
 .. seealso:: :py:func:`visibleExtent`
 
 .. seealso:: :py:func:`extent`
+%End
+
+    QgsPointXY center() const;
+%Docstring
+Returns the geographical coordinates of the center of the map that should be rendered.
+
+If the :py:func:`~QgsMapSettings.viewConstraint` is set to :py:class:`Qgis`.MapViewConstraint.ExtentAndRotation then the center
+will be derived from the map's :py:func:`~QgsMapSettings.extent`.
+
+.. seealso:: :py:func:`setCenter`
+
+.. versionadded:: 3.32
+%End
+
+    void setCenter( const QgsPointXY &center );
+%Docstring
+Sets the geographical coordinates of the ``center`` of the map that should be rendered.
+
+.. note::
+
+   Calling this method will automatically set the :py:func:`~QgsMapSettings.viewConstraint` to :py:class:`Qgis`.MapViewConstraint.CenterRotationAndScale.
+
+.. seealso:: :py:func:`center`
+
+.. versionadded:: 3.32
 %End
 
     double extentBuffer() const;
@@ -510,6 +562,26 @@ Returns the distance in geographical coordinates that equals to one pixel in the
 %Docstring
 Returns the calculated map scale.
 The scale value indicates the scale denominator, e.g. 1000.0 for a 1:1000 map.
+
+If the :py:func:`~QgsMapSettings.viewConstraint` is set to :py:class:`Qgis`.MapViewConstraint.ExtentAndRotation then the scale is derived
+from the :py:func:`~QgsMapSettings.extent` and map :py:func:`~QgsMapSettings.size`.
+
+.. seealso:: :py:func:`setScale`
+%End
+
+    void setScale( double scale );
+%Docstring
+Sets the desired map ``scale``.
+
+The ``scale`` value indicates the scale denominator, e.g. 1000.0 for a 1:1000 map.
+
+.. note::
+
+   Calling this method will automatically set the :py:func:`~QgsMapSettings.viewConstraint` to :py:class:`Qgis`.MapViewConstraint.CenterRotationAndScale.
+
+.. seealso:: :py:func:`scale`
+
+.. versionadded:: 3.32
 %End
 
     void setExpressionContext( const QgsExpressionContext &context );
@@ -997,6 +1069,8 @@ Sets the shading ``renderer`` used to render shading on the entire map
 %End
 
   protected:
+
+
 
 
 

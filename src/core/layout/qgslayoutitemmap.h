@@ -405,6 +405,26 @@ class CORE_EXPORT QgsLayoutItemMap : public QgsLayoutItem, public QgsTemporalRan
     void setFrameStrokeWidth( QgsLayoutMeasurement width ) override;
 
     /**
+     * Returns the map item's view constraint, which determines the properties of the map which determine
+     * the visible area.
+     *
+     * \see setViewConstraint()
+     *
+     * \since QGIS 3.32
+     */
+    Qgis::MapViewConstraint viewConstraint() const;
+
+    /**
+     * Sets the map item's view \a constraint, which determines the properties of the map which determine
+     * the visible area.
+     *
+     * \see viewConstraint()
+     *
+     * \since QGIS 3.32
+     */
+    void setViewConstraint( Qgis::MapViewConstraint constraint );
+
+    /**
      * Returns the map scale.
      * The scale value indicates the scale denominator, e.g. 1000.0 for a 1:1000 map.
      * \see setScale()
@@ -973,9 +993,9 @@ class CORE_EXPORT QgsLayoutItemMap : public QgsLayoutItem, public QgsTemporalRan
     std::unique_ptr< QgsLayoutItemMapGridStack > mGridStack;
     std::unique_ptr< QgsLayoutItemMapOverviewStack > mOverviewStack;
 
+    Qgis::MapViewConstraint mViewConstraint = Qgis::MapViewConstraint::ExtentAndRotation;
+
     // Map region in map units really used for rendering
-    // It can be the same as mUserExtent, but it can be bigger in on dimension if mCalculate==Scale,
-    // so that full rectangle in paper is used.
     QgsRectangle mExtent;
 
     //! Map CRS

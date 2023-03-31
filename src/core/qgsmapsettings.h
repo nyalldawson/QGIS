@@ -92,6 +92,26 @@ class CORE_EXPORT QgsMapSettings : public QgsTemporalRangeObject
     QgsMapSettings();
 
     /**
+     * Returns the map's view constraint, which determines the properties of the map which determine
+     * the visible area.
+     *
+     * \see setViewConstraint()
+     *
+     * \since QGIS 3.32
+     */
+    Qgis::MapViewConstraint viewConstraint() const { return mViewConstraint; }
+
+    /**
+     * Sets the map's view \a constraint, which determines the properties of the map which determine
+     * the visible area.
+     *
+     * \see viewConstraint()
+     *
+     * \since QGIS 3.32
+     */
+    void setViewConstraint( Qgis::MapViewConstraint constraint );
+
+    /**
      * Returns geographical coordinates of the rectangle that should be rendered.
      *
      * \warning The actual visible extent used for rendering can be significantly different from this
@@ -100,11 +120,14 @@ class CORE_EXPORT QgsMapSettings : public QgsTemporalRangeObject
      *
      * \see visibleExtent()
      * \see setExtent()
+     * \see center()
      */
     QgsRectangle extent() const;
 
     /**
      * Sets the coordinates of the rectangle which should be rendered.
+     *
+     * \note Calling this method will automatically set the viewConstraint() to Qgis::MapViewConstraint::ExtentAndRotation.
      *
      * \warning The actual visible extent used for rendering can be significantly different
      * from the specified extent, since the given extent may be expanded in order to match the
@@ -114,6 +137,27 @@ class CORE_EXPORT QgsMapSettings : public QgsTemporalRangeObject
      * \see extent()
      */
     void setExtent( const QgsRectangle &rect, bool magnified = true );
+
+    /**
+     * Returns the geographical coordinates of the center of the map that should be rendered.
+     *
+     * If the viewConstraint() is set to Qgis::MapViewConstraint::ExtentAndRotation then the center
+     * will be derived from the map's extent().
+     *
+     * \see setCenter()
+     * \since QGIS 3.32
+     */
+    QgsPointXY center() const;
+
+    /**
+     * Sets the geographical coordinates of the \a center of the map that should be rendered.
+     *
+     * \note Calling this method will automatically set the viewConstraint() to Qgis::MapViewConstraint::CenterRotationAndScale.
+     *
+     * \see center()
+     * \since QGIS 3.32
+     */
+    void setCenter( const QgsPointXY &center );
 
     /**
      * Returns the buffer in map units to use around the visible extent for rendering
@@ -468,8 +512,25 @@ class CORE_EXPORT QgsMapSettings : public QgsTemporalRangeObject
     /**
      * Returns the calculated map scale.
      * The scale value indicates the scale denominator, e.g. 1000.0 for a 1:1000 map.
+     *
+     * If the viewConstraint() is set to Qgis::MapViewConstraint::ExtentAndRotation then the scale is derived
+     * from the extent() and map size().
+     *
+     * \see setScale()
      */
     double scale() const;
+
+    /**
+     * Sets the desired map \a scale.
+     *
+     * The \a scale value indicates the scale denominator, e.g. 1000.0 for a 1:1000 map.
+     *
+     * \note Calling this method will automatically set the viewConstraint() to Qgis::MapViewConstraint::CenterRotationAndScale.
+     *
+     * \see scale()
+     * \since QGIS 3.32
+     */
+    void setScale( double scale );
 
     /**
      * Sets the expression context. This context is used for all expression evaluation
@@ -889,8 +950,12 @@ class CORE_EXPORT QgsMapSettings : public QgsTemporalRangeObject
     QSize mSize;
     float mDevicePixelRatio = 1.0;
 
+    Qgis::MapViewConstraint mViewConstraint = Qgis::MapViewConstraint::ExtentAndRotation;
+
     QgsRectangle mExtent;
     double mExtentBuffer = 0.0;
+
+    QgsPointXY mCenter;
 
     double mRotation = 0.0;
     double mMagnificationFactor = 1.0;
