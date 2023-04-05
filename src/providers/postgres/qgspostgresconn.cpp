@@ -1032,6 +1032,472 @@ bool QgsPostgresConn::getTableInfo( bool searchGeometryColumnsOnly, bool searchP
   return true;
 }
 
+
+struct PGTypeInfo
+{
+  QString typeName;
+  QString typeType;
+  QString typeElem;
+  int typeLen;
+};
+
+bool QgsPostgresConn::getTableFields( const QString &query, QgsFields &fields, QHash<int, char> &identityFields,
+                                      const QList<int> &primaryKeyAttributes, QHash<int, QString> &defaultValues,
+                                      QHash<int, QString> &generatedValues,
+                                      Qgis::PostgresRelKind relKind,
+                                      bool isQuery, const QStringList &keyColumns, const QString &geometryColumnName )
+{
+  // Populate the field vector for this layer. The field vector contains
+  // field name, type, length, and precision (if numeric)
+  QString sql = QStringLiteral( "SELECT * FROM %1 LIMIT 0" ).arg( query );
+  QString attroidsFilter;
+
+  QgsPostgresResult result( LoggedPQexec( "QgsPostgresProvider", sql ) );
+
+  QMap<Oid, QMap<int, QString> > fmtFieldTypeMap, descrMap, defValMap, identityMap, generatedMap;
+  QMap<Oid, QMap<int, Oid> > attTypeIdMap;
+  QMap<Oid, QMap<int, bool> > notNullMap, uniqueMap;
+  if ( result.PQnfields() > 0 )
+  {
+    // Collect attribiute oids
+    QSet<Oid> attroids;
+    for ( int i = 0; i < result.PQnfields(); i++ )
+    {
+      Oid attroid = result.PQftype( i );
+      attroids.insert( attroid );
+    }
+
+    // Collect table oids
+    QSet<Oid> tableoids;
+    for ( int i = 0; i < result.PQnfields(); i++ )
+    {
+      Oid tableoid = result.PQftable( i );
+      if ( tableoid > 0 )
+      {
+        tableoids.insert( tableoid );
+      }
+    }
+
+    if ( !tableoids.isEmpty() )
+    {
+      QStringList tableoidsList;
+      const auto constTableoids = tableoids;
+      for ( Oid tableoid : constTableoids )
+      {
+        tableoidsList.append( QString::number( tableoid ) );
+      }
+
+      QString tableoidsFilter = '(' + tableoidsList.join( QLatin1Char( ',' ) ) + ')';
+
+      // Collect formatted field types
+      sql = QStringLiteral(
+              "SELECT attrelid, attnum, pg_catalog.format_type(atttypid,atttypmod), pg_catalog.col_description(attrelid,attnum), pg_catalog.pg_get_expr(adbin,adrelid), atttypid, attnotnull::int, indisunique::int%1%2"
+              " FROM pg_attribute"
+              " LEFT OUTER JOIN pg_attrdef ON attrelid=adrelid AND attnum=adnum"
+
+              // find unique constraints if present. Text cast required to handle int2vector comparison. Distinct required as multiple unique constraints may exist
+              " LEFT OUTER JOIN ( SELECT DISTINCT indrelid, indkey, indisunique FROM pg_index WHERE indisunique ) uniq ON attrelid=indrelid AND attnum::text=indkey::text "
+
+              " WHERE attrelid IN %3"
+            ).arg( pgVersion() >= 100000 ? QStringLiteral( ", attidentity" ) : QString(),
+                   pgVersion() >= 120000 ? QStringLiteral( ", attgenerated" ) : QString(),
+                   tableoidsFilter );
+
+      QgsPostgresResult fmtFieldTypeResult( LoggedPQexec( "QgsPostgresProvider", sql ) );
+
+      if ( ! fmtFieldTypeResult.result() )
+      {
+        throw PGException( fmtFieldTypeResult );
+      }
+
+      for ( int i = 0; i < fmtFieldTypeResult.PQntuples(); ++i )
+      {
+        Oid attrelid = fmtFieldTypeResult.PQgetvalue( i, 0 ).toUInt();
+        int attnum = fmtFieldTypeResult.PQgetvalue( i, 1 ).toInt(); // Int2
+        QString formatType = fmtFieldTypeResult.PQgetvalue( i, 2 );
+        QString descr = fmtFieldTypeResult.PQgetvalue( i, 3 );
+        QString defVal = fmtFieldTypeResult.PQgetvalue( i, 4 );
+        Oid attType = fmtFieldTypeResult.PQgetvalue( i, 5 ).toUInt();
+        bool attNotNull = fmtFieldTypeResult.PQgetvalue( i, 6 ).toInt();
+        bool uniqueConstraint = fmtFieldTypeResult.PQgetvalue( i, 7 ).toInt();
+        QString attIdentity = pgVersion() >= 100000 ? fmtFieldTypeResult.PQgetvalue( i, 8 ) : " ";
+
+        // On PostgreSQL 12, the field pg_attribute.attgenerated is always filled with "s" if the field is generated,
+        // with the possibility of other values in future releases. This indicates "STORED" generated fields.
+        // The documentation for version 12 indicates that there is a future possibility of supporting virtual
+        // generated values, which might make possible to have values other than "s" on pg_attribute.attgenerated,
+        // which should be unimportant for QGIS if the user still won't be able to overwrite the column value.
+        // See https://www.postgresql.org/docs/12/ddl-generated-columns.html
+        QString attGenerated = pgVersion() >= 120000 ? fmtFieldTypeResult.PQgetvalue( i, 9 ) : "";
+        fmtFieldTypeMap[attrelid][attnum] = formatType;
+        descrMap[attrelid][attnum] = descr;
+        defValMap[attrelid][attnum] = defVal;
+        attTypeIdMap[attrelid][attnum] = attType;
+        notNullMap[attrelid][attnum] = attNotNull;
+        uniqueMap[attrelid][attnum] = uniqueConstraint;
+        identityMap[attrelid][attnum] = attIdentity.isEmpty() ? " " : attIdentity;
+        generatedMap[attrelid][attnum] = attGenerated.isEmpty() ? QString() : defVal;
+
+        // Also include atttype oid from pg_attribute, because PQnfields only returns basic type for for domains
+        attroids.insert( attType );
+      }
+    }
+
+    // Prepare filter for fetching pg_type info
+    if ( !attroids.isEmpty() )
+    {
+      QStringList attroidsList;
+      for ( Oid attroid : std::as_const( attroids ) )
+      {
+        attroidsList.append( QString::number( attroid ) );
+      }
+      attroidsFilter = QStringLiteral( "WHERE oid in (%1)" ).arg( attroidsList.join( ',' ) );
+    }
+  }
+
+  // Collect type info
+  sql = QStringLiteral( "SELECT oid,typname,typtype,typelem,typlen FROM pg_type %1" ).arg( attroidsFilter );
+  QgsPostgresResult typeResult( LoggedPQexec( "QgsPostgresProvider", sql ) );
+
+  QMap<Oid, PGTypeInfo> typeMap;
+  for ( int i = 0; i < typeResult.PQntuples(); ++i )
+  {
+    PGTypeInfo typeInfo =
+    {
+      /* typeName = */ typeResult.PQgetvalue( i, 1 ),
+      /* typeType = */ typeResult.PQgetvalue( i, 2 ),
+      /* typeElem = */ typeResult.PQgetvalue( i, 3 ),
+      /* typeLen = */ typeResult.PQgetvalue( i, 4 ).toInt()
+    };
+    typeMap.insert( typeResult.PQgetvalue( i, 0 ).toUInt(), typeInfo );
+  }
+
+  QSet<QString> fieldNames;
+  fields.clear();
+  identityFields.clear();
+  for ( int i = 0; i < result.PQnfields(); i++ )
+  {
+    QString fieldName = result.PQfname( i );
+    if ( fieldName == geometryColumnName )
+      continue;
+
+    Oid fldtyp = result.PQftype( i );
+    int fldMod = result.PQfmod( i );
+    int fieldPrec = 0;
+    Oid tableoid = result.PQftable( i );
+    int attnum = result.PQftablecol( i );
+    Oid atttypid = attTypeIdMap[tableoid][attnum];
+
+    const PGTypeInfo &typeInfo = typeMap.value( fldtyp );
+    QString fieldTypeName = typeInfo.typeName;
+    QString fieldTType = typeInfo.typeType;
+    int fieldSize = typeInfo.typeLen;
+
+    bool isDomain = ( typeMap.value( atttypid ).typeType == QLatin1String( "d" ) );
+
+    QString formattedFieldType = fmtFieldTypeMap[tableoid][attnum];
+    QString originalFormattedFieldType = formattedFieldType;
+    if ( isDomain )
+    {
+      // get correct formatted field type for domain
+      sql = QStringLiteral( "SELECT format_type(%1, %2)" ).arg( fldtyp ).arg( fldMod );
+      QgsPostgresResult fmtFieldModResult( LoggedPQexec( "QgsPostgresProvider", sql ) );
+      if ( fmtFieldModResult.PQntuples() > 0 )
+      {
+        formattedFieldType = fmtFieldModResult.PQgetvalue( 0, 0 );
+      }
+    }
+
+    QString fieldComment = descrMap[tableoid][attnum];
+
+    QVariant::Type fieldType = QVariant::Invalid;
+    QVariant::Type fieldSubType = QVariant::Invalid;
+
+    if ( fieldTType == QLatin1String( "b" ) )
+    {
+      bool isArray = fieldTypeName.startsWith( '_' );
+
+      if ( isArray )
+        fieldTypeName = fieldTypeName.mid( 1 );
+
+      if ( fieldTypeName == QLatin1String( "int8" ) || fieldTypeName == QLatin1String( "serial8" ) )
+      {
+        fieldType = QVariant::LongLong;
+        fieldSize = -1;
+        fieldPrec = 0;
+      }
+      else if ( fieldTypeName == QLatin1String( "int2" ) || fieldTypeName == QLatin1String( "int4" ) ||
+                fieldTypeName == QLatin1String( "oid" ) || fieldTypeName == QLatin1String( "serial" ) )
+      {
+        fieldType = QVariant::Int;
+        fieldSize = -1;
+        fieldPrec = 0;
+      }
+      else if ( fieldTypeName == QLatin1String( "real" ) || fieldTypeName == QLatin1String( "double precision" ) ||
+                fieldTypeName == QLatin1String( "float4" ) || fieldTypeName == QLatin1String( "float8" ) )
+      {
+        fieldType = QVariant::Double;
+        fieldSize = -1;
+        fieldPrec = 0;
+      }
+      else if ( fieldTypeName == QLatin1String( "numeric" ) )
+      {
+        fieldType = QVariant::Double;
+
+        if ( formattedFieldType == QLatin1String( "numeric" ) || formattedFieldType.isEmpty() )
+        {
+          fieldSize = -1;
+          fieldPrec = 0;
+        }
+        else
+        {
+          const QRegularExpression re( QRegularExpression::anchoredPattern( QStringLiteral( "numeric\\((\\d+),(\\d+)\\)" ) ) );
+          const QRegularExpressionMatch match = re.match( formattedFieldType );
+          if ( match.hasMatch() )
+          {
+            fieldSize = match.captured( 1 ).toInt();
+            fieldPrec = match.captured( 2 ).toInt();
+          }
+          else if ( formattedFieldType != QLatin1String( "numeric" ) )
+          {
+            QgsMessageLog::logMessage( tr( "Unexpected formatted field type '%1' for field %2" )
+                                       .arg( formattedFieldType,
+                                             fieldName ),
+                                       tr( "PostGIS" ) );
+            fieldSize = -1;
+            fieldPrec = 0;
+          }
+        }
+      }
+      else if ( fieldTypeName == QLatin1String( "varchar" ) )
+      {
+        fieldType = QVariant::String;
+
+        const QRegularExpression re( QRegularExpression::anchoredPattern( "character varying\\((\\d+)\\)" ) );
+        const QRegularExpressionMatch match = re.match( formattedFieldType );
+        if ( match.hasMatch() )
+        {
+          fieldSize = match.captured( 1 ).toInt();
+        }
+        else
+        {
+          fieldSize = -1;
+        }
+      }
+      else if ( fieldTypeName == QLatin1String( "date" ) )
+      {
+        fieldType = QVariant::Date;
+        fieldSize = -1;
+      }
+      else if ( fieldTypeName == QLatin1String( "time" ) )
+      {
+        fieldType = QVariant::Time;
+        fieldSize = -1;
+      }
+      else if ( fieldTypeName == QLatin1String( "timestamp" ) || fieldTypeName == QLatin1String( "timestamptz" ) )
+      {
+        fieldType = QVariant::DateTime;
+        fieldSize = -1;
+      }
+      else if ( fieldTypeName == QLatin1String( "bytea" ) )
+      {
+        fieldType = QVariant::ByteArray;
+        fieldSize = -1;
+      }
+      else if ( fieldTypeName == QLatin1String( "text" ) ||
+                fieldTypeName == QLatin1String( "citext" ) ||
+                fieldTypeName == QLatin1String( "geography" ) ||
+                fieldTypeName == QLatin1String( "inet" ) ||
+                fieldTypeName == QLatin1String( "cidr" ) ||
+                fieldTypeName == QLatin1String( "macaddr" ) ||
+                fieldTypeName == QLatin1String( "macaddr8" ) ||
+                fieldTypeName == QLatin1String( "money" ) ||
+                fieldTypeName == QLatin1String( "ltree" ) ||
+                fieldTypeName == QLatin1String( "uuid" ) ||
+                fieldTypeName == QLatin1String( "xml" ) ||
+                fieldTypeName.startsWith( QLatin1String( "time" ) ) ||
+                fieldTypeName.startsWith( QLatin1String( "date" ) ) )
+      {
+        fieldType = QVariant::String;
+        fieldSize = -1;
+      }
+      else if ( fieldTypeName == QLatin1String( "geometry" ) )
+      {
+        fieldType = QVariant::UserType;
+        fieldSize = -1;
+      }
+      else if ( fieldTypeName == QLatin1String( "bpchar" ) )
+      {
+        // although postgres internally uses "bpchar", this is exposed to users as character in postgres
+        fieldTypeName = QStringLiteral( "character" );
+
+        fieldType = QVariant::String;
+
+        const QRegularExpression re( QRegularExpression::anchoredPattern( "character\\((\\d+)\\)" ) );
+        const QRegularExpressionMatch match = re.match( formattedFieldType );
+        if ( match.hasMatch() )
+        {
+          fieldSize = match.captured( 1 ).toInt();
+        }
+        else
+        {
+          QgsDebugMsg( QStringLiteral( "Unexpected formatted field type '%1' for field %2" )
+                       .arg( formattedFieldType,
+                             fieldName ) );
+          fieldSize = -1;
+          fieldPrec = 0;
+        }
+      }
+      else if ( fieldTypeName == QLatin1String( "char" ) )
+      {
+        fieldType = QVariant::String;
+
+        const QRegularExpression re( QRegularExpression::anchoredPattern( QStringLiteral( "char\\((\\d+)\\)" ) ) );
+        const QRegularExpressionMatch match = re.match( formattedFieldType );
+        if ( match.hasMatch() )
+        {
+          fieldSize = match.captured( 1 ).toInt();
+        }
+        else
+        {
+          QgsMessageLog::logMessage( tr( "Unexpected formatted field type '%1' for field %2" )
+                                     .arg( formattedFieldType,
+                                           fieldName ) );
+          fieldSize = -1;
+          fieldPrec = 0;
+        }
+      }
+      else if ( fieldTypeName == QLatin1String( "hstore" ) ||  fieldTypeName == QLatin1String( "json" ) || fieldTypeName == QLatin1String( "jsonb" ) )
+      {
+        fieldType = QVariant::Map;
+        fieldSubType = QVariant::String;
+        fieldSize = -1;
+      }
+      else if ( fieldTypeName == QLatin1String( "bool" ) )
+      {
+        // enum
+        fieldType = QVariant::Bool;
+        fieldSize = -1;
+      }
+      // PG 12 returns "name" type for some system table fields (e.g. information_schema.tables)
+      else if ( fieldTypeName == QLatin1String( "name" ) )
+      {
+        fieldSubType = QVariant::String;
+        fieldSize = 63;
+      }
+      else
+      {
+        // be tolerant in case of views: this might be a field used as a key
+        if ( ( relKind == Qgis::PostgresRelKind::View || relKind == Qgis::PostgresRelKind::MaterializedView ) && keyColumns.contains( fieldName ) )
+        {
+          // Assume it is convertible to text
+          fieldType = QVariant::String;
+          fieldSize = -1;
+        }
+        else if ( fieldTypeName == QLatin1String( "unknown" ) )
+        {
+          // Assume it is convertible to text
+          fieldType = QVariant::String;
+          fieldSize = -1;
+        }
+        else
+        {
+          QgsMessageLog::logMessage( tr( "Field %1 ignored, because of unsupported type %2" ).arg( fieldName, fieldTType ), tr( "PostGIS" ) );
+          continue;
+        }
+      }
+
+      if ( isArray )
+      {
+        fieldTypeName = '_' + fieldTypeName;
+        fieldSubType = fieldType;
+        fieldType = ( fieldType == QVariant::String ? QVariant::StringList : QVariant::List );
+        fieldSize = -1;
+      }
+    }
+    else if ( fieldTType == QLatin1String( "e" ) )
+    {
+      // enum
+      fieldType = QVariant::String;
+      fieldSize = -1;
+    }
+    else
+    {
+      QgsMessageLog::logMessage( tr( "Field %1 ignored, because of unsupported type %2" ).arg( fieldName, fieldTType ), tr( "PostGIS" ) );
+      continue;
+    }
+
+    if ( fieldNames.contains( fieldName ) )
+    {
+      QgsMessageLog::logMessage( tr( "Duplicate field %1 found\n" ).arg( fieldName ), tr( "PostGIS" ) );
+      // In case of read-only query layers we can safely ignore the issue and rename the duplicated field
+      if ( !isQuery )
+      {
+        return false;
+      }
+      else
+      {
+        unsigned short int i = 1;
+        while ( i < std::numeric_limits<unsigned short int>::max() )
+        {
+          const QString newName { QStringLiteral( "%1 (%2)" ).arg( fieldName ).arg( ++i ) };
+          if ( ! fieldNames.contains( newName ) )
+          {
+            fieldName = newName;
+            break;
+          }
+        }
+      }
+    }
+
+    fieldNames << fieldName;
+
+    if ( isDomain )
+    {
+      //field was defined using domain, so use domain type name for fieldTypeName
+      fieldTypeName = originalFormattedFieldType;
+    }
+
+    // If this is an identity field with constraints and there is no default, let's look for a sequence:
+    // we might have a default value created by a sequence named <table>_<field>_seq
+    if ( ! identityMap[tableoid ][ attnum ].isEmpty()
+         && notNullMap[tableoid][ attnum ]
+         && uniqueMap[tableoid][attnum]
+         && defValMap[tableoid][attnum].isEmpty() )
+    {
+      const QString seqSql = QStringLiteral( "SELECT pg_get_serial_sequence(%1, %2)" )
+                             .arg( quotedValue( query ) )
+                             .arg( quotedValue( fieldName ) );
+      QgsPostgresResult seqResult( PQexec( seqSql ) );
+      if ( seqResult.PQntuples() == 1 )
+      {
+        defValMap[tableoid][attnum] = QStringLiteral( "nextval(%1)" ).arg( quotedValue( seqResult.PQgetvalue( 0, 0 ) ) );
+      }
+    }
+
+    defaultValues.insert( fields.size(), defValMap[tableoid][attnum] );
+
+    const QString generatedValue = generatedMap[tableoid][attnum];
+    if ( !generatedValue.isNull() )
+      generatedValues.insert( fields.size(), generatedValue );
+
+    QgsField newField = QgsField( fieldName, fieldType, fieldTypeName, fieldSize, fieldPrec, fieldComment, fieldSubType );
+    newField.setReadOnly( !generatedValue.isNull() );
+
+    QgsFieldConstraints constraints;
+    if ( notNullMap[tableoid][attnum] || ( primaryKeyAttributes.size() == 1 && primaryKeyAttributes[0] == i ) || identityMap[tableoid][attnum] != ' ' )
+      constraints.setConstraint( QgsFieldConstraints::ConstraintNotNull, QgsFieldConstraints::ConstraintOriginProvider );
+    if ( uniqueMap[tableoid][attnum] || ( primaryKeyAttributes.size() == 1 && primaryKeyAttributes[0] == i ) || identityMap[tableoid][attnum] != ' ' )
+      constraints.setConstraint( QgsFieldConstraints::ConstraintUnique, QgsFieldConstraints::ConstraintOriginProvider );
+    newField.setConstraints( constraints );
+
+    identityFields.insert( fields.size(), identityMap[tableoid][attnum][0].toLatin1() );
+    fields.append( newField );
+  }
+
+  return true;
+}
+
 bool QgsPostgresConn::supportedLayers( QVector<QgsPostgresLayerProperty> &layers, bool searchGeometryColumnsOnly, bool searchPublicOnly, bool allowGeometrylessTables, const QString &schema )
 {
   QMutexLocker locker( &mLock );

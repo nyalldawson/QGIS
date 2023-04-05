@@ -420,6 +420,13 @@ class QgsPostgresConn : public QObject
     bool getTableInfo( bool searchGeometryColumnsOnly, bool searchPublicOnly, bool allowGeometrylessTables,
                        const QString &schema = QString() );
 
+    bool getTableFields( const QString &query, QgsFields &fields, QHash<int, char> &identityFields,
+                         const QList<int> &primaryKeyAttributes, QHash<int, QString> &defaultValues,
+                         QHash<int, QString> &generatedValues,
+                         Qgis::PostgresRelKind relKind, bool isQuery,
+                         const QStringList &keyColumns,
+                         const QString &geometryColumnName = QString() );
+
     qint64 getBinaryInt( QgsPostgresResult &queryResult, int row, int col );
 
     QString fieldExpressionForWhereClause( const QgsField &fld, QVariant::Type valueType = QVariant::LastType, QString expr = "%1" );
