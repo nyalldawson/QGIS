@@ -2481,7 +2481,7 @@ int QgsCoordinateReferenceSystem::syncDatabase()
       int major = statement.columnAsInt64( 0 );
       int minor = statement.columnAsInt64( 1 );
       int patch = statement.columnAsInt64( 2 );
-      if ( major == PROJ_VERSION_MAJOR && minor == PROJ_VERSION_MINOR && patch == PROJ_VERSION_PATCH )
+      if ( false &&  major == PROJ_VERSION_MAJOR && minor == PROJ_VERSION_MINOR && patch == PROJ_VERSION_PATCH )
         // yay, nothing to do!
         return 0;
     }
@@ -2535,6 +2535,9 @@ int QgsCoordinateReferenceSystem::syncDatabase()
       proj4.replace( QLatin1String( "+type=crs" ), QString() );
       proj4 = proj4.trimmed();
 
+      const bool deprecated = proj_is_deprecated( crs.get() );
+      const QString name( proj_get_name( crs.get() ) );
+
       if ( proj4.isEmpty() )
       {
         QgsDebugMsgLevel( QStringLiteral( "No proj4 for '%1:%2'" ).arg( authority, code ), 2 );
@@ -2542,8 +2545,26 @@ int QgsCoordinateReferenceSystem::syncDatabase()
         proj4 = "";
       }
 
-      const bool deprecated = proj_is_deprecated( crs.get() );
-      const QString name( proj_get_name( crs.get() ) );
+      {
+        // retrieve operation details
+        QgsProjUtils::proj_pj_unique_ptr op( proj_crs_get_coordoperation( pjContext, crs.get() ) );
+
+        const char *outMethodName = nullptr;
+        const char *outMethodAuthName = nullptr;
+        const char *outMethodCode = nullptr;
+        proj_coordoperation_get_method_info( pjContext, op.get(), &outMethodName, &outMethodAuthName, &outMethodCode );
+        const int instantiable = proj_coordoperation_is_instantiable( pjContext, op.get() );
+
+        const QString method( outMethodName );
+        const QString methodAuthName( outMethodAuthName );
+        const QString methodCode( outMethodCode );
+
+        if ( !instantiable && !method.isEmpty() )
+        {
+          std::cout << QStringLiteral( "Can't use method for '%1:%2 %3'" ).arg( authority, code, name ).toLocal8Bit().constData() << std::endl;
+          std::cout << QStringLiteral( "  %1 %2 %3" ).arg( method, methodAuthName, methodCode ).toLocal8Bit().constData() << std::endl;
+        }
+      }
 
       QString sql = QStringLiteral( "SELECT parameters,description,deprecated FROM tbl_srs WHERE auth_name='%1' AND auth_id='%2'" ).arg( authority, code );
       statement = database.prepare( sql, result );
