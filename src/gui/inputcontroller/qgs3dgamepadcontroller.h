@@ -38,6 +38,7 @@ SIP_IF_MODULE( HAVE_QTGAMEPAD )
 #endif
 
 class QGamepad;
+class QTimer;
 
 
 /**
@@ -367,9 +368,17 @@ class GUI_EXPORT QgsGamepad3DMapController : public QgsAbstract3DMapController
      */
     void buttonGuideChanged( bool value );
 
+  private slots:
+
+    void updateNavigation();
+    void navigationTimeout();
+
   private:
+    double axisMax();
+
     int mGamepadDeviceId = -1;
-    QPointer<QGamepad> mGamepad;
+    QPointer< QGamepad> mGamepad;
+    QTimer *mTimer = nullptr;
 };
 
 

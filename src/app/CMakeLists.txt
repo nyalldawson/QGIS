@@ -629,7 +629,8 @@ target_link_libraries(qgis_app
 
 if (WITH_QTGAMEPAD)
     target_link_libraries(qgis_app
-      ${QT_VERSION_BASE}::Gamepad
+      PRIVATE
+      ${QT_VERSION_BASE}::GamepadLegacy
     )
 endif()
 

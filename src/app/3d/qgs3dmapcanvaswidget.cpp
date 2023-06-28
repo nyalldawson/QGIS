@@ -22,6 +22,7 @@
 #include "qgs3ddebugwidget.h"
 #include "qgs3dmapcanvas.h"
 #include "qgs3dmapconfigwidget.h"
+#include "qgs3dmapcontroller.h"
 #include "qgs3dmapexportsettings.h"
 #include "qgs3dmapexportwidget.h"
 #include "qgs3dmapscene.h"
@@ -46,6 +47,7 @@
 #include "qgsgui.h"
 #include "qgshelp.h"
 #include "qgsidentifyresultsdialog.h"
+#include "qgsinputcontrollermanager.h"
 #include "qgslinestring.h"
 #include "qgsmapcanvas.h"
 #include "qgsmapthemecollection.h"
@@ -1812,4 +1814,56 @@ void ClassValidator::fixup( QString &input ) const
   bool ok;
   const int n = number.toInt( &ok );
   input = u"%1 (%2)"_s.arg( n ).arg( mClasses[n] );
+}
+
+
+Qgs3DMapCanvasInputBridge::Qgs3DMapCanvasInputBridge( QObject *parent )
+  : QObject( parent )
+{
+  const QStringList available = QgsGui::inputControllerManager()->available3DMapControllers();
+  if ( !available.empty() )
+  {
+    mController = QgsGui::inputControllerManager()->create3DMapController( available.at( 0 ) );
+    connect( mController, &QgsAbstract3DMapController::rotateCamera, this, &Qgs3DMapCanvasInputBridge::rotateCamera );
+    connect( mController, &QgsAbstract3DMapController::walkView, this, &Qgs3DMapCanvasInputBridge::walkView );
+  }
+}
+
+bool Qgs3DMapCanvasInputBridge::eventFilter( QObject *watched, QEvent *event )
+{
+  if ( Qgs3DMapCanvasWidget *widget = qobject_cast< Qgs3DMapCanvasWidget *>( watched ) )
+  {
+    if ( event->type() == QEvent::WindowActivate )
+    {
+      mActiveCanvas = widget;
+      QgsDebugError( u"activated %1"_s.arg( widget->canvasName() ) );
+    }
+    else if ( event->type() == QEvent::FocusIn )
+    {
+      mActiveCanvas = widget;
+      QgsDebugError( u"focused %1"_s.arg( widget->canvasName() ) );
+    }
+    else if ( event->type() == QEvent::MouseButtonPress )
+    {
+      mActiveCanvas = widget;
+      QgsDebugError( u"pressed %1"_s.arg( widget->canvasName() ) );
+    }
+  }
+  return QObject::eventFilter( watched, event );
+}
+
+void Qgs3DMapCanvasInputBridge::rotateCamera( double pitch, double yaw )
+{
+  if ( !mActiveCanvas )
+    return;
+
+  mActiveCanvas->mapCanvas3D()->cameraController()->rotateCamera( pitch, yaw );
+}
+
+void Qgs3DMapCanvasInputBridge::walkView( double x, double y, double z )
+{
+  if ( !mActiveCanvas )
+    return;
+
+  mActiveCanvas->mapCanvas3D()->cameraController()->walkView( x, y, z );
 }

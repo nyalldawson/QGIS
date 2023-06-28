@@ -58,6 +58,28 @@ class QgsSettingsEntryBool;
 class QgsGeometry;
 class QgsElevationProfile;
 class QgsProfilePoint;
+class QgsAbstract3DMapController;
+class Qgs3DMapCanvasWidget;
+
+
+class Qgs3DMapCanvasInputBridge : public QObject
+{
+    Q_OBJECT
+  public:
+    Qgs3DMapCanvasInputBridge( QObject *parent );
+
+    bool eventFilter( QObject *watched, QEvent *event ) override;
+
+  private slots:
+
+    void rotateCamera( double pitch, double yaw );
+    void walkView( double x, double y, double z );
+
+  private:
+    QgsAbstract3DMapController *mController = nullptr;
+    QPointer< Qgs3DMapCanvasWidget > mActiveCanvas;
+};
+
 
 //! Helper validator for classification classes
 class ClassValidator : public QValidator

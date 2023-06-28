@@ -21,8 +21,8 @@
 
 #include <QMessageBox>
 #include <QString>
-#include <QtGamepad/QGamepad>
-#include <QtGamepad/QGamepadManager>
+#include <QtGamepadLegacy/QGamepad>
+#include <QtGamepadLegacy/QGamepadManager>
 
 using namespace Qt::StringLiterals;
 
