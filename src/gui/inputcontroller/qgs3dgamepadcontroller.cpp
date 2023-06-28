@@ -18,6 +18,7 @@
 #ifdef HAVE_QTGAMEPAD
 
 #include <QtGamepad/QGamepad>
+#include <QTimer>
 
 QgsGamepad3DMapController::QgsGamepad3DMapController( int gamepadDeviceId, QObject *parent )
   : QgsAbstract3DMapController( parent )
@@ -50,8 +51,22 @@ QgsGamepad3DMapController::QgsGamepad3DMapController( int gamepadDeviceId, QObje
   connect( mGamepad, &QGamepad::buttonCenterChanged, this, &QgsGamepad3DMapController::buttonCenterChanged );
   connect( mGamepad, &QGamepad::buttonGuideChanged, this, &QgsGamepad3DMapController::buttonGuideChanged );
 
-  // also here we would make connections to the 2D map controller signals like zoomMap, depending on some
-  // reasonable defaults and user defined QSettings
+  // setup high level connections for 3d map navigation
+  mTimer = new QTimer( this );
+  connect( mTimer, &QTimer::timeout, this, &QgsGamepad3DMapController::navigationTimeout );
+
+  connect( mGamepad.data(), &QGamepad::connectedChanged, this, [ = ]( bool connected )
+  {
+    if ( !connected )
+      mTimer->stop();
+  } );
+
+  connect( mGamepad.data(), &QGamepad::axisLeftXChanged, this, &QgsGamepad3DMapController::updateNavigation );
+  connect( mGamepad.data(), &QGamepad::axisLeftYChanged, this, &QgsGamepad3DMapController::updateNavigation );
+  connect( mGamepad.data(), &QGamepad::axisRightXChanged, this, &QgsGamepad3DMapController::updateNavigation );
+  connect( mGamepad.data(), &QGamepad::axisRightYChanged, this, &QgsGamepad3DMapController::updateNavigation );
+  connect( mGamepad.data(), &QGamepad::buttonL2Changed, this, &QgsGamepad3DMapController::updateNavigation );
+  connect( mGamepad.data(), &QGamepad::buttonR2Changed, this, &QgsGamepad3DMapController::updateNavigation );
 }
 
 QgsGamepad3DMapController *QgsGamepad3DMapController::clone() const
@@ -67,6 +82,90 @@ QString QgsGamepad3DMapController::deviceId() const
 bool QgsGamepad3DMapController::isConnected() const
 {
   return mGamepad->isConnected();
+}
+
+void QgsGamepad3DMapController::updateNavigation()
+{
+  if ( axisMax() > 0.12 && !mTimer->isActive() )
+  {
+    disconnect( mGamepad.data(), &QGamepad::axisLeftXChanged, this, &QgsGamepad3DMapController::updateNavigation );
+    disconnect( mGamepad.data(), &QGamepad::axisLeftYChanged, this, &QgsGamepad3DMapController::updateNavigation );
+    disconnect( mGamepad.data(), &QGamepad::axisRightXChanged, this, &QgsGamepad3DMapController::updateNavigation );
+    disconnect( mGamepad.data(), &QGamepad::axisRightYChanged, this, &QgsGamepad3DMapController::updateNavigation );
+    disconnect( mGamepad.data(), &QGamepad::buttonL2Changed, this, &QgsGamepad3DMapController::updateNavigation );
+    disconnect( mGamepad.data(), &QGamepad::buttonR2Changed, this, &QgsGamepad3DMapController::updateNavigation );
+
+    mTimer->start( 50 );
+    navigationTimeout();
+  }
+}
+
+void QgsGamepad3DMapController::navigationTimeout()
+{
+  if ( axisMax() <= 0.12 )
+  {
+    connect( mGamepad.data(), &QGamepad::axisLeftXChanged, this, &QgsGamepad3DMapController::updateNavigation );
+    connect( mGamepad.data(), &QGamepad::axisLeftYChanged, this, &QgsGamepad3DMapController::updateNavigation );
+    connect( mGamepad.data(), &QGamepad::axisRightXChanged, this, &QgsGamepad3DMapController::updateNavigation );
+    connect( mGamepad.data(), &QGamepad::axisRightYChanged, this, &QgsGamepad3DMapController::updateNavigation );
+    connect( mGamepad.data(), &QGamepad::buttonL2Changed, this, &QgsGamepad3DMapController::updateNavigation );
+    connect( mGamepad.data(), &QGamepad::buttonR2Changed, this, &QgsGamepad3DMapController::updateNavigation );
+    mTimer->stop();
+    return;
+  }
+
+  constexpr double maxPitchYaw = 5;
+  constexpr double expPitchYaw = 3;
+
+  auto scaleExp = []( double value, double domainMin, double domainMax, double rangeMin, double rangeMax, double exponent ) -> double
+  {
+    return ( ( rangeMax - rangeMin ) / pow( domainMax - domainMin, exponent ) ) * pow( value - domainMin, exponent ) + rangeMin;
+  };
+
+  constexpr double expMovement = 3;
+
+  double moveX = 0;
+  double moveY = 0;
+  double moveZ = 0;
+
+  if ( std::fabs( mGamepad->axisLeftY() ) > 0.1 )
+  {
+    moveX = scaleExp( std::fabs( mGamepad->axisLeftY() ), 0, 1, 0, 1, expMovement ) * ( mGamepad->axisLeftY() > 0 ? -1 : 1 );
+  }
+  if ( std::fabs( mGamepad->axisLeftX() ) > 0.1 )
+  {
+    moveY = scaleExp( std::fabs( mGamepad->axisLeftX() ), 0, 1, 0, 1, expMovement ) * ( mGamepad->axisLeftX() > 0 ? -1 : 1 );
+  }
+  if ( mGamepad->buttonL2() > 0.1 || mGamepad->buttonR2() > 0.1 )
+  {
+    moveZ = scaleExp( mGamepad->buttonL2(), 0, 1, 0, 1, expMovement ) * -1 + scaleExp( mGamepad->buttonR2(), 0, 1, 0, 1, expMovement );
+  }
+
+  if ( moveX != 0.0 || moveY != 0.0 || moveZ != 0.0 )
+  {
+    emit walkView( moveX, moveY, moveZ );
+  }
+
+  double pitch = 0.0;
+  double yaw = 0.0;
+  if ( std::fabs( mGamepad->axisRightY() ) > 0.2 )
+  {
+    pitch = scaleExp( std::fabs( mGamepad->axisRightY() ), 0, 1, 0, maxPitchYaw, expPitchYaw ) * ( mGamepad->axisRightY() > 0 ? -1 : 1 );
+  }
+  if ( std::fabs( mGamepad->axisRightX() ) > 0.2 )
+  {
+    yaw = scaleExp( std::fabs( mGamepad->axisRightX() ), 0, 1, 0, maxPitchYaw, expPitchYaw ) * ( mGamepad->axisRightX() > 0 ? -1 : 1 );
+  }
+  emit rotateCamera( pitch, yaw );
+}
+
+double QgsGamepad3DMapController::axisMax()
+{
+  return std::max( std::fabs( mGamepad->axisLeftX() ),
+                   std::max( std::fabs( mGamepad->axisLeftY() ),
+                             std::max( std::fabs( mGamepad->axisRightX() ),
+                                       std::max( std::fabs( mGamepad->axisRightY() ),
+                                           std::max( std::fabs( mGamepad->buttonL2() ), std::fabs( mGamepad->buttonR2() ) ) ) ) ) );
 }
 
 QString QgsGamepad3DMapController::name() const
@@ -183,5 +282,8 @@ bool QgsGamepad3DMapController::buttonGuide() const
 {
   return mGamepad->buttonGuide();
 }
+
+
+
 
 #endif

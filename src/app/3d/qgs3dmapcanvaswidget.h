@@ -38,6 +38,29 @@ class Qgs3DMapToolMeasureLine;
 class QgsMapCanvas;
 class QgsDockableWidgetHelper;
 class QgsRubberBand;
+class QgsAbstract3DMapController ;
+class Qgs3DMapCanvasWidget;
+
+class Qgs3dMapCanvasInputBridge : public QObject
+{
+    Q_OBJECT
+  public:
+    Qgs3dMapCanvasInputBridge( QObject *parent );
+
+    bool eventFilter( QObject *watched, QEvent *event ) override;
+
+  private slots:
+
+    void rotateCamera( double pitch, double yaw );
+    void walkView( double x, double y, double z );
+
+  private:
+
+    QgsAbstract3DMapController *mController = nullptr;
+    QPointer< Qgs3DMapCanvasWidget > mActiveCanvas;
+
+
+};
 
 class APP_EXPORT Qgs3DMapCanvasWidget : public QWidget
 {

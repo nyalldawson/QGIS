@@ -29,6 +29,8 @@
 #include "qgs3dmapscene.h"
 #include "qgscameracontroller.h"
 #include "qgshelp.h"
+#include "qgsinputcontrollermanager.h"
+#include "qgs3dmapcontroller.h"
 #include "qgsmapcanvas.h"
 #include "qgsmessagebar.h"
 #include "qgsapplication.h"
@@ -641,4 +643,57 @@ void Qgs3DMapCanvasWidget::onExtentChanged()
     mViewExtentHighlight->addPoint( QgsPointXY( extent.xMaximum(), extent.yMinimum() ), false );
     mViewExtentHighlight->closePoints();
   }
+}
+
+Qgs3dMapCanvasInputBridge::Qgs3dMapCanvasInputBridge( QObject *parent )
+  : QObject( parent )
+{
+  const QStringList available = QgsGui::inputControllerManager()->available3DMapControllers();
+  if ( !available.empty() )
+  {
+    mController =  QgsGui::inputControllerManager()->create3DMapController( available.at( 0 ) );
+    connect( mController, &QgsAbstract3DMapController::rotateCamera, this, &Qgs3dMapCanvasInputBridge::rotateCamera );
+    connect( mController, &QgsAbstract3DMapController::walkView, this, &Qgs3dMapCanvasInputBridge::walkView );
+  }
+}
+
+bool Qgs3dMapCanvasInputBridge::eventFilter( QObject *watched, QEvent *event )
+{
+  if ( Qgs3DMapCanvasWidget *widget = qobject_cast< Qgs3DMapCanvasWidget *>( watched ) )
+  {
+    if ( event->type() == QEvent::WindowActivate )
+    {
+      mActiveCanvas = widget;
+      QgsDebugError( QStringLiteral( "activated %1" ).arg( widget->canvasName() ) );
+    }
+    else if ( event->type() == QEvent::FocusIn )
+    {
+      mActiveCanvas = widget;
+      QgsDebugError( QStringLiteral( "focused %1" ).arg( widget->canvasName() ) );
+    }
+    else if ( event->type() == QEvent::MouseButtonPress )
+    {
+      mActiveCanvas = widget;
+      QgsDebugError( QStringLiteral( "pressed %1" ).arg( widget->canvasName() ) );
+    }
+  }
+  return QObject::eventFilter( watched, event );
+}
+
+void Qgs3dMapCanvasInputBridge::rotateCamera( double pitch, double yaw )
+{
+  if ( !mActiveCanvas )
+    return;
+
+  mActiveCanvas->mapCanvas3D()->cameraController()->rotateCamera( pitch, yaw );
+
+}
+
+void Qgs3dMapCanvasInputBridge::walkView( double x, double y, double z )
+{
+  if ( !mActiveCanvas )
+    return;
+
+  mActiveCanvas->mapCanvas3D()->cameraController()->walkView( x, y, z );
+
 }

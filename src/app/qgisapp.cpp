@@ -13160,6 +13160,12 @@ Qgs3DMapCanvasWidget *QgisApp::createNew3DMapCanvasDock( const QString &name, bo
 
   Qgs3DMapCanvasWidget *widget = new Qgs3DMapCanvasWidget( name, isDocked );
 
+  if ( !m3dMapCanvasInputBridge )
+  {
+    m3dMapCanvasInputBridge = new Qgs3dMapCanvasInputBridge( this );
+  }
+  widget->installEventFilter( m3dMapCanvasInputBridge );
+
   mOpen3DMapViews.insert( widget );
   widget->setMainCanvas( mMapCanvas );
   widget->mapCanvas3D()->setTemporalController( mTemporalControllerWidget->temporalController() );

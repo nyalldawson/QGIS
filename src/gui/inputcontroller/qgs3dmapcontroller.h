@@ -42,6 +42,10 @@ class GUI_EXPORT QgsAbstract3DMapController : public QgsAbstractInputController
     Qgis::InputControllerType type() const override;
 
   signals:
+
+    void rotateCamera( double pitch, double yaw );
+
+    void walkView( double x, double y, double z );
 #if 0
 
     // TODO: add a bunch of signals relating to navigating a 3D map, eg

@@ -159,6 +159,7 @@ class QgsAppGpsConnection;
 class QgsGpsToolBar;
 class QgsAppGpsSettingsMenu;
 class Qgs3DMapScene;
+class Qgs3dMapCanvasInputBridge;
 
 #include <QMainWindow>
 #include <QToolBar>
@@ -2732,6 +2733,7 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
 
 #ifdef HAVE_3D
     QSet<Qgs3DMapCanvasWidget *> mOpen3DMapViews;
+    Qgs3dMapCanvasInputBridge* m3dMapCanvasInputBridge = nullptr;
 #endif
 
     //! True if the autoSelectAddedLayer() slot should not be doing anything (performance optimization when adding a lot of layers)

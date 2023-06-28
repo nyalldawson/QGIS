@@ -30,6 +30,10 @@ Constructor for QgsAbstract3DMapController, with the specified ``parent`` object
 
 
   signals:
+
+    void rotateCamera( double pitch, double yaw );
+
+    void walkView( double x, double y, double z );
 };
 
 
