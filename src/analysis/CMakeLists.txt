@@ -437,6 +437,7 @@ if (WITH_PDAL AND PDAL_2_5_OR_HIGHER)
     processing/pdal/qgsalgorithmpdalthinbydecimate.cpp
     processing/pdal/qgsalgorithmpdalthinbyradius.cpp
     processing/pdal/qgsalgorithmpdaltile.cpp
+    processing/pdal/qgsalgorithmpdaltranslatexyz.cpp
   )
 
   set(QGIS_ANALYSIS_HDRS ${QGIS_ANALYSIS_HDRS}

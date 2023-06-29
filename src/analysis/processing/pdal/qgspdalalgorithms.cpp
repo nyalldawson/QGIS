@@ -36,6 +36,7 @@
 #include "qgsalgorithmpdalthinbydecimate.h"
 #include "qgsalgorithmpdalthinbyradius.h"
 #include "qgsalgorithmpdaltile.h"
+#include "qgsalgorithmpdaltranslatexyz.h"
 
 ///@cond PRIVATE
 
@@ -95,7 +96,7 @@ void QgsPdalAlgorithms::loadAlgorithms()
   addAlgorithm( new QgsPdalAssignProjectionAlgorithm() );
   addAlgorithm( new QgsPdalBoundaryAlgorithm() );
   addAlgorithm( new QgsPdalBuildVpcAlgorithm() );
-  addAlgorithm( new QgsPdalClipAlgorithm() );
+  addAlgorithm( new QgsPdalClipAlgorithm() );addAlgorithm( new QgsPdalTileAlgorithm() );
   addAlgorithm( new QgsPdalConvertFormatAlgorithm() );
   addAlgorithm( new QgsPdalCreateCopcAlgorithm() );
   addAlgorithm( new QgsPdalDensityAlgorithm() );
@@ -109,6 +110,7 @@ void QgsPdalAlgorithms::loadAlgorithms()
   addAlgorithm( new QgsPdalThinByDecimateAlgorithm() );
   addAlgorithm( new QgsPdalThinByRadiusAlgorithm() );
   addAlgorithm( new QgsPdalTileAlgorithm() );
+  addAlgorithm( new QgsPdalTranslateXyzAlgorithm() );
 }
 
 ///@endcond

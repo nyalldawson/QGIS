@@ -128,6 +128,7 @@ set(PDAL_WRENCH_SRCS
   ${CMAKE_SOURCE_DIR}/external/pdal_wrench/to_raster.cpp
   ${CMAKE_SOURCE_DIR}/external/pdal_wrench/to_raster_tin.cpp
   ${CMAKE_SOURCE_DIR}/external/pdal_wrench/to_vector.cpp
+  ${CMAKE_SOURCE_DIR}/external/pdal_wrench/transform.cpp
   ${CMAKE_SOURCE_DIR}/external/pdal_wrench/translate.cpp
   ${CMAKE_SOURCE_DIR}/external/pdal_wrench/utils.cpp
   ${CMAKE_SOURCE_DIR}/external/pdal_wrench/vpc.cpp
