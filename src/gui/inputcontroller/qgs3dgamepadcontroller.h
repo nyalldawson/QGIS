@@ -28,6 +28,7 @@ SIP_IF_MODULE( HAVE_QTGAMEPAD )
 #include "qgs3dmapcontroller.h"
 
 #include <QPointer>
+#include <QElapsedTimer>
 
 #ifdef SIP_RUN
 // this is needed for the "convert to subclass" code below to compile
@@ -380,6 +381,7 @@ class GUI_EXPORT QgsGamepad3DMapController : public QgsAbstract3DMapController
     int mGamepadDeviceId = -1;
     QPointer< QGamepad> mGamepad;
     QTimer *mTimer = nullptr;
+    QElapsedTimer mElapsedTimer;
 };
 
 
