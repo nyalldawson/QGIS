@@ -176,9 +176,6 @@ QgsBlockingNetworkRequest::ErrorCode QgsBlockingNetworkRequest::doRequest( QgsBl
 
     sendRequestToNetworkAccessManager( request );
 
-    if ( mFeedback )
-      connect( mFeedback, &QgsFeedback::canceled, mReply, &QNetworkReply::abort );
-
     if ( !mAuthCfg.isEmpty() && !QgsApplication::authManager()->updateNetworkReply( mReply, mAuthCfg ) )
     {
       mErrorCode = NetworkError;
@@ -280,6 +277,12 @@ QgsBlockingNetworkRequest::ErrorCode QgsBlockingNetworkRequest::doRequest( QgsBl
 void QgsBlockingNetworkRequest::abort()
 {
   mIsAborted = true;
+  if ( mReply )
+  {
+    mReply->abort();
+  }
+
+  // mReply may have been cleaned up already as a direct result of calling abort above
   if ( mReply )
   {
     mReply->deleteLater();
