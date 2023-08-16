@@ -23,12 +23,16 @@
 #include "qgscoordinatereferencesystem.h"
 #include "qgstiledsceneboundingvolume.h"
 #include "qgstiledsceneindex.h"
+#include "qgstiledscenerequest.h"
+#include "qgstiledscenetile.h"
 
 #include <memory>
 #include <QElapsedTimer>
 #include <QSet>
 #include <QImage>
 #include <QHash>
+#include <QThread>
+#include <QSemaphore>
 
 #define SIP_NO_FILE
 
@@ -76,21 +80,20 @@ class CORE_EXPORT QgsTiledSceneLayerRenderer: public QgsMapLayerRenderer
 
     bool renderTiles( QgsTiledSceneRenderContext &context );
 
-    void renderTile( const QgsTiledSceneTile &tile, QgsTiledSceneRenderContext &context );
+    void renderTile( const QgsTiledSceneTile &tile, const QByteArray &content, QgsTiledSceneRenderContext &context );
 
     /**
      * Renders the content for a \a tile.
      *
      * Returns TRUE if the tile had content to render, or FALSE if it is an empty tile.
      */
-    bool renderTileContent( const QgsTiledSceneTile &tile, QgsTiledSceneRenderContext &context );
+    bool renderTileContent( const QgsTiledSceneTile &tile, const QByteArray &content, QgsTiledSceneRenderContext &context );
 
     void renderPrimitive( const tinygltf::Model &model,
                           const tinygltf::Primitive &primitive,
                           const QgsTiledSceneTile &tile,
                           const QgsVector3D &tileTranslationEcef,
                           const QMatrix4x4 *gltfLocalTransform,
-                          const QString &contentUri,
                           QgsTiledSceneRenderContext &context );
 
     void renderTrianglePrimitive( const tinygltf::Model &model,
@@ -98,7 +101,6 @@ class CORE_EXPORT QgsTiledSceneLayerRenderer: public QgsMapLayerRenderer
                                   const QgsTiledSceneTile &tile,
                                   const QgsVector3D &tileTranslationEcef,
                                   const QMatrix4x4 *gltfLocalTransform,
-                                  const QString &contentUri,
                                   QgsTiledSceneRenderContext &context );
 
 
@@ -136,6 +138,40 @@ class CORE_EXPORT QgsTiledSceneLayerRenderer: public QgsMapLayerRenderer
     QSet< int > mWarnedPrimitiveTypes;
 
     QElapsedTimer mElapsedTimer;
+
+    // shared objects with producer
+
+    friend class TileLayerRendererProducer;
+
+    static const int sBufferSize = 30;
+    struct QueuedTileContent
+    {
+      QgsTiledSceneTile tile;
+      QByteArray content;
+    };
+
+    QueuedTileContent mBuffer[sBufferSize];
+
+    QSemaphore mFreeSemaphore = QSemaphore( sBufferSize );
+    QSemaphore mUsedSemaphore;
+};
+
+class TileLayerRendererProducer : public QThread
+{
+  public:
+    TileLayerRendererProducer( QgsTiledSceneLayerRenderer &consumer,
+                               const QgsTiledSceneRequest &request,
+                               const QgsTiledSceneIndex &index,
+                               QgsFeedback *feedback,
+                               const std::function< bool ( const QgsTiledSceneTile &tile ) > &isVisibleFunction );
+    void run() override;
+
+  private:
+    QgsTiledSceneLayerRenderer &mConsumer;
+    QgsTiledSceneRequest mRequest;
+    QgsTiledSceneIndex mIndex;
+    QgsFeedback *mFeedback = nullptr;
+    const std::function< bool ( const QgsTiledSceneTile &tile ) > mIsVisibleFunction;
 };
 
 #endif // QGSTILEDSCENELAYERRENDERER_H

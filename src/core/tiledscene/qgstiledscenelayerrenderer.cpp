@@ -17,7 +17,9 @@
 
 
 #include "qgstiledscenelayerrenderer.h"
+#include "qapplication.h"
 #include "qgscurve.h"
+#include "qgstiledownloadmanager.h"
 #include "qgstiledsceneboundingvolume.h"
 #include "qgstiledscenelayer.h"
 #include "qgsfeedback.h"
@@ -29,6 +31,9 @@
 #include "qgsgltfutils.h"
 #include "qgscesiumutils.h"
 #include "qgscurvepolygon.h"
+#include "qnetworkrequest.h"
+#include "qgsnetworkaccessmanager.h"
+#include "qgsapplication.h"
 
 #include <QMatrix4x4>
 
@@ -171,6 +176,28 @@ bool QgsTiledSceneLayerRenderer::renderTiles( QgsTiledSceneRenderContext &contex
   };
 
   QgsTiledSceneRequest request = createBaseRequest();
+
+
+  TileLayerRendererProducer producer( *this, request, mIndex, feedback(), tileIsVisibleInMap );
+  producer.setObjectName( "TileLayerRendererProducer" );
+  producer.start();
+  unsigned int cursor = 0;
+  while ( true )
+  {
+    mUsedSemaphore.acquire();
+    const QgsTiledSceneTile tile = mBuffer[cursor].tile;
+    const QByteArray content = mBuffer[cursor].content;
+    mFreeSemaphore.release();
+    if ( !tile.isValid() )
+      break;
+
+    cursor = ( cursor + 1 ) % sBufferSize;
+    //QgsDebugError( QStringLiteral( "render tile: %1" ).arg( tile.id() ) );
+    renderTile( tile, content, context );
+  }
+  producer.wait();
+
+#if 0
   QVector< long long > tileIds = mIndex.getTiles( request );
   while ( !tileIds.empty() )
   {
@@ -219,6 +246,8 @@ bool QgsTiledSceneLayerRenderer::renderTiles( QgsTiledSceneRenderContext &contex
       }
     }
   }
+#endif
+
   if ( feedback() && feedback()->isCanceled() )
     return false;
 
@@ -267,9 +296,9 @@ bool QgsTiledSceneLayerRenderer::renderTiles( QgsTiledSceneRenderContext &contex
   return true;
 }
 
-void QgsTiledSceneLayerRenderer::renderTile( const QgsTiledSceneTile &tile, QgsTiledSceneRenderContext &context )
+void QgsTiledSceneLayerRenderer::renderTile( const QgsTiledSceneTile &tile, const QByteArray &content, QgsTiledSceneRenderContext &context )
 {
-  const bool hasContent = renderTileContent( tile, context );
+  const bool hasContent = renderTileContent( tile, content, context );
 
   if ( mRenderTileBorders )
   {
@@ -307,13 +336,8 @@ void QgsTiledSceneLayerRenderer::renderTile( const QgsTiledSceneTile &tile, QgsT
   }
 }
 
-bool QgsTiledSceneLayerRenderer::renderTileContent( const QgsTiledSceneTile &tile, QgsTiledSceneRenderContext &context )
+bool QgsTiledSceneLayerRenderer::renderTileContent( const QgsTiledSceneTile &tile, const QByteArray &tileContent, QgsTiledSceneRenderContext &context )
 {
-  const QString contentUri = tile.resources().value( QStringLiteral( "content" ) ).toString();
-  if ( contentUri.isEmpty() )
-    return false;
-
-  const QByteArray tileContent = mIndex.retrieveContent( contentUri, feedback() );
   const QByteArray gltfContent = QgsCesiumUtils::extractGltfFromTileContent( tileContent );
   if ( gltfContent.isEmpty() )
   {
@@ -342,7 +366,7 @@ bool QgsTiledSceneLayerRenderer::renderTileContent( const QgsTiledSceneTile &til
         if ( context.renderContext().renderingStopped() )
           break;
 
-        renderPrimitive( model, primitive, tile, tileTranslationEcef, gltfLocalTransform.get(), contentUri, context );
+        renderPrimitive( model, primitive, tile, tileTranslationEcef, gltfLocalTransform.get(), context );
       }
     }
   }
@@ -357,12 +381,12 @@ bool QgsTiledSceneLayerRenderer::renderTileContent( const QgsTiledSceneTile &til
   return true;
 }
 
-void QgsTiledSceneLayerRenderer::renderPrimitive( const tinygltf::Model &model, const tinygltf::Primitive &primitive, const QgsTiledSceneTile &tile, const QgsVector3D &tileTranslationEcef, const QMatrix4x4 *gltfLocalTransform, const QString &contentUri, QgsTiledSceneRenderContext &context )
+void QgsTiledSceneLayerRenderer::renderPrimitive( const tinygltf::Model &model, const tinygltf::Primitive &primitive, const QgsTiledSceneTile &tile, const QgsVector3D &tileTranslationEcef, const QMatrix4x4 *gltfLocalTransform, QgsTiledSceneRenderContext &context )
 {
   switch ( primitive.mode )
   {
     case TINYGLTF_MODE_TRIANGLES:
-      renderTrianglePrimitive( model, primitive, tile, tileTranslationEcef, gltfLocalTransform, contentUri, context );
+      renderTrianglePrimitive( model, primitive, tile, tileTranslationEcef, gltfLocalTransform, context );
       break;
 
     case TINYGLTF_MODE_LINE:
@@ -423,7 +447,7 @@ void QgsTiledSceneLayerRenderer::renderPrimitive( const tinygltf::Model &model, 
   }
 }
 
-void QgsTiledSceneLayerRenderer::renderTrianglePrimitive( const tinygltf::Model &model, const tinygltf::Primitive &primitive, const QgsTiledSceneTile &tile, const QgsVector3D &tileTranslationEcef, const QMatrix4x4 *gltfLocalTransform, const QString &contentUri, QgsTiledSceneRenderContext &context )
+void QgsTiledSceneLayerRenderer::renderTrianglePrimitive( const tinygltf::Model &model, const tinygltf::Primitive &primitive, const QgsTiledSceneTile &tile, const QgsVector3D &tileTranslationEcef, const QMatrix4x4 *gltfLocalTransform, QgsTiledSceneRenderContext &context )
 {
   auto posIt = primitive.attributes.find( "POSITION" );
   if ( posIt == primitive.attributes.end() )
@@ -471,7 +495,7 @@ void QgsTiledSceneLayerRenderer::renderTrianglePrimitive( const tinygltf::Model 
         case QgsGltfUtils::ResourceType::Linked:
         {
           const QString linkedPath = QgsGltfUtils::linkedImagePath( model, tex.source );
-          const QString textureUri = QUrl( contentUri ).resolved( linkedPath ).toString();
+          const QString textureUri = QUrl( tile.resources().value( QStringLiteral( "content" ) ).toString() ).resolved( linkedPath ).toString();
           const QByteArray rep = mIndex.retrieveContent( textureUri, feedback() );
           if ( !rep.isEmpty() )
           {
@@ -479,6 +503,7 @@ void QgsTiledSceneLayerRenderer::renderTrianglePrimitive( const tinygltf::Model 
           }
           break;
         }
+
       }
 
       if ( !textureImage.isNull() )
@@ -665,4 +690,109 @@ void QgsTiledSceneLayerRenderer::renderTrianglePrimitive( const tinygltf::Model 
   {
     mReadyToCompose = true;
   }
+}
+
+#include <QRandomGenerator>
+
+TileLayerRendererProducer::TileLayerRendererProducer( QgsTiledSceneLayerRenderer &consumer, const QgsTiledSceneRequest &request, const QgsTiledSceneIndex &index, QgsFeedback *feedback, const std::function< bool ( const QgsTiledSceneTile &tile ) > &isVisibleFunction )
+  : mConsumer( consumer )
+  , mRequest( request )
+  , mIndex( index )
+  , mFeedback( feedback )
+  , mIsVisibleFunction( isVisibleFunction )
+{
+
+}
+
+void TileLayerRendererProducer::run()
+{
+  unsigned int cursor = 0;
+  unsigned int outstandingRequests = 0;
+
+  auto fetchTile = [this, &cursor, &outstandingRequests]( const QgsTiledSceneTile & tile )
+  {
+    const QString contentUri = tile.resources().value( QStringLiteral( "content" ) ).toString();
+    if ( contentUri.isEmpty() )
+      return;
+
+    QNetworkRequest networkRequest = QNetworkRequest( QUrl( contentUri ) );
+    QgsSetRequestInitiatorClass( networkRequest, QStringLiteral( "QgsCesiumTiledSceneIndex" ) );
+    networkRequest.setAttribute( QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::PreferCache );
+    networkRequest.setAttribute( QNetworkRequest::CacheSaveControlAttribute, true );
+    outstandingRequests++;
+
+    QgsTileDownloadManagerReply *reply( QgsApplication::tileDownloadManager()->get( networkRequest ) );
+    QObject::connect( reply, &QgsTileDownloadManagerReply::finished, this, [this, tile, &cursor, &outstandingRequests, reply]
+    {
+      mConsumer.mFreeSemaphore.acquire();
+      //QgsDebugError( QStringLiteral( "queue tile: %1" ).arg( tile.id() ) );
+      mConsumer.mBuffer[cursor].tile = tile;
+      mConsumer.mBuffer[cursor].content = reply->data();
+      cursor = ( cursor + 1 ) % mConsumer.sBufferSize;
+      mConsumer.mUsedSemaphore.release();
+
+      reply->deleteLater();
+      outstandingRequests--;
+    }, Qt::DirectConnection );
+  };
+
+  QVector< long long > tileIds = mIndex.getTiles( mRequest );
+  while ( !tileIds.empty() )
+  {
+    if ( mFeedback && mFeedback->isCanceled() )
+      break;
+
+    const long long tileId = tileIds.first();
+    tileIds.pop_front();
+
+    const QgsTiledSceneTile tile = mIndex.getTile( tileId );
+    if ( !tile.isValid() || !mIsVisibleFunction( tile ) )
+      continue;
+
+    switch ( mIndex.childAvailability( tileId ) )
+    {
+      case Qgis::TileChildrenAvailability::NoChildren:
+      case Qgis::TileChildrenAvailability::Available:
+      {
+        fetchTile( tile );
+        break;
+      }
+
+      case Qgis::TileChildrenAvailability::NeedFetching:
+      {
+        if ( mIndex.fetchHierarchy( tileId, mFeedback ) )
+        {
+          mRequest.setParentTileId( tileId );
+          const QVector< long long > newTileIdsToRender = mIndex.getTiles( mRequest );
+          tileIds.append( newTileIdsToRender );
+
+          // do we still need to render the parent? Depends on the parent's refinement process...
+          const QgsTiledSceneTile tile = mIndex.getTile( tileId );
+          if ( tile.isValid() )
+          {
+            switch ( tile.refinementProcess() )
+            {
+              case Qgis::TileRefinementProcess::Replacement:
+                break;
+              case Qgis::TileRefinementProcess::Additive:
+                fetchTile( tile );
+                break;
+            }
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  QEventLoop loop;
+  while ( outstandingRequests )
+  {
+    loop.processEvents();
+  }
+
+  // queue an invalid tile to signal that we're finished here.
+  mConsumer.mFreeSemaphore.acquire();
+  mConsumer.mBuffer[cursor].tile = QgsTiledSceneTile();
+  mConsumer.mUsedSemaphore.release();
 }
