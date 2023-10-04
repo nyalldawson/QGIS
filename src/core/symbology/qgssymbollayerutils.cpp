@@ -19,30 +19,28 @@
 #include "qgssymbollayerregistry.h"
 #include "qgssymbol.h"
 #include "qgscolorramp.h"
-#include "qgscolorrampimpl.h"
-#include "qgsexpression.h"
-#include "qgsexpressionnode.h"
 #include "qgspainteffect.h"
 #include "qgspainteffectregistry.h"
 #include "qgsapplication.h"
 #include "qgspathresolver.h"
-#include "qgsogcutils.h"
 #include "qgslogger.h"
 #include "qgsreadwritecontext.h"
 #include "qgsrendercontext.h"
 #include "qgsunittypes.h"
 #include "qgsexpressioncontextutils.h"
-#include "qgsstyleentityvisitor.h"
 #include "qgsrenderer.h"
-#include "qgsxmlutils.h"
 #include "qgsfillsymbollayer.h"
-#include "qgslinesymbollayer.h"
 #include "qgslinesymbol.h"
 #include "qgsmarkersymbol.h"
 #include "qgsfillsymbol.h"
+#include "qgssvgcache.h"
+#include "qgsogcutils.h"
+#include "qgsxmlutils.h"
+#include "qgscolorrampimpl.h"
+#include "qgslinesymbollayer.h"
+#include "qgsstyleentityvisitor.h"
 #include "qgssymbollayerreference.h"
 #include "qgsmarkersymbollayer.h"
-#include "qmath.h"
 
 #include <QColor>
 #include <QFont>
@@ -58,6 +56,7 @@
 #include <QMimeData>
 #include <QRegularExpression>
 #include <QDir>
+#include <QtMath>
 
 #define POINTS_TO_MM 2.83464567
 
@@ -2523,20 +2522,32 @@ void QgsSymbolLayerUtils::externalGraphicToSld( QDomDocument &doc, QDomElement &
 void QgsSymbolLayerUtils::parametricSvgToSld( QDomDocument &doc, QDomElement &graphicElem,
     const QString &path, const QColor &fillColor, double size, const QColor &strokeColor, double strokeWidth )
 {
-  // Parametric SVG paths are an extension that few systems will understand, but se:Graphic allows for fallback
-  // symbols, this encodes the full parametric path first, the pure shape second, and a mark with the right colors as
-  // a last resort for systems that cannot do SVG at all
+  if ( path.startsWith( QLatin1String( "base64:" ) ) )
+  {
+    // nice and easy -- it's an embedded svg already. We'll use SLD InlineContent to embed a version of the
+    // svg which has already baked in the required parameters.
+    const QByteArray svg = QgsApplication::svgCache()->svgContent( path, size, fillColor, strokeColor, strokeWidth, 1 );
+    QDomElement externalGraphicElem = doc.createElement( QStringLiteral( "se:ExternalGraphic" ) );
+    createInlineContentElement( doc, externalGraphicElem, svg, QStringLiteral( "image/svg+xml" ) );
+    graphicElem.appendChild( externalGraphicElem );
+  }
+  else
+  {
+    // Parametric SVG paths are an extension that few systems will understand, but se:Graphic allows for fallback
+    // symbols, this encodes the full parametric path first, the pure shape second, and a mark with the right colors as
+    // a last resort for systems that cannot do SVG at all
 
-  // encode parametric version with all coloring details (size is going to be encoded by the last fallback)
-  graphicElem.appendChild( doc.createComment( QStringLiteral( "Parametric SVG" ) ) );
-  const QString parametricPath = getSvgParametricPath( path, fillColor, strokeColor, strokeWidth );
-  QgsSymbolLayerUtils::externalGraphicToSld( doc, graphicElem, parametricPath, QStringLiteral( "image/svg+xml" ), fillColor, -1 );
-  // also encode a fallback version without parameters, in case a renderer gets confused by the parameters
-  graphicElem.appendChild( doc.createComment( QStringLiteral( "Plain SVG fallback, no parameters" ) ) );
-  QgsSymbolLayerUtils::externalGraphicToSld( doc, graphicElem, path, QStringLiteral( "image/svg+xml" ), fillColor, -1 );
-  // finally encode a simple mark with the right colors/outlines for renderers that cannot do SVG at all
-  graphicElem.appendChild( doc.createComment( QStringLiteral( "Well known marker fallback" ) ) );
-  QgsSymbolLayerUtils::wellKnownMarkerToSld( doc, graphicElem, QStringLiteral( "square" ), fillColor, strokeColor, Qt::PenStyle::SolidLine, strokeWidth, -1 );
+    // encode parametric version with all coloring details (size is going to be encoded by the last fallback)
+    graphicElem.appendChild( doc.createComment( QStringLiteral( "Parametric SVG" ) ) );
+    const QString parametricPath = getSvgParametricPath( path, fillColor, strokeColor, strokeWidth );
+    QgsSymbolLayerUtils::externalGraphicToSld( doc, graphicElem, parametricPath, QStringLiteral( "image/svg+xml" ), fillColor, -1 );
+    // also encode a fallback version without parameters, in case a renderer gets confused by the parameters
+    graphicElem.appendChild( doc.createComment( QStringLiteral( "Plain SVG fallback, no parameters" ) ) );
+    QgsSymbolLayerUtils::externalGraphicToSld( doc, graphicElem, path, QStringLiteral( "image/svg+xml" ), fillColor, -1 );
+    // finally encode a simple mark with the right colors/outlines for renderers that cannot do SVG at all
+    graphicElem.appendChild( doc.createComment( QStringLiteral( "Well known marker fallback" ) ) );
+    QgsSymbolLayerUtils::wellKnownMarkerToSld( doc, graphicElem, QStringLiteral( "square" ), fillColor, strokeColor, Qt::PenStyle::SolidLine, strokeWidth, -1 );
+  }
 
   // size is encoded here, it's part of se:Graphic, not attached to the single symbol
   if ( size >= 0 )
@@ -3111,6 +3122,18 @@ void QgsSymbolLayerUtils::createOnlineResourceElement( QDomDocument &doc, QDomEl
   onlineResourceElem.setAttribute( QStringLiteral( "xlink:type" ), QStringLiteral( "simple" ) );
   onlineResourceElem.setAttribute( QStringLiteral( "xlink:href" ), url );
   element.appendChild( onlineResourceElem );
+
+  QDomElement formatElem = doc.createElement( QStringLiteral( "se:Format" ) );
+  formatElem.appendChild( doc.createTextNode( format ) );
+  element.appendChild( formatElem );
+}
+
+void QgsSymbolLayerUtils::createInlineContentElement( QDomDocument &doc, QDomElement &element, const QByteArray &content, const QString &format )
+{
+  QDomElement inlineContentElem = doc.createElement( QStringLiteral( "se:InlineContent" ) );
+  inlineContentElem.setAttribute( QStringLiteral( "encoding" ), QStringLiteral( "base64" ) );
+  inlineContentElem.appendChild( doc.createTextNode( content.toBase64() ) );
+  element.appendChild( inlineContentElem );
 
   QDomElement formatElem = doc.createElement( QStringLiteral( "se:Format" ) );
   formatElem.appendChild( doc.createTextNode( format ) );

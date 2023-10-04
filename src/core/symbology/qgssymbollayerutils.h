@@ -526,6 +526,9 @@ class CORE_EXPORT QgsSymbolLayerUtils
     static void createAnchorPointElement( QDomDocument &doc, QDomElement &element, QPointF anchor );
 
     static void createOnlineResourceElement( QDomDocument &doc, QDomElement &element, const QString &path, const QString &format );
+
+    static void createInlineContentElement( QDomDocument &doc, QDomElement &element, const QByteArray &content, const QString &format );
+
     static bool onlineResourceFromSldElement( QDomElement &element, QString &path, QString &format );
 
     static void createGeometryElement( QDomDocument &doc, QDomElement &element, const QString &geomFunc );
