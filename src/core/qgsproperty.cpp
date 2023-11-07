@@ -865,6 +865,18 @@ QVariant QgsProperty::toVariant() const
       propertyMap.insert( QStringLiteral( "expression" ), d->expressionString );
       break;
 
+    case Qgis::PropertyType::Keyframe:
+    {
+      QVariantList keyframes;
+      for ( auto it = d->keyframeMap.constBegin(); it != d->keyframeMap.constEnd(); ++it )
+      {
+        keyframes.append( it.key() );
+        keyframes.append( it.value() );
+      }
+      propertyMap.insert( QStringLiteral( "keyframes" ), keyframes );
+      break;
+    }
+
     case Qgis::PropertyType::Invalid:
       break;
   }
@@ -912,6 +924,17 @@ bool QgsProperty::loadVariant( const QVariant &property )
       d->expressionIsInvalid = false;
       d->expressionReferencedCols.clear();
       break;
+
+    case Qgis::PropertyType::Keyframe:
+    {
+      const QVariantList keyframes = propertyMap.value( QStringLiteral( "keyframes" ) ).toList();
+      d->keyframeMap.clear();
+      for ( int i = 0; i < keyframes.size(); i += 2 )
+      {
+        d->keyframeMap.insert( keyframes.at( i ).toInt(), keyframes.at( i + 1 ) );
+      }
+      break;
+    }
 
     case Qgis::PropertyType::Invalid:
       break;
