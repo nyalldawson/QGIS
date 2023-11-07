@@ -61,6 +61,19 @@ void QgsTemporalNavigationObject::timerTimeout()
   }
 }
 
+long long QgsTemporalNavigationObject::totalMovieFrames() const
+{
+  return mTotalMovieFrames;
+}
+
+void QgsTemporalNavigationObject::setTotalMovieFrames( long long newTotalMovieFrames )
+{
+  mTotalMovieFrames = newTotalMovieFrames;
+
+  emit temporalExtentsChanged( mTemporalExtents );
+
+}
+
 bool QgsTemporalNavigationObject::isLooping() const
 {
   return mLoopAnimation;
@@ -140,6 +153,7 @@ void QgsTemporalNavigationObject::setNavigationMode( const NavigationMode mode )
         emit updateTemporalRange( mTemporalExtents );
         break;
       case NavigationOff:
+      case Movie:
         emit updateTemporalRange( QgsDateTimeRange() );
         break;
     }
@@ -173,6 +187,7 @@ void QgsTemporalNavigationObject::setTemporalExtents( const QgsDateTimeRange &te
         emit updateTemporalRange( mTemporalExtents );
       break;
     case NavigationOff:
+    case Movie:
       break;
   }
 
@@ -317,6 +332,9 @@ void QgsTemporalNavigationObject::skipToEnd()
 
 long long QgsTemporalNavigationObject::totalFrameCount() const
 {
+  if ( mNavigationMode == Movie )
+    return mTotalMovieFrames;
+
   if ( mFrameDuration.originalUnit() == Qgis::TemporalUnit::IrregularStep )
   {
     return mAllRanges.count();

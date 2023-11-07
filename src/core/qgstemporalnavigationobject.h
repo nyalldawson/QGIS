@@ -53,6 +53,7 @@ class CORE_EXPORT QgsTemporalNavigationObject : public QgsTemporalController, pu
       NavigationOff, //!< Temporal navigation is disabled
       Animated, //!< Temporal navigation relies on frames within a datetime range
       FixedRange, //!< Temporal navigation relies on a fixed datetime range
+      Movie, //!< Movie mode -- behaves like a video player, with a fixed frame duration and no temporal range (since QGIS 3.36)
     };
 
     //! Represents the current animation state.
@@ -232,6 +233,9 @@ class CORE_EXPORT QgsTemporalNavigationObject : public QgsTemporalController, pu
 
     QgsExpressionContextScope *createExpressionContextScope() const override SIP_FACTORY;
 
+    long long totalMovieFrames() const;
+    void setTotalMovieFrames( long long newTotalMovieFrames );
+
   signals:
 
     /**
@@ -345,6 +349,9 @@ class CORE_EXPORT QgsTemporalNavigationObject : public QgsTemporalController, pu
     bool mCumulativeTemporalRange = false;
 
     int mBlockUpdateTemporalRangeSignal = 0;
+
+    //! Total frame count, for Movie mode only
+    long long mTotalMovieFrames = 0;
 
     QgsTemporalNavigationObject( const QgsTemporalNavigationObject & ) = delete;
     QgsTemporalNavigationObject &operator= ( const QgsTemporalNavigationObject & ) = delete;

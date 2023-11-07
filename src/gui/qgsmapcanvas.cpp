@@ -578,6 +578,7 @@ void QgsMapCanvas::temporalControllerModeChanged()
     switch ( temporalNavigationObject->navigationMode() )
     {
       case QgsTemporalNavigationObject::Animated:
+      case QgsTemporalNavigationObject::Movie:
         mSettings.setFrameRate( temporalNavigationObject->framesPerSecond() );
         mSettings.setCurrentFrame( temporalNavigationObject->currentFrameNumber() );
         break;
@@ -763,6 +764,7 @@ void QgsMapCanvas::refreshMap()
     switch ( temporalNavigationObject->navigationMode() )
     {
       case QgsTemporalNavigationObject::Animated:
+      case QgsTemporalNavigationObject::Movie:
         mSettings.setFrameRate( temporalNavigationObject->framesPerSecond() );
         mSettings.setCurrentFrame( temporalNavigationObject->currentFrameNumber() );
         break;

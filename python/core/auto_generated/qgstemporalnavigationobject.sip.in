@@ -35,6 +35,7 @@ Constructor for QgsTemporalNavigationObject, with the specified ``parent`` objec
       NavigationOff,
       Animated,
       FixedRange,
+      Movie,
     };
 
     enum AnimationState
@@ -219,6 +220,9 @@ Returns the best suited frame number for the specified datetime, based on the st
 
     virtual QgsExpressionContextScope *createExpressionContextScope() const /Factory/;
 
+
+    long long totalMovieFrames() const;
+    void setTotalMovieFrames( long long newTotalMovieFrames );
 
   signals:
 
