@@ -442,6 +442,7 @@ class CORE_EXPORT Qgis
       Static SIP_MONKEYPATCH_COMPAT_NAME( StaticProperty ), //!< Static property
       Field SIP_MONKEYPATCH_COMPAT_NAME( FieldBasedProperty ), //!< Field based property
       Expression SIP_MONKEYPATCH_COMPAT_NAME( ExpressionBasedProperty ), //!< Expression based property
+      Keyframe, //!< Keyframe based property (since QGIS 3.36)
     };
     Q_ENUM( PropertyType )
 

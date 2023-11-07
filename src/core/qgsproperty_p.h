@@ -52,6 +52,7 @@ class QgsPropertyPrivate : public QSharedData
       , expressionIsInvalid( other.expressionIsInvalid )
       , expression( other.expression )
       , expressionReferencedCols( other.expressionReferencedCols )
+      , keyframeMap( other.keyframeMap )
     {}
 
     ~QgsPropertyPrivate()
@@ -81,6 +82,9 @@ class QgsPropertyPrivate : public QSharedData
     mutable QgsExpression expression;
     //! Cached set of referenced columns
     mutable QSet< QString > expressionReferencedCols;
+
+    // Keyframe
+    QMap< int, QVariant > keyframeMap;
 
   private:
     QgsPropertyPrivate &operator=( const QgsPropertyPrivate & ) = delete;

@@ -290,6 +290,7 @@ The development version
       Static,
       Field,
       Expression,
+      Keyframe,
     };
 
     enum class SldExportOption

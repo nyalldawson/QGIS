@@ -501,7 +501,10 @@ QgsProperty.ExpressionBasedProperty = Qgis.PropertyType.Expression
 QgsProperty.Type.ExpressionBasedProperty = Qgis.PropertyType.Expression
 QgsProperty.ExpressionBasedProperty.is_monkey_patched = True
 QgsProperty.ExpressionBasedProperty.__doc__ = "Expression based property"
-Qgis.PropertyType.__doc__ = "Property types\n\n.. note::\n\n   Prior to QGIS 3.36 this was available as :py:class:`QgsProperty`.Type\n\n.. versionadded:: 3.36\n\n" + '* ``InvalidProperty``: ' + Qgis.PropertyType.Invalid.__doc__ + '\n' + '* ``StaticProperty``: ' + Qgis.PropertyType.Static.__doc__ + '\n' + '* ``FieldBasedProperty``: ' + Qgis.PropertyType.Field.__doc__ + '\n' + '* ``ExpressionBasedProperty``: ' + Qgis.PropertyType.Expression.__doc__
+QgsProperty.Keyframe = Qgis.PropertyType.Keyframe
+QgsProperty.Keyframe.is_monkey_patched = True
+QgsProperty.Keyframe.__doc__ = "Keyframe based property (since QGIS 3.36)"
+Qgis.PropertyType.__doc__ = "Property types\n\n.. note::\n\n   Prior to QGIS 3.36 this was available as :py:class:`QgsProperty`.Type\n\n.. versionadded:: 3.36\n\n" + '* ``InvalidProperty``: ' + Qgis.PropertyType.Invalid.__doc__ + '\n' + '* ``StaticProperty``: ' + Qgis.PropertyType.Static.__doc__ + '\n' + '* ``FieldBasedProperty``: ' + Qgis.PropertyType.Field.__doc__ + '\n' + '* ``ExpressionBasedProperty``: ' + Qgis.PropertyType.Expression.__doc__ + '\n' + '* ``Keyframe``: ' + Qgis.PropertyType.Keyframe.__doc__
 # --
 Qgis.PropertyType.baseClass = Qgis
 # monkey patching scoped based enum

@@ -305,6 +305,9 @@ bool QgsProperty::isStaticValueInContext( const QgsExpressionContext &context, Q
     case Qgis::PropertyType::Field:
       return false;
 
+    case Qgis::PropertyType::Keyframe:
+      return !d->keyframeMap.isEmpty();
+
     case Qgis::PropertyType::Expression:
     {
       QgsExpression exp = d->expression;
@@ -410,10 +413,26 @@ QString QgsProperty::asExpression() const
       break;
 
     case Qgis::PropertyType::Invalid:
+    case Qgis::PropertyType::Keyframe:
       exp = QString();
       break;
   }
   return d->transformer ? d->transformer->toExpression( exp ) : exp;
+}
+
+void QgsProperty::setKeyFrameMap( const QMap<int, QVariant> &keyFrames )
+{
+  d.detach();
+  d->type = Qgis::PropertyType::Keyframe;
+  d->keyframeMap = keyFrames;
+}
+
+QMap<int, QVariant> QgsProperty::keyFrameMap() const
+{
+  if ( d->type != Qgis::PropertyType::Keyframe )
+    return QMap<int, QVariant>();
+
+  return d->keyframeMap;
 }
 
 bool QgsProperty::prepare( const QgsExpressionContext &context ) const
@@ -453,6 +472,7 @@ bool QgsProperty::prepare( const QgsExpressionContext &context ) const
     }
 
     case Qgis::PropertyType::Invalid:
+    case Qgis::PropertyType::Keyframe:
       return true;
 
   }
@@ -469,6 +489,7 @@ QSet<QString> QgsProperty::referencedFields( const QgsExpressionContext &context
   {
     case Qgis::PropertyType::Static:
     case Qgis::PropertyType::Invalid:
+    case Qgis::PropertyType::Keyframe:
       return QSet<QString>();
 
     case Qgis::PropertyType::Field:
@@ -568,6 +589,69 @@ QVariant QgsProperty::propertyValue( const QgsExpressionContext &context, const 
       {
         return defaultValue;
       }
+    }
+
+    case Qgis::PropertyType::Keyframe:
+    {
+      if ( d->keyframeMap.isEmpty() )
+        return defaultValue;
+
+      const QVariant frame = context.variable( QStringLiteral( "frame_number" ) );
+      const int frameNumber = frame.toInt( ok );
+      if ( ok && !( *ok ) )
+        return defaultValue;
+
+      if ( ok )
+        *ok = true;
+
+      // find keyframes neighbouring target frame
+      QVariant prev;
+      int prevFrameNumber = -1;
+      QVariant next;
+      int nextFrameNumber = -1;
+      QMap<int, QVariant>::const_iterator it = d->keyframeMap.constBegin();
+
+      for ( ; it != d->keyframeMap.constEnd(); ++it )
+      {
+        if ( it.key() == frameNumber )
+        {
+          return it.value();
+        }
+        else if ( it.key() < frameNumber && ( prevFrameNumber == -1 || it.key() > prevFrameNumber ) )
+        {
+          prev = it.value();
+          prevFrameNumber = it.key();
+        }
+        else if ( it.key() > frameNumber && ( nextFrameNumber == -1 || it.key() < nextFrameNumber ) )
+        {
+          next = it.value();
+          nextFrameNumber = it.key();
+        }
+      }
+      if ( prevFrameNumber >= 0 && nextFrameNumber == -1 )
+        return prev;
+      else if ( nextFrameNumber >= 0 && prevFrameNumber == -1 )
+        return defaultValue;
+
+      // interpolate!
+      switch ( prev.type() )
+      {
+        case QVariant::Double:
+        case QVariant::Int:
+        case QVariant::UInt:
+        case QVariant::LongLong:
+          return prev.toDouble() + ( next.toDouble() - prev.toDouble( ) ) / ( nextFrameNumber - prevFrameNumber ) * ( frameNumber - prevFrameNumber );
+
+        case QVariant::String:
+          return prev;
+
+        default:
+          break;
+      }
+
+      if ( ok )
+        *ok = false;
+      return defaultValue;
     }
 
     case Qgis::PropertyType::Invalid:

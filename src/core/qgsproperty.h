@@ -362,6 +362,26 @@ class CORE_EXPORT QgsProperty
     QString asExpression() const;
 
     /**
+     * Sets a key frame map for the property.
+     *
+     * Calling this will transform the property into an Qgis::PropertyType::Keyframe type.
+     *
+     * \see keyFrameMap()
+     * \since QGIS 3.36
+     */
+    void setKeyFrameMap( const QMap< int, QVariant > &keyFrames );
+
+    /**
+     * Returns the current key frame map for the property.
+     *
+     * If the property is not a Qgis::PropertyType::Keyframe type this will return an empty map.
+     *
+     * \see setKeyFrameMap()
+     * \since QGIS 3.36
+     */
+    QMap< int, QVariant > keyFrameMap() const;
+
+    /**
      * Prepares the property against a specified expression context. Calling prepare before evaluating the
      * property multiple times allows precalculation of expensive setup tasks such as parsing expressions.
      * Returns TRUE if preparation was successful.
@@ -556,6 +576,10 @@ class CORE_EXPORT QgsProperty
       case Qgis::PropertyType::Expression:
         typeString = QStringLiteral( "expression" );
         definitionString = sipCpp->expressionString();
+        break;
+
+      case Qgis::PropertyType::Keyframe:
+        typeString = QStringLiteral( "keyframe" );
         break;
 
       case Qgis::PropertyType::Invalid:

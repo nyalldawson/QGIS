@@ -327,6 +327,28 @@ Returns an expression string representing the state of the property, or an empty
 string if the property could not be converted to an expression
 %End
 
+    void setKeyFrameMap( const QMap< int, QVariant > &keyFrames );
+%Docstring
+Sets a key frame map for the property.
+
+Calling this will transform the property into an :py:class:`Qgis`.PropertyType.Keyframe type.
+
+.. seealso:: :py:func:`keyFrameMap`
+
+.. versionadded:: 3.36
+%End
+
+    QMap< int, QVariant > keyFrameMap() const;
+%Docstring
+Returns the current key frame map for the property.
+
+If the property is not a :py:class:`Qgis`.PropertyType.Keyframe type this will return an empty map.
+
+.. seealso:: :py:func:`setKeyFrameMap`
+
+.. versionadded:: 3.36
+%End
+
     bool prepare( const QgsExpressionContext &context = QgsExpressionContext() ) const;
 %Docstring
 Prepares the property against a specified expression context. Calling prepare before evaluating the
@@ -579,6 +601,10 @@ be called in non-performance critical code.
       case Qgis::PropertyType::Expression:
         typeString = QStringLiteral( "expression" );
         definitionString = sipCpp->expressionString();
+        break;
+
+      case Qgis::PropertyType::Keyframe:
+        typeString = QStringLiteral( "keyframe" );
         break;
 
       case Qgis::PropertyType::Invalid:
