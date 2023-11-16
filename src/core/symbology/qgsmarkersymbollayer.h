@@ -1073,7 +1073,7 @@ class CORE_EXPORT QgsFontMarkerSymbolLayer : public QgsMarkerSymbolLayer
     bool mNonZeroFontSize = true;
 
     QString characterToRender( QgsSymbolRenderContext &context, QPointF &charOffset, double &charWidth );
-    void calculateOffsetAndRotation( QgsSymbolRenderContext &context, double scaledSize, bool &hasDataDefinedRotation, QPointF &offset, double &angle ) const;
+    void calculateOffsetAndRotation(QgsSymbolRenderContext &context, double scaledSize, QPointF &offset, double &angle ) const;
     double calculateSize( QgsSymbolRenderContext &context );
 };
 

@@ -927,7 +927,6 @@ void QgsSimpleMarkerSymbolLayerBase::calculateOffsetAndRotation( QgsSymbolRender
   markerOffset( context, scaledSize, scaledSize, offsetX, offsetY );
   offset = QPointF( offsetX, offsetY );
 
-  hasDataDefinedRotation = false;
   //angle
   bool ok = true;
   angle = mAngle + mLineAngle;
@@ -939,28 +938,16 @@ void QgsSimpleMarkerSymbolLayerBase::calculateOffsetAndRotation( QgsSymbolRender
     // If the expression evaluation was not successful, fallback to static value
     if ( !ok )
       angle = mAngle + mLineAngle;
-
-    hasDataDefinedRotation = true;
   }
 
-  hasDataDefinedRotation = context.renderHints() & Qgis::SymbolRenderHint::DynamicRotation || hasDataDefinedRotation;
-
-  if ( hasDataDefinedRotation )
+  switch ( mRotationMode )
   {
-    // For non-point markers, "dataDefinedRotation" means following the
-    // shape (shape-data defined). For them, "field-data defined" does
-    // not work at all. TODO: if "field-data defined" ever gets implemented
-    // we'll need a way to distinguish here between the two, possibly
-    // using another flag in renderHints()
-    const QgsFeature *f = context.feature();
-    if ( f )
-    {
-      if ( f->hasGeometry() && f->geometry().type() == Qgis::GeometryType::Point )
-      {
-        const QgsMapToPixel &m2p = context.renderContext().mapToPixel();
-        angle += m2p.mapRotation();
-      }
-    }
+  case Qgis::SymbolRotationMode::RespectMapRotation:
+    angle += context.renderContext().mapToPixel().mapRotation();
+    break;
+
+  case Qgis::SymbolRotationMode::IgnoreMapRotation:
+    break;
   }
 
   if ( angle )
@@ -1034,6 +1021,7 @@ QgsSymbolLayer *QgsSimpleMarkerSymbolLayer::create( const QVariantMap &props )
   if ( props.contains( QStringLiteral( "size_map_unit_scale" ) ) )
     m->setSizeMapUnitScale( QgsSymbolLayerUtils::decodeMapUnitScale( props[QStringLiteral( "size_map_unit_scale" )].toString() ) );
 
+  m->setRotationMode( qgsEnumKeyToValue( props[QStringLiteral( "rotationMode" )].toString(), Qgis::SymbolRotationMode::IgnoreMapRotation ) );
   if ( props.contains( QStringLiteral( "outline_style" ) ) )
   {
     m->setStrokeStyle( QgsSymbolLayerUtils::decodePenStyle( props[QStringLiteral( "outline_style" )].toString() ) );
@@ -1375,6 +1363,7 @@ QVariantMap QgsSimpleMarkerSymbolLayer::properties() const
   map[QStringLiteral( "size_unit" )] = QgsUnitTypes::encodeUnit( mSizeUnit );
   map[QStringLiteral( "size_map_unit_scale" )] = QgsSymbolLayerUtils::encodeMapUnitScale( mSizeMapUnitScale );
   map[QStringLiteral( "angle" )] = QString::number( mAngle );
+  map[QStringLiteral( "rotationMode" )] = qgsEnumValueToKey( mRotationMode );
   map[QStringLiteral( "offset" )] = QgsSymbolLayerUtils::encodePoint( mOffset );
   map[QStringLiteral( "offset_unit" )] = QgsUnitTypes::encodeUnit( mOffsetUnit );
   map[QStringLiteral( "offset_map_unit_scale" )] = QgsSymbolLayerUtils::encodeMapUnitScale( mOffsetMapUnitScale );
@@ -1405,6 +1394,7 @@ QgsSimpleMarkerSymbolLayer *QgsSimpleMarkerSymbolLayer::clone() const
   m->setHorizontalAnchorPoint( mHorizontalAnchorPoint );
   m->setVerticalAnchorPoint( mVerticalAnchorPoint );
   m->setPenCapStyle( mPenCapStyle );
+  m->setRotationMode( mRotationMode );
   copyDataDefinedProperties( m );
   copyPaintEffect( m );
   return m;
@@ -1655,6 +1645,15 @@ bool QgsSimpleMarkerSymbolLayer::writeDxf( QgsDxfExport &e, double mmMapUnitScal
     context.setOriginalValueVariable( mAngle );
     angle = mDataDefinedProperties.valueAsDouble( QgsSymbolLayer::PropertyAngle, context.renderContext().expressionContext(), mAngle ) + mLineAngle;
   }
+  switch ( mRotationMode )
+  {
+  case Qgis::SymbolRotationMode::RespectMapRotation:
+    angle += context.renderContext().mapToPixel().mapRotation();
+    break;
+
+  case Qgis::SymbolRotationMode::IgnoreMapRotation:
+    break;
+  }
 
   Qgis::MarkerShape shape = mShape;
   if ( mDataDefinedProperties.isActive( QgsSymbolLayer::PropertyName ) )
@@ -1895,6 +1894,7 @@ QgsSymbolLayer *QgsFilledMarkerSymbolLayer::create( const QVariantMap &props )
     scaleMethod = QgsSymbolLayerUtils::decodeScaleMethod( props[QStringLiteral( "scale_method" )].toString() );
 
   QgsFilledMarkerSymbolLayer *m = new QgsFilledMarkerSymbolLayer( decodeShape( name ), size, angle, scaleMethod );
+  m->setRotationMode( qgsEnumKeyToValue( props[QStringLiteral( "rotationMode" )].toString(), Qgis::SymbolRotationMode::IgnoreMapRotation ) );
   if ( props.contains( QStringLiteral( "offset" ) ) )
     m->setOffset( QgsSymbolLayerUtils::decodePoint( props[QStringLiteral( "offset" )].toString() ) );
   if ( props.contains( QStringLiteral( "offset_unit" ) ) )
@@ -1952,6 +1952,7 @@ QVariantMap QgsFilledMarkerSymbolLayer::properties() const
   map[QStringLiteral( "size_unit" )] = QgsUnitTypes::encodeUnit( mSizeUnit );
   map[QStringLiteral( "size_map_unit_scale" )] = QgsSymbolLayerUtils::encodeMapUnitScale( mSizeMapUnitScale );
   map[QStringLiteral( "angle" )] = QString::number( mAngle );
+  map[QStringLiteral( "rotationMode" )] = qgsEnumValueToKey( mRotationMode );
   map[QStringLiteral( "offset" )] = QgsSymbolLayerUtils::encodePoint( mOffset );
   map[QStringLiteral( "offset_unit" )] = QgsUnitTypes::encodeUnit( mOffsetUnit );
   map[QStringLiteral( "offset_map_unit_scale" )] = QgsSymbolLayerUtils::encodeMapUnitScale( mOffsetMapUnitScale );
@@ -2125,7 +2126,7 @@ QgsSymbolLayer *QgsSvgMarkerSymbolLayer::create( const QVariantMap &props )
     scaleMethod = QgsSymbolLayerUtils::decodeScaleMethod( props[QStringLiteral( "scale_method" )].toString() );
 
   QgsSvgMarkerSymbolLayer *m = new QgsSvgMarkerSymbolLayer( name, size, angle, scaleMethod );
-
+  m->setRotationMode( qgsEnumKeyToValue( props[QStringLiteral( "rotationMode" )].toString(), Qgis::SymbolRotationMode::IgnoreMapRotation ) );
   if ( props.contains( QStringLiteral( "size_unit" ) ) )
     m->setSizeUnit( QgsUnitTypes::decodeRenderUnit( props[QStringLiteral( "size_unit" )].toString() ) );
   if ( props.contains( QStringLiteral( "size_map_unit_scale" ) ) )
@@ -2559,23 +2560,14 @@ void QgsSvgMarkerSymbolLayer::calculateOffsetAndRotation( QgsSymbolRenderContext
     angle = mDataDefinedProperties.valueAsDouble( QgsSymbolLayer::PropertyAngle, context.renderContext().expressionContext(), mAngle ) + mLineAngle;
   }
 
-  const bool hasDataDefinedRotation = context.renderHints() & Qgis::SymbolRenderHint::DynamicRotation || mDataDefinedProperties.isActive( QgsSymbolLayer::PropertyAngle );
-  if ( hasDataDefinedRotation )
+  switch ( mRotationMode )
   {
-    // For non-point markers, "dataDefinedRotation" means following the
-    // shape (shape-data defined). For them, "field-data defined" does
-    // not work at all. TODO: if "field-data defined" ever gets implemented
-    // we'll need a way to distinguish here between the two, possibly
-    // using another flag in renderHints()
-    const QgsFeature *f = context.feature();
-    if ( f )
-    {
-      if ( f->hasGeometry() && f->geometry().type() == Qgis::GeometryType::Point )
-      {
-        const QgsMapToPixel &m2p = context.renderContext().mapToPixel();
-        angle += m2p.mapRotation();
-      }
-    }
+  case Qgis::SymbolRotationMode::RespectMapRotation:
+    angle += context.renderContext().mapToPixel().mapRotation();
+    break;
+
+  case Qgis::SymbolRotationMode::IgnoreMapRotation:
+    break;
   }
 
   if ( angle )
@@ -2592,6 +2584,7 @@ QVariantMap QgsSvgMarkerSymbolLayer::properties() const
   map[QStringLiteral( "size_map_unit_scale" )] = QgsSymbolLayerUtils::encodeMapUnitScale( mSizeMapUnitScale );
   map[QStringLiteral( "fixedAspectRatio" )] = QString::number( mFixedAspectRatio );
   map[QStringLiteral( "angle" )] = QString::number( mAngle );
+  map[QStringLiteral( "rotationMode" )] = qgsEnumValueToKey( mRotationMode );
   map[QStringLiteral( "offset" )] = QgsSymbolLayerUtils::encodePoint( mOffset );
   map[QStringLiteral( "offset_unit" )] = QgsUnitTypes::encodeUnit( mOffsetUnit );
   map[QStringLiteral( "offset_map_unit_scale" )] = QgsSymbolLayerUtils::encodeMapUnitScale( mOffsetMapUnitScale );
@@ -2633,6 +2626,7 @@ QgsSvgMarkerSymbolLayer *QgsSvgMarkerSymbolLayer::clone() const
   m->setHorizontalAnchorPoint( mHorizontalAnchorPoint );
   m->setVerticalAnchorPoint( mVerticalAnchorPoint );
   m->setParameters( mParameters );
+  m->setRotationMode( mRotationMode );
 
   copyDataDefinedProperties( m );
   copyPaintEffect( m );
@@ -2868,6 +2862,16 @@ bool QgsSvgMarkerSymbolLayer::writeDxf( QgsDxfExport &e, double mmMapUnitScaleFa
     angle = mDataDefinedProperties.valueAsDouble( QgsSymbolLayer::PropertyAngle, context.renderContext().expressionContext(), mAngle ) + mLineAngle;
   }
 
+  switch ( mRotationMode )
+  {
+  case Qgis::SymbolRotationMode::RespectMapRotation:
+    angle += context.renderContext().mapToPixel().mapRotation();
+    break;
+
+  case Qgis::SymbolRotationMode::IgnoreMapRotation:
+    break;
+  }
+
   if ( angle )
     outputOffset = _rotatedOffset( outputOffset, angle );
 
@@ -3051,6 +3055,7 @@ QgsSymbolLayer *QgsRasterMarkerSymbolLayer::create( const QVariantMap &props )
     scaleMethod = QgsSymbolLayerUtils::decodeScaleMethod( props[QStringLiteral( "scale_method" )].toString() );
 
   std::unique_ptr< QgsRasterMarkerSymbolLayer > m = std::make_unique< QgsRasterMarkerSymbolLayer >( path, size, angle, scaleMethod );
+  m->setRotationMode( qgsEnumKeyToValue( props[QStringLiteral( "rotationMode" )].toString(), Qgis::SymbolRotationMode::IgnoreMapRotation ) );
   m->setCommonProperties( props );
   return m.release();
 }
@@ -3327,18 +3332,14 @@ void QgsRasterMarkerSymbolLayer::calculateOffsetAndRotation( QgsSymbolRenderCont
     angle = mDataDefinedProperties.valueAsDouble( QgsSymbolLayer::PropertyAngle, context.renderContext().expressionContext(), mAngle ) + mLineAngle;
   }
 
-  const bool hasDataDefinedRotation = context.renderHints() & Qgis::SymbolRenderHint::DynamicRotation || mDataDefinedProperties.isActive( QgsSymbolLayer::PropertyAngle );
-  if ( hasDataDefinedRotation )
+  switch ( mRotationMode )
   {
-    const QgsFeature *f = context.feature();
-    if ( f )
-    {
-      if ( f->hasGeometry() && f->geometry().type() == Qgis::GeometryType::Point )
-      {
-        const QgsMapToPixel &m2p = context.renderContext().mapToPixel();
-        angle += m2p.mapRotation();
-      }
-    }
+  case Qgis::SymbolRotationMode::RespectMapRotation:
+    angle += context.renderContext().mapToPixel().mapRotation();
+    break;
+
+  case Qgis::SymbolRotationMode::IgnoreMapRotation:
+    break;
   }
 
   if ( angle )
@@ -3355,6 +3356,7 @@ QVariantMap QgsRasterMarkerSymbolLayer::properties() const
   map[QStringLiteral( "size_map_unit_scale" )] = QgsSymbolLayerUtils::encodeMapUnitScale( mSizeMapUnitScale );
   map[QStringLiteral( "fixedAspectRatio" )] = QString::number( mFixedAspectRatio );
   map[QStringLiteral( "angle" )] = QString::number( mAngle );
+  map[QStringLiteral( "rotationMode" )] = qgsEnumValueToKey( mRotationMode );
   map[QStringLiteral( "alpha" )] = QString::number( mOpacity );
   map[QStringLiteral( "offset" )] = QgsSymbolLayerUtils::encodePoint( mOffset );
   map[QStringLiteral( "offset_unit" )] = QgsUnitTypes::encodeUnit( mOffsetUnit );
@@ -3384,6 +3386,7 @@ void QgsRasterMarkerSymbolLayer::copyCommonProperties( QgsRasterMarkerSymbolLaye
   other->setSizeMapUnitScale( mSizeMapUnitScale );
   other->setHorizontalAnchorPoint( mHorizontalAnchorPoint );
   other->setVerticalAnchorPoint( mVerticalAnchorPoint );
+  other->setRotationMode( mRotationMode );
   copyDataDefinedProperties( other );
   copyPaintEffect( other );
 }
@@ -3496,6 +3499,7 @@ QgsSymbolLayer *QgsFontMarkerSymbolLayer::create( const QVariantMap &props )
     angle = props[QStringLiteral( "angle" )].toDouble();
 
   QgsFontMarkerSymbolLayer *m = new QgsFontMarkerSymbolLayer( fontFamily, string, pointSize, color, angle );
+  m->setRotationMode( qgsEnumKeyToValue( props[QStringLiteral( "rotationMode" )].toString(), Qgis::SymbolRotationMode::IgnoreMapRotation ) );
 
   if ( props.contains( QStringLiteral( "font_style" ) ) )
     m->setFontStyle( props[QStringLiteral( "font_style" )].toString() );
@@ -3613,7 +3617,6 @@ QString QgsFontMarkerSymbolLayer::characterToRender( QgsSymbolRenderContext &con
 
 void QgsFontMarkerSymbolLayer::calculateOffsetAndRotation( QgsSymbolRenderContext &context,
     double scaledSize,
-    bool &hasDataDefinedRotation,
     QPointF &offset,
     double &angle ) const
 {
@@ -3636,23 +3639,14 @@ void QgsFontMarkerSymbolLayer::calculateOffsetAndRotation( QgsSymbolRenderContex
       angle = mAngle + mLineAngle;
   }
 
-  hasDataDefinedRotation = context.renderHints() & Qgis::SymbolRenderHint::DynamicRotation;
-  if ( hasDataDefinedRotation )
+  switch ( mRotationMode )
   {
-    // For non-point markers, "dataDefinedRotation" means following the
-    // shape (shape-data defined). For them, "field-data defined" does
-    // not work at all. TODO: if "field-data defined" ever gets implemented
-    // we'll need a way to distinguish here between the two, possibly
-    // using another flag in renderHints()
-    const QgsFeature *f = context.feature();
-    if ( f )
-    {
-      if ( f->hasGeometry() && f->geometry().type() == Qgis::GeometryType::Point )
-      {
-        const QgsMapToPixel &m2p = context.renderContext().mapToPixel();
-        angle += m2p.mapRotation();
-      }
-    }
+  case Qgis::SymbolRotationMode::RespectMapRotation:
+    angle += context.renderContext().mapToPixel().mapRotation();
+    break;
+
+  case Qgis::SymbolRotationMode::IgnoreMapRotation:
+    break;
   }
 
   if ( angle )
@@ -3774,10 +3768,9 @@ void QgsFontMarkerSymbolLayer::renderPoint( QPointF point, QgsSymbolRenderContex
 
   const double sizeToRender = calculateSize( context );
 
-  bool hasDataDefinedRotation = false;
   QPointF offset;
   double angle = 0;
-  calculateOffsetAndRotation( context, sizeToRender, hasDataDefinedRotation, offset, angle );
+  calculateOffsetAndRotation( context, sizeToRender, offset, angle );
 
   p->translate( point.x() + offset.x(), point.y() + offset.y() );
 
@@ -3830,6 +3823,7 @@ QVariantMap QgsFontMarkerSymbolLayer::properties() const
   props[QStringLiteral( "outline_width_map_unit_scale" )] = QgsSymbolLayerUtils::encodeMapUnitScale( mStrokeWidthMapUnitScale );
   props[QStringLiteral( "joinstyle" )] = QgsSymbolLayerUtils::encodePenJoinStyle( mPenJoinStyle );
   props[QStringLiteral( "angle" )] = QString::number( mAngle );
+  props[QStringLiteral( "rotationMode" )] = qgsEnumValueToKey( mRotationMode );
   props[QStringLiteral( "offset" )] = QgsSymbolLayerUtils::encodePoint( mOffset );
   props[QStringLiteral( "offset_unit" )] = QgsUnitTypes::encodeUnit( mOffsetUnit );
   props[QStringLiteral( "offset_map_unit_scale" )] = QgsSymbolLayerUtils::encodeMapUnitScale( mOffsetMapUnitScale );
@@ -3854,6 +3848,7 @@ QgsFontMarkerSymbolLayer *QgsFontMarkerSymbolLayer::clone() const
   m->setSizeMapUnitScale( mSizeMapUnitScale );
   m->setHorizontalAnchorPoint( mHorizontalAnchorPoint );
   m->setVerticalAnchorPoint( mVerticalAnchorPoint );
+  m->setRotationMode( mRotationMode );
   copyDataDefinedProperties( m );
   copyPaintEffect( m );
   return m;
@@ -3919,10 +3914,9 @@ QRectF QgsFontMarkerSymbolLayer::bounds( QPointF point, QgsSymbolRenderContext &
   }
   chrWidth *= mFontSizeScale;
 
-  bool hasDataDefinedRotation = false;
   QPointF offset;
   double angle = 0;
-  calculateOffsetAndRotation( context, scaledSize, hasDataDefinedRotation, offset, angle );
+  calculateOffsetAndRotation( context, scaledSize, offset, angle );
   scaledSize = context.renderContext().convertToPainterUnits( scaledSize, mSizeUnit, mSizeMapUnitScale );
 
   QTransform transform;
@@ -4050,7 +4044,7 @@ QgsSymbolLayer *QgsAnimatedMarkerSymbolLayer::create( const QVariantMap &propert
 
   std::unique_ptr< QgsAnimatedMarkerSymbolLayer > m = std::make_unique< QgsAnimatedMarkerSymbolLayer >( path, size, angle );
   m->setFrameRate( properties.value( QStringLiteral( "frameRate" ), QStringLiteral( "10" ) ).toDouble() );
-
+  m->setRotationMode( qgsEnumKeyToValue( properties[QStringLiteral( "rotationMode" )].toString(), Qgis::SymbolRotationMode::IgnoreMapRotation ) );
   m->setCommonProperties( properties );
   return m.release();
 }

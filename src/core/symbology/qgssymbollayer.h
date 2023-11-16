@@ -810,6 +810,7 @@ class CORE_EXPORT QgsMarkerSymbolLayer : public QgsSymbolLayer
      * Sets the rotation angle for the marker.
      * \param angle angle in degrees clockwise from north.
      * \see angle()
+     * \see rotationMode()
      * \see setLineAngle()
      */
     void setAngle( double angle ) { mAngle = angle; }
@@ -817,8 +818,25 @@ class CORE_EXPORT QgsMarkerSymbolLayer : public QgsSymbolLayer
     /**
      * Returns the rotation angle for the marker, in degrees clockwise from north.
      * \see setAngle()
+     * \see rotationMode()
      */
     double angle() const { return mAngle; }
+
+    /**
+     * Returns the rotation mode for the marker.
+     *
+     * \see setRotationMode()
+     * \since QGIS 3.36
+     */
+    Qgis::SymbolRotationMode rotationMode() const;
+
+    /**
+     * Sets the rotation \a mode for the marker.
+     *
+     * \see rotationMode()
+     * \since QGIS 3.36
+     */
+    void setRotationMode( Qgis::SymbolRotationMode mode );
 
     /**
      * Sets the line angle modification for the symbol's angle. This angle is added to
@@ -1073,6 +1091,8 @@ class CORE_EXPORT QgsMarkerSymbolLayer : public QgsSymbolLayer
     HorizontalAnchorPoint mHorizontalAnchorPoint = HCenter;
     //! Vertical anchor point
     VerticalAnchorPoint mVerticalAnchorPoint = VCenter;
+
+    Qgis::SymbolRotationMode mRotationMode = Qgis::SymbolRotationMode::IgnoreMapRotation;
 
   private:
     static QgsMarkerSymbolLayer::HorizontalAnchorPoint decodeHorizontalAnchorPoint( const QString &str );

@@ -824,6 +824,8 @@ Sets the rotation angle for the marker.
 
 .. seealso:: :py:func:`angle`
 
+.. seealso:: :py:func:`rotationMode`
+
 .. seealso:: :py:func:`setLineAngle`
 %End
 
@@ -832,6 +834,26 @@ Sets the rotation angle for the marker.
 Returns the rotation angle for the marker, in degrees clockwise from north.
 
 .. seealso:: :py:func:`setAngle`
+
+.. seealso:: :py:func:`rotationMode`
+%End
+
+    Qgis::SymbolRotationMode rotationMode() const;
+%Docstring
+Returns the rotation mode for the marker.
+
+.. seealso:: :py:func:`setRotationMode`
+
+.. versionadded:: 3.36
+%End
+
+    void setRotationMode( Qgis::SymbolRotationMode mode );
+%Docstring
+Sets the rotation ``mode`` for the marker.
+
+.. seealso:: :py:func:`rotationMode`
+
+.. versionadded:: 3.36
 %End
 
     void setLineAngle( double lineAngle );
@@ -1143,6 +1165,7 @@ Adjusts a marker offset to account for rotation.
 
 :return: adjusted offset
 %End
+
 
 
   private:

@@ -19,8 +19,11 @@
 
 #include "qgis_core.h"
 #include "qgis.h"
-#include "qgsmarkersymbollayer.h"
+#include "qgssymbollayer.h"
+
 #include <QPainterPath>
+#include <QPen>
+#include <QBrush>
 
 class QgsExpression;
 
@@ -281,7 +284,7 @@ class CORE_EXPORT QgsEllipseSymbolLayer: public QgsMarkerSymbolLayer
      */
     void preparePath( const QgsEllipseSymbolLayer::Shape &shape, QgsSymbolRenderContext &context, double *scaledWidth = nullptr, double *scaledHeight = nullptr, const QgsFeature *f = nullptr );
     QSizeF calculateSize( QgsSymbolRenderContext &context, double *scaledWidth = nullptr, double *scaledHeight = nullptr );
-    void calculateOffsetAndRotation( QgsSymbolRenderContext &context, double scaledWidth, double scaledHeight, bool &hasDataDefinedRotation, QPointF &offset, double &angle ) const;
+    void calculateOffsetAndRotation( QgsSymbolRenderContext &context, double scaledWidth, double scaledHeight, QPointF &offset, double &angle ) const;
 };
 
 // clazy:excludeall=qstring-allocations

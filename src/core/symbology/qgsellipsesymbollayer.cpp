@@ -162,6 +162,7 @@ QgsSymbolLayer *QgsEllipseSymbolLayer::create( const QVariantMap &properties )
   {
     layer->setVerticalAnchorPoint( QgsMarkerSymbolLayer::VerticalAnchorPoint( properties[ QStringLiteral( "vertical_anchor_point" )].toInt() ) );
   }
+  layer->setRotationMode( qgsEnumKeyToValue( properties[QStringLiteral("rotationMode")].toString(), Qgis::SymbolRotationMode::IgnoreMapRotation));
 
   //data defined properties
   layer->restoreOldDataDefinedProperties( properties );
@@ -261,10 +262,9 @@ void QgsEllipseSymbolLayer::renderPoint( QPointF point, QgsSymbolRenderContext &
   }
 
   //offset and rotation
-  bool hasDataDefinedRotation = false;
   QPointF offset;
   double angle = 0;
-  calculateOffsetAndRotation( context, scaledWidth, scaledHeight, hasDataDefinedRotation, offset, angle );
+  calculateOffsetAndRotation( context, scaledWidth, scaledHeight, offset, angle );
 
   QPainter *p = context.renderContext().painter();
   if ( !p )
@@ -297,7 +297,6 @@ void QgsEllipseSymbolLayer::renderPoint( QPointF point, QgsSymbolRenderContext &
 void QgsEllipseSymbolLayer::calculateOffsetAndRotation( QgsSymbolRenderContext &context,
     double scaledWidth,
     double scaledHeight,
-    bool &hasDataDefinedRotation,
     QPointF &offset,
     double &angle ) const
 {
@@ -306,35 +305,22 @@ void QgsEllipseSymbolLayer::calculateOffsetAndRotation( QgsSymbolRenderContext &
   markerOffset( context, scaledWidth, scaledHeight, mSymbolWidthUnit, mSymbolHeightUnit, offsetX, offsetY, mSymbolWidthMapUnitScale, mSymbolHeightMapUnitScale );
   offset = QPointF( offsetX, offsetY );
 
-//priority for rotation: 1. data defined symbol level, 2. symbol layer rotation (mAngle)
-  const bool ok = true;
+  //priority for rotation: 1. data defined symbol level, 2. symbol layer rotation (mAngle)
   angle = mAngle + mLineAngle;
-  bool usingDataDefinedRotation = false;
   if ( mDataDefinedProperties.isActive( QgsSymbolLayer::PropertyAngle ) )
   {
     context.setOriginalValueVariable( angle );
     angle = mDataDefinedProperties.valueAsDouble( QgsSymbolLayer::PropertyAngle, context.renderContext().expressionContext(), 0 ) + mLineAngle;
-    usingDataDefinedRotation = ok;
   }
 
-  hasDataDefinedRotation = context.renderHints() & Qgis::SymbolRenderHint::DynamicRotation || usingDataDefinedRotation;
-  if ( hasDataDefinedRotation )
+  switch ( mRotationMode )
   {
-    // For non-point markers, "dataDefinedRotation" means following the
-    // shape (shape-data defined). For them, "field-data defined" does
-    // not work at all. TODO: if "field-data defined" ever gets implemented
-    // we'll need a way to distinguish here between the two, possibly
-    // using another flag in renderHints()
-    const QgsFeature *f = context.feature();
-    if ( f )
-    {
-      const QgsGeometry g = f->geometry();
-      if ( !g.isNull() && g.type() == Qgis::GeometryType::Point )
-      {
-        const QgsMapToPixel &m2p = context.renderContext().mapToPixel();
-        angle += m2p.mapRotation();
-      }
-    }
+  case Qgis::SymbolRotationMode::RespectMapRotation:
+    angle += context.renderContext().mapToPixel().mapRotation();
+    break;
+
+  case Qgis::SymbolRotationMode::IgnoreMapRotation:
+    break;
   }
 
   if ( angle )
@@ -402,6 +388,7 @@ QgsEllipseSymbolLayer *QgsEllipseSymbolLayer::clone() const
   m->setAngle( mAngle );
   m->setHorizontalAnchorPoint( mHorizontalAnchorPoint );
   m->setVerticalAnchorPoint( mVerticalAnchorPoint );
+  m->setRotationMode( mRotationMode );
 
   copyDataDefinedProperties( m );
   copyPaintEffect( m );
@@ -547,6 +534,7 @@ QVariantMap QgsEllipseSymbolLayer::properties() const
   map[QStringLiteral( "symbol_height_unit" )] = QgsUnitTypes::encodeUnit( mSymbolHeightUnit );
   map[QStringLiteral( "symbol_height_map_unit_scale" )] = QgsSymbolLayerUtils::encodeMapUnitScale( mSymbolHeightMapUnitScale );
   map[QStringLiteral( "angle" )] = QString::number( mAngle );
+  map[QStringLiteral( "rotationMode" )] = qgsEnumValueToKey( mRotationMode );
   map[QStringLiteral( "outline_style" )] = QgsSymbolLayerUtils::encodePenStyle( mStrokeStyle );
   map[QStringLiteral( "outline_width" )] = QString::number( mStrokeWidth );
   map[QStringLiteral( "outline_width_unit" )] = QgsUnitTypes::encodeUnit( mStrokeWidthUnit );
@@ -838,10 +826,9 @@ QRectF QgsEllipseSymbolLayer::bounds( QPointF point, QgsSymbolRenderContext &con
 {
   const QSizeF size = calculateSize( context );
 
-  bool hasDataDefinedRotation = false;
   QPointF offset;
   double angle = 0;
-  calculateOffsetAndRotation( context, size.width(), size.height(), hasDataDefinedRotation, offset, angle );
+  calculateOffsetAndRotation( context, size.width(), size.height(), offset, angle );
 
   QTransform transform;
 

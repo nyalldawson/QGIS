@@ -662,6 +662,16 @@ QPointF QgsMarkerSymbolLayer::_rotatedOffset( QPointF offset, double angle )
   return QPointF( offset.x() * c - offset.y() * s, offset.x() * s + offset.y() * c );
 }
 
+Qgis::SymbolRotationMode QgsMarkerSymbolLayer::rotationMode() const
+{
+  return mRotationMode;
+}
+
+void QgsMarkerSymbolLayer::setRotationMode( Qgis::SymbolRotationMode mode )
+{
+  mRotationMode = mode;
+}
+
 QgsMarkerSymbolLayer::HorizontalAnchorPoint QgsMarkerSymbolLayer::decodeHorizontalAnchorPoint( const QString &str )
 {
   if ( str.compare( QLatin1String( "left" ), Qt::CaseInsensitive ) == 0 )
