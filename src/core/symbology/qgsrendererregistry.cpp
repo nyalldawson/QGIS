@@ -27,8 +27,9 @@
 #include "qgs25drenderer.h"
 #include "qgsembeddedsymbolrenderer.h"
 #include "qgsnullsymbolrenderer.h"
+#include "qgslineclusterrenderer.h"
+#include "qgslinedisplacementrenderer.h"
 #include "qgsvectorlayer.h"
-#include "qgsmarkersymbol.h"
 
 QgsRendererRegistry::QgsRendererRegistry()
 {
@@ -82,6 +83,20 @@ QgsRendererRegistry::QgsRendererRegistry()
                                         QIcon(),
                                         nullptr,
                                         QgsRendererAbstractMetadata::PolygonLayer ) );
+
+  addRenderer( new QgsRendererMetadata( QStringLiteral( "lineCluster" ),
+                                        QObject::tr( "Line Cluster" ),
+                                        QgsLineClusterRenderer::create,
+                                        QIcon(),
+                                        nullptr,
+                                        QgsRendererAbstractMetadata::LineLayer ) );
+
+  addRenderer( new QgsRendererMetadata( QStringLiteral( "lineDisplacement" ),
+                                        QObject::tr( "Line Displacement" ),
+                                        QgsLineDisplacementRenderer::create,
+                                        QIcon(),
+                                        nullptr,
+                                        QgsRendererAbstractMetadata::LineLayer ) );
 
   addRenderer( new QgsRendererMetadata( QStringLiteral( "heatmapRenderer" ),
                                         QObject::tr( "Heatmap" ),

@@ -1,35 +1,32 @@
 /************************************************************************
  * This file has been generated automatically from                      *
  *                                                                      *
- * src/core/symbology/qgsmergedfeaturerenderer.h                        *
+ * src/core/symbology/qgslinedisplacementrenderer.h                     *
  *                                                                      *
  * Do not edit manually ! Edit header and run scripts/sipify.pl again   *
  ************************************************************************/
 
 
-class QgsMergedFeatureRenderer : QgsFeatureRenderer
+class QgsLineDisplacementRenderer : QgsFeatureRenderer
 {
 %Docstring(signature="appended")
-:py:class:`QgsMergedFeatureRenderer` is a polygon or line-only feature renderer used to
-render a set of features merged (or dissolved) into a single geometry.
+:py:class:`QgsLineDisplacementRenderer` is a line-only feature renderer used to
+render overlapping line features in a displaced manner.
 
 It is designed on top of another feature renderer, which is called "embedded"
-Most of the methods are then only proxies to the embedded renderer. E.g. if
-the embedded renderer is a categorized renderer, then all the matching features
-for each categorized class will be dissolved together. Features from different
-classes will NOT be dissolved together.
+Most of the methods are then only proxies to the embedded renderer.
 
-.. versionadded:: 3.18
+.. versionadded:: 3.36
 %End
 
 %TypeHeaderCode
-#include "qgsmergedfeaturerenderer.h"
+#include "qgslinedisplacementrenderer.h"
 %End
   public:
 
-    QgsMergedFeatureRenderer( QgsFeatureRenderer *embeddedRenderer /Transfer/ );
+    QgsLineDisplacementRenderer( QgsFeatureRenderer *embeddedRenderer /Transfer/ );
 %Docstring
-Constructor for QgsMergedFeatureRenderer.
+Constructor for QgsLineDisplacementRenderer.
 
 :param embeddedRenderer: optional embeddedRenderer. Ownership will be transferred.
 %End
@@ -40,32 +37,15 @@ Constructor for QgsMergedFeatureRenderer.
 Creates a renderer out of an XML, for loading
 %End
 
-    virtual QgsMergedFeatureRenderer *clone() const /Factory/;
+    virtual QgsLineDisplacementRenderer *clone() const /Factory/;
 
     virtual void startRender( QgsRenderContext &context, const QgsFields &fields );
 
 
     virtual bool renderFeature( const QgsFeature &feature, QgsRenderContext &context, int layer = -1, bool selected = false, bool drawVertexMarker = false ) throw( QgsCsException );
 
-%Docstring
-Renders a given feature.
-This will here collect features. The actual rendering will be postponed to :py:func:`~QgsMergedFeatureRenderer.stopRender`
-
-:param feature: the feature to render
-:param context: the rendering context
-:param layer: the symbol layer to render, if that makes sense
-:param selected: whether this feature has been selected (this will add decorations)
-:param drawVertexMarker: whether this feature has vertex markers (in edit mode usually)
-
-:return: ``True`` if the rendering was OK
-%End
-
     virtual void stopRender( QgsRenderContext &context );
 
-%Docstring
-The actual rendering will take place here.
-Features collected during :py:func:`~QgsMergedFeatureRenderer.renderFeature` are rendered using the embedded feature renderer
-%End
 
     virtual QString dump() const;
 
@@ -110,30 +90,22 @@ Features collected during :py:func:`~QgsMergedFeatureRenderer.renderFeature` are
     virtual bool accept( QgsStyleEntityVisitorInterface *visitor ) const;
 
 
-    static QgsMergedFeatureRenderer *convertFromRenderer( const QgsFeatureRenderer *renderer ) /Factory/;
+    static QgsLineDisplacementRenderer *convertFromRenderer( const QgsFeatureRenderer *renderer ) /Factory/;
 %Docstring
-Creates a QgsMergedFeatureRenderer by a conversion from an existing renderer.
+Creates a QgsLineDisplacementRenderer by a conversion from an existing renderer.
 
 :return: a new renderer if the conversion was possible, otherwise ``None``.
 %End
 
   protected:
 
-    QgsMergedFeatureRenderer( const QString &type, QgsFeatureRenderer *embeddedRenderer /Transfer/ );
+    QgsLineDisplacementRenderer( const QString &type, QgsFeatureRenderer *embeddedRenderer /Transfer/ );
 %Docstring
-Constructor for QgsMergedFeatureRenderer.
+Constructor for QgsLineDisplacementRenderer.
 
 :param type: renderer ID string
 :param embeddedRenderer: optional embeddedRenderer. Ownership will be transferred.
 %End
-
-    enum GeometryOperation
-    {
-      Merge,
-      InvertOnly,
-      MergeAndInvert,
-    };
-
 
 
 };
@@ -142,7 +114,7 @@ Constructor for QgsMergedFeatureRenderer.
 /************************************************************************
  * This file has been generated automatically from                      *
  *                                                                      *
- * src/core/symbology/qgsmergedfeaturerenderer.h                        *
+ * src/core/symbology/qgslinedisplacementrenderer.h                     *
  *                                                                      *
  * Do not edit manually ! Edit header and run scripts/sipify.pl again   *
  ************************************************************************/

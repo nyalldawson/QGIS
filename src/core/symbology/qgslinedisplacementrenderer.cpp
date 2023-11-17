@@ -1,8 +1,8 @@
 /***************************************************************************
-    qgsmergedfeaturerenderer.h
+    qgslinedisplacementrenderer.h
     ---------------------
-    begin                : December 2020
-    copyright            : (C) 2020 by Nyall Dawson
+    begin                : November 2023
+    copyright            : (C) 2023 by Nyall Dawson
     email                : nyall dot dawson at gmail dot com
  ***************************************************************************
  *                                                                         *
@@ -13,8 +13,11 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "qgsmergedfeaturerenderer.h"
+#include "qgslinedisplacementrenderer.h"
+
 #include "qgssymbol.h"
+#include "qgssymbollayerutils.h"
+
 #include "qgsfeature.h"
 #include "qgsvectorlayer.h"
 #include "qgsstyleentityvisitor.h"
@@ -22,13 +25,13 @@
 #include <QDomDocument>
 #include <QDomElement>
 
-QgsMergedFeatureRenderer::QgsMergedFeatureRenderer( QgsFeatureRenderer *subRenderer )
-  : QgsMergedFeatureRenderer( QStringLiteral( "mergedFeatureRenderer" ), subRenderer )
+QgsLineDisplacementRenderer::QgsLineDisplacementRenderer( QgsFeatureRenderer *subRenderer )
+  : QgsLineDisplacementRenderer( QStringLiteral( "lineDisplacement" ), subRenderer )
 {
 
 }
 
-QgsMergedFeatureRenderer::QgsMergedFeatureRenderer( const QString &type, QgsFeatureRenderer *subRenderer )
+QgsLineDisplacementRenderer::QgsLineDisplacementRenderer( const QString &type, QgsFeatureRenderer *subRenderer )
   : QgsFeatureRenderer( type )
 {
   if ( subRenderer )
@@ -37,17 +40,17 @@ QgsMergedFeatureRenderer::QgsMergedFeatureRenderer( const QString &type, QgsFeat
   }
 }
 
-void QgsMergedFeatureRenderer::setEmbeddedRenderer( QgsFeatureRenderer *subRenderer )
+void QgsLineDisplacementRenderer::setEmbeddedRenderer( QgsFeatureRenderer *subRenderer )
 {
   mSubRenderer.reset( subRenderer );
 }
 
-const QgsFeatureRenderer *QgsMergedFeatureRenderer::embeddedRenderer() const
+const QgsFeatureRenderer *QgsLineDisplacementRenderer::embeddedRenderer() const
 {
   return mSubRenderer.get();
 }
 
-void QgsMergedFeatureRenderer::setLegendSymbolItem( const QString &key, QgsSymbol *symbol )
+void QgsLineDisplacementRenderer::setLegendSymbolItem( const QString &key, QgsSymbol *symbol )
 {
   if ( !mSubRenderer )
     return;
@@ -55,7 +58,7 @@ void QgsMergedFeatureRenderer::setLegendSymbolItem( const QString &key, QgsSymbo
   mSubRenderer->setLegendSymbolItem( key, symbol );
 }
 
-bool QgsMergedFeatureRenderer::legendSymbolItemsCheckable() const
+bool QgsLineDisplacementRenderer::legendSymbolItemsCheckable() const
 {
   if ( !mSubRenderer )
     return false;
@@ -63,7 +66,7 @@ bool QgsMergedFeatureRenderer::legendSymbolItemsCheckable() const
   return mSubRenderer->legendSymbolItemsCheckable();
 }
 
-bool QgsMergedFeatureRenderer::legendSymbolItemChecked( const QString &key )
+bool QgsLineDisplacementRenderer::legendSymbolItemChecked( const QString &key )
 {
   if ( !mSubRenderer )
     return false;
@@ -71,7 +74,7 @@ bool QgsMergedFeatureRenderer::legendSymbolItemChecked( const QString &key )
   return mSubRenderer->legendSymbolItemChecked( key );
 }
 
-void QgsMergedFeatureRenderer::checkLegendSymbolItem( const QString &key, bool state )
+void QgsLineDisplacementRenderer::checkLegendSymbolItem( const QString &key, bool state )
 {
   if ( !mSubRenderer )
     return;
@@ -79,7 +82,7 @@ void QgsMergedFeatureRenderer::checkLegendSymbolItem( const QString &key, bool s
   mSubRenderer->checkLegendSymbolItem( key, state );
 }
 
-bool QgsMergedFeatureRenderer::accept( QgsStyleEntityVisitorInterface *visitor ) const
+bool QgsLineDisplacementRenderer::accept( QgsStyleEntityVisitorInterface *visitor ) const
 {
   if ( !mSubRenderer )
     return true;
@@ -87,7 +90,7 @@ bool QgsMergedFeatureRenderer::accept( QgsStyleEntityVisitorInterface *visitor )
   return mSubRenderer->accept( visitor );
 }
 
-void QgsMergedFeatureRenderer::startRender( QgsRenderContext &context, const QgsFields &fields )
+void QgsLineDisplacementRenderer::startRender( QgsRenderContext &context, const QgsFields &fields )
 {
   QgsFeatureRenderer::startRender( context, fields );
 
@@ -129,7 +132,7 @@ void QgsMergedFeatureRenderer::startRender( QgsRenderContext &context, const Qgs
     mContext.setExtent( context.mapExtent() );
     // do we have to recompute the MapToPixel ?
   }
-
+#if 0
   switch ( mOperation )
   {
     case InvertOnly:
@@ -155,9 +158,10 @@ void QgsMergedFeatureRenderer::startRender( QgsRenderContext &context, const Qgs
     case Merge:
       break;
   }
+#endif
 }
 
-bool QgsMergedFeatureRenderer::renderFeature( const QgsFeature &feature, QgsRenderContext &context, int layer, bool selected, bool drawVertexMarker )
+bool QgsLineDisplacementRenderer::renderFeature( const QgsFeature &feature, QgsRenderContext &context, int layer, bool selected, bool drawVertexMarker )
 {
   if ( !context.painter() || !mSubRenderer )
   {
@@ -230,9 +234,10 @@ bool QgsMergedFeatureRenderer::renderFeature( const QgsFeature &feature, QgsRend
     geom.transform( xform );
   }
 
+#if 0
   switch ( mOperation )
   {
-    case QgsMergedFeatureRenderer::MergeAndInvert:
+    case QgsDisplacedLinesRenderer::MergeAndInvert:
       // fix the polygon if it is not valid
       if ( ! geom.isGeosValid() )
       {
@@ -240,11 +245,11 @@ bool QgsMergedFeatureRenderer::renderFeature( const QgsFeature &feature, QgsRend
       }
       break;
 
-    case QgsMergedFeatureRenderer::InvertOnly:
-    case QgsMergedFeatureRenderer::Merge: // maybe we should also fix for this? not sure if the fixing step was only required for the differencing operation...
+    case QgsDisplacedLinesRenderer::InvertOnly:
+    case QgsDisplacedLinesRenderer::Merge: // maybe we should also fix for this? not sure if the fixing step was only required for the differencing operation...
       break;
   }
-
+#endif
   if ( geom.isNull() )
     return false; // do not let invalid geometries sneak in!
 
@@ -254,7 +259,7 @@ bool QgsMergedFeatureRenderer::renderFeature( const QgsFeature &feature, QgsRend
   return true;
 }
 
-void QgsMergedFeatureRenderer::stopRender( QgsRenderContext &context )
+void QgsLineDisplacementRenderer::stopRender( QgsRenderContext &context )
 {
   QgsFeatureRenderer::stopRender( context );
   if ( context.renderingStopped() )
@@ -275,7 +280,7 @@ void QgsMergedFeatureRenderer::stopRender( QgsRenderContext &context )
 
   QgsMultiPolygonXY finalMulti; //avoid expensive allocation for list for every feature
   QgsPolygonXY newPoly;
-
+#if 0
   for ( const CombinedFeature &cit : std::as_const( mFeaturesCategories ) )
   {
     finalMulti.resize( 0 ); //preserve capacity - don't use clear!
@@ -283,7 +288,7 @@ void QgsMergedFeatureRenderer::stopRender( QgsRenderContext &context )
 
     switch ( mOperation )
     {
-      case QgsMergedFeatureRenderer::Merge:
+      case QgsDisplacedLinesRenderer::Merge:
       {
         QgsGeometry unioned( QgsGeometry::unaryUnion( cit.geometries ) );
         if ( unioned.type() == Qgis::GeometryType::Line )
@@ -292,7 +297,7 @@ void QgsMergedFeatureRenderer::stopRender( QgsRenderContext &context )
         break;
       }
 
-      case QgsMergedFeatureRenderer::MergeAndInvert:
+      case QgsDisplacedLinesRenderer::MergeAndInvert:
       {
         // compute the unary union on the polygons
         const QgsGeometry unioned( QgsGeometry::unaryUnion( cit.geometries ) );
@@ -303,7 +308,7 @@ void QgsMergedFeatureRenderer::stopRender( QgsRenderContext &context )
         break;
       }
 
-      case QgsMergedFeatureRenderer::InvertOnly:
+      case QgsDisplacedLinesRenderer::InvertOnly:
       {
         // No preprocessing involved.
         // We build here a "reversed" geometry of all the polygons
@@ -368,10 +373,10 @@ void QgsMergedFeatureRenderer::stopRender( QgsRenderContext &context )
   // in that case, nothing will be rendered
   switch ( mOperation )
   {
-    case QgsMergedFeatureRenderer::Merge:
+    case QgsDisplacedLinesRenderer::Merge:
       break;
-    case QgsMergedFeatureRenderer::InvertOnly:
-    case QgsMergedFeatureRenderer::MergeAndInvert:
+    case QgsDisplacedLinesRenderer::InvertOnly:
+    case QgsDisplacedLinesRenderer::MergeAndInvert:
       if ( mFeaturesCategories.isEmpty() )
       {
         // empty feature with default attributes
@@ -381,6 +386,7 @@ void QgsMergedFeatureRenderer::stopRender( QgsRenderContext &context )
       }
       break;
   }
+#endif
 
   // draw feature decorations
   for ( FeatureDecoration deco : std::as_const( mFeatureDecorations ) )
@@ -391,7 +397,7 @@ void QgsMergedFeatureRenderer::stopRender( QgsRenderContext &context )
   mSubRenderer->stopRender( mContext );
 }
 
-QString QgsMergedFeatureRenderer::dump() const
+QString QgsLineDisplacementRenderer::dump() const
 {
   if ( !mSubRenderer )
   {
@@ -400,24 +406,24 @@ QString QgsMergedFeatureRenderer::dump() const
   return "MERGED FEATURES [" + mSubRenderer->dump() + ']';
 }
 
-QgsMergedFeatureRenderer *QgsMergedFeatureRenderer::clone() const
+QgsLineDisplacementRenderer *QgsLineDisplacementRenderer::clone() const
 {
-  QgsMergedFeatureRenderer *newRenderer = nullptr;
+  QgsLineDisplacementRenderer *newRenderer = nullptr;
   if ( !mSubRenderer )
   {
-    newRenderer = new QgsMergedFeatureRenderer( nullptr );
+    newRenderer = new QgsLineDisplacementRenderer( nullptr );
   }
   else
   {
-    newRenderer = new QgsMergedFeatureRenderer( mSubRenderer->clone() );
+    newRenderer = new QgsLineDisplacementRenderer( mSubRenderer->clone() );
   }
   copyRendererData( newRenderer );
   return newRenderer;
 }
 
-QgsFeatureRenderer *QgsMergedFeatureRenderer::create( QDomElement &element, const QgsReadWriteContext &context )
+QgsFeatureRenderer *QgsLineDisplacementRenderer::create( QDomElement &element, const QgsReadWriteContext &context )
 {
-  QgsMergedFeatureRenderer *r = new QgsMergedFeatureRenderer( nullptr );
+  QgsLineDisplacementRenderer *r = new QgsLineDisplacementRenderer( nullptr );
   //look for an embedded renderer <renderer-v2>
   QDomElement embeddedRendererElem = element.firstChildElement( QStringLiteral( "renderer-v2" ) );
   if ( !embeddedRendererElem.isNull() )
@@ -428,12 +434,12 @@ QgsFeatureRenderer *QgsMergedFeatureRenderer::create( QDomElement &element, cons
   return r;
 }
 
-QDomElement QgsMergedFeatureRenderer::save( QDomDocument &doc, const QgsReadWriteContext &context )
+QDomElement QgsLineDisplacementRenderer::save( QDomDocument &doc, const QgsReadWriteContext &context )
 {
   // clazy:skip
 
   QDomElement rendererElem = doc.createElement( RENDERER_TAG_NAME );
-  rendererElem.setAttribute( QStringLiteral( "type" ), QStringLiteral( "mergedFeatureRenderer" ) );
+  rendererElem.setAttribute( QStringLiteral( "type" ), QStringLiteral( "lineDisplacement" ) );
 
   if ( mSubRenderer )
   {
@@ -446,7 +452,7 @@ QDomElement QgsMergedFeatureRenderer::save( QDomDocument &doc, const QgsReadWrit
   return rendererElem;
 }
 
-QgsSymbol *QgsMergedFeatureRenderer::symbolForFeature( const QgsFeature &feature, QgsRenderContext &context ) const
+QgsSymbol *QgsLineDisplacementRenderer::symbolForFeature( const QgsFeature &feature, QgsRenderContext &context ) const
 {
   if ( !mSubRenderer )
   {
@@ -455,14 +461,14 @@ QgsSymbol *QgsMergedFeatureRenderer::symbolForFeature( const QgsFeature &feature
   return mSubRenderer->symbolForFeature( feature, context );
 }
 
-QgsSymbol *QgsMergedFeatureRenderer::originalSymbolForFeature( const QgsFeature &feature, QgsRenderContext &context ) const
+QgsSymbol *QgsLineDisplacementRenderer::originalSymbolForFeature( const QgsFeature &feature, QgsRenderContext &context ) const
 {
   if ( !mSubRenderer )
     return nullptr;
   return mSubRenderer->originalSymbolForFeature( feature, context );
 }
 
-QgsSymbolList QgsMergedFeatureRenderer::symbolsForFeature( const QgsFeature &feature, QgsRenderContext &context ) const
+QgsSymbolList QgsLineDisplacementRenderer::symbolsForFeature( const QgsFeature &feature, QgsRenderContext &context ) const
 {
   if ( !mSubRenderer )
   {
@@ -471,21 +477,21 @@ QgsSymbolList QgsMergedFeatureRenderer::symbolsForFeature( const QgsFeature &fea
   return mSubRenderer->symbolsForFeature( feature, context );
 }
 
-QgsSymbolList QgsMergedFeatureRenderer::originalSymbolsForFeature( const QgsFeature &feature, QgsRenderContext &context ) const
+QgsSymbolList QgsLineDisplacementRenderer::originalSymbolsForFeature( const QgsFeature &feature, QgsRenderContext &context ) const
 {
   if ( !mSubRenderer )
     return QgsSymbolList();
   return mSubRenderer->originalSymbolsForFeature( feature, context );
 }
 
-QSet<QString> QgsMergedFeatureRenderer::legendKeysForFeature( const QgsFeature &feature, QgsRenderContext &context ) const
+QSet<QString> QgsLineDisplacementRenderer::legendKeysForFeature( const QgsFeature &feature, QgsRenderContext &context ) const
 {
   if ( !mSubRenderer )
     return QSet<QString>();
   return mSubRenderer->legendKeysForFeature( feature, context );
 }
 
-QString QgsMergedFeatureRenderer::legendKeyToExpression( const QString &key, QgsVectorLayer *layer, bool &ok ) const
+QString QgsLineDisplacementRenderer::legendKeyToExpression( const QString &key, QgsVectorLayer *layer, bool &ok ) const
 {
   ok = false;
   if ( !mSubRenderer )
@@ -493,7 +499,7 @@ QString QgsMergedFeatureRenderer::legendKeyToExpression( const QString &key, Qgs
   return mSubRenderer->legendKeyToExpression( key, layer, ok );
 }
 
-QgsSymbolList QgsMergedFeatureRenderer::symbols( QgsRenderContext &context ) const
+QgsSymbolList QgsLineDisplacementRenderer::symbols( QgsRenderContext &context ) const
 {
   if ( !mSubRenderer )
   {
@@ -502,7 +508,7 @@ QgsSymbolList QgsMergedFeatureRenderer::symbols( QgsRenderContext &context ) con
   return mSubRenderer->symbols( context );
 }
 
-QgsFeatureRenderer::Capabilities QgsMergedFeatureRenderer::capabilities()
+QgsFeatureRenderer::Capabilities QgsLineDisplacementRenderer::capabilities()
 {
   if ( !mSubRenderer )
   {
@@ -511,7 +517,7 @@ QgsFeatureRenderer::Capabilities QgsMergedFeatureRenderer::capabilities()
   return mSubRenderer->capabilities();
 }
 
-QSet<QString> QgsMergedFeatureRenderer::usedAttributes( const QgsRenderContext &context ) const
+QSet<QString> QgsLineDisplacementRenderer::usedAttributes( const QgsRenderContext &context ) const
 {
   if ( !mSubRenderer )
   {
@@ -520,12 +526,12 @@ QSet<QString> QgsMergedFeatureRenderer::usedAttributes( const QgsRenderContext &
   return mSubRenderer->usedAttributes( context );
 }
 
-bool QgsMergedFeatureRenderer::filterNeedsGeometry() const
+bool QgsLineDisplacementRenderer::filterNeedsGeometry() const
 {
   return mSubRenderer ? mSubRenderer->filterNeedsGeometry() : false;
 }
 
-QgsLegendSymbolList QgsMergedFeatureRenderer::legendSymbolItems() const
+QgsLegendSymbolList QgsLineDisplacementRenderer::legendSymbolItems() const
 {
   if ( !mSubRenderer )
   {
@@ -534,7 +540,7 @@ QgsLegendSymbolList QgsMergedFeatureRenderer::legendSymbolItems() const
   return mSubRenderer->legendSymbolItems();
 }
 
-bool QgsMergedFeatureRenderer::willRenderFeature( const QgsFeature &feature, QgsRenderContext &context ) const
+bool QgsLineDisplacementRenderer::willRenderFeature( const QgsFeature &feature, QgsRenderContext &context ) const
 {
   if ( !mSubRenderer )
   {
@@ -543,11 +549,11 @@ bool QgsMergedFeatureRenderer::willRenderFeature( const QgsFeature &feature, Qgs
   return mSubRenderer->willRenderFeature( feature, context );
 }
 
-QgsMergedFeatureRenderer *QgsMergedFeatureRenderer::convertFromRenderer( const QgsFeatureRenderer *renderer )
+QgsLineDisplacementRenderer *QgsLineDisplacementRenderer::convertFromRenderer( const QgsFeatureRenderer *renderer )
 {
   if ( renderer->type() == QLatin1String( "mergedFeatureRenderer" ) )
   {
-    return dynamic_cast<QgsMergedFeatureRenderer *>( renderer->clone() );
+    return dynamic_cast<QgsLineDisplacementRenderer *>( renderer->clone() );
   }
 
   if ( renderer->type() == QLatin1String( "singleSymbol" ) ||
@@ -555,13 +561,13 @@ QgsMergedFeatureRenderer *QgsMergedFeatureRenderer::convertFromRenderer( const Q
        renderer->type() == QLatin1String( "graduatedSymbol" ) ||
        renderer->type() == QLatin1String( "RuleRenderer" ) )
   {
-    std::unique_ptr< QgsMergedFeatureRenderer > res = std::make_unique< QgsMergedFeatureRenderer >( renderer->clone() );
+    std::unique_ptr< QgsLineDisplacementRenderer > res = std::make_unique< QgsLineDisplacementRenderer >( renderer->clone() );
     renderer->copyRendererData( res.get() );
     return res.release();
   }
   else if ( renderer->type() == QLatin1String( "invertedPolygonRenderer" ) )
   {
-    std::unique_ptr< QgsMergedFeatureRenderer > res = std::make_unique< QgsMergedFeatureRenderer >( renderer->embeddedRenderer() ? renderer->embeddedRenderer()->clone() : nullptr );
+    std::unique_ptr< QgsLineDisplacementRenderer > res = std::make_unique< QgsLineDisplacementRenderer >( renderer->embeddedRenderer() ? renderer->embeddedRenderer()->clone() : nullptr );
     renderer->copyRendererData( res.get() );
     return res.release();
   }

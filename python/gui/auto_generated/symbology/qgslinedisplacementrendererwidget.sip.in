@@ -1,0 +1,59 @@
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/gui/symbology/qgslinedisplacementrendererwidget.h                *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.pl again   *
+ ************************************************************************/
+
+
+
+class QgsLineDisplacementRendererWidget : QgsRendererWidget
+{
+%Docstring(signature="appended")
+A widget used represent options of a :py:class:`QgsLineDisplacementRenderer`
+
+.. versionadded:: 3.36
+%End
+
+%TypeHeaderCode
+#include "qgslinedisplacementrendererwidget.h"
+%End
+  public:
+
+    static QgsRendererWidget *create( QgsVectorLayer *layer, QgsStyle *style, QgsFeatureRenderer *renderer ) /Factory/;
+%Docstring
+Static creation method
+
+:param layer: the layer where this renderer is applied
+:param style:
+:param renderer: the merged feature renderer (will not take ownership)
+%End
+
+    QgsLineDisplacementRendererWidget( QgsVectorLayer *layer, QgsStyle *style, QgsFeatureRenderer *renderer );
+%Docstring
+Constructor
+
+:param layer: the layer where this renderer is applied
+:param style:
+:param renderer: the displaced lines feature renderer (will not take ownership)
+%End
+    ~QgsLineDisplacementRendererWidget();
+
+    virtual QgsFeatureRenderer *renderer();
+
+    virtual void setContext( const QgsSymbolWidgetContext &context );
+
+    virtual void setDockMode( bool dockMode );
+
+
+};
+
+
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/gui/symbology/qgslinedisplacementrendererwidget.h                *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.pl again   *
+ ************************************************************************/

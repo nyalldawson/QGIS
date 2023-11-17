@@ -1,0 +1,82 @@
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/core/symbology/qgslineclusterrenderer.h                          *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.pl again   *
+ ************************************************************************/
+
+
+
+
+
+class QgsLineClusterRenderer: QgsLineDistanceRenderer
+{
+%Docstring(signature="appended")
+A renderer that automatically clusters line segments with the same geographic position.
+
+.. versionadded:: 3.36
+%End
+
+%TypeHeaderCode
+#include "qgslineclusterrenderer.h"
+%End
+  public:
+
+    QgsLineClusterRenderer();
+
+    virtual QgsLineClusterRenderer *clone() const /Factory/;
+
+    virtual void startRender( QgsRenderContext &context, const QgsFields &fields );
+
+    virtual void stopRender( QgsRenderContext &context );
+
+    virtual QDomElement save( QDomDocument &doc, const QgsReadWriteContext &context );
+
+    virtual QSet<QString> usedAttributes( const QgsRenderContext &context ) const;
+
+    virtual bool accept( QgsStyleEntityVisitorInterface *visitor ) const;
+
+
+    static QgsFeatureRenderer *create( QDomElement &symbologyElem, const QgsReadWriteContext &context ) /Factory/;
+%Docstring
+Creates a renderer from XML element
+%End
+
+    QgsLineSymbol *clusterSymbol();
+%Docstring
+Returns the symbol used for rendering clustered line segments (but not ownership of the symbol).
+
+.. seealso:: :py:func:`setClusterSymbol`
+%End
+
+    void setClusterSymbol( QgsLineSymbol *symbol /Transfer/ );
+%Docstring
+Sets the symbol for rendering clustered line segments.
+
+:param symbol: new cluster symbol. Ownership is transferred to the renderer.
+
+.. seealso:: :py:func:`clusterSymbol`
+%End
+
+    static QgsLineClusterRenderer *convertFromRenderer( const QgsFeatureRenderer *renderer ) /Factory/;
+%Docstring
+Creates a QgsLineClusterRenderer from an existing renderer.
+
+:return: a new renderer if the conversion was possible, otherwise ``None``.
+%End
+
+  private:
+    QgsLineClusterRenderer( const QgsLineClusterRenderer & );
+    QgsLineClusterRenderer &operator=( const QgsLineClusterRenderer & );
+    virtual void drawGroup( QPointF centerPoint, QgsRenderContext &context, const QgsLineDistanceRenderer::ClusteredGroup &group ) const;
+
+};
+
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/core/symbology/qgslineclusterrenderer.h                          *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.pl again   *
+ ************************************************************************/

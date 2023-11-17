@@ -30,6 +30,8 @@
 #include "qgs25drendererwidget.h"
 #include "qgsnullsymbolrendererwidget.h"
 #include "qgsembeddedsymbolrendererwidget.h"
+#include "qgslineclusterrendererwidget.h"
+#include "qgslinedisplacementrendererwidget.h"
 #include "qgspanelwidget.h"
 #include "qgspainteffect.h"
 #include "qgsproject.h"
@@ -82,6 +84,8 @@ void QgsRendererPropertiesDialog::initRendererWidgetFunctions()
   initVectorLayerRenderer( QStringLiteral( "25dRenderer" ), Qgs25DRendererWidget::create, QStringLiteral( "renderer25dSymbol.svg" ) );
   initVectorLayerRenderer( QStringLiteral( "nullSymbol" ), QgsNullSymbolRendererWidget::create, QStringLiteral( "rendererNullSymbol.svg" ) );
   initVectorLayerRenderer( QStringLiteral( "embeddedSymbol" ), QgsEmbeddedSymbolRendererWidget::create );
+  initVectorLayerRenderer( QStringLiteral( "lineCluster" ), QgsLineClusterRendererWidget::create );
+  initVectorLayerRenderer( QStringLiteral( "lineDisplacement" ), QgsLineDisplacementRendererWidget::create );
   sInitialized = true;
 }
 

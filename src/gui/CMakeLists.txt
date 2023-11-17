@@ -57,6 +57,8 @@ set(QGIS_GUI_SRCS
   symbology/qgsinterpolatedlinesymbollayerwidget.cpp
   symbology/qgsinvertedpolygonrendererwidget.cpp
   symbology/qgslayerpropertieswidget.cpp
+  symbology/qgslineclusterrendererwidget.cpp
+  symbology/qgslinedisplacementrendererwidget.cpp
   symbology/qgsmasksymbollayerwidget.cpp
   symbology/qgsmergedfeaturerendererwidget.cpp
   symbology/qgsnullsymbolrendererwidget.cpp
@@ -1453,6 +1455,8 @@ set(QGIS_GUI_HDRS
   symbology/qgsheatmaprendererwidget.h
   symbology/qgsinterpolatedlinesymbollayerwidget.h
   symbology/qgsinvertedpolygonrendererwidget.h
+  symbology/qgslineclusterrendererwidget.h
+  symbology/qgslinedisplacementrendererwidget.h
   symbology/qgslayerpropertieswidget.h
   symbology/qgsmergedfeaturerendererwidget.h
   symbology/qgsnullsymbolrendererwidget.h

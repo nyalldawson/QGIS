@@ -118,6 +118,8 @@ class CORE_EXPORT QgsFeatureRenderer
       sipType = sipType_QgsHeatmapRenderer;
     else if ( type == QLatin1String( "invertedPolygonRenderer" ) )
       sipType = sipType_QgsInvertedPolygonRenderer;
+    else if ( type == QLatin1String( "mergedFeatureRenderer" ) )
+      sipType = sipType_QgsMergedFeatureRenderer;
     else if ( type == QLatin1String( "pointCluster" ) )
       sipType = sipType_QgsPointClusterRenderer;
     else if ( type == QLatin1String( "pointDisplacement" ) )
@@ -128,6 +130,10 @@ class CORE_EXPORT QgsFeatureRenderer
       sipType = sipType_QgsNullSymbolRenderer;
     else if ( type == QLatin1String( "embeddedSymbol" ) )
       sipType = sipType_QgsEmbeddedSymbolRenderer;
+    else if ( type == QLatin1String( "lineCluster" ) )
+      sipType = sipType_QgsLineClusterRenderer;
+    else if ( type == QLatin1String( "lineDisplacement" ) )
+      sipType = sipType_QgsLineDisplacementRenderer;
     else
       sipType = 0;
     SIP_END

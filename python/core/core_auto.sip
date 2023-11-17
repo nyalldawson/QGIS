@@ -675,6 +675,9 @@
 %Include auto_generated/symbology/qgsinterpolatedlinerenderer.sip
 %Include auto_generated/symbology/qgsinvertedpolygonrenderer.sip
 %Include auto_generated/symbology/qgslegendsymbolitem.sip
+%Include auto_generated/symbology/qgslineclusterrenderer.sip
+%Include auto_generated/symbology/qgslinedisplacementrenderer.sip
+%Include auto_generated/symbology/qgslinedistancerenderer.sip
 %Include auto_generated/symbology/qgslinesymbol.sip
 %Include auto_generated/symbology/qgslinesymbollayer.sip
 %Include auto_generated/symbology/qgsmapinfosymbolconverter.sip

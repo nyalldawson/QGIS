@@ -1,8 +1,8 @@
 /***************************************************************************
-    qgsmergedfeaturerenderer.h
+    qgslinedisplacementrenderer.h
     ---------------------
-    begin                : December 2020
-    copyright            : (C) 2020 by Nyall Dawson
+    begin                : November 2023
+    copyright            : (C) 2023 by Nyall Dawson
     email                : nyall dot dawson at gmail dot com
  ***************************************************************************
  *                                                                         *
@@ -12,8 +12,8 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-#ifndef QGSMERGEDFEATURERENDERER_H
-#define QGSMERGEDFEATURERENDERER_H
+#ifndef QGSLINEDISPLACEMENTRENDERER_H
+#define QGSLINEDISPLACEMENTRENDERER_H
 
 #include "qgis_core.h"
 #include "qgis_sip.h"
@@ -26,54 +26,36 @@
 
 /**
  * \ingroup core
- * \brief QgsMergedFeatureRenderer is a polygon or line-only feature renderer used to
- * render a set of features merged (or dissolved) into a single geometry.
+ * \brief QgsLineDisplacementRenderer is a line-only feature renderer used to
+ * render overlapping line features in a displaced manner.
  *
  * It is designed on top of another feature renderer, which is called "embedded"
- * Most of the methods are then only proxies to the embedded renderer. E.g. if
- * the embedded renderer is a categorized renderer, then all the matching features
- * for each categorized class will be dissolved together. Features from different
- * classes will NOT be dissolved together.
+ * Most of the methods are then only proxies to the embedded renderer.
  *
- * \since QGIS 3.18
+ * \since QGIS 3.36
  */
-class CORE_EXPORT QgsMergedFeatureRenderer : public QgsFeatureRenderer
+class CORE_EXPORT QgsLineDisplacementRenderer : public QgsFeatureRenderer
 {
   public:
 
     /**
-     * Constructor for QgsMergedFeatureRenderer.
+     * Constructor for QgsLineDisplacementRenderer.
      * \param embeddedRenderer optional embeddedRenderer. Ownership will be transferred.
      */
-    QgsMergedFeatureRenderer( QgsFeatureRenderer *embeddedRenderer SIP_TRANSFER );
+    QgsLineDisplacementRenderer( QgsFeatureRenderer *embeddedRenderer SIP_TRANSFER );
 
-    //! Direct copies are forbidden. Use clone() instead.
-    QgsMergedFeatureRenderer( const QgsMergedFeatureRenderer & ) = delete;
-    //! Direct copies are forbidden. Use clone() instead.
-    QgsMergedFeatureRenderer &operator=( const QgsMergedFeatureRenderer & ) = delete;
+    //! QgsLineDisplacementRenderer cannot be copied. Use clone() instead.
+    QgsLineDisplacementRenderer( const QgsLineDisplacementRenderer & ) = delete;
+    //! QgsLineDisplacementRenderer cannot be copied. Use clone() instead.
+    QgsLineDisplacementRenderer &operator=( const QgsLineDisplacementRenderer & ) = delete;
 
     //! Creates a renderer out of an XML, for loading
     static QgsFeatureRenderer *create( QDomElement &element, const QgsReadWriteContext &context ) SIP_FACTORY;
 
-    QgsMergedFeatureRenderer *clone() const override SIP_FACTORY;
+    QgsLineDisplacementRenderer *clone() const override SIP_FACTORY;
     void startRender( QgsRenderContext &context, const QgsFields &fields ) override;
 
-    /**
-     * Renders a given feature.
-     * This will here collect features. The actual rendering will be postponed to stopRender()
-     * \param feature the feature to render
-     * \param context the rendering context
-     * \param layer the symbol layer to render, if that makes sense
-     * \param selected whether this feature has been selected (this will add decorations)
-     * \param drawVertexMarker whether this feature has vertex markers (in edit mode usually)
-     * \returns TRUE if the rendering was OK
-     */
     bool renderFeature( const QgsFeature &feature, QgsRenderContext &context, int layer = -1, bool selected = false, bool drawVertexMarker = false ) override SIP_THROW( QgsCsException );
-
-    /**
-     * The actual rendering will take place here.
-     * Features collected during renderFeature() are rendered using the embedded feature renderer
-     */
     void stopRender( QgsRenderContext &context ) override;
 
     QString dump() const override;
@@ -99,32 +81,19 @@ class CORE_EXPORT QgsMergedFeatureRenderer : public QgsFeatureRenderer
     bool accept( QgsStyleEntityVisitorInterface *visitor ) const override;
 
     /**
-     * Creates a QgsMergedFeatureRenderer by a conversion from an existing renderer.
+     * Creates a QgsLineDisplacementRenderer by a conversion from an existing renderer.
      * \returns a new renderer if the conversion was possible, otherwise NULLPTR.
      */
-    static QgsMergedFeatureRenderer *convertFromRenderer( const QgsFeatureRenderer *renderer ) SIP_FACTORY;
+    static QgsLineDisplacementRenderer *convertFromRenderer( const QgsFeatureRenderer *renderer ) SIP_FACTORY;
 
   protected:
 
     /**
-     * Constructor for QgsMergedFeatureRenderer.
+     * Constructor for QgsLineDisplacementRenderer.
      * \param type renderer ID string
      * \param embeddedRenderer optional embeddedRenderer. Ownership will be transferred.
      */
-    QgsMergedFeatureRenderer( const QString &type, QgsFeatureRenderer *embeddedRenderer SIP_TRANSFER );
-
-    /**
-     * Operations to apply to collected geometries prior to rendering.
-     */
-    enum GeometryOperation
-    {
-      Merge, //!< Merge features (union/dissolve)
-      InvertOnly, //!< Invert features only (polygons only)
-      MergeAndInvert, //!< Merge and invert features (polygons only)
-    };
-
-    //! Operation to apply to collected geometries
-    GeometryOperation mOperation = Merge;
+    QgsLineDisplacementRenderer( const QString &type, QgsFeatureRenderer *embeddedRenderer SIP_TRANSFER );
 
     //! Embedded renderer
     std::unique_ptr<QgsFeatureRenderer> mSubRenderer;
@@ -175,4 +144,4 @@ class CORE_EXPORT QgsMergedFeatureRenderer : public QgsFeatureRenderer
 };
 
 
-#endif // QGSMERGEDFEATURERENDERER_H
+#endif // QGSLINEDISPLACEMENTRENDERER_H
