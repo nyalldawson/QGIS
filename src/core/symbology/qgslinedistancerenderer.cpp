@@ -45,15 +45,8 @@ void QgsLineDistanceRenderer::toSld( QDomDocument &doc, QDomElement &element, co
 bool QgsLineDistanceRenderer::renderFeature( const QgsFeature &feature, QgsRenderContext &context, int layer, bool selected, bool drawVertexMarker )
 {
   Q_UNUSED( drawVertexMarker )
-  Q_UNUSED( context )
   Q_UNUSED( layer )
 
-  /*
-  * IMPORTANT: This algorithm is ported to Python in the processing "Points Displacement" algorithm.
-  * Please port any changes/improvements to that algorithm too!
-  */
-
-  //check if there is already a point at that position
   if ( !feature.hasGeometry() )
     return false;
 
@@ -63,12 +56,12 @@ bool QgsLineDistanceRenderer::renderFeature( const QgsFeature &feature, QgsRende
   if ( !symbol )
     return false;
 
-  //point position in screen coords
+  //get line geometry in screen coordinates
   QgsGeometry geom = feature.geometry();
   const Qgis::WkbType geomType = geom.wkbType();
-  if ( QgsWkbTypes::geometryType( geomType ) != Qgis::GeometryType::Point )
+  if ( QgsWkbTypes::geometryType( geomType ) != Qgis::GeometryType::Line )
   {
-    //can only render point type
+    //can only render line features
     return false;
   }
 
@@ -76,59 +69,64 @@ bool QgsLineDistanceRenderer::renderFeature( const QgsFeature &feature, QgsRende
   QgsFeature transformedFeature = feature;
   if ( xform.isValid() )
   {
-    geom.transform( xform );
+    try
+    {
+      geom.transform( xform );
+    }
+    catch ( QgsCsException & )
+    {
+      QgsDebugError( QStringLiteral( "Cannot transform line to map CRS" ) );
+      return false;
+    }
+
     transformedFeature.setGeometry( geom );
   }
 
-  const double searchDistance = context.convertToMapUnits( mTolerance, mToleranceUnit, mToleranceMapUnitScale );
-
-  const QgsGeometry transformedGeometry = transformedFeature.geometry();
-  for ( auto partIt = transformedGeometry.const_parts_begin(); partIt != transformedGeometry.const_parts_end(); ++partIt )
+  for ( auto partIt = geom.const_parts_begin(); partIt != geom.const_parts_end(); ++partIt )
   {
-    const QgsPoint *point = qgsgeometry_cast< const QgsPoint * >( *partIt );
-    // create a new feature which is JUST this point, no other parts from the multi-point
-    QgsFeature pointFeature = transformedFeature;
-    pointFeature.setGeometry( QgsGeometry( point->clone() ) );
-    const QList<QgsFeatureId> intersectList = mSpatialIndex->intersects( searchRect( point, searchDistance ) );
-    if ( intersectList.empty() )
+    std::unique_ptr< QgsLineString > segmentizedPart;
+    const QgsLineString *thisLine = qgsgeometry_cast< const QgsLineString * >( *partIt );
+    if ( !thisLine )
     {
-      mSpatialIndex->addFeature( pointFeature );
-      // create new group
-      ClusteredGroup newGroup;
-      newGroup << GroupedFeature( pointFeature, symbol->clone(), selected );
-      mClusteredGroups.push_back( newGroup );
-      // add to group index
-      mGroupIndex.insert( pointFeature.id(), mClusteredGroups.count() - 1 );
-      mGroupLocations.insert( pointFeature.id(), QgsPointXY( *point ) );
+      segmentizedPart.reset( qgsgeometry_cast< QgsLineString * >( thisLine->segmentize() ) );
+      thisLine = segmentizedPart.get();
     }
-    else
+
+    const int numPoints = thisLine->numPoints();
+    if ( numPoints < 2 )
+      continue;
+
+    const double *xData = thisLine->xData();
+    const double *yData = thisLine->yData();
+
+    SegmentData thisSegmentData;
+    thisSegmentData.feature = feature;
+    thisSegmentData.x2 = *xData++;
+    thisSegmentData.y2 = *yData++;
+    thisSegmentData.selected = selected;
+    thisSegmentData.drawVertexMarker = drawVertexMarker;
+
+    for ( int n = 1; n < numPoints; ++ n )
     {
-      // find group with closest location to this point (may be more than one within search tolerance)
-      QgsFeatureId minDistFeatureId = intersectList.at( 0 );
-      double minDist = mGroupLocations.value( minDistFeatureId ).distance( point->x(), point->y() );
-      for ( int i = 1; i < intersectList.count(); ++i )
-      {
-        const QgsFeatureId candidateId = intersectList.at( i );
-        const double newDist = mGroupLocations.value( candidateId ).distance( point->x(), point->y() );
-        if ( newDist < minDist )
-        {
-          minDist = newDist;
-          minDistFeatureId = candidateId;
-        }
-      }
+      if ( context.renderingStopped() )
+        break;
 
-      const int groupIdx = mGroupIndex[ minDistFeatureId ];
-      ClusteredGroup &group = mClusteredGroups[groupIdx];
+      thisSegmentData.x1 = thisSegmentData.x2;
+      thisSegmentData.y1 = thisSegmentData.y2;
+      thisSegmentData.x2 = *xData++;
+      thisSegmentData.y2 = *yData++;
+      thisSegmentData.segmentIndex = n - 1;
 
-      // calculate new centroid of group
-      const QgsPointXY oldCenter = mGroupLocations.value( minDistFeatureId );
-      mGroupLocations[ minDistFeatureId ] = QgsPointXY( ( oldCenter.x() * group.size() + point->x() ) / ( group.size() + 1.0 ),
-                                            ( oldCenter.y() * group.size() + point->y() ) / ( group.size() + 1.0 ) );
+      // rectangle will be normalized automatically, we don't need to check min/max coordinates here
+      const QgsRectangle segmentRect = QgsRectangle( thisSegmentData.x1,
+                                       thisSegmentData.y1,
+                                       thisSegmentData.x2,
+                                       thisSegmentData.y2 );
 
-      // add to a group
-      group << GroupedFeature( pointFeature, symbol->clone(), selected );
-      // add to group index
-      mGroupIndex.insert( pointFeature.id(), groupIdx );
+      mSegmentData.push_back( thisSegmentData );
+
+      mSegmentIndex->addFeature( mSegmentId, segmentRect );
+      mSegmentId++;
     }
   }
 
@@ -308,31 +306,188 @@ void QgsLineDistanceRenderer::startRender( QgsRenderContext &context, const QgsF
 
   mRenderer->startRender( context, fields );
 
-  mClusteredGroups.clear();
-  mGroupIndex.clear();
-  mGroupLocations.clear();
-  mSpatialIndex = std::make_unique< QgsSpatialIndex >();
+  mSegmentId = 0;
+  mSegmentData.clear();
+  mSegmentIndex = std::make_unique< QgsSpatialIndex >();
 }
 
 void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
 {
   QgsFeatureRenderer::stopRender( context );
 
-  //printInfoDisplacementGroups(); //just for debugging
-
   if ( !context.renderingStopped() )
   {
-    const auto constMClusteredGroups = mClusteredGroups;
-    for ( const ClusteredGroup &group : constMClusteredGroups )
+    QgsSpatialIndex segmentGroupIndex;
+    int segmentGroupIndexId = 0;
+    QHash< int, int> segmentGroups;
+    QHash< int, int> splitSegments;
+
+    int splitSegmentId = 0;
+
+    const double tolerance = context.convertToMapUnits( mTolerance, mToleranceUnit, mToleranceMapUnitScale );
+
+    int _id = -1;
+    for ( const SegmentData &segmentData : std::as_const( mSegmentData ) )
     {
-      drawGroup( group, context );
+      _id++;
+      if ( context.renderingStopped() )
+        break;
+
+      const double featureLineAngle = QgsGeometryUtils::lineAngle(
+                                        segmentData.x1, segmentData.y1, segmentData.x2, segmentData.y2
+                                      );
+
+      QSet< double > splitPoints;
+
+      const QgsRectangle searchRect = QgsRectangle( segmentData.x1,
+                                      segmentData.y1,
+                                      segmentData.x2,
+                                      segmentData.y2 ).buffered( tolerance );
+
+      const QList<QgsFeatureId> candidateSegments = mSegmentIndex->intersects( searchRect );
+      QSet< QgsFeatureId > outSegments;
+      for ( const QgsFeatureId candidate : candidateSegments )
+      {
+        if ( candidate == _id )
+          continue;
+
+        const SegmentData &candidateSegment = mSegmentData[candidate];
+        //  candidate_p1, candidate_p2, _, candidate_fid, _
+
+        // actually ignoring all segments from same source feature!
+        if ( segmentData.feature.id() == candidateSegment.feature.id() )
+          continue;
+
+        const double candidateLineAngle = QgsGeometryUtils::lineAngle(
+                                            candidateSegment.x1,
+                                            candidateSegment.y1,
+                                            candidateSegment.x2,
+                                            candidateSegment.y2 );
+
+        const double deltaAngle = std::min(
+                                    std::min(
+                                      std::min(
+                                        std::min(
+                                          std::fabs( candidateLineAngle - featureLineAngle ),
+                                          std::fabs( 2 * M_PI + candidateLineAngle - featureLineAngle ) ),
+                                        std::fabs( candidateLineAngle - ( 2 * M_PI + featureLineAngle ) ) ),
+                                      std::fabs( M_PI + candidateLineAngle - featureLineAngle ) ),
+                                    std::fabs( candidateLineAngle - ( M_PI + featureLineAngle ) )
+                                  );
+
+        if ( ( deltaAngle * 180 / M_PI ) > mAngleThreshold )
+          continue;
+
+        // next step -- find overlapping portion of segment
+        // take the start/end of the candidate, and find the nearest point on segment to those
+        double ptX1;
+        double ptY1;
+        const double dist1 = QgsGeometryUtils::sqrDistToLine( candidateSegment.x1, candidateSegment.y1,
+                             segmentData.x1, segmentData.y1,
+                             segmentData.x2, segmentData.y2, ptX1, ptY1, 0 );
+        double ptX2;
+        double ptY2;
+        const double dist2 = QgsGeometryUtils::sqrDistToLine( candidateSegment.x2, candidateSegment.y2,
+                             segmentData.x1, segmentData.y1,
+                             segmentData.x2, segmentData.y2, ptX2, ptY2, 0 );
+
+        if ( qgsDoubleNear( ptX1, ptX2 ) && qgsDoubleNear( ptY1, ptY2 ) )
+        {
+          // lines are parallel which come close, but don't actually overlap at all
+          // i.e. ------ ----------
+          continue;
+        }
+
+        double minDistX;
+        double minDistY;
+        const double dist3 = QgsGeometryUtils::sqrDistToLine( segmentData.x1, segmentData.y1,
+                             candidateSegment.x1, candidateSegment.y1,
+                             candidateSegment.x2, candidateSegment.y2, minDistX, minDistY, 0 );
+        const double dist4 = QgsGeometryUtils::sqrDistToLine( segmentData.x2, segmentData.y2,
+                             candidateSegment.x1, candidateSegment.y1,
+                             candidateSegment.x2, candidateSegment.y2, minDistX, minDistY, 0 );
+
+        const double minDistance = std::sqrt( std::min( std::min( std::min( dist1, dist2 ), dist3 ), dist4 ) );
+        if ( minDistance > tolerance )
+        {
+          // lines are parallel, but minimum distance between them is larger than the tolerance
+          continue;
+        }
+
+        // calculate split points - the distance along the segment at which the overlap starts/ends
+        const double split1 = std::sqrt( std::pow( segmentData.x1 - ptX1, 2 ) + std::pow( segmentData.y1 - ptY1, 2 ) );
+        splitPoints.insert( split1 );
+        const double split2 = std::sqrt( std::pow( segmentData.x1 - ptX2, 2 ) + std::pow( segmentData.y1 - ptY2, 2 ) );
+        splitPoints.insert( split2 );
+
+        outSegments.insert( candidate );
+      }
+
+      splitPoints.remove( 0 );
+      splitPoints.remove( std::sqrt( std::pow( segmentData.x1 - segmentData.x2, 2 ) + std::pow( segmentData.y1 - segmentData.y2, 2 ) ) );
+
+      if ( !splitPoints.empty() )
+      {
+        split_points = [p1] + [QgsGeometryUtils.pointOnLineWithDistance( p1, p2, d ) for d in sorted( list( split_points ) )] + [p2];
+        for ( i in range( len( split_points ) - 1 ) )
+        {
+          pp1 = split_points[i];
+          pp2 = split_points[i + 1];
+
+          centroid = QgsPointXY( 0.5 * ( pp1.x() + pp2.x() ), 0.5 * ( pp1.y() + pp2.y() ) );
+          associated_group = segment_group_index.nearestNeighbor( centroid, maxDistance = tolerance );
+          if ( associated_group )
+          {
+            // assigning to existing group
+            split_segments[split_segment_id] = ( pp1, pp2, associated_group[0], len( segment_groups[associated_group[0]] ), fid, geometry_idx, i );
+
+            segment_groups[associated_group[0]].append( split_segment_id );
+          }
+          else
+          {
+            // making a new group
+            split_segments[split_segment_id] = ( pp1, pp2, segment_group_index_id, 0, fid, geometry_idx, i );
+            segment_groups[segment_group_index_id] = [split_segment_id];
+            segment_group_index.addFeature( segment_group_index_id, QgsRectangle( centroid, centroid ).buffered( 0.0001 ) );
+            segment_group_index_id += 1;
+
+            splitSegmentId++;
+          }
+        }
+      }
+      else
+      {
+        const QgsPointXY centroid( 0.5 * ( segmentData.x1 + segmentData.x2 ), 0.5 * ( segmentData.y1 + segmentData.y2 ) );
+        associated_group = segment_group_index.nearestNeighbor( centroid, maxDistance = tolerance ) if out_segments else None;
+
+      // TODO -- maybe if no out_segments we should store this elsewhere, since it will always be unchanged
+
+
+      if ( associated_group )
+        {
+          // assigning to existing group
+          split_segments[split_segment_id] = ( p1, p2, associated_group[0], len( segment_groups[associated_group[0]] ), fid, geometry_idx, 0 );
+
+          segment_groups[associated_group[0]].append( split_segment_id );
+        }
+        else
+        {
+          // making a new group
+          split_segments[split_segment_id] = ( p1, p2, segment_group_index_id, 0, fid, geometry_idx,  0 );
+          segment_groups[segment_group_index_id] = [split_segment_id];
+          segment_group_index.addFeature( segment_group_index_id, QgsRectangle( centroid, centroid ).buffered( 0.0001 ) );
+          segment_group_index_id += 1;
+
+          splitSegmentId++;
+        }
+      }
     }
+
   }
 
-  mClusteredGroups.clear();
-  mGroupIndex.clear();
-  mGroupLocations.clear();
-  mSpatialIndex.reset();
+  mSegmentId = 0;
+  mSegmentData.clear();
+  mSegmentIndex.reset();
 
   mRenderer->stopRender( context );
 }
@@ -349,23 +504,6 @@ QgsLegendSymbolList QgsLineDistanceRenderer::legendSymbolItems() const
 QgsRectangle QgsLineDistanceRenderer::searchRect( const QgsPoint *p, double distance ) const
 {
   return QgsRectangle( p->x() - distance, p->y() - distance, p->x() + distance, p->y() + distance );
-}
-
-void QgsLineDistanceRenderer::printGroupInfo() const
-{
-#ifdef QGISDEBUG
-  const int nGroups = mClusteredGroups.size();
-  QgsDebugMsgLevel( "number of displacement groups:" + QString::number( nGroups ), 3 );
-  for ( int i = 0; i < nGroups; ++i )
-  {
-    QgsDebugMsgLevel( "***************displacement group " + QString::number( i ), 3 );
-    const auto constAt = mClusteredGroups.at( i );
-    for ( const GroupedFeature &feature : constAt )
-    {
-      QgsDebugMsgLevel( FID_TO_STRING( feature.feature.id() ), 3 );
-    }
-  }
-#endif
 }
 
 QgsExpressionContextScope *QgsLineDistanceRenderer::createGroupScope( const ClusteredGroup &group ) const

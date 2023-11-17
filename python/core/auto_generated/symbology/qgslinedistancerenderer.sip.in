@@ -194,8 +194,17 @@ intersections as overlapping segments.
 
 
 
-
-
+    struct SegmentData
+    {
+      double x1;
+      double y1;
+      double x2;
+      double y2;
+      QgsFeature feature;
+      int segmentIndex;
+      bool selected;
+      bool drawVertexMarker;
+    };
 
 
   private:

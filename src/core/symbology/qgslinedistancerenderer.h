@@ -190,18 +190,22 @@ class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer
 
     double mAngleThreshold = 10;
 
+    std::unique_ptr< QgsSpatialIndex > mSegmentIndex;
 
-    //! Groups of features that are considered clustered together.
-    QList<ClusteredGroup> mClusteredGroups;
+    struct SegmentData
+    {
+      double x1;
+      double y1;
+      double x2;
+      double y2;
+      QgsFeature feature;
+      int segmentIndex;
+      bool selected;
+      bool drawVertexMarker;
+    };
 
-    //! Mapping of feature ID to the feature's group index.
-    QMap<QgsFeatureId, int> mGroupIndex;
-
-    //! Mapping of feature ID to approximate group location
-    QMap<QgsFeatureId, QgsPointXY > mGroupLocations;
-
-    //! Spatial index for fast lookup of nearby points.
-    std::unique_ptr< QgsSpatialIndex > mSpatialIndex;
+    int mSegmentId = 0;
+    QVector< SegmentData > mSegmentData;
 
   private:
 
@@ -215,9 +219,6 @@ class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer
 
     //! Creates a search rectangle with specified distance tolerance.
     QgsRectangle searchRect( const QgsPoint *p, double distance ) const;
-
-    //! Debugging function to check the entries in the clustered groups
-    void printGroupInfo() const;
 
     //! Internal group rendering helper
     void drawGroup( const ClusteredGroup &group, QgsRenderContext &context ) const;
