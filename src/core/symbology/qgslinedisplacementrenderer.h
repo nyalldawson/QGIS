@@ -19,7 +19,7 @@
 #include "qgis_sip.h"
 #include "qgis.h"
 #include "qgsrenderer.h"
-#include "qgsexpression.h"
+#include "qgslinedistancerenderer.h"
 #include "qgsfeature.h"
 #include "qgsgeometry.h"
 #include "qgsrendercontext.h"
@@ -34,7 +34,7 @@
  *
  * \since QGIS 3.36
  */
-class CORE_EXPORT QgsLineDisplacementRenderer : public QgsFeatureRenderer
+class CORE_EXPORT QgsLineDisplacementRenderer : public QgsLineDistanceRenderer
 {
   public:
 
@@ -44,40 +44,14 @@ class CORE_EXPORT QgsLineDisplacementRenderer : public QgsFeatureRenderer
      */
     QgsLineDisplacementRenderer( QgsFeatureRenderer *embeddedRenderer SIP_TRANSFER );
 
-    //! QgsLineDisplacementRenderer cannot be copied. Use clone() instead.
-    QgsLineDisplacementRenderer( const QgsLineDisplacementRenderer & ) = delete;
-    //! QgsLineDisplacementRenderer cannot be copied. Use clone() instead.
-    QgsLineDisplacementRenderer &operator=( const QgsLineDisplacementRenderer & ) = delete;
-
     //! Creates a renderer out of an XML, for loading
     static QgsFeatureRenderer *create( QDomElement &element, const QgsReadWriteContext &context ) SIP_FACTORY;
 
     QgsLineDisplacementRenderer *clone() const override SIP_FACTORY;
     void startRender( QgsRenderContext &context, const QgsFields &fields ) override;
-
-    bool renderFeature( const QgsFeature &feature, QgsRenderContext &context, int layer = -1, bool selected = false, bool drawVertexMarker = false ) override SIP_THROW( QgsCsException );
     void stopRender( QgsRenderContext &context ) override;
-
-    QString dump() const override;
-    QSet<QString> usedAttributes( const QgsRenderContext &context ) const override;
-    bool filterNeedsGeometry() const override;
-    QgsFeatureRenderer::Capabilities capabilities() override;
-    QgsSymbolList symbols( QgsRenderContext &context ) const override;
-    QgsSymbol *symbolForFeature( const QgsFeature &feature, QgsRenderContext &context ) const override;
-    QgsSymbol *originalSymbolForFeature( const QgsFeature &feature, QgsRenderContext &context ) const override;
-    QgsSymbolList symbolsForFeature( const QgsFeature &feature, QgsRenderContext &context ) const override;
-    QgsSymbolList originalSymbolsForFeature( const QgsFeature &feature, QgsRenderContext &context ) const override;
-    QSet< QString > legendKeysForFeature( const QgsFeature &feature, QgsRenderContext &context ) const override;
-    QString legendKeyToExpression( const QString &key, QgsVectorLayer *layer, bool &ok ) const override;
-    QgsLegendSymbolList legendSymbolItems() const override;
-    bool willRenderFeature( const QgsFeature &feature, QgsRenderContext &context ) const override;
     QDomElement save( QDomDocument &doc, const QgsReadWriteContext &context ) override;
-    void setEmbeddedRenderer( QgsFeatureRenderer *subRenderer SIP_TRANSFER ) override;
-    const QgsFeatureRenderer *embeddedRenderer() const override;
-    void setLegendSymbolItem( const QString &key, QgsSymbol *symbol ) override;
-    bool legendSymbolItemsCheckable() const override;
-    bool legendSymbolItemChecked( const QString &key ) override;
-    void checkLegendSymbolItem( const QString &key, bool state = true ) override;
+    QSet<QString> usedAttributes( const QgsRenderContext &context ) const override;
     bool accept( QgsStyleEntityVisitorInterface *visitor ) const override;
 
     /**
@@ -86,19 +60,8 @@ class CORE_EXPORT QgsLineDisplacementRenderer : public QgsFeatureRenderer
      */
     static QgsLineDisplacementRenderer *convertFromRenderer( const QgsFeatureRenderer *renderer ) SIP_FACTORY;
 
-  protected:
-
-    /**
-     * Constructor for QgsLineDisplacementRenderer.
-     * \param type renderer ID string
-     * \param embeddedRenderer optional embeddedRenderer. Ownership will be transferred.
-     */
-    QgsLineDisplacementRenderer( const QString &type, QgsFeatureRenderer *embeddedRenderer SIP_TRANSFER );
-
-    //! Embedded renderer
-    std::unique_ptr<QgsFeatureRenderer> mSubRenderer;
-
   private:
+    void drawGroup( QPointF centerPoint, QgsRenderContext &context, const QgsLineDistanceRenderer::ClusteredGroup &group ) const override SIP_FORCE;
 
     //! Structure where the reversed geometry is built during renderFeature
     struct CombinedFeature

@@ -90,7 +90,7 @@ QgsFeatureRenderer *QgsLineClusterRenderer::create( QDomElement &symbologyElem, 
   r->setTolerance( symbologyElem.attribute( QStringLiteral( "tolerance" ), QStringLiteral( "3" ) ).toDouble() );
   r->setToleranceUnit( QgsUnitTypes::decodeRenderUnit( symbologyElem.attribute( QStringLiteral( "toleranceUnit" ), QStringLiteral( "MM" ) ) ) );
   r->setToleranceMapUnitScale( QgsSymbolLayerUtils::decodeMapUnitScale( symbologyElem.attribute( QStringLiteral( "toleranceUnitScale" ) ) ) );
-  r->setAngleThreshold( symbologyElem.attribute( QStringLiteral( "angleTolerance" ), QStringLiteral( "10" ) ).toDouble() );
+  r->setAngleThreshold( symbologyElem.attribute( QStringLiteral( "angleThreshold" ), QStringLiteral( "10" ) ).toDouble() );
 
   //look for an embedded renderer <renderer-v2>
   QDomElement embeddedRendererElem = symbologyElem.firstChildElement( QStringLiteral( "renderer-v2" ) );
@@ -120,6 +120,7 @@ QDomElement QgsLineClusterRenderer::save( QDomDocument &doc, const QgsReadWriteC
   rendererElement.setAttribute( QStringLiteral( "tolerance" ), QString::number( mTolerance ) );
   rendererElement.setAttribute( QStringLiteral( "toleranceUnit" ), QgsUnitTypes::encodeUnit( mToleranceUnit ) );
   rendererElement.setAttribute( QStringLiteral( "toleranceUnitScale" ), QgsSymbolLayerUtils::encodeMapUnitScale( mToleranceMapUnitScale ) );
+  rendererElement.setAttribute( QStringLiteral( "angleThreshold" ), mAngleThreshold );
 
   if ( mRenderer )
   {

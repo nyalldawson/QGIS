@@ -7,7 +7,7 @@
  ************************************************************************/
 
 
-class QgsLineDisplacementRenderer : QgsFeatureRenderer
+class QgsLineDisplacementRenderer : QgsLineDistanceRenderer
 {
 %Docstring(signature="appended")
 :py:class:`QgsLineDisplacementRenderer` is a line-only feature renderer used to
@@ -31,7 +31,6 @@ Constructor for QgsLineDisplacementRenderer.
 :param embeddedRenderer: optional embeddedRenderer. Ownership will be transferred.
 %End
 
-
     static QgsFeatureRenderer *create( QDomElement &element, const QgsReadWriteContext &context ) /Factory/;
 %Docstring
 Creates a renderer out of an XML, for loading
@@ -41,51 +40,11 @@ Creates a renderer out of an XML, for loading
 
     virtual void startRender( QgsRenderContext &context, const QgsFields &fields );
 
-
-    virtual bool renderFeature( const QgsFeature &feature, QgsRenderContext &context, int layer = -1, bool selected = false, bool drawVertexMarker = false ) throw( QgsCsException );
-
     virtual void stopRender( QgsRenderContext &context );
-
-
-    virtual QString dump() const;
-
-    virtual QSet<QString> usedAttributes( const QgsRenderContext &context ) const;
-
-    virtual bool filterNeedsGeometry() const;
-
-    virtual QgsFeatureRenderer::Capabilities capabilities();
-
-    virtual QgsSymbolList symbols( QgsRenderContext &context ) const;
-
-    virtual QgsSymbol *symbolForFeature( const QgsFeature &feature, QgsRenderContext &context ) const;
-
-    virtual QgsSymbol *originalSymbolForFeature( const QgsFeature &feature, QgsRenderContext &context ) const;
-
-    virtual QgsSymbolList symbolsForFeature( const QgsFeature &feature, QgsRenderContext &context ) const;
-
-    virtual QgsSymbolList originalSymbolsForFeature( const QgsFeature &feature, QgsRenderContext &context ) const;
-
-    virtual QSet< QString > legendKeysForFeature( const QgsFeature &feature, QgsRenderContext &context ) const;
-
-    virtual QString legendKeyToExpression( const QString &key, QgsVectorLayer *layer, bool &ok ) const;
-
-    virtual QgsLegendSymbolList legendSymbolItems() const;
-
-    virtual bool willRenderFeature( const QgsFeature &feature, QgsRenderContext &context ) const;
 
     virtual QDomElement save( QDomDocument &doc, const QgsReadWriteContext &context );
 
-    virtual void setEmbeddedRenderer( QgsFeatureRenderer *subRenderer /Transfer/ );
-
-    virtual const QgsFeatureRenderer *embeddedRenderer() const;
-
-    virtual void setLegendSymbolItem( const QString &key, QgsSymbol *symbol );
-
-    virtual bool legendSymbolItemsCheckable() const;
-
-    virtual bool legendSymbolItemChecked( const QString &key );
-
-    virtual void checkLegendSymbolItem( const QString &key, bool state = true );
+    virtual QSet<QString> usedAttributes( const QgsRenderContext &context ) const;
 
     virtual bool accept( QgsStyleEntityVisitorInterface *visitor ) const;
 
@@ -97,16 +56,8 @@ Creates a QgsLineDisplacementRenderer by a conversion from an existing renderer.
 :return: a new renderer if the conversion was possible, otherwise ``None``.
 %End
 
-  protected:
-
-    QgsLineDisplacementRenderer( const QString &type, QgsFeatureRenderer *embeddedRenderer /Transfer/ );
-%Docstring
-Constructor for QgsLineDisplacementRenderer.
-
-:param type: renderer ID string
-:param embeddedRenderer: optional embeddedRenderer. Ownership will be transferred.
-%End
-
+  private:
+    virtual void drawGroup( QPointF centerPoint, QgsRenderContext &context, const QgsLineDistanceRenderer::ClusteredGroup &group ) const;
 
 };
 
