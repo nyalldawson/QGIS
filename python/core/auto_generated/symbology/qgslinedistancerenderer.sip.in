@@ -8,7 +8,7 @@
 
 
 
-class QgsLineDistanceRenderer : QgsFeatureRenderer
+class QgsLineDistanceRenderer : QgsFeatureRenderer /Abstract/
 {
 %Docstring(signature="appended")
 An abstract base class for distance based line renderers (e.g., clusterer and displacement renderers).
@@ -191,31 +191,6 @@ intersections as overlapping segments.
   protected:
 
 
-
-
-
-    struct SegmentData
-    {
-      double x1;
-      double y1;
-      double x2;
-      double y2;
-      QgsFeature feature;
-      int segmentIndex;
-      bool selected;
-      bool drawVertexMarker;
-    };
-
-
-  private:
-    virtual void drawGroup( QPointF centerPoint, QgsRenderContext &context, const ClusteredGroup &group ) const = 0;
-%Docstring
-Draws a group of clustered points.
-
-:param centerPoint: central point (geographic centroid) of all points contained within the cluster
-:param context: destination render context
-:param group: contents of group
-%End
 };
 
 

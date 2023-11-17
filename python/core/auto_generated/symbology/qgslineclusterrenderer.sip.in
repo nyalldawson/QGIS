@@ -69,8 +69,6 @@ Creates a QgsLineClusterRenderer from an existing renderer.
   private:
     QgsLineClusterRenderer( const QgsLineClusterRenderer & );
     QgsLineClusterRenderer &operator=( const QgsLineClusterRenderer & );
-    virtual void drawGroup( QPointF centerPoint, QgsRenderContext &context, const QgsLineDistanceRenderer::ClusteredGroup &group ) const;
-
 };
 
 /************************************************************************

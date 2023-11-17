@@ -74,8 +74,10 @@ class CORE_EXPORT QgsLineClusterRenderer: public QgsLineDistanceRenderer
     //! Symbol for line segment clusters
     std::unique_ptr< QgsLineSymbol > mClusterSymbol;
 
-    void drawGroup( QPointF centerPoint, QgsRenderContext &context, const QgsLineDistanceRenderer::ClusteredGroup &group ) const override SIP_FORCE;
-
+    void drawGroups( QgsRenderContext &context,
+                     const QHash< int, QList< int> > &segmentGroups,
+                     const QHash< int, SplitSegment> &splitSegments
+                   ) const final;
 };
 
 #endif // QGSLINECLUSTERRENDERER_H

@@ -56,9 +56,6 @@ Creates a QgsLineDisplacementRenderer by a conversion from an existing renderer.
 :return: a new renderer if the conversion was possible, otherwise ``None``.
 %End
 
-  private:
-    virtual void drawGroup( QPointF centerPoint, QgsRenderContext &context, const QgsLineDistanceRenderer::ClusteredGroup &group ) const;
-
 };
 
 

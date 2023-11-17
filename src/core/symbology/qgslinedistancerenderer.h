@@ -36,7 +36,7 @@ class QgsSpatialIndex;
  *
  * \since QGIS 3.36
  */
-class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer
+class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer SIP_ABSTRACT
 {
   public:
 
@@ -178,6 +178,7 @@ class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer
 
   protected:
 
+#ifndef SIP_RUN
     //! Embedded renderer
     std::unique_ptr<QgsFeatureRenderer> mRenderer;
 
@@ -204,18 +205,31 @@ class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer
       bool drawVertexMarker;
     };
 
+    struct SplitSegment
+    {
+      double x1;
+      double y1;
+      double x2;
+      double y2;
+      int segmentGroup;
+      int indexInGroup;
+      QgsFeature feature;
+      int indexInGeometry;
+      int indexInSplit;
+    };
+
     int mSegmentId = 0;
     QVector< SegmentData > mSegmentData;
+#endif
 
   private:
 
-    /**
-     * Draws a group of clustered points.
-     * \param centerPoint central point (geographic centroid) of all points contained within the cluster
-     * \param context destination render context
-     * \param group contents of group
-     */
-    virtual void drawGroup( QPointF centerPoint, QgsRenderContext &context, const ClusteredGroup &group ) const = 0 SIP_FORCE;
+#ifndef SIP_RUN
+    virtual void drawGroups( QgsRenderContext &context,
+                             const QHash< int, QList< int> > &segmentGroups,
+                             const QHash< int, SplitSegment> &splitSegments
+                           ) const = 0;
+#endif
 
     //! Creates a search rectangle with specified distance tolerance.
     QgsRectangle searchRect( const QgsPoint *p, double distance ) const;

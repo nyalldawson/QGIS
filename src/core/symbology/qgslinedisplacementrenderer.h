@@ -61,8 +61,10 @@ class CORE_EXPORT QgsLineDisplacementRenderer : public QgsLineDistanceRenderer
     static QgsLineDisplacementRenderer *convertFromRenderer( const QgsFeatureRenderer *renderer ) SIP_FACTORY;
 
   private:
-    void drawGroup( QPointF centerPoint, QgsRenderContext &context, const QgsLineDistanceRenderer::ClusteredGroup &group ) const override SIP_FORCE;
-
+    void drawGroups( QgsRenderContext &context,
+                     const QHash< int, QList< int> > &segmentGroups,
+                     const QHash< int, SplitSegment> &splitSegments
+                   ) const final;
     //! Structure where the reversed geometry is built during renderFeature
     struct CombinedFeature
     {

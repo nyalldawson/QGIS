@@ -46,26 +46,6 @@ QgsLineClusterRenderer *QgsLineClusterRenderer::clone() const
   return r.release();
 }
 
-void QgsLineClusterRenderer::drawGroup( QPointF centerPoint, QgsRenderContext &context, const ClusteredGroup &group ) const
-{
-  if ( group.size() > 1 )
-  {
-#if 0
-    mClusterSymbol->renderLine( centerPoint, &( group.at( 0 ).feature ), context, -1, false );
-#endif
-  }
-  else
-  {
-#if 0
-    //single isolated symbol, draw it untouched
-    QgsMarkerSymbol *symbol = group.at( 0 ).symbol();
-    symbol->startRender( context );
-    symbol->renderPoint( centerPoint, &( group.at( 0 ).feature ), context, -1, group.at( 0 ).isSelected );
-    symbol->stopRender( context );
-#endif
-  }
-}
-
 void QgsLineClusterRenderer::startRender( QgsRenderContext &context, const QgsFields &fields )
 {
   if ( mClusterSymbol )
@@ -202,4 +182,29 @@ QgsLineClusterRenderer *QgsLineClusterRenderer::convertFromRenderer( const QgsFe
   {
     return nullptr;
   }
+}
+
+void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QHash<int, QList<int> > &segmentGroups, const QHash<int, SplitSegment> &splitSegments ) const
+{
+
+#if 0
+  if ( group.size() > 1 )
+  {
+
+    mClusterSymbol->renderLine( centerPoint, &( group.at( 0 ).feature ), context, -1, false );
+
+  }
+  else
+  {
+
+    //single isolated symbol, draw it untouched
+    QgsMarkerSymbol *symbol = group.at( 0 ).symbol();
+    symbol->startRender( context );
+    symbol->renderPoint( centerPoint, &( group.at( 0 ).feature ), context, -1, group.at( 0 ).isSelected );
+    symbol->stopRender( context );
+
+  }
+}
+#endif
+
 }

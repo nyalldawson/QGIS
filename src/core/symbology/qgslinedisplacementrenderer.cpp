@@ -134,7 +134,10 @@ QgsLineDisplacementRenderer *QgsLineDisplacementRenderer::convertFromRenderer( c
   return nullptr;
 }
 
-void QgsLineDisplacementRenderer::drawGroup( QPointF centerPoint, QgsRenderContext &context, const ClusteredGroup &group ) const
+void QgsLineDisplacementRenderer::drawGroups( QgsRenderContext &context,
+    const QHash< int, QList< int> > &segmentGroups,
+    const QHash< int, SplitSegment> &splitSegments
+                                            ) const
 {
 
 }

@@ -135,6 +135,7 @@ bool QgsLineDistanceRenderer::renderFeature( const QgsFeature &feature, QgsRende
 
 void QgsLineDistanceRenderer::drawGroup( const ClusteredGroup &group, QgsRenderContext &context ) const
 {
+#if 0
   //calculate centroid of all points, this will be center of group
   QgsMultiPoint *groupMultiPoint = new QgsMultiPoint();
   const auto constGroup = group;
@@ -149,6 +150,7 @@ void QgsLineDistanceRenderer::drawGroup( const ClusteredGroup &group, QgsRenderC
 
   const QgsExpressionContextScopePopper scopePopper( context.expressionContext(), createGroupScope( group ) );
   drawGroup( pt, context, group );
+#endif
 }
 
 void QgsLineDistanceRenderer::setEmbeddedRenderer( QgsFeatureRenderer *r )
@@ -319,8 +321,8 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
   {
     QgsSpatialIndex segmentGroupIndex;
     int segmentGroupIndexId = 0;
-    QHash< int, int> segmentGroups;
-    QHash< int, int> splitSegments;
+    QHash< int, QList< int> > segmentGroups;
+    QHash< int, SplitSegment> splitSegments;
 
     int splitSegmentId = 0;
 
@@ -428,61 +430,139 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
 
       if ( !splitPoints.empty() )
       {
-        split_points = [p1] + [QgsGeometryUtils.pointOnLineWithDistance( p1, p2, d ) for d in sorted( list( split_points ) )] + [p2];
-        for ( i in range( len( split_points ) - 1 ) )
+        QList< double > splitPointsList = qgis::setToList( splitPoints );
+        std::sort( splitPointsList.begin(), splitPointsList.end() );
+        QVector< double > newSplitPoints;
+        const int countNewSplitPoints = splitPointsList.size() + 2;
+        newSplitPoints.resize( countNewSplitPoints * 2 );
+        double *newSplitPointsData = newSplitPoints.data();
+        *newSplitPointsData++ = segmentData.x1;
+        *newSplitPointsData++ = segmentData.y1;
+        for ( double d : std::as_const( splitPointsList ) )
         {
-          pp1 = split_points[i];
-          pp2 = split_points[i + 1];
+          double splitPointX;
+          double splitPointY;
+          QgsGeometryUtils::pointOnLineWithDistance( segmentData.x1, segmentData.y1,
+              segmentData.x2, segmentData.y2,
+              d, splitPointX, splitPointY );
+          *newSplitPointsData++ = splitPointX;
+          *newSplitPointsData++ = splitPointY;
+        }
+        *newSplitPointsData++ = segmentData.x2;
+        *newSplitPointsData = segmentData.y2;
 
-          centroid = QgsPointXY( 0.5 * ( pp1.x() + pp2.x() ), 0.5 * ( pp1.y() + pp2.y() ) );
-          associated_group = segment_group_index.nearestNeighbor( centroid, maxDistance = tolerance );
-          if ( associated_group )
+        const double *newSplitPointsOut = newSplitPoints.constData();
+        double splitPointX2 = *newSplitPointsOut++;
+        double splitPointY2 = *newSplitPointsOut++;
+
+        for ( int i = 0; i < countNewSplitPoints - 1; ++i )
+        {
+          double splitPointX1 = splitPointX2;
+          double splitPointY1 = splitPointY2;
+          double splitPointX2 = *newSplitPointsOut++;
+          double splitPointY2 = *newSplitPointsOut++;
+
+          QgsPointXY centroid( 0.5 * ( splitPointX1 + splitPointX2 ), 0.5 * ( splitPointY1 + splitPointY2 ) );
+          const QList<QgsFeatureId> associatedGroup = segmentGroupIndex.nearestNeighbor( centroid, 1, tolerance );
+          if ( !associatedGroup.empty() )
           {
             // assigning to existing group
-            split_segments[split_segment_id] = ( pp1, pp2, associated_group[0], len( segment_groups[associated_group[0]] ), fid, geometry_idx, i );
 
-            segment_groups[associated_group[0]].append( split_segment_id );
+            SplitSegment splitSegment;
+            splitSegment.x1 = splitPointX1;
+            splitSegment.y1 = splitPointY1;
+            splitSegment.x2 = splitPointX2;
+            splitSegment.y2 = splitPointY2;
+            splitSegment.segmentGroup = associatedGroup.at( 0 );
+            splitSegment.indexInGroup = segmentGroups.value( associatedGroup.at( 0 ) ).length();
+            splitSegment.feature = segmentData.feature;
+            splitSegment.indexInGeometry = segmentData.segmentIndex;
+            splitSegment.indexInSplit = i;
+            splitSegments.insert( splitSegmentId, splitSegment );
+
+            segmentGroups[associatedGroup.at( 0 )].append( splitSegmentId );
           }
           else
           {
             // making a new group
-            split_segments[split_segment_id] = ( pp1, pp2, segment_group_index_id, 0, fid, geometry_idx, i );
-            segment_groups[segment_group_index_id] = [split_segment_id];
-            segment_group_index.addFeature( segment_group_index_id, QgsRectangle( centroid, centroid ).buffered( 0.0001 ) );
-            segment_group_index_id += 1;
 
-            splitSegmentId++;
+            SplitSegment splitSegment;
+            splitSegment.x1 = splitPointX1;
+            splitSegment.y1 = splitPointY1;
+            splitSegment.x2 = splitPointX2;
+            splitSegment.y2 = splitPointY2;
+            splitSegment.segmentGroup = segmentGroupIndexId;
+            splitSegment.indexInGroup = 0;
+            splitSegment.feature = segmentData.feature;
+            splitSegment.indexInGeometry = segmentData.segmentIndex;
+            splitSegment.indexInSplit = i;
+
+            splitSegments.insert( splitSegmentId, splitSegment );
+            segmentGroups[segmentGroupIndexId] = QList< int > { splitSegmentId };
+            segmentGroupIndex.addFeature( segmentGroupIndexId, QgsRectangle( centroid, centroid ).buffered( 0.0001 ) );
+            segmentGroupIndexId++;
           }
+          splitSegmentId++;
         }
       }
       else
       {
         const QgsPointXY centroid( 0.5 * ( segmentData.x1 + segmentData.x2 ), 0.5 * ( segmentData.y1 + segmentData.y2 ) );
-        associated_group = segment_group_index.nearestNeighbor( centroid, maxDistance = tolerance ) if out_segments else None;
 
-      // TODO -- maybe if no out_segments we should store this elsewhere, since it will always be unchanged
-
-
-      if ( associated_group )
+        bool hasGroup = false;
+        if ( !outSegments.empty() )
         {
-          // assigning to existing group
-          split_segments[split_segment_id] = ( p1, p2, associated_group[0], len( segment_groups[associated_group[0]] ), fid, geometry_idx, 0 );
+          const QList<QgsFeatureId> associatedGroup = segmentGroupIndex.nearestNeighbor( centroid, 1, tolerance );
+          if ( !associatedGroup.empty() )
+          {
+            // assigning to existing group
+            hasGroup = true;
 
-          segment_groups[associated_group[0]].append( split_segment_id );
+            SplitSegment splitSegment;
+            splitSegment.x1 = segmentData.x1;
+            splitSegment.y1 = segmentData.y1;
+            splitSegment.x2 = segmentData.x2;
+            splitSegment.y2 = segmentData.y2;
+            splitSegment.segmentGroup = associatedGroup.at( 0 );
+            splitSegment.indexInGroup = segmentGroups.value( associatedGroup.at( 0 ) ).length();
+            splitSegment.feature = segmentData.feature;
+            splitSegment.indexInGeometry = segmentData.segmentIndex;
+            splitSegment.indexInSplit = 0;
+
+            splitSegments.insert( splitSegmentId, splitSegment );
+            segmentGroups[associatedGroup.at( 0 )].append( splitSegmentId );
+          }
         }
-        else
+
+        // TODO -- maybe if no outSegments we should store this elsewhere, since it will always be unchanged
+        if ( !hasGroup )
         {
           // making a new group
-          split_segments[split_segment_id] = ( p1, p2, segment_group_index_id, 0, fid, geometry_idx,  0 );
-          segment_groups[segment_group_index_id] = [split_segment_id];
-          segment_group_index.addFeature( segment_group_index_id, QgsRectangle( centroid, centroid ).buffered( 0.0001 ) );
-          segment_group_index_id += 1;
+          SplitSegment splitSegment;
+          splitSegment.x1 = segmentData.x1;
+          splitSegment.y1 = segmentData.y1;
+          splitSegment.x2 = segmentData.x2;
+          splitSegment.y2 = segmentData.y2;
+          splitSegment.segmentGroup = segmentGroupIndexId;
+          splitSegment.indexInGroup = 0;
+          splitSegment.feature = segmentData.feature;
+          splitSegment.indexInGeometry = segmentData.segmentIndex;
+          splitSegment.indexInSplit = 0;
 
-          splitSegmentId++;
+          splitSegments.insert( splitSegmentId, splitSegment );
+          segmentGroups[segmentGroupIndexId] = QList< int > { splitSegmentId };
+          segmentGroupIndex.addFeature( segmentGroupIndexId, QgsRectangle( centroid, centroid ).buffered( 0.0001 ) );
+          segmentGroupIndexId++;
+
         }
+        splitSegmentId++;
       }
     }
 
+    if ( !context.renderingStopped() )
+    {
+      drawGroups( context, segmentGroups, splitSegments );
+    }
   }
 
   mSegmentId = 0;
