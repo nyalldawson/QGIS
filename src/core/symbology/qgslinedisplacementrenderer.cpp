@@ -110,6 +110,11 @@ QDomElement QgsLineDisplacementRenderer::save( QDomDocument &doc, const QgsReadW
   return rendererElem;
 }
 
+QSet<QString> QgsLineDisplacementRenderer::usedAttributes( const QgsRenderContext &context ) const
+{
+  return QgsLineDistanceRenderer::usedAttributes( context );
+}
+
 QgsLineDisplacementRenderer *QgsLineDisplacementRenderer::convertFromRenderer( const QgsFeatureRenderer *renderer )
 {
   if ( renderer->type() == QLatin1String( "lineDisplacement" ) )
@@ -127,5 +132,10 @@ QgsLineDisplacementRenderer *QgsLineDisplacementRenderer::convertFromRenderer( c
     return res.release();
   }
   return nullptr;
+}
+
+void QgsLineDisplacementRenderer::drawGroup( QPointF centerPoint, QgsRenderContext &context, const ClusteredGroup &group ) const
+{
+
 }
 
