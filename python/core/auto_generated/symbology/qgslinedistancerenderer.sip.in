@@ -188,6 +188,14 @@ intersections as overlapping segments.
 .. seealso:: :py:func:`setAngleThreshold`
 %End
 
+    QgsLineSymbol *firstSymbolForFeature( const QgsFeature &feature, QgsRenderContext &context ) const;
+%Docstring
+Returns first symbol from the embedded renderer for a feature or ``None`` if none
+
+:param feature: source feature
+:param context: target render context
+%End
+
   protected:
 
 

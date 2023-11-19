@@ -22,7 +22,9 @@
 #include "qgsvectorlayer.h"
 #include "qgsstyleentityvisitor.h"
 #include "qgsspatialindex.h"
+#include "qgslinesymbol.h"
 #include "qgsmarkersymbol.h"
+
 #include "qgsmultipoint.h"
 #include "qgsexpressioncontextutils.h"
 
@@ -50,7 +52,7 @@ bool QgsLineDistanceRenderer::renderFeature( const QgsFeature &feature, QgsRende
   if ( !feature.hasGeometry() )
     return false;
 
-  QgsMarkerSymbol *symbol = firstSymbolForFeature( feature, context );
+  QgsLineSymbol *symbol = firstSymbolForFeature( feature, context );
 
   //if the feature has no symbol (e.g., no matching rule in a rule-based renderer), skip it
   if ( !symbol )
@@ -103,6 +105,7 @@ bool QgsLineDistanceRenderer::renderFeature( const QgsFeature &feature, QgsRende
     thisSegmentData.feature = feature;
     thisSegmentData.x2 = *xData++;
     thisSegmentData.y2 = *yData++;
+    context.mapToPixel().transformInPlace( thisSegmentData.x2, thisSegmentData.y2 );
     thisSegmentData.selected = selected;
     thisSegmentData.drawVertexMarker = drawVertexMarker;
 
@@ -115,6 +118,7 @@ bool QgsLineDistanceRenderer::renderFeature( const QgsFeature &feature, QgsRende
       thisSegmentData.y1 = thisSegmentData.y2;
       thisSegmentData.x2 = *xData++;
       thisSegmentData.y2 = *yData++;
+      context.mapToPixel().transformInPlace( thisSegmentData.x2, thisSegmentData.y2 );
       thisSegmentData.segmentIndex = n - 1;
 
       // rectangle will be normalized automatically, we don't need to check min/max coordinates here
@@ -129,6 +133,8 @@ bool QgsLineDistanceRenderer::renderFeature( const QgsFeature &feature, QgsRende
       mSegmentId++;
     }
   }
+
+  mQueuedFeatures << feature;
 
   return true;
 }
@@ -309,6 +315,7 @@ void QgsLineDistanceRenderer::startRender( QgsRenderContext &context, const QgsF
   mRenderer->startRender( context, fields );
 
   mSegmentId = 0;
+  mQueuedFeatures.clear();
   mSegmentData.clear();
   mSegmentIndex = std::make_unique< QgsSpatialIndex >();
 }
@@ -323,10 +330,11 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
     int segmentGroupIndexId = 0;
     QHash< int, QList< int> > segmentGroups;
     QHash< int, SplitSegment> splitSegments;
+    QHash< QgsFeatureId, QList< int > > featureIdToSegments;
 
     int splitSegmentId = 0;
 
-    const double tolerance = context.convertToMapUnits( mTolerance, mToleranceUnit, mToleranceMapUnitScale );
+    const double tolerance = context.convertToPainterUnits( mTolerance, mToleranceUnit, mToleranceMapUnitScale );
 
     int _id = -1;
     for ( const SegmentData &segmentData : std::as_const( mSegmentData ) )
@@ -376,7 +384,6 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
                                       std::fabs( M_PI + candidateLineAngle - featureLineAngle ) ),
                                     std::fabs( candidateLineAngle - ( M_PI + featureLineAngle ) )
                                   );
-
         if ( ( deltaAngle * 180 / M_PI ) > mAngleThreshold )
           continue;
 
@@ -402,6 +409,7 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
 
         double minDistX;
         double minDistY;
+        // take the start/end of the segment, and find the nearest point on the candidate to those
         const double dist3 = QgsGeometryUtils::sqrDistToLine( segmentData.x1, segmentData.y1,
                              candidateSegment.x1, candidateSegment.y1,
                              candidateSegment.x2, candidateSegment.y2, minDistX, minDistY, 0 );
@@ -438,6 +446,7 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
         double *newSplitPointsData = newSplitPoints.data();
         *newSplitPointsData++ = segmentData.x1;
         *newSplitPointsData++ = segmentData.y1;
+
         for ( double d : std::as_const( splitPointsList ) )
         {
           double splitPointX;
@@ -450,17 +459,16 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
         }
         *newSplitPointsData++ = segmentData.x2;
         *newSplitPointsData = segmentData.y2;
-
         const double *newSplitPointsOut = newSplitPoints.constData();
         double splitPointX2 = *newSplitPointsOut++;
         double splitPointY2 = *newSplitPointsOut++;
 
         for ( int i = 0; i < countNewSplitPoints - 1; ++i )
         {
-          double splitPointX1 = splitPointX2;
-          double splitPointY1 = splitPointY2;
-          double splitPointX2 = *newSplitPointsOut++;
-          double splitPointY2 = *newSplitPointsOut++;
+          const double splitPointX1 = splitPointX2;
+          const double splitPointY1 = splitPointY2;
+          splitPointX2 = *newSplitPointsOut++;
+          splitPointY2 = *newSplitPointsOut++;
 
           QgsPointXY centroid( 0.5 * ( splitPointX1 + splitPointX2 ), 0.5 * ( splitPointY1 + splitPointY2 ) );
           const QList<QgsFeatureId> associatedGroup = segmentGroupIndex.nearestNeighbor( centroid, 1, tolerance );
@@ -502,6 +510,8 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
             segmentGroupIndex.addFeature( segmentGroupIndexId, QgsRectangle( centroid, centroid ).buffered( 0.0001 ) );
             segmentGroupIndexId++;
           }
+          featureIdToSegments[ segmentData.feature.id() ].append( splitSegmentId );
+
           splitSegmentId++;
         }
       }
@@ -555,18 +565,21 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
           segmentGroupIndexId++;
 
         }
+        featureIdToSegments[ segmentData.feature.id() ].append( splitSegmentId );
+
         splitSegmentId++;
       }
     }
 
     if ( !context.renderingStopped() )
     {
-      drawGroups( context, segmentGroups, splitSegments );
+      drawGroups( context, mQueuedFeatures, featureIdToSegments, segmentGroups, splitSegments );
     }
   }
 
   mSegmentId = 0;
   mSegmentData.clear();
+  mQueuedFeatures.clear();
   mSegmentIndex.reset();
 
   mRenderer->stopRender( context );
@@ -633,7 +646,7 @@ QgsExpressionContextScope *QgsLineDistanceRenderer::createGroupScope( const Clus
   return clusterScope;
 }
 
-QgsMarkerSymbol *QgsLineDistanceRenderer::firstSymbolForFeature( const QgsFeature &feature, QgsRenderContext &context )
+QgsLineSymbol *QgsLineDistanceRenderer::firstSymbolForFeature( const QgsFeature &feature, QgsRenderContext &context ) const
 {
   if ( !mRenderer )
   {
@@ -646,7 +659,7 @@ QgsMarkerSymbol *QgsLineDistanceRenderer::firstSymbolForFeature( const QgsFeatur
     return nullptr;
   }
 
-  return dynamic_cast< QgsMarkerSymbol * >( symbolList.at( 0 ) );
+  return dynamic_cast< QgsLineSymbol * >( symbolList.at( 0 ) );
 }
 
 QgsLineDistanceRenderer::GroupedFeature::GroupedFeature( const QgsFeature &feature, QgsMarkerSymbol *symbol, bool isSelected )

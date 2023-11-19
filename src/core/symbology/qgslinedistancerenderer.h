@@ -25,6 +25,7 @@
 #include "qgsrendercontext.h"
 
 class QgsSpatialIndex;
+class QgsLineSymbol;
 
 /**
  * \ingroup core
@@ -176,6 +177,13 @@ class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer SIP_ABSTRA
     */
     double angleThreshold() const { return mAngleThreshold; }
 
+    /**
+     * Returns first symbol from the embedded renderer for a feature or NULLPTR if none
+     * \param feature source feature
+     * \param context target render context
+    */
+    QgsLineSymbol *firstSymbolForFeature( const QgsFeature &feature, QgsRenderContext &context ) const;
+
   protected:
 
 #ifndef SIP_RUN
@@ -192,6 +200,7 @@ class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer SIP_ABSTRA
     double mAngleThreshold = 10;
 
     std::unique_ptr< QgsSpatialIndex > mSegmentIndex;
+    QVector< QgsFeature > mQueuedFeatures;
 
     struct SegmentData
     {
@@ -226,6 +235,8 @@ class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer SIP_ABSTRA
 
 #ifndef SIP_RUN
     virtual void drawGroups( QgsRenderContext &context,
+                             const QVector< QgsFeature > &features,
+                             const QHash< QgsFeatureId, QList< int > > &featureIdToSegments,
                              const QHash< int, QList< int> > &segmentGroups,
                              const QHash< int, SplitSegment> &splitSegments
                            ) const = 0;
@@ -237,12 +248,6 @@ class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer SIP_ABSTRA
     //! Internal group rendering helper
     void drawGroup( const ClusteredGroup &group, QgsRenderContext &context ) const;
 
-    /**
-     * Returns first symbol from the embedded renderer for a feature or NULLPTR if none
-     * \param feature source feature
-     * \param context target render context
-    */
-    QgsMarkerSymbol *firstSymbolForFeature( const QgsFeature &feature, QgsRenderContext &context );
 
     /**
      * Creates an expression context scope for a clustered group, with variables reflecting the group's properties.

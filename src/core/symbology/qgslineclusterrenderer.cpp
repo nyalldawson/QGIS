@@ -184,8 +184,33 @@ QgsLineClusterRenderer *QgsLineClusterRenderer::convertFromRenderer( const QgsFe
   }
 }
 
-void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QHash<int, QList<int> > &segmentGroups, const QHash<int, SplitSegment> &splitSegments ) const
+void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVector<QgsFeature> &features, const QHash<QgsFeatureId, QList<int> > &featureIdToSegments, const QHash<int, QList<int> > &segmentGroups, const QHash<int, SplitSegment> &splitSegments ) const
 {
+  for ( const QgsFeature &feature : features )
+  {
+    if ( QgsLineSymbol *symbol = firstSymbolForFeature( feature, context ) )
+    {
+      context.expressionContext().setFeature( feature );
+      const QList< int > segments = featureIdToSegments.value( feature.id() );
+      for ( const int segmentId : segments )
+      {
+        const SplitSegment &segment = splitSegments.value( segmentId );
+        QgsLineSymbol *thisSymbol = nullptr;
+        if ( segmentGroups[ segmentId ].size() > 1 )
+        {
+          thisSymbol = mClusterSymbol.get();
+        }
+        else
+        {
+          thisSymbol = symbol;
+        }
+
+        thisSymbol->renderPolyline( QPolygonF( QVector<QPointF> { QPointF( segment.x1, segment.y1 ), QPointF( segment.x2, segment.y2 )} ),
+                                    &feature,
+                                    context );
+      }
+    }
+  }
 
 #if 0
   if ( group.size() > 1 )
