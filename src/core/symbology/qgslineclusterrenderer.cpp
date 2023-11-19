@@ -186,17 +186,119 @@ QgsLineClusterRenderer *QgsLineClusterRenderer::convertFromRenderer( const QgsFe
 
 void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVector<QgsFeature> &features, const QHash<QgsFeatureId, QList<int> > &featureIdToSegments, const QHash<int, QList<int> > &segmentGroups, const QHash<int, SplitSegment> &splitSegments ) const
 {
+  // process segment groups to generate clustered segments
+  QHash< int, QVector< double > > processedGroups;
+  for ( auto it = segmentGroups.constBegin(); it != segmentGroups.constEnd(); ++it )
+  {
+    if ( it.value().length() == 1 )
+    {
+      const SplitSegment &segment = splitSegments.value( it.value().at( 0 ) );
+      processedGroups[it.key()] = { segment.x1, segment.y1, segment.x2, segment.y2 };
+    }
+    else if ( !it.value().empty() )
+    {
+      auto valueIt = it.value().constBegin();
+      const SplitSegment &firstSegment = splitSegments.value( *valueIt++ );
+
+      // calculate centroid of clustered segment start/end
+      double sumStartPointX = firstSegment.x1;
+      double sumStartPointY = firstSegment.y1;
+      double sumEndPointX = firstSegment.x2;
+      double sumEndPointY = firstSegment.y2;
+
+      // flip segment directions if needed so that all segments in group are the same direction;
+
+      QVector< bool > wasReversed;
+      wasReversed << false;
+
+      for ( ; valueIt != it.value().constEnd(); ++valueIt )
+      {
+        const SplitSegment &thisSegment = splitSegments.value( *valueIt );
+        if ( ( std::pow( thisSegment.x1 - firstSegment.x1, 2 ) + std::pow( thisSegment.y1 - firstSegment.y1, 2 ) )
+             < ( std::pow( thisSegment.x1 - firstSegment.x2, 2 ) + std::pow( thisSegment.y1 - firstSegment.y2, 2 ) ) )
+        {
+          sumStartPointX += thisSegment.x1;
+          sumStartPointY += thisSegment.y1;
+          sumEndPointX += thisSegment.x2;
+          sumEndPointY += thisSegment.y2;
+
+          wasReversed.append( false );
+        }
+        else
+        {
+          sumStartPointX += thisSegment.x2;
+          sumStartPointY += thisSegment.y2;
+          sumEndPointX += thisSegment.x1;
+          sumEndPointY += thisSegment.y1;
+          wasReversed.append( true );
+        }
+      }
+
+      const int size = it.value().size();
+      const double averageStartPointX = sumStartPointX / size;
+      const double averageStartPointY = sumStartPointY / size;
+      const double averageEndPointX = sumEndPointX / size;
+      const double averageEndPointY = sumEndPointY / size;
+
+      processedGroups[it.key()] = { averageStartPointX, averageStartPointY, averageEndPointX, averageEndPointY };
+    }
+  }
+
+  // concatenate segments back to linestrings
+  struct CollapsedSegment
+  {
+    int indexInGeometry;
+    int indexInSplit;
+    QVector< double > segment;
+    int groupSize;
+  };
+
+  QHash< QgsFeatureId, QVector<CollapsedSegment> > collapsedSegments;
+
+  for ( auto it = splitSegments.constBegin(); it != splitSegments.constEnd(); ++ it )
+  {
+    CollapsedSegment collapsedSegment;
+    collapsedSegment.indexInGeometry = it->indexInGeometry;
+    collapsedSegment.indexInSplit = it->indexInSplit;
+    collapsedSegment.segment = processedGroups[it.value().segmentGroup];
+    collapsedSegment.groupSize = segmentGroups.value( it.key() ).size();
+    collapsedSegments[it->feature.id()].append( collapsedSegment );
+  }
+
   for ( const QgsFeature &feature : features )
   {
     if ( QgsLineSymbol *symbol = firstSymbolForFeature( feature, context ) )
     {
       context.expressionContext().setFeature( feature );
-      const QList< int > segments = featureIdToSegments.value( feature.id() );
-      for ( const int segmentId : segments )
+      QVector< CollapsedSegment > segments = collapsedSegments.value( feature.id() );
+      std::sort( segments.begin(), segments.end(), []( const CollapsedSegment & s1, const CollapsedSegment & s2 )
       {
-        const SplitSegment &segment = splitSegments.value( segmentId );
+        return s1.indexInGeometry < s2.indexInGeometry
+               || ( s1.indexInGeometry == s2.indexInGeometry && s1.indexInSplit < s2.indexInSplit );
+      } );
+
+      double prevEndX = segments.at( 0 ).segment[0];
+      double prevEndY = segments.at( 0 ).segment[1];
+
+      for ( int i = 0; i < segments.size(); ++ i )
+      {
         QgsLineSymbol *thisSymbol = nullptr;
-        if ( segmentGroups[ segmentId ].size() > 1 )
+        const CollapsedSegment &segment = segments[i];
+        const double thisStartX = prevEndX;
+        const double thisStartY = prevEndY;
+        double thisEndX = segment.segment[2];
+        double thisEndY = segment.segment[3];
+        if ( i < segments.size() - 1 )
+        {
+          const CollapsedSegment &nextSegment = segments[i + 1];
+          if ( nextSegment.groupSize > segment.groupSize )
+          {
+            thisEndX = nextSegment.segment[0];
+            thisEndY = nextSegment.segment[1];
+          }
+        }
+
+        if ( segment.groupSize > 1 )
         {
           thisSymbol = mClusterSymbol.get();
         }
@@ -205,9 +307,12 @@ void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVecto
           thisSymbol = symbol;
         }
 
-        thisSymbol->renderPolyline( QPolygonF( QVector<QPointF> { QPointF( segment.x1, segment.y1 ), QPointF( segment.x2, segment.y2 )} ),
+        thisSymbol->renderPolyline( QPolygonF( QVector<QPointF> { QPointF( thisStartX, thisStartY ), QPointF( thisEndX, thisEndY )} ),
                                     &feature,
                                     context );
+
+        prevEndX = thisEndX;
+        prevEndY = thisEndY;
       }
     }
   }
