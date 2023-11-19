@@ -191,7 +191,7 @@ class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer SIP_ABSTRA
     std::unique_ptr<QgsFeatureRenderer> mRenderer;
 
     //! Distance tolerance. Points that are closer together than this distance are considered clustered.
-    double mTolerance = 3;
+    double mTolerance = 6;
     //! Unit for distance tolerance.
     Qgis::RenderUnit mToleranceUnit = Qgis::RenderUnit::Millimeters;
     //! Map unit scale for distance tolerance.

@@ -188,14 +188,10 @@ void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVecto
 {
   // process segment groups to generate clustered segments
   QHash< int, QVector< double > > processedGroups;
+  QHash< int, QSet< int > > reversedSegments;
   for ( auto it = segmentGroups.constBegin(); it != segmentGroups.constEnd(); ++it )
   {
-    if ( it.value().length() == 1 )
-    {
-      const SplitSegment &segment = splitSegments.value( it.value().at( 0 ) );
-      processedGroups[it.key()] = { segment.x1, segment.y1, segment.x2, segment.y2 };
-    }
-    else if ( !it.value().empty() )
+    if ( it.value().length() > 1 )
     {
       auto valueIt = it.value().constBegin();
       const SplitSegment &firstSegment = splitSegments.value( *valueIt++ );
@@ -208,9 +204,6 @@ void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVecto
 
       // flip segment directions if needed so that all segments in group are the same direction;
 
-      QVector< bool > wasReversed;
-      wasReversed << false;
-
       for ( ; valueIt != it.value().constEnd(); ++valueIt )
       {
         const SplitSegment &thisSegment = splitSegments.value( *valueIt );
@@ -221,8 +214,6 @@ void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVecto
           sumStartPointY += thisSegment.y1;
           sumEndPointX += thisSegment.x2;
           sumEndPointY += thisSegment.y2;
-
-          wasReversed.append( false );
         }
         else
         {
@@ -230,7 +221,8 @@ void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVecto
           sumStartPointY += thisSegment.y2;
           sumEndPointX += thisSegment.x1;
           sumEndPointY += thisSegment.y1;
-          wasReversed.append( true );
+
+          reversedSegments[it.key()].insert( thisSegment.indexInGroup );
         }
       }
 
@@ -260,8 +252,29 @@ void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVecto
     CollapsedSegment collapsedSegment;
     collapsedSegment.indexInGeometry = it->indexInGeometry;
     collapsedSegment.indexInSplit = it->indexInSplit;
-    collapsedSegment.segment = processedGroups[it.value().segmentGroup];
-    collapsedSegment.groupSize = segmentGroups.value( it.key() ).size();
+
+    auto processedGroup = processedGroups.constFind( it.value().segmentGroup );
+    if ( processedGroup != processedGroups.constEnd() )
+    {
+      auto reversedIt = reversedSegments.constFind( it.value().segmentGroup );
+      collapsedSegment.segment = processedGroups[it.value().segmentGroup];
+      if ( reversedIt != reversedSegments.constEnd() && reversedIt->contains( it.value().indexInGroup ) )
+      {
+        // we need to reverse the segment to match the original line segment direction
+        collapsedSegment.segment =
+        {
+          collapsedSegment.segment[2], collapsedSegment.segment[3],
+          collapsedSegment.segment[0], collapsedSegment.segment[1]
+        };
+      }
+      collapsedSegment.groupSize = segmentGroups.value( it.value().segmentGroup ).size();
+    }
+    else
+    {
+      collapsedSegment.groupSize = 1;
+      collapsedSegment.segment = { it.value().x1, it.value().y1, it.value().x2, it.value().y2 };
+    }
+
     collapsedSegments[it->feature.id()].append( collapsedSegment );
   }
 
