@@ -280,9 +280,9 @@ void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVecto
 
   for ( const QgsFeature &feature : features )
   {
+    context.expressionContext().setFeature( feature );
     if ( QgsLineSymbol *symbol = firstSymbolForFeature( feature, context ) )
     {
-      context.expressionContext().setFeature( feature );
       QVector< CollapsedSegment > segments = collapsedSegments.value( feature.id() );
       std::sort( segments.begin(), segments.end(), []( const CollapsedSegment & s1, const CollapsedSegment & s2 )
       {
