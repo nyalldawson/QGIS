@@ -49,6 +49,28 @@ QgsLineClusterRendererWidget::QgsLineClusterRendererWidget( QgsVectorLayer *laye
   }
   setupUi( this );
   connect( mRendererComboBox, static_cast<void ( QComboBox::* )( int )>( &QComboBox::currentIndexChanged ), this, &QgsLineClusterRendererWidget::mRendererComboBox_currentIndexChanged );
+  connect( mDistanceSpinBox, static_cast < void ( QDoubleSpinBox::* )( double ) > ( &QDoubleSpinBox::valueChanged ), this, [ = ]( double value )
+  {
+    if ( mRenderer )
+    {
+      mRenderer->setTolerance( value );
+    }
+    emit widgetChanged();
+  } );
+  connect( mDistanceUnitWidget, &QgsUnitSelectionWidget::changed, this, [ = ]
+  {
+    if ( mRenderer )
+    {
+      mRenderer->setToleranceUnit( mDistanceUnitWidget->unit() );
+      mRenderer->setToleranceMapUnitScale( mDistanceUnitWidget->getMapUnitScale() );
+    }
+    emit widgetChanged();
+  } );
+  this->layout()->setContentsMargins( 0, 0, 0, 0 );
+
+  mDistanceUnitWidget->setUnits( { Qgis::RenderUnit::Millimeters, Qgis::RenderUnit::MetersInMapUnits, Qgis::RenderUnit::MapUnits, Qgis::RenderUnit::Pixels,
+                                   Qgis::RenderUnit::Points, Qgis::RenderUnit::Inches } );
+  mClusterLineSymbolToolButton->setSymbolType( Qgis::SymbolType::Line );
 
   // try to recognize the previous renderer
   // (null renderer means "no previous renderer")
@@ -87,6 +109,11 @@ QgsLineClusterRendererWidget::QgsLineClusterRendererWidget( QgsVectorLayer *laye
   }
   mRendererComboBox->blockSignals( false );
 
+  whileBlocking( mDistanceSpinBox )->setValue( mRenderer->tolerance() );
+  whileBlocking( mDistanceUnitWidget )->setUnit( mRenderer->toleranceUnit() );
+  whileBlocking( mDistanceUnitWidget )->setMapUnitScale( mRenderer->toleranceMapUnitScale() );
+  mClusterLineSymbolToolButton->setSymbol( mRenderer->clusterSymbol()->clone() );
+
   const int oldIdx = mRendererComboBox->currentIndex();
   mRendererComboBox->setCurrentIndex( currentEmbeddedIdx );
   if ( oldIdx == currentEmbeddedIdx )
@@ -94,6 +121,14 @@ QgsLineClusterRendererWidget::QgsLineClusterRendererWidget( QgsVectorLayer *laye
     // force update
     mRendererComboBox_currentIndexChanged( currentEmbeddedIdx );
   }
+
+  connect( mClusterLineSymbolToolButton, &QgsSymbolButton::changed, this, [ = ]
+  {
+    mRenderer->setClusterSymbol( mClusterLineSymbolToolButton->clonedSymbol< QgsLineSymbol >() );
+    emit widgetChanged();
+  } );
+  mClusterLineSymbolToolButton->setLayer( mLayer );
+  mClusterLineSymbolToolButton->registerExpressionContextGenerator( this );
 }
 
 QgsLineClusterRendererWidget::~QgsLineClusterRendererWidget() = default;
@@ -116,6 +151,14 @@ void QgsLineClusterRendererWidget::setContext( const QgsSymbolWidgetContext &con
   QgsRendererWidget::setContext( context );
   if ( mEmbeddedRendererWidget )
     mEmbeddedRendererWidget->setContext( context );
+
+  if ( mDistanceUnitWidget )
+    mDistanceUnitWidget->setMapCanvas( context.mapCanvas() );
+  if ( mClusterLineSymbolToolButton )
+  {
+    mClusterLineSymbolToolButton->setMapCanvas( context.mapCanvas() );
+    mClusterLineSymbolToolButton->setMessageBar( context.messageBar() );
+  }
 }
 
 void QgsLineClusterRendererWidget::setDockMode( bool dockMode )
@@ -123,6 +166,21 @@ void QgsLineClusterRendererWidget::setDockMode( bool dockMode )
   QgsRendererWidget::setDockMode( dockMode );
   if ( mEmbeddedRendererWidget )
     mEmbeddedRendererWidget->setDockMode( dockMode );
+}
+
+QgsExpressionContext QgsLineClusterRendererWidget::createExpressionContext() const
+{
+  QgsExpressionContext context;
+  if ( auto *lExpressionContext = mContext.expressionContext() )
+    context = *lExpressionContext;
+  else
+    context.appendScopes( mContext.globalProjectAtlasMapLayerScopes( mLayer ) );
+  QList< QgsExpressionContextScope > scopes = mContext.additionalExpressionContextScopes();
+  for ( const QgsExpressionContextScope &s : std::as_const( scopes ) )
+  {
+    context << new QgsExpressionContextScope( s );
+  }
+  return context;
 }
 
 void QgsLineClusterRendererWidget::mRendererComboBox_currentIndexChanged( int index )

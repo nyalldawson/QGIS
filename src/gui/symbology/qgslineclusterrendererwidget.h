@@ -18,6 +18,7 @@
 #include "ui_qgslineclusterrendererwidgetbase.h"
 #include "qgis_sip.h"
 #include "qgsrendererwidget.h"
+#include "qgsexpressioncontextgenerator.h"
 #include "qgis_gui.h"
 
 class QMenu;
@@ -29,7 +30,7 @@ class QgsLineClusterRenderer;
  *
  * \since QGIS 3.36
  */
-class GUI_EXPORT QgsLineClusterRendererWidget : public QgsRendererWidget, private Ui::QgsLineClusterRendererWidgetBase
+class GUI_EXPORT QgsLineClusterRendererWidget : public QgsRendererWidget, public QgsExpressionContextGenerator, private Ui::QgsLineClusterRendererWidgetBase
 {
     Q_OBJECT
 
@@ -55,7 +56,7 @@ class GUI_EXPORT QgsLineClusterRendererWidget : public QgsRendererWidget, privat
     QgsFeatureRenderer *renderer() override;
     void setContext( const QgsSymbolWidgetContext &context ) override;
     void setDockMode( bool dockMode ) override;
-
+    QgsExpressionContext createExpressionContext() const override;
   private:
     //! The renderer
     std::unique_ptr<QgsLineClusterRenderer> mRenderer;

@@ -134,29 +134,9 @@ bool QgsLineDistanceRenderer::renderFeature( const QgsFeature &feature, QgsRende
     }
   }
 
-  mQueuedFeatures << feature;
+  mQueuedFeatures << GroupedFeature( feature, symbol, selected );
 
   return true;
-}
-
-void QgsLineDistanceRenderer::drawGroup( const ClusteredGroup &group, QgsRenderContext &context ) const
-{
-#if 0
-  //calculate centroid of all points, this will be center of group
-  QgsMultiPoint *groupMultiPoint = new QgsMultiPoint();
-  const auto constGroup = group;
-  for ( const GroupedFeature &f : constGroup )
-  {
-    groupMultiPoint->addGeometry( f.feature.geometry().constGet()->clone() );
-  }
-  const QgsGeometry groupGeom( groupMultiPoint );
-  const QgsGeometry centroid = groupGeom.centroid();
-  QPointF pt = centroid.asQPointF();
-  context.mapToPixel().transformInPlace( pt.rx(), pt.ry() );
-
-  const QgsExpressionContextScopePopper scopePopper( context.expressionContext(), createGroupScope( group ) );
-  drawGroup( pt, context, group );
-#endif
 }
 
 void QgsLineDistanceRenderer::setEmbeddedRenderer( QgsFeatureRenderer *r )
@@ -407,16 +387,23 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
           continue;
         }
 
-        double minDistX;
-        double minDistY;
+        double ptX3;
+        double ptY3;
+        double ptX4;
+        double ptY4;
 
         // project closest points from segment back onto candidate
         const double dist3 = QgsGeometryUtils::sqrDistToLine( ptX1, ptY1,
                              candidateSegment.x1, candidateSegment.y1,
-                             candidateSegment.x2, candidateSegment.y2, minDistX, minDistY, 0 );
+                             candidateSegment.x2, candidateSegment.y2, ptX3, ptY3, 0 );
         const double dist4 = QgsGeometryUtils::sqrDistToLine( ptX2, ptY2,
                              candidateSegment.x1, candidateSegment.y1,
-                             candidateSegment.x2, candidateSegment.y2, minDistX, minDistY, 0 );
+                             candidateSegment.x2, candidateSegment.y2, ptX4, ptY4, 0 );
+        if ( qgsDoubleNear( ptX3, ptX4 ) && qgsDoubleNear( ptY3, ptY4 ) )
+        {
+          continue;
+        }
+
         if ( std::max( dist3, dist4 ) > tolerance * tolerance )
           continue;
 
@@ -591,14 +578,10 @@ QgsLegendSymbolList QgsLineDistanceRenderer::legendSymbolItems() const
   return QgsLegendSymbolList();
 }
 
-QgsRectangle QgsLineDistanceRenderer::searchRect( const QgsPoint *p, double distance ) const
-{
-  return QgsRectangle( p->x() - distance, p->y() - distance, p->x() + distance, p->y() + distance );
-}
-
-QgsExpressionContextScope *QgsLineDistanceRenderer::createGroupScope( const ClusteredGroup &group ) const
+QgsExpressionContextScope *QgsLineDistanceRenderer::createGroupScope() const
 {
   QgsExpressionContextScope *clusterScope = new QgsExpressionContextScope();
+#if 0
   if ( group.size() > 1 )
   {
     //scan through symbols to check color, e.g., if all clustered symbols are same color
@@ -640,6 +623,7 @@ QgsExpressionContextScope *QgsLineDistanceRenderer::createGroupScope( const Clus
     // data defined properties may require a feature in the expression context, so just use first feature in group
     clusterScope->setFeature( group.at( 0 ).feature );
   }
+#endif
   return clusterScope;
 }
 
@@ -659,7 +643,7 @@ QgsLineSymbol *QgsLineDistanceRenderer::firstSymbolForFeature( const QgsFeature 
   return dynamic_cast< QgsLineSymbol * >( symbolList.at( 0 ) );
 }
 
-QgsLineDistanceRenderer::GroupedFeature::GroupedFeature( const QgsFeature &feature, QgsMarkerSymbol *symbol, bool isSelected )
+QgsLineDistanceRenderer::GroupedFeature::GroupedFeature( const QgsFeature &feature, QgsLineSymbol *symbol, bool isSelected )
   : feature( feature )
   , isSelected( isSelected )
   , mSymbol( symbol )

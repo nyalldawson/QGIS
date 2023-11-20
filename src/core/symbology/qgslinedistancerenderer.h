@@ -41,7 +41,6 @@ class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer SIP_ABSTRA
 {
   public:
 
-
     //! Contains properties for a feature within a clustered group.
     struct CORE_EXPORT GroupedFeature
     {
@@ -49,28 +48,24 @@ class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer SIP_ABSTRA
         /**
         * Constructor for GroupedFeature.
         * \param feature feature
-        * \param symbol base symbol for rendering feature (owned by GroupedFeature)
+        * \param symbol base symbol for rendering feature
         * \param isSelected set to TRUE if feature is selected and should be rendered in a selected state
         */
-        GroupedFeature( const QgsFeature &feature, QgsMarkerSymbol *symbol SIP_TRANSFER, bool isSelected );
+        GroupedFeature( const QgsFeature &feature, QgsLineSymbol *symbol, bool isSelected );
         ~GroupedFeature();
 
         //! Feature
         QgsFeature feature;
 
         //! Base symbol for rendering feature
-        QgsMarkerSymbol *symbol() const { return mSymbol.get(); }
+        QgsLineSymbol *symbol() const { return mSymbol; }
 
         //! True if feature is selected and should be rendered in a selected state
         bool isSelected;
 
       private:
-        std::shared_ptr< QgsMarkerSymbol > mSymbol;
+        QgsLineSymbol *mSymbol = nullptr;
     };
-
-    //! A group of clustered lines (ie features within the distance tolerance).
-    typedef QList< QgsLineDistanceRenderer::GroupedFeature > ClusteredGroup;
-
 
     /**
      * Constructor for QgsLineDistanceRenderer.
@@ -200,7 +195,7 @@ class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer SIP_ABSTRA
     double mAngleThreshold = 10;
 
     std::unique_ptr< QgsSpatialIndex > mSegmentIndex;
-    QVector< QgsFeature > mQueuedFeatures;
+    QVector< GroupedFeature > mQueuedFeatures;
 
     struct SegmentData
     {
@@ -231,30 +226,24 @@ class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer SIP_ABSTRA
     QVector< SegmentData > mSegmentData;
 #endif
 
+    /**
+     * Creates an expression context scope for a clustered group, with variables reflecting the group's properties.
+     * \param group clustered group
+     * \returns new expression context scope
+     */
+    QgsExpressionContextScope *createGroupScope() const;
+
   private:
 
 #ifndef SIP_RUN
     virtual void drawGroups( QgsRenderContext &context,
-                             const QVector< QgsFeature > &features,
+                             const QVector< GroupedFeature > &features,
                              const QHash< QgsFeatureId, QList< int > > &featureIdToSegments,
                              const QHash< int, QList< int> > &segmentGroups,
                              const QHash< int, SplitSegment> &splitSegments
                            ) const = 0;
 #endif
 
-    //! Creates a search rectangle with specified distance tolerance.
-    QgsRectangle searchRect( const QgsPoint *p, double distance ) const;
-
-    //! Internal group rendering helper
-    void drawGroup( const ClusteredGroup &group, QgsRenderContext &context ) const;
-
-
-    /**
-     * Creates an expression context scope for a clustered group, with variables reflecting the group's properties.
-     * \param group clustered group
-     * \returns new expression context scope
-     */
-    QgsExpressionContextScope *createGroupScope( const ClusteredGroup &group ) const;
 };
 
 

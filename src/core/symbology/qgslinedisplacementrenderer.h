@@ -62,7 +62,7 @@ class CORE_EXPORT QgsLineDisplacementRenderer : public QgsLineDistanceRenderer
 
   private:
     void drawGroups( QgsRenderContext &context,
-                     const QVector< QgsFeature > &features,
+                     const QVector< GroupedFeature > &features,
                      const QHash< QgsFeatureId, QList< int > > &featureIdToSegments,
                      const QHash< int, QList< int> > &segmentGroups,
                      const QHash< int, SplitSegment> &splitSegments

@@ -25,23 +25,22 @@ in the desired style.
 %End
   public:
 
-
     struct GroupedFeature
     {
 
-        GroupedFeature( const QgsFeature &feature, QgsMarkerSymbol *symbol /Transfer/, bool isSelected );
+        GroupedFeature( const QgsFeature &feature, QgsLineSymbol *symbol, bool isSelected );
 %Docstring
 Constructor for GroupedFeature.
 
 :param feature: feature
-:param symbol: base symbol for rendering feature (owned by GroupedFeature)
+:param symbol: base symbol for rendering feature
 :param isSelected: set to ``True`` if feature is selected and should be rendered in a selected state
 %End
         ~GroupedFeature();
 
         QgsFeature feature;
 
-        QgsMarkerSymbol *symbol() const;
+        QgsLineSymbol *symbol() const;
 %Docstring
 Base symbol for rendering feature
 %End
@@ -49,9 +48,6 @@ Base symbol for rendering feature
         bool isSelected;
 
     };
-
-    typedef QList< QgsLineDistanceRenderer::GroupedFeature > ClusteredGroup;
-
 
     QgsLineDistanceRenderer( const QString &rendererName );
 %Docstring
@@ -198,6 +194,15 @@ Returns first symbol from the embedded renderer for a feature or ``None`` if non
 
   protected:
 
+
+    QgsExpressionContextScope *createGroupScope() const;
+%Docstring
+Creates an expression context scope for a clustered group, with variables reflecting the group's properties.
+
+:param group: clustered group
+
+:return: new expression context scope
+%End
 
 };
 

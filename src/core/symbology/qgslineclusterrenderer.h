@@ -75,7 +75,7 @@ class CORE_EXPORT QgsLineClusterRenderer: public QgsLineDistanceRenderer
     std::unique_ptr< QgsLineSymbol > mClusterSymbol;
 
     void drawGroups( QgsRenderContext &context,
-                     const QVector< QgsFeature > &features,
+                     const QVector< GroupedFeature > &features,
                      const QHash< QgsFeatureId, QList< int > > &featureIdToSegments,
                      const QHash< int, QList< int> > &segmentGroups,
                      const QHash< int, SplitSegment> &splitSegments

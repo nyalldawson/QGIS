@@ -20,6 +20,7 @@
 #include "qgsstyleentityvisitor.h"
 #include "qgslinesymbol.h"
 #include "qgsunittypes.h"
+#include "qgsexpressioncontextutils.h"
 
 #include <cmath>
 
@@ -184,7 +185,7 @@ QgsLineClusterRenderer *QgsLineClusterRenderer::convertFromRenderer( const QgsFe
   }
 }
 
-void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVector<QgsFeature> &features, const QHash<QgsFeatureId, QList<int> > &featureIdToSegments, const QHash<int, QList<int> > &segmentGroups, const QHash<int, SplitSegment> &splitSegments ) const
+void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVector<GroupedFeature> &features, const QHash<QgsFeatureId, QList<int> > &, const QHash<int, QList<int> > &segmentGroups, const QHash<int, SplitSegment> &splitSegments ) const
 {
   // process segment groups to generate clustered segments
   QHash< int, QVector< double > > processedGroups;
@@ -257,7 +258,7 @@ void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVecto
     if ( processedGroup != processedGroups.constEnd() )
     {
       auto reversedIt = reversedSegments.constFind( it.value().segmentGroup );
-      collapsedSegment.segment = processedGroups[it.value().segmentGroup];
+      collapsedSegment.segment = *processedGroup;
       if ( reversedIt != reversedSegments.constEnd() && reversedIt->contains( it.value().indexInGroup ) )
       {
         // we need to reverse the segment to match the original line segment direction
@@ -278,76 +279,79 @@ void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVecto
     collapsedSegments[it->feature.id()].append( collapsedSegment );
   }
 
-  for ( const QgsFeature &feature : features )
+  for ( const GroupedFeature &feature : features )
   {
-    context.expressionContext().setFeature( feature );
-    if ( QgsLineSymbol *symbol = firstSymbolForFeature( feature, context ) )
+    if ( !feature.symbol() )
+      continue;
+
+    context.expressionContext().setFeature( feature.feature );
+    QVector< CollapsedSegment > segments = collapsedSegments.value( feature.feature.id() );
+    std::sort( segments.begin(), segments.end(), []( const CollapsedSegment & s1, const CollapsedSegment & s2 )
     {
-      QVector< CollapsedSegment > segments = collapsedSegments.value( feature.id() );
-      std::sort( segments.begin(), segments.end(), []( const CollapsedSegment & s1, const CollapsedSegment & s2 )
+      return s1.indexInGeometry < s2.indexInGeometry
+             || ( s1.indexInGeometry == s2.indexInGeometry && s1.indexInSplit < s2.indexInSplit );
+    } );
+
+    double prevEndX = segments.at( 0 ).segment[0];
+    double prevEndY = segments.at( 0 ).segment[1];
+
+    QPolygonF currentPolyline;
+
+    for ( int i = 0; i < segments.size(); ++ i )
+    {
+      const CollapsedSegment &segment = segments[i];
+      const double thisStartX = prevEndX;
+      const double thisStartY = prevEndY;
+      double thisEndX = segment.segment[2];
+      double thisEndY = segment.segment[3];
+      if ( i < segments.size() - 1 )
       {
-        return s1.indexInGeometry < s2.indexInGeometry
-               || ( s1.indexInGeometry == s2.indexInGeometry && s1.indexInSplit < s2.indexInSplit );
-      } );
-
-      double prevEndX = segments.at( 0 ).segment[0];
-      double prevEndY = segments.at( 0 ).segment[1];
-
-      for ( int i = 0; i < segments.size(); ++ i )
-      {
-        QgsLineSymbol *thisSymbol = nullptr;
-        const CollapsedSegment &segment = segments[i];
-        const double thisStartX = prevEndX;
-        const double thisStartY = prevEndY;
-        double thisEndX = segment.segment[2];
-        double thisEndY = segment.segment[3];
-        if ( i < segments.size() - 1 )
+        const CollapsedSegment &nextSegment = segments[i + 1];
+        if ( nextSegment.groupSize > segment.groupSize )
         {
-          const CollapsedSegment &nextSegment = segments[i + 1];
-          if ( nextSegment.groupSize > segment.groupSize )
-          {
-            thisEndX = nextSegment.segment[0];
-            thisEndY = nextSegment.segment[1];
-          }
+          thisEndX = nextSegment.segment[0];
+          thisEndY = nextSegment.segment[1];
         }
-
-        if ( segment.groupSize > 1 )
-        {
-          thisSymbol = mClusterSymbol.get();
-        }
-        else
-        {
-          thisSymbol = symbol;
-        }
-
-        thisSymbol->renderPolyline( QPolygonF( QVector<QPointF> { QPointF( thisStartX, thisStartY ), QPointF( thisEndX, thisEndY )} ),
-                                    &feature,
-                                    context );
-
-        prevEndX = thisEndX;
-        prevEndY = thisEndY;
       }
+
+      if ( segment.groupSize > 1 )
+      {
+        if ( !currentPolyline.empty() )
+        {
+          feature.symbol()->renderPolyline( currentPolyline, &feature.feature, context, -1, feature.isSelected );
+          currentPolyline.clear();
+        }
+      }
+      else
+      {
+        if ( currentPolyline.empty() )
+          currentPolyline << QPointF( thisStartX, thisStartY );
+        currentPolyline << QPointF( thisEndX, thisEndY );
+      }
+
+      prevEndX = thisEndX;
+      prevEndY = thisEndY;
+    }
+
+    if ( !currentPolyline.empty() )
+    {
+      feature.symbol()->renderPolyline( currentPolyline, &feature.feature, context, -1, feature.isSelected );
+      currentPolyline.clear();
     }
   }
 
-#if 0
-  if ( group.size() > 1 )
+  // lastly, draw all the clustered segments once
+  for ( auto it = segmentGroups.constBegin(); it != segmentGroups.constEnd(); ++it )
   {
+    if ( it.value().length() > 1 )
+    {
 
-    mClusterSymbol->renderLine( centerPoint, &( group.at( 0 ).feature ), context, -1, false );
+      const QgsExpressionContextScopePopper scopePopper( context.expressionContext(), createGroupScope( ) );
 
+      const QVector<double> &group = processedGroups[it.key()];
+      mClusterSymbol->renderPolyline( QPolygonF( QVector<QPointF> { QPointF( group[0], group[1] ),
+                                      QPointF( group[2], group[3] )
+                                                                  } ), nullptr, context, -1, false );
+    }
   }
-  else
-  {
-
-    //single isolated symbol, draw it untouched
-    QgsMarkerSymbol *symbol = group.at( 0 ).symbol();
-    symbol->startRender( context );
-    symbol->renderPoint( centerPoint, &( group.at( 0 ).feature ), context, -1, group.at( 0 ).isSelected );
-    symbol->stopRender( context );
-
-  }
-}
-#endif
-
 }
