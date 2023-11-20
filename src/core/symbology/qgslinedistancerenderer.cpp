@@ -391,17 +391,14 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
         // take the start/end of the candidate, and find the nearest point on segment to those
         double ptX1;
         double ptY1;
-        const double dist1 = QgsGeometryUtils::sqrDistToLine( candidateSegment.x1, candidateSegment.y1,
-                             segmentData.x1, segmentData.y1,
-                             segmentData.x2, segmentData.y2, ptX1, ptY1, 0 );
+        ( void )QgsGeometryUtils::sqrDistToLine( candidateSegment.x1, candidateSegment.y1,
+            segmentData.x1, segmentData.y1,
+            segmentData.x2, segmentData.y2, ptX1, ptY1, 0 );
         double ptX2;
         double ptY2;
-        const double dist2 = QgsGeometryUtils::sqrDistToLine( candidateSegment.x2, candidateSegment.y2,
-                             segmentData.x1, segmentData.y1,
-                             segmentData.x2, segmentData.y2, ptX2, ptY2, 0 );
-
-        //if ( dist1 > tolerance * tolerance || dist2 > tolerance * tolerance )
-        // continue;
+        ( void )QgsGeometryUtils::sqrDistToLine( candidateSegment.x2, candidateSegment.y2,
+            segmentData.x1, segmentData.y1,
+            segmentData.x2, segmentData.y2, ptX2, ptY2, 0 );
 
         if ( qgsDoubleNear( ptX1, ptX2 ) && qgsDoubleNear( ptY1, ptY2 ) )
         {
@@ -412,22 +409,7 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
 
         double minDistX;
         double minDistY;
-#if 0
-        // take the start/end of the segment, and find the nearest point on the candidate to those
-        const double dist3 = QgsGeometryUtils::sqrDistToLine( segmentData.x1, segmentData.y1,
-                             candidateSegment.x1, candidateSegment.y1,
-                             candidateSegment.x2, candidateSegment.y2, minDistX, minDistY, 0 );
-        const double dist4 = QgsGeometryUtils::sqrDistToLine( segmentData.x2, segmentData.y2,
-                             candidateSegment.x1, candidateSegment.y1,
-                             candidateSegment.x2, candidateSegment.y2, minDistX, minDistY, 0 );
-        const double minDistance = std::min( std::min( std::min( dist1, dist2 ), dist3 ), dist4 );
-        if ( minDistance > tolerance * tolerance )
-        {
-          // lines are parallel, but minimum distance between them is larger than the tolerance
-          continue;
-        }
 
-#endif
         // project closest points from segment back onto candidate
         const double dist3 = QgsGeometryUtils::sqrDistToLine( ptX1, ptY1,
                              candidateSegment.x1, candidateSegment.y1,
@@ -441,9 +423,6 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
         // calculate split points - the distance along the segment at which the overlap starts/ends
         const double split1 = std::sqrt( std::pow( segmentData.x1 - ptX1, 2 ) + std::pow( segmentData.y1 - ptY1, 2 ) );
         const double split2 = std::sqrt( std::pow( segmentData.x1 - ptX2, 2 ) + std::pow( segmentData.y1 - ptY2, 2 ) );
-
-
-
 
         splitPoints.insert( split1 );
         splitPoints.insert( split2 );
