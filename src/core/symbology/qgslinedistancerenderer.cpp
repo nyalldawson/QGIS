@@ -84,6 +84,8 @@ bool QgsLineDistanceRenderer::renderFeature( const QgsFeature &feature, QgsRende
     transformedFeature.setGeometry( geom );
   }
 
+  QList< int >& featureToSegments = mFeatureIdToSegments[feature.id()];
+
   for ( auto partIt = geom.const_parts_begin(); partIt != geom.const_parts_end(); ++partIt )
   {
     std::unique_ptr< QgsLineString > segmentizedPart;
@@ -128,6 +130,8 @@ bool QgsLineDistanceRenderer::renderFeature( const QgsFeature &feature, QgsRende
                                        thisSegmentData.y2 );
 
       mSegmentData.push_back( thisSegmentData );
+      featureToSegments.append( mSegmentId );
+      mSegmentToFeatureId[mSegmentId].append( feature.id() );
 
       mSegmentIndex->addFeature( mSegmentId, segmentRect );
       mSegmentId++;
@@ -308,16 +312,19 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
   {
     QgsSpatialIndex segmentGroupIndex;
     int segmentGroupIndexId = 0;
+
     QHash< int, QList< int> > segmentGroups;
     QHash< int, SplitSegment> splitSegments;
-    QHash< QgsFeatureId, QList< int > > featureIdToSegments;
 
     int splitSegmentId = 0;
 
     const double tolerance = context.convertToPainterUnits( mTolerance, mToleranceUnit, mToleranceMapUnitScale );
 
     int _id = -1;
-    for ( const SegmentData &segmentData : std::as_const( mSegmentData ) )
+
+    // make a const copy for iteration, we'll be modifying the original as we go
+    const QVector< SegmentData > segmentData = mSegmentData;
+    for ( const SegmentData &segmentData : segmentData )
     {
       _id++;
       if ( context.renderingStopped() )
@@ -369,37 +376,37 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
 
         // next step -- find overlapping portion of segment
         // take the start/end of the candidate, and find the nearest point on segment to those
-        double ptX1;
-        double ptY1;
+        double nearestPointOnSegmentX1;
+        double nearestPointOnSegmentY1;
         ( void )QgsGeometryUtils::sqrDistToLine( candidateSegment.x1, candidateSegment.y1,
             segmentData.x1, segmentData.y1,
-            segmentData.x2, segmentData.y2, ptX1, ptY1, 0 );
-        double ptX2;
-        double ptY2;
+            segmentData.x2, segmentData.y2, nearestPointOnSegmentX1, nearestPointOnSegmentY1, 0 );
+        double nearestPointOnSegmentX2;
+        double nearestPointOnSegmentY2;
         ( void )QgsGeometryUtils::sqrDistToLine( candidateSegment.x2, candidateSegment.y2,
             segmentData.x1, segmentData.y1,
-            segmentData.x2, segmentData.y2, ptX2, ptY2, 0 );
+            segmentData.x2, segmentData.y2, nearestPointOnSegmentX2, nearestPointOnSegmentY2, 0 );
 
-        if ( qgsDoubleNear( ptX1, ptX2 ) && qgsDoubleNear( ptY1, ptY2 ) )
+        if ( qgsDoubleNear( nearestPointOnSegmentX1, nearestPointOnSegmentX2 ) && qgsDoubleNear( nearestPointOnSegmentY1, nearestPointOnSegmentY2 ) )
         {
           // lines are parallel which come close, but don't actually overlap at all
           // i.e. ------ ----------
           continue;
         }
 
-        double ptX3;
-        double ptY3;
-        double ptX4;
-        double ptY4;
+        double nearestPointOnCandidateX1;
+        double nearestPointOnCandidateY1;
+        double nearestPointOnCandidateX2;
+        double nearestPointOnCandidateY2;
 
         // project closest points from segment back onto candidate
-        const double dist3 = QgsGeometryUtils::sqrDistToLine( ptX1, ptY1,
+        const double dist3 = QgsGeometryUtils::sqrDistToLine( nearestPointOnSegmentX1, nearestPointOnSegmentY1,
                              candidateSegment.x1, candidateSegment.y1,
-                             candidateSegment.x2, candidateSegment.y2, ptX3, ptY3, 0 );
-        const double dist4 = QgsGeometryUtils::sqrDistToLine( ptX2, ptY2,
+                             candidateSegment.x2, candidateSegment.y2, nearestPointOnCandidateX1, nearestPointOnCandidateY1, 0 );
+        const double dist4 = QgsGeometryUtils::sqrDistToLine( nearestPointOnSegmentX2, nearestPointOnSegmentY2,
                              candidateSegment.x1, candidateSegment.y1,
-                             candidateSegment.x2, candidateSegment.y2, ptX4, ptY4, 0 );
-        if ( qgsDoubleNear( ptX3, ptX4 ) && qgsDoubleNear( ptY3, ptY4 ) )
+                             candidateSegment.x2, candidateSegment.y2, nearestPointOnCandidateX2, nearestPointOnCandidateY2, 0 );
+        if ( qgsDoubleNear( nearestPointOnCandidateX1, nearestPointOnCandidateX2 ) && qgsDoubleNear( nearestPointOnCandidateY1, nearestPointOnCandidateY2 ) )
         {
           continue;
         }
@@ -408,11 +415,112 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
           continue;
 
         // calculate split points - the distance along the segment at which the overlap starts/ends
-        const double split1 = std::sqrt( std::pow( segmentData.x1 - ptX1, 2 ) + std::pow( segmentData.y1 - ptY1, 2 ) );
-        const double split2 = std::sqrt( std::pow( segmentData.x1 - ptX2, 2 ) + std::pow( segmentData.y1 - ptY2, 2 ) );
+        const double segmentSplitStartDistance = std::sqrt( std::pow( segmentData.x1 - nearestPointOnSegmentX1, 2 ) + std::pow( segmentData.y1 - nearestPointOnSegmentY1, 2 ) );
+        const double segmentSplitEndDistance = std::sqrt( std::pow( segmentData.x1 - nearestPointOnSegmentX2, 2 ) + std::pow( segmentData.y1 - nearestPointOnSegmentY2, 2 ) );
 
-        splitPoints.insert( split1 );
-        splitPoints.insert( split2 );
+        // calculate split points - the distance along the candidate at which the overlap starts/ends
+        const double candidateSplitDistance1 = std::sqrt( std::pow( candidateSegment.x1 - nearestPointOnCandidateX1, 2 ) + std::pow( candidateSegment.y1 - nearestPointOnCandidateY1, 2 ) );
+        const double candidateSplitDistance2 = std::sqrt( std::pow( candidateSegment.x1 - nearestPointOnCandidateX2, 2 ) + std::pow( candidateSegment.y1 - nearestPointOnCandidateY2, 2 ) );
+
+        const double candidateLength = std::sqrt( std::pow( candidateSegment.x1 - candidateSegment.x2, 2 ) + std::pow( candidateSegment.y1 - candidateSegment.y2, 2 ));
+
+        if ( !qgsDoubleNear( candidateSplitDistance1, 0 ) && !qgsDoubleNear( candidateSplitDistance1, candidateLength )
+            && !qgsDoubleNear( candidateSplitDistance2, 0 ) && !qgsDoubleNear( candidateSplitDistance2, candidateLength ))
+        {
+          // two valid split points, make three new segments from candidate and replace existing
+          SegmentData newSegment1;
+          newSegment1.weight = candidateSegment.weight + 1;
+          newSegment1.x1 = candidateSegment.x1;
+          newSegment1.y1 = candidateSegment.y1;
+
+          SegmentData newSegment2;
+          newSegment2.weight = candidateSegment.weight + 1;
+
+          SegmentData newSegment3;
+          newSegment3.weight = candidateSegment.weight + 1;
+          newSegment3.x2 = candidateSegment.x2;
+          newSegment3.y2 = candidateSegment.y2;
+
+          if ( candidateSplitDistance1 < candidateSplitDistance2 )
+          {
+              newSegment1.x2 = (( nearestPointOnCandidateX1 * candidateSegment.weight ) + nearestPointOnSegmentX1 ) / newSegment1.weight;
+              newSegment1.y2 = (( nearestPointOnCandidateY1 * candidateSegment.weight ) + nearestPointOnSegmentY1 ) / newSegment1.weight;
+
+              newSegment2.x1 = newSegment1.x2;
+              newSegment2.y1 = newSegment1.y2;
+              newSegment2.x2 = (( nearestPointOnCandidateX2 * candidateSegment.weight ) + nearestPointOnSegmentX2 ) / newSegment2.weight;
+              newSegment2.y2 = (( nearestPointOnCandidateY2 * candidateSegment.weight ) + nearestPointOnSegmentY2 ) / newSegment2.weight;
+
+              newSegment3.x1 = newSegment2.x2;
+              newSegment3.y1 = newSegment2.y2;
+          }
+          else
+          {
+              newSegment1.x2 = (( nearestPointOnCandidateX2 * candidateSegment.weight ) + nearestPointOnSegmentX2 ) / newSegment1.weight;
+              newSegment1.y2 = (( nearestPointOnCandidateY2 * candidateSegment.weight ) + nearestPointOnSegmentY2 ) / newSegment1.weight;
+
+              newSegment2.x1 = newSegment1.x2;
+              newSegment2.y1 = newSegment1.y2;
+              newSegment2.x2 = (( nearestPointOnCandidateX1 * candidateSegment.weight ) + nearestPointOnSegmentX1 ) / newSegment2.weight;
+              newSegment2.y2 = (( nearestPointOnCandidateY1 * candidateSegment.weight ) + nearestPointOnSegmentY1 ) / newSegment2.weight;
+
+              newSegment3.x1 = newSegment2.x2;
+              newSegment3.y1 = newSegment2.y2;
+          }
+
+          mSegmentData.append( newSegment1 );
+          mSegmentData.append( newSegment2 );
+          mSegmentData.append( newSegment3 );
+
+          mSegmentIndex->deleteFeature( candidate, QgsRectangle( candidateSegment.x1,
+                                                               candidateSegment.y1,
+                                                               candidateSegment.x2,
+                                                               candidateSegment.y2 ) );
+
+          auto it = mSegmentToFeatureId.find( candidate );
+          if ( it != mSegmentToFeatureId.end() )
+          {
+              const QList< QgsFeatureId > featureIds = it.value();
+              for ( const QgsFeatureId id : featureIds )
+              {
+                  mFeatureIdToSegments[id].removeAll( candidate );
+                  mFeatureIdToSegments[id].append( mSegmentId );
+                  mFeatureIdToSegments[id].append( mSegmentId+1 );
+                  mFeatureIdToSegments[id].append( mSegmentId+2 );
+              }
+              mSegmentToFeatureId.erase( it );
+              mSegmentToFeatureId.insert( mSegmentId, featureIds );
+              mSegmentToFeatureId.insert( mSegmentId + 1, featureIds );
+              mSegmentToFeatureId.insert( mSegmentId + 2, featureIds );
+          }
+          mSegmentIndex->addFeature( mSegmentId, QgsRectangle( newSegment1.x1,
+                                                             newSegment1.y1,
+                                                             newSegment1.x2,
+                                                             newSegment1.y2 ));
+          mSegmentIndex->addFeature( mSegmentId+1, QgsRectangle( newSegment2.x1,
+                                                             newSegment2.y1,
+                                                             newSegment2.x2,
+                                                             newSegment2.y2 ));
+          mSegmentIndex->addFeature( mSegmentId+2, QgsRectangle( newSegment3.x1,
+                                                             newSegment3.y1,
+                                                             newSegment3.x2,
+                                                             newSegment3.y2 ));
+
+          mSegmentId+=3;
+        }
+
+        // TODO -- even if start/end point coincide with start/end of candidate, we need to shift the
+        // candidate points
+
+        // TODO -- only two or one split segments on candidate
+
+        // TODO -- node new segment and add
+
+        // TODO -- this should all be happening in renderFeature now?
+
+
+  //      splitPoints.insert( split1 );
+//        splitPoints.insert( split2 );
 
         outSegments.insert( candidate );
       }
@@ -494,7 +602,9 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
             segmentGroupIndex.addFeature( segmentGroupIndexId, QgsRectangle( centroid, centroid ).buffered( 0.0001 ) );
             segmentGroupIndexId++;
           }
-          featureIdToSegments[ segmentData.feature.id() ].append( splitSegmentId );
+
+//          featureIdToSegments[ segmentData.feature.id() ].append( splitSegmentId );
+////          segmentToFeatureId[ splitSegmentId ].append( segmentData.feature.id() );
 
           splitSegmentId++;
         }
@@ -549,7 +659,8 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
           segmentGroupIndexId++;
 
         }
-        featureIdToSegments[ segmentData.feature.id() ].append( splitSegmentId );
+    //    featureIdToSegments[ segmentData.feature.id() ].append( splitSegmentId );
+     //   segmentToFeatureId[ splitSegmentId ].append( segmentData.feature.id() );
 
         splitSegmentId++;
       }
@@ -557,7 +668,7 @@ void QgsLineDistanceRenderer::stopRender( QgsRenderContext &context )
 
     if ( !context.renderingStopped() )
     {
-      drawGroups( context, mQueuedFeatures, featureIdToSegments, segmentGroups, splitSegments );
+      drawGroups( context, mQueuedFeatures, mFeatureIdToSegments, segmentGroups, splitSegments );
     }
   }
 

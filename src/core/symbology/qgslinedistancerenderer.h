@@ -197,6 +197,9 @@ class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer SIP_ABSTRA
     std::unique_ptr< QgsSpatialIndex > mSegmentIndex;
     QVector< GroupedFeature > mQueuedFeatures;
 
+    QHash< QgsFeatureId, QList< int > > mFeatureIdToSegments;
+    QHash< int, QList< QgsFeatureId > > mSegmentToFeatureId;
+
     struct SegmentData
     {
       double x1;
@@ -207,6 +210,7 @@ class CORE_EXPORT QgsLineDistanceRenderer : public QgsFeatureRenderer SIP_ABSTRA
       int segmentIndex;
       bool selected;
       bool drawVertexMarker;
+      int weight = 1;
     };
 
     struct SplitSegment
