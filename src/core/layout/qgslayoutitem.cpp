@@ -32,6 +32,7 @@
 #include "qgssvgcache.h"
 #include "qgslinesymbollayer.h"
 #include "qgslinesymbol.h"
+#include "qgsfillsymbollayer.h"
 #include "qgsfillsymbol.h"
 
 #include <QPainter>
@@ -65,13 +66,18 @@ QgsLayoutItem::QgsLayoutItem( QgsLayout *layout, bool manageZValue )
   mItemPosition = QgsLayoutPoint( scenePos().x(), scenePos().y(), initialUnits );
   mItemSize = QgsLayoutSize( rect().width(), rect().height(), initialUnits );
 
-  // required to initially setup background/frame style
-  refreshBackgroundColor( false );
-  refreshFrame( false );
-  mFrameSymbol = std::make_unique< QgsLineSymbol >();
-  mFrameSymbol->setColor( QColor( 0, 0, 0 ) );
-  mFrameSymbol->setWidth( 0.3 );
+  mFrameSymbol = std::make_unique< QgsFillSymbol >( QgsSymbolLayerList
+  {
+    new QgsSimpleLineSymbolLayer( QColor( 0, 0, 0 ), 0.3 )
+  } );
   qgis::down_cast< QgsSimpleLineSymbolLayer * >( mFrameSymbol->symbolLayer( 0 ) )->setPenJoinStyle( Qt::MiterJoin );
+
+  mBackgroundSymbol = std::make_unique< QgsFillSymbol >();
+  mBackgroundSymbol->setColor( QColor( 255, 255, 255 ) );
+  qgis::down_cast< QgsSimpleFillSymbolLayer * >( mBackgroundSymbol->symbolLayer( 0 ) )->setStrokeStyle( Qt::NoPen );
+
+  // required to initially setup frame style
+  refreshFrame( false );
 
   initConnectionsToLayout();
 
@@ -674,18 +680,20 @@ bool QgsLayoutItem::writeXml( QDomElement &parentElement, QDomDocument &doc, con
   }
 
   //frame
-  QDomElement frameElem = doc.createElement( QStringLiteral( "frameSymbol" ) );
-  QDomElement frameSymbolElem = QgsSymbolLayerUtils::saveSymbol( QString(), mFrameSymbol.get(), doc, context );
-  frameElem.appendChild( frameSymbolElem );
-  element.appendChild( frameElem );
+  {
+    QDomElement frameElem = doc.createElement( QStringLiteral( "frameSymbol" ) );
+    QDomElement frameSymbolElem = QgsSymbolLayerUtils::saveSymbol( QString(), mFrameSymbol.get(), doc, context );
+    frameElem.appendChild( frameSymbolElem );
+    element.appendChild( frameElem );
+  }
 
-  //background color
-  QDomElement bgColorElem = doc.createElement( QStringLiteral( "BackgroundColor" ) );
-  bgColorElem.setAttribute( QStringLiteral( "red" ), QString::number( mBackgroundColor.red() ) );
-  bgColorElem.setAttribute( QStringLiteral( "green" ), QString::number( mBackgroundColor.green() ) );
-  bgColorElem.setAttribute( QStringLiteral( "blue" ), QString::number( mBackgroundColor.blue() ) );
-  bgColorElem.setAttribute( QStringLiteral( "alpha" ), QString::number( mBackgroundColor.alpha() ) );
-  element.appendChild( bgColorElem );
+  //background
+  {
+    QDomElement backgroundElem = doc.createElement( QStringLiteral( "backgroundSymbol" ) );
+    QDomElement backgroundSymbolElem = QgsSymbolLayerUtils::saveSymbol( QString(), mBackgroundSymbol.get(), doc, context );
+    backgroundElem.appendChild( backgroundSymbolElem );
+    element.appendChild( backgroundElem );
+  }
 
   //blend mode
   element.setAttribute( QStringLiteral( "blendMode" ), static_cast< int >( QgsPainting::getBlendModeEnum( mBlendMode ) ) );
@@ -766,101 +774,117 @@ bool QgsLayoutItem::readXml( const QDomElement &element, const QDomDocument &doc
     mBackground = false;
   }
 
-  //pen
-  QDomElement frameStyleElem = element.firstChildElement( QStringLiteral( "frameSymbol" ) );
-  if ( !frameStyleElem.isNull() )
+  // frame
   {
-    QDomElement symbolElem = frameStyleElem.firstChildElement( QStringLiteral( "symbol" ) );
-    if ( !symbolElem.isNull() )
+    const QDomElement frameSymbolElem = element.firstChildElement( QStringLiteral( "frameSymbol" ) );
+    if ( !frameSymbolElem.isNull() )
     {
-      mFrameSymbol.reset( QgsSymbolLayerUtils::loadSymbol<QgsLineSymbol>( symbolElem, context ) );
-    }
-  }
-  else
-  {
-    mFrameSymbol = std::make_unique< QgsLineSymbol >();
-    mFrameSymbol->setColor( QColor( 0, 0, 0 ) );
-    const QgsLayoutMeasurement frameWidth = QgsLayoutMeasurement::decodeMeasurement( element.attribute( QStringLiteral( "outlineWidthM" ) ) );
-    switch ( frameWidth.units() )
-    {
-      case Qgis::LayoutUnit::Millimeters:
-        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Millimeters );
-        mFrameSymbol->setWidth( frameWidth.length() );
-        break;
-      case Qgis::LayoutUnit::Centimeters:
-        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Millimeters );
-        mFrameSymbol->setWidth( frameWidth.length() * 10 );
-        break;
-      case Qgis::LayoutUnit::Meters:
-        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Millimeters );
-        mFrameSymbol->setWidth( frameWidth.length() * 1000 );
-        break;
-      case Qgis::LayoutUnit::Inches:
-        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Inches );
-        mFrameSymbol->setWidth( frameWidth.length() );
-        break;
-      case Qgis::LayoutUnit::Feet:
-        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Inches );
-        mFrameSymbol->setWidth( frameWidth.length() * 12 );
-        break;
-      case Qgis::LayoutUnit::Points:
-        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Points );
-        mFrameSymbol->setWidth( frameWidth.length() );
-        break;
-      case Qgis::LayoutUnit::Picas:
-        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Points );
-        mFrameSymbol->setWidth( frameWidth.length() * 12 );
-        break;
-      case Qgis::LayoutUnit::Pixels:
-        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Pixels );
-        mFrameSymbol->setWidth( frameWidth.length() );
-        break;
-    }
-
-    qgis::down_cast< QgsSimpleLineSymbolLayer * >( mFrameSymbol->symbolLayer( 0 ) )->setPenJoinStyle(
-      QgsSymbolLayerUtils::decodePenJoinStyle( element.attribute( QStringLiteral( "frameJoinStyle" ), QStringLiteral( "miter" ) ) ) );
-
-    QDomNodeList frameColorList = element.elementsByTagName( QStringLiteral( "FrameColor" ) );
-    if ( !frameColorList.isEmpty() )
-    {
-      QDomElement frameColorElem = frameColorList.at( 0 ).toElement();
-      bool redOk = false;
-      bool greenOk = false;
-      bool blueOk = false;
-      bool alphaOk = false;
-      int penRed, penGreen, penBlue, penAlpha;
-
-      penRed = frameColorElem.attribute( QStringLiteral( "red" ) ).toDouble( &redOk );
-      penGreen = frameColorElem.attribute( QStringLiteral( "green" ) ).toDouble( &greenOk );
-      penBlue = frameColorElem.attribute( QStringLiteral( "blue" ) ).toDouble( &blueOk );
-      penAlpha = frameColorElem.attribute( QStringLiteral( "alpha" ) ).toDouble( &alphaOk );
-
-      if ( redOk && greenOk && blueOk && alphaOk )
+      const QDomElement symbolElem = frameSymbolElem.firstChildElement( QStringLiteral( "symbol" ) );
+      if ( !symbolElem.isNull() )
       {
-        mFrameSymbol->setColor( QColor( penRed, penGreen, penBlue, penAlpha ) );
+        mFrameSymbol.reset( QgsSymbolLayerUtils::loadSymbol<QgsFillSymbol>( symbolElem, context ) );
       }
     }
-    refreshFrame( false );
+    else
+    {
+      mFrameSymbol = std::make_unique< QgsFillSymbol >( QgsSymbolLayerList{ new QgsSimpleLineSymbolLayer() } );
+      mFrameSymbol->setColor( QColor( 0, 0, 0 ) );
+      QgsSimpleLineSymbolLayer *stroke = qgis::down_cast< QgsSimpleLineSymbolLayer * >( mFrameSymbol->symbolLayer( 0 ) );
+      const QgsLayoutMeasurement frameWidth = QgsLayoutMeasurement::decodeMeasurement( element.attribute( QStringLiteral( "outlineWidthM" ) ) );
+      switch ( frameWidth.units() )
+      {
+        case Qgis::LayoutUnit::Millimeters:
+          stroke->setWidthUnit( Qgis::RenderUnit::Millimeters );
+          stroke->setWidth( frameWidth.length() );
+          break;
+        case Qgis::LayoutUnit::Centimeters:
+          stroke->setWidthUnit( Qgis::RenderUnit::Millimeters );
+          stroke->setWidth( frameWidth.length() * 10 );
+          break;
+        case Qgis::LayoutUnit::Meters:
+          stroke->setWidthUnit( Qgis::RenderUnit::Millimeters );
+          stroke->setWidth( frameWidth.length() * 1000 );
+          break;
+        case Qgis::LayoutUnit::Inches:
+          stroke->setWidthUnit( Qgis::RenderUnit::Inches );
+          stroke->setWidth( frameWidth.length() );
+          break;
+        case Qgis::LayoutUnit::Feet:
+          stroke->setWidthUnit( Qgis::RenderUnit::Inches );
+          stroke->setWidth( frameWidth.length() * 12 );
+          break;
+        case Qgis::LayoutUnit::Points:
+          stroke->setWidthUnit( Qgis::RenderUnit::Points );
+          stroke->setWidth( frameWidth.length() );
+          break;
+        case Qgis::LayoutUnit::Picas:
+          stroke->setWidthUnit( Qgis::RenderUnit::Points );
+          stroke->setWidth( frameWidth.length() * 12 );
+          break;
+        case Qgis::LayoutUnit::Pixels:
+          stroke->setWidthUnit( Qgis::RenderUnit::Pixels );
+          stroke->setWidth( frameWidth.length() );
+          break;
+      }
+
+      stroke->setPenJoinStyle(
+        QgsSymbolLayerUtils::decodePenJoinStyle( element.attribute( QStringLiteral( "frameJoinStyle" ), QStringLiteral( "miter" ) ) ) );
+
+      const QDomNodeList frameColorList = element.elementsByTagName( QStringLiteral( "FrameColor" ) );
+      if ( !frameColorList.isEmpty() )
+      {
+        const QDomElement frameColorElem = frameColorList.at( 0 ).toElement();
+        bool redOk = false;
+        bool greenOk = false;
+        bool blueOk = false;
+        bool alphaOk = false;
+        int penRed, penGreen, penBlue, penAlpha;
+
+        penRed = frameColorElem.attribute( QStringLiteral( "red" ) ).toDouble( &redOk );
+        penGreen = frameColorElem.attribute( QStringLiteral( "green" ) ).toDouble( &greenOk );
+        penBlue = frameColorElem.attribute( QStringLiteral( "blue" ) ).toDouble( &blueOk );
+        penAlpha = frameColorElem.attribute( QStringLiteral( "alpha" ) ).toDouble( &alphaOk );
+
+        if ( redOk && greenOk && blueOk && alphaOk )
+        {
+          stroke->setColor( QColor( penRed, penGreen, penBlue, penAlpha ) );
+        }
+      }
+      refreshFrame( false );
+    }
   }
 
-  //brush
-  const QDomNodeList bgColorList = element.elementsByTagName( QStringLiteral( "BackgroundColor" ) );
-  if ( !bgColorList.isEmpty() )
+  //background
   {
-    const QDomElement bgColorElem = bgColorList.at( 0 ).toElement();
-    bool redOk, greenOk, blueOk, alphaOk;
-    int bgRed, bgGreen, bgBlue, bgAlpha;
-    bgRed = bgColorElem.attribute( QStringLiteral( "red" ) ).toDouble( &redOk );
-    bgGreen = bgColorElem.attribute( QStringLiteral( "green" ) ).toDouble( &greenOk );
-    bgBlue = bgColorElem.attribute( QStringLiteral( "blue" ) ).toDouble( &blueOk );
-    bgAlpha = bgColorElem.attribute( QStringLiteral( "alpha" ) ).toDouble( &alphaOk );
-    if ( redOk && greenOk && blueOk && alphaOk )
+    const QDomElement backgroundSymbolElem = element.firstChildElement( QStringLiteral( "backgroundSymbol" ) );
+    if ( !backgroundSymbolElem.isNull() )
     {
-      mBackgroundColor = QColor( bgRed, bgGreen, bgBlue, bgAlpha );
-      setBrush( QBrush( mBackgroundColor, Qt::SolidPattern ) );
+      const QDomElement symbolElem = backgroundSymbolElem.firstChildElement( QStringLiteral( "symbol" ) );
+      if ( !symbolElem.isNull() )
+      {
+        mBackgroundSymbol.reset( QgsSymbolLayerUtils::loadSymbol<QgsFillSymbol>( symbolElem, context ) );
+      }
     }
-    //apply any data defined settings
-    refreshBackgroundColor( false );
+    else
+    {
+      const QDomNodeList bgColorList = element.elementsByTagName( QStringLiteral( "BackgroundColor" ) );
+      if ( !bgColorList.isEmpty() )
+      {
+        const QDomElement bgColorElem = bgColorList.at( 0 ).toElement();
+        bool redOk, greenOk, blueOk, alphaOk;
+        int bgRed, bgGreen, bgBlue, bgAlpha;
+        bgRed = bgColorElem.attribute( QStringLiteral( "red" ) ).toDouble( &redOk );
+        bgGreen = bgColorElem.attribute( QStringLiteral( "green" ) ).toDouble( &greenOk );
+        bgBlue = bgColorElem.attribute( QStringLiteral( "blue" ) ).toDouble( &blueOk );
+        bgAlpha = bgColorElem.attribute( QStringLiteral( "alpha" ) ).toDouble( &alphaOk );
+        if ( redOk && greenOk && blueOk && alphaOk )
+        {
+          mBackgroundSymbol = std::make_unique< QgsFillSymbol >();
+          mBackgroundSymbol->setColor( QColor( bgRed, bgGreen, bgBlue, bgAlpha ) );
+          qgis::down_cast< QgsSimpleFillSymbolLayer * >( mBackgroundSymbol->symbolLayer( 0 ) )->setStrokeStyle( Qt::NoPen );
+        }
+      }
+    }
   }
 
   //blend mode
@@ -910,13 +934,13 @@ void QgsLayoutItem::setFrameEnabled( bool drawFrame )
   emit frameChanged();
 }
 
-void QgsLayoutItem::setFrameSymbol( QgsLineSymbol *symbol )
+void QgsLayoutItem::setFrameSymbol( QgsFillSymbol *symbol )
 {
   mFrameSymbol.reset( symbol );
   refreshFrame();
 }
 
-QgsLineSymbol *QgsLayoutItem::frameSymbol() const
+QgsFillSymbol *QgsLayoutItem::frameSymbol() const
 {
   return mFrameSymbol.get();
 }
@@ -945,46 +969,50 @@ void QgsLayoutItem::setFrameStrokeWidth( const QgsLayoutMeasurement width )
     return;
   }
 
+  QgsSimpleLineSymbolLayer *stroke = qgis::down_cast< QgsSimpleLineSymbolLayer * >( mFrameSymbol->symbolLayer( 0 ) );
+  if ( !stroke )
+    return;
+
   switch ( width.units() )
   {
     case Qgis::LayoutUnit::Millimeters:
-      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Millimeters );
-      mFrameSymbol->setWidth( width.length() );
+      stroke->setWidthUnit( Qgis::RenderUnit::Millimeters );
+      stroke->setWidth( width.length() );
       break;
 
     case Qgis::LayoutUnit::Centimeters:
-      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Millimeters );
-      mFrameSymbol->setWidth( width.length() * 10 );
+      stroke->setWidthUnit( Qgis::RenderUnit::Millimeters );
+      stroke->setWidth( width.length() * 10 );
       break;
 
     case Qgis::LayoutUnit::Meters:
-      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Millimeters );
-      mFrameSymbol->setWidth( width.length() * 1000 );
+      stroke->setWidthUnit( Qgis::RenderUnit::Millimeters );
+      stroke->setWidth( width.length() * 1000 );
       break;
 
     case Qgis::LayoutUnit::Inches:
-      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Inches );
-      mFrameSymbol->setWidth( width.length() );
+      stroke->setWidthUnit( Qgis::RenderUnit::Inches );
+      stroke->setWidth( width.length() );
       break;
 
     case Qgis::LayoutUnit::Feet:
-      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Inches );
-      mFrameSymbol->setWidth( width.length() * 12 );
+      stroke->setWidthUnit( Qgis::RenderUnit::Inches );
+      stroke->setWidth( width.length() * 12 );
       break;
 
     case Qgis::LayoutUnit::Points:
-      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Points );
-      mFrameSymbol->setWidth( width.length() );
+      stroke->setWidthUnit( Qgis::RenderUnit::Points );
+      stroke->setWidth( width.length() );
       break;
 
     case Qgis::LayoutUnit::Picas:
-      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Points );
-      mFrameSymbol->setWidth( width.length() * 12 );
+      stroke->setWidthUnit( Qgis::RenderUnit::Points );
+      stroke->setWidth( width.length() * 12 );
       break;
 
     case Qgis::LayoutUnit::Pixels:
-      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Pixels );
-      mFrameSymbol->setWidth( width.length() );
+      stroke->setWidthUnit( Qgis::RenderUnit::Pixels );
+      stroke->setWidth( width.length() );
       break;
   }
 
@@ -996,16 +1024,20 @@ QgsLayoutMeasurement QgsLayoutItem::frameStrokeWidth() const
   if ( !mFrameSymbol )
     return QgsLayoutMeasurement( 0 );
 
+  QgsSimpleLineSymbolLayer *stroke = qgis::down_cast< QgsSimpleLineSymbolLayer * >( mFrameSymbol->symbolLayer( 0 ) );
+  if ( !stroke )
+    return QgsLayoutMeasurement( 0 );
+
   switch ( mFrameSymbol->outputUnit() )
   {
     case Qgis::RenderUnit::Millimeters:
-      return QgsLayoutMeasurement( mFrameSymbol->width(), Qgis::LayoutUnit::Millimeters );
+      return QgsLayoutMeasurement( stroke->width(), Qgis::LayoutUnit::Millimeters );
     case Qgis::RenderUnit::Pixels:
-      return QgsLayoutMeasurement( mFrameSymbol->width(), Qgis::LayoutUnit::Pixels );
+      return QgsLayoutMeasurement( stroke->width(), Qgis::LayoutUnit::Pixels );
     case Qgis::RenderUnit::Points:
-      return QgsLayoutMeasurement( mFrameSymbol->width(), Qgis::LayoutUnit::Points );
+      return QgsLayoutMeasurement( stroke->width(), Qgis::LayoutUnit::Points );
     case Qgis::RenderUnit::Inches:
-      return QgsLayoutMeasurement( mFrameSymbol->width(), Qgis::LayoutUnit::Inches );
+      return QgsLayoutMeasurement( stroke->width(), Qgis::LayoutUnit::Inches );
 
     case Qgis::RenderUnit::Unknown:
     case Qgis::RenderUnit::MetersInMapUnits:
@@ -1020,29 +1052,39 @@ QgsLayoutMeasurement QgsLayoutItem::frameStrokeWidth() const
 
 Qt::PenJoinStyle QgsLayoutItem::frameJoinStyle() const
 {
+  if ( !mFrameSymbol )
+    return Qt::PenJoinStyle::MiterJoin;
 
+  for ( int i = 0; i < mFrameSymbol->symbolLayerCount(); ++i )
+  {
+    if ( const QgsSimpleLineSymbolLayer *layer = dynamic_cast< QgsSimpleLineSymbolLayer * >( mFrameSymbol->symbolLayer( i ) ) )
+    {
+      return layer->penJoinStyle();
+    }
+    else if ( const QgsSimpleFillSymbolLayer *layer = dynamic_cast< QgsSimpleFillSymbolLayer * >( mFrameSymbol->symbolLayer( i ) ) )
+    {
+      return layer->penJoinStyle();
+    }
+  }
+
+  return Qt::PenJoinStyle::MiterJoin;
 }
 
 void QgsLayoutItem::setFrameJoinStyle( const Qt::PenJoinStyle style )
 {
-  if ( mFrameJoinStyle == style )
-  {
-    //no change
-    return;
-  }
-
   for ( int layer = 0; layer < mFrameSymbol->symbolLayerCount(); ++layer )
   {
     if ( QgsSimpleLineSymbolLayer *line = dynamic_cast<QgsSimpleLineSymbolLayer * >( mFrameSymbol->symbolLayer( layer ) ) )
     {
       line->setPenJoinStyle( style );
     }
+    else if ( QgsSimpleFillSymbolLayer *fill = dynamic_cast< QgsSimpleFillSymbolLayer * >( mFrameSymbol->symbolLayer( layer ) ) )
+    {
+      fill->setPenJoinStyle( style );
+    }
   }
 
-  QPen itemPen = pen();
-  itemPen.setJoinStyle( mFrameJoinStyle );
-  setPen( itemPen );
-  emit frameChanged();
+  refreshFrame();
 }
 
 void QgsLayoutItem::setBackgroundEnabled( bool drawBackground )
@@ -1051,11 +1093,24 @@ void QgsLayoutItem::setBackgroundEnabled( bool drawBackground )
   update();
 }
 
+void QgsLayoutItem::setBackgroundSymbol( QgsFillSymbol *symbol )
+{
+  mBackgroundSymbol.reset( symbol );
+  update();
+}
+
+QgsFillSymbol *QgsLayoutItem::backgroundSymbol() const
+{
+  return mBackgroundSymbol.get();
+}
+
 void QgsLayoutItem::setBackgroundColor( const QColor &color )
 {
-  mBackgroundColor = color;
-  // apply any datadefined overrides
-  refreshBackgroundColor( true );
+  if ( !mBackgroundSymbol )
+    return;
+
+  mBackgroundSymbol->setColor( color );
+  update();
 }
 
 void QgsLayoutItem::setBlendMode( const QPainter::CompositionMode mode )
@@ -1284,11 +1339,12 @@ void QgsLayoutItem::refreshDataDefinedProperty( const QgsLayoutObject::DataDefin
   }
   if ( property == QgsLayoutObject::FrameColor || property == QgsLayoutObject::AllProperties )
   {
+    // TODO!
     refreshFrame( false );
   }
   if ( property == QgsLayoutObject::BackgroundColor || property == QgsLayoutObject::AllProperties )
   {
-    refreshBackgroundColor( false );
+    // TODO!
   }
   if ( property == QgsLayoutObject::BlendMode || property == QgsLayoutObject::AllProperties )
   {
@@ -1408,16 +1464,9 @@ void QgsLayoutItem::drawFrame( QgsRenderContext &context )
   if ( !mFrame || !context.painter() || !mFrameSymbol )
     return;
 
+  const QTransform t = QTransform::fromScale( context.scaleFactor(), context.scaleFactor() );
   mFrameSymbol->startRender( context );
-
-  QPolygonF line;
-  line << QPointF( 0, 0 )
-       << QPointF( rect().width() * context.scaleFactor(), 0.0 )
-       << QPointF( rect().width() * context.scaleFactor(), rect().height() * context.scaleFactor() )
-       << QPointF( 0.0, rect().height() * context.scaleFactor() )
-       << QPointF( 0.0, 0.0 );
-
-  mFrameSymbol->renderPolyline( line, nullptr, context );
+  mFrameSymbol->renderPolygon( framePath().toFillPolygon( t ), nullptr, nullptr, context );
   mFrameSymbol->stopRender( context );
 }
 
@@ -1426,14 +1475,10 @@ void QgsLayoutItem::drawBackground( QgsRenderContext &context )
   if ( !mBackground || !context.painter() )
     return;
 
-  const QgsScopedQPainterState painterState( context.painter() );
-
-  QPainter *p = context.painter();
-  p->setBrush( brush() );
-  p->setPen( Qt::NoPen );
-  context.setPainterFlagsUsingContext( p );
-
-  p->drawPath( framePath() );
+  const QTransform t = QTransform::fromScale( context.scaleFactor(), context.scaleFactor() );
+  mBackgroundSymbol->startRender( context );
+  mBackgroundSymbol->renderPolygon( framePath().toFillPolygon( t ), nullptr, nullptr, context );
+  mBackgroundSymbol->stopRender( context );
 }
 
 void QgsLayoutItem::drawRefreshingOverlay( QPainter *painter, const QStyleOptionGraphicsItem *itemStyle )
@@ -1661,19 +1706,10 @@ void QgsLayoutItem::refreshFrame( bool updateItem )
     return;
   }
 
-  //data defined stroke color set?
-  bool ok = false;
-  const QColor frameColor = mDataDefinedProperties.valueAsColor( QgsLayoutObject::FrameColor, createExpressionContext(), mFrameColor, &ok );
-  QPen itemPen;
-  if ( ok )
-  {
-    itemPen = QPen( frameColor );
-  }
-  else
-  {
-    itemPen = QPen( mFrameColor );
-  }
-  itemPen.setJoinStyle( mFrameJoinStyle );
+  // always use a transparent color for the pen. We still set A pen with the correct width,
+  // as this is used internally by QGraphicsRectItem for bounding box calculation...
+  const QColor frameColor = QColor( 0, 0, 0, 0 );
+  QPen itemPen( frameColor );
 
   if ( mLayout )
     itemPen.setWidthF( mLayout->convertToLayoutUnits( mFrameWidth ) );
@@ -1690,25 +1726,14 @@ void QgsLayoutItem::refreshFrame( bool updateItem )
   emit frameChanged();
 }
 
-QColor QgsLayoutItem::backgroundColor( bool useDataDefined ) const
+QColor QgsLayoutItem::backgroundColor( bool ) const
 {
-  return useDataDefined ? brush().color() : mBackgroundColor;
+  return mBackgroundSymbol ? mBackgroundSymbol->color() : QColor();
 }
-
 
 void QgsLayoutItem::refreshBackgroundColor( bool updateItem )
 {
-  //data defined fill color set?
-  bool ok = false;
-  const QColor backgroundColor = mDataDefinedProperties.valueAsColor( QgsLayoutObject::BackgroundColor, createExpressionContext(), mBackgroundColor, &ok );
-  if ( ok )
-  {
-    setBrush( QBrush( backgroundColor, Qt::SolidPattern ) );
-  }
-  else
-  {
-    setBrush( QBrush( mBackgroundColor, Qt::SolidPattern ) );
-  }
+  // we don't need to actually DO anything here anymore!
   if ( updateItem )
   {
     update();

@@ -1706,15 +1706,20 @@ bool QgsCompositionConverter::readXml( QgsLayoutItem *layoutItem, const QDomElem
     penGreen = frameColorElem.attribute( QStringLiteral( "green" ) ).toDouble( &greenOk );
     penBlue = frameColorElem.attribute( QStringLiteral( "blue" ) ).toDouble( &blueOk );
     penAlpha = frameColorElem.attribute( QStringLiteral( "alpha" ) ).toDouble( &alphaOk );
+    // QGIS 4.0 -- drop compatibility code, require users to update compositions through QGIS 3.x first...
+    Q_NOWARN_DEPRECATED_PUSH
     layoutItem->setFrameJoinStyle( QgsSymbolLayerUtils::decodePenJoinStyle( itemElem.attribute( QStringLiteral( "frameJoinStyle" ), QStringLiteral( "miter" ) ) ) );
+    Q_NOWARN_DEPRECATED_POP
 
     if ( redOk && greenOk && blueOk && alphaOk && widthOk )
     {
+      Q_NOWARN_DEPRECATED_PUSH
       layoutItem->setFrameStrokeColor( QColor( penRed, penGreen, penBlue, penAlpha ) );
       layoutItem->setFrameStrokeWidth( QgsLayoutMeasurement( penWidth ) );
       QPen framePen( layoutItem->frameStrokeColor() );
       framePen.setWidthF( layoutItem->frameStrokeWidth( ).length() );
       framePen.setJoinStyle( layoutItem->frameJoinStyle( ) );
+      Q_NOWARN_DEPRECATED_POP
       layoutItem->setPen( framePen );
       //apply any data defined settings
       layoutItem->refreshFrame( false );
@@ -1734,11 +1739,10 @@ bool QgsCompositionConverter::readXml( QgsLayoutItem *layoutItem, const QDomElem
     bgAlpha = bgColorElem.attribute( QStringLiteral( "alpha" ) ).toDouble( &alphaOk );
     if ( redOk && greenOk && blueOk && alphaOk )
     {
-      layoutItem->mBackgroundColor = QColor( bgRed, bgGreen, bgBlue, bgAlpha );
-      layoutItem->setBrush( QBrush( layoutItem->mBackgroundColor, Qt::SolidPattern ) );
+      Q_NOWARN_DEPRECATED_PUSH
+      layoutItem->setBackgroundColor( QColor( bgRed, bgGreen, bgBlue, bgAlpha ) );
+      Q_NOWARN_DEPRECATED_POP
     }
-    //apply any data defined settings
-    layoutItem->refreshBackgroundColor( false );
   }
 
   //blend mode

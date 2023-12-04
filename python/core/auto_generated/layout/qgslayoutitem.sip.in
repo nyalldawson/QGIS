@@ -770,9 +770,11 @@ Sets whether this item has a frame drawn around it or not.
 .. seealso:: :py:func:`setFrameSymbol`
 %End
 
-    void setFrameSymbol( QgsLineSymbol *symbol /Transfer/ );
+    void setFrameSymbol( QgsFillSymbol *symbol /Transfer/ );
 %Docstring
-Sets the line ``symbol`` used for drawing the item frame.
+Sets the fill ``symbol`` used for drawing the item frame.
+
+The frame will always be rendered above the contents of the item.
 
 Ownership of ``symbol`` is transferred to the item.
 
@@ -781,9 +783,11 @@ Ownership of ``symbol`` is transferred to the item.
 .. versionadded:: 3.36
 %End
 
-    QgsLineSymbol *frameSymbol() const;
+    QgsFillSymbol *frameSymbol() const;
 %Docstring
-Returns the line symbol used for drawing the item frame.
+Returns the fill symbol used for drawing the item frame.
+
+The frame will always be rendered above the contents of the item.
 
 .. seealso:: :py:func:`setFrameSymbol`
 
@@ -892,7 +896,7 @@ Returns ``True`` if the item has a background.
 
 .. seealso:: :py:func:`setBackgroundEnabled`
 
-.. seealso:: :py:func:`backgroundColor`
+.. seealso:: :py:func:`backgroundSymbol`
 %End
 
     void setBackgroundEnabled( bool drawBackground );
@@ -901,10 +905,34 @@ Sets whether this item has a background drawn under it or not.
 
 .. seealso:: :py:func:`hasBackground`
 
-.. seealso:: :py:func:`setBackgroundColor`
+.. seealso:: :py:func:`setBackgroundSymbol`
 %End
 
-    QColor backgroundColor( bool useDataDefined = true ) const;
+    void setBackgroundSymbol( QgsFillSymbol *symbol /Transfer/ );
+%Docstring
+Sets the fill ``symbol`` used for drawing the item background.
+
+The background will always be rendered below the contents of the item.
+
+Ownership of ``symbol`` is transferred to the item.
+
+.. seealso:: :py:func:`backgroundSymbol`
+
+.. versionadded:: 3.36
+%End
+
+    QgsFillSymbol *backgroundSymbol() const;
+%Docstring
+Returns the fill symbol used for drawing the item background.
+
+The background will always be rendered below the contents of the item.
+
+.. seealso:: :py:func:`setBackgroundSymbol`
+
+.. versionadded:: 3.36
+%End
+
+ QColor backgroundColor( bool useDataDefined = true ) const /Deprecated/;
 %Docstring
 Returns the background color for this item. This is only used if :py:func:`~QgsLayoutItem.hasBackground`
 returns ``True``.
@@ -914,15 +942,21 @@ returns ``True``.
 .. seealso:: :py:func:`setBackgroundColor`
 
 .. seealso:: :py:func:`hasBackground`
+
+.. deprecated:: QGIS 3.36
+  use :py:func:`~QgsLayoutItem.backgroundSymbol` instead.
 %End
 
-    void setBackgroundColor( const QColor &color );
+ void setBackgroundColor( const QColor &color ) /Deprecated/;
 %Docstring
 Sets the background ``color`` for this item.
 
 .. seealso:: :py:func:`backgroundColor`
 
 .. seealso:: :py:func:`setBackgroundEnabled`
+
+.. deprecated:: QGIS 3.36
+  use :py:func:`~QgsLayoutItem.setBackgroundSymbol` instead.
 %End
 
     QPainter::CompositionMode blendMode() const;

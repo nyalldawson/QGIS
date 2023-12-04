@@ -33,7 +33,6 @@ class QPainter;
 class QgsLayoutItemGroup;
 class QgsLayoutEffect;
 class QgsStyleEntityVisitorInterface;
-class QgsLineSymbol;
 class QgsFillSymbol;
 
 /**
@@ -770,22 +769,26 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
     virtual void setFrameEnabled( bool drawFrame );
 
     /**
-     * Sets the line \a symbol used for drawing the item frame.
+     * Sets the fill \a symbol used for drawing the item frame.
+     *
+     * The frame will always be rendered above the contents of the item.
      *
      * Ownership of \a symbol is transferred to the item.
      *
      * \see frameSymbol()
      * \since QGIS 3.36
      */
-    void setFrameSymbol( QgsLineSymbol *symbol SIP_TRANSFER );
+    void setFrameSymbol( QgsFillSymbol *symbol SIP_TRANSFER );
 
     /**
-     * Returns the line symbol used for drawing the item frame.
+     * Returns the fill symbol used for drawing the item frame.
+     *
+     * The frame will always be rendered above the contents of the item.
      *
      * \see setFrameSymbol()
      * \since QGIS 3.36
      */
-    QgsLineSymbol *frameSymbol() const;
+    QgsFillSymbol *frameSymbol() const;
 
     /**
      * Sets the frame stroke \a color.
@@ -850,16 +853,38 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
     /**
      * Returns TRUE if the item has a background.
      * \see setBackgroundEnabled()
-     * \see backgroundColor()
+     * \see backgroundSymbol()
      */
     bool hasBackground() const { return mBackground; }
 
     /**
      * Sets whether this item has a background drawn under it or not.
      * \see hasBackground()
-     * \see setBackgroundColor()
+     * \see setBackgroundSymbol()
      */
     void setBackgroundEnabled( bool drawBackground );
+
+    /**
+     * Sets the fill \a symbol used for drawing the item background.
+     *
+     * The background will always be rendered below the contents of the item.
+     *
+     * Ownership of \a symbol is transferred to the item.
+     *
+     * \see backgroundSymbol()
+     * \since QGIS 3.36
+     */
+    void setBackgroundSymbol( QgsFillSymbol *symbol SIP_TRANSFER );
+
+    /**
+     * Returns the fill symbol used for drawing the item background.
+     *
+     * The background will always be rendered below the contents of the item.
+     *
+     * \see setBackgroundSymbol()
+     * \since QGIS 3.36
+     */
+    QgsFillSymbol *backgroundSymbol() const;
 
     /**
      * Returns the background color for this item. This is only used if hasBackground()
@@ -867,15 +892,17 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
      * \param useDataDefined If true, then returns the data defined override for the background color
      * \see setBackgroundColor()
      * \see hasBackground()
+     * \deprecated since QGIS 3.36, use backgroundSymbol() instead.
      */
-    QColor backgroundColor( bool useDataDefined = true ) const;
+    Q_DECL_DEPRECATED QColor backgroundColor( bool useDataDefined = true ) const SIP_DEPRECATED;
 
     /**
      * Sets the background \a color for this item.
      * \see backgroundColor()
      * \see setBackgroundEnabled()
+     * \deprecated since QGIS 3.36, use setBackgroundSymbol() instead.
      */
-    void setBackgroundColor( const QColor &color );
+    Q_DECL_DEPRECATED void setBackgroundColor( const QColor &color ) SIP_DEPRECATED;
 
     /**
      * Returns the item's composition blending mode.
@@ -1356,8 +1383,8 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
     //! True if item has a frame
     bool mFrame = false;
 
-    //! Frame symbol
-    std::unique_ptr< QgsLineSymbol > mFrameSymbol;
+    //! Frame symbol.
+    std::unique_ptr< QgsFillSymbol > mFrameSymbol;
 
     //! True if item has a background
     bool mBackground = true;
@@ -1365,11 +1392,7 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
     //! Background symbol
     std::unique_ptr< QgsFillSymbol > mBackgroundSymbol;
 
-    //! Background color
-    QColor mBackgroundColor = QColor( 255, 255, 255 );
-
     bool mBlockUndoCommands = false;
-
 
     void initConnectionsToLayout();
 
