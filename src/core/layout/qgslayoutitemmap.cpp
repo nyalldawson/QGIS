@@ -1152,6 +1152,7 @@ void QgsLayoutItemMap::paint( QPainter *painter, const QStyleOptionGraphicsItem 
     if ( mLayout && mLayout->renderContext().flags() & QgsLayoutRenderContext::FlagLosslessImageRendering )
       painter->setRenderHint( QPainter::LosslessImageRendering, true );
 
+    double dotsPerMM = 0;
     if ( ( containsAdvancedEffects() || ( blendModeForRender() != QPainter::CompositionMode_SourceOver ) )
          && ( !mLayout || !( mLayout->renderContext().flags() & QgsLayoutRenderContext::FlagForceVectorOutput ) ) )
     {
@@ -1165,7 +1166,7 @@ void QgsLayoutItemMap::paint( QPainter *painter, const QStyleOptionGraphicsItem 
       image.fill( Qt::transparent );
       image.setDotsPerMeterX( static_cast< int >( std::round( 1000 * destinationDpi / 25.4 ) ) );
       image.setDotsPerMeterY( static_cast< int >( std::round( 1000 * destinationDpi / 25.4 ) ) );
-      double dotsPerMM = destinationDpi / 25.4;
+      dotsPerMM = destinationDpi / 25.4;
       QPainter p( &image );
 
       QPointF tl = -boundingRect().topLeft();
@@ -1181,9 +1182,7 @@ void QgsLayoutItemMap::paint( QPainter *painter, const QStyleOptionGraphicsItem 
       // so that layers with opacity or blend modes can correctly interact with it
       if ( shouldDrawPart( Background ) )
       {
-        p.scale( dotsPerMM, dotsPerMM );
         drawMapBackground( &p );
-        p.scale( 1.0 / dotsPerMM, 1.0 / dotsPerMM );
       }
 
       drawMap( &p, cExtent, imagePaintRect.size(), image.logicalDpiX() );
@@ -1211,10 +1210,13 @@ void QgsLayoutItemMap::paint( QPainter *painter, const QStyleOptionGraphicsItem 
     }
     else
     {
+      dotsPerMM = paintDevice->logicalDpiX() / 25.4;
       // Fill with background color
       if ( shouldDrawPart( Background ) )
       {
+        painter->scale( 1 / dotsPerMM, 1 / dotsPerMM ); // scale painter from mm to dots
         drawMapBackground( painter );
+        painter->scale( dotsPerMM, dotsPerMM ); // scale painter from mm to dots
       }
 
       QgsScopedQPainterState painterState( painter );
@@ -1225,7 +1227,6 @@ void QgsLayoutItemMap::paint( QPainter *painter, const QStyleOptionGraphicsItem 
         QgsScopedQPainterState stagedPainterState( painter );
         painter->translate( mXOffset, mYOffset );
 
-        double dotsPerMM = paintDevice->logicalDpiX() / 25.4;
         size *= dotsPerMM; // output size will be in dots (pixels)
         painter->scale( 1 / dotsPerMM, 1 / dotsPerMM ); // scale painter from mm to dots
 
@@ -1259,7 +1260,9 @@ void QgsLayoutItemMap::paint( QPainter *painter, const QStyleOptionGraphicsItem 
 
     if ( shouldDrawPart( Frame ) )
     {
+      painter->scale( 1 / dotsPerMM, 1 / dotsPerMM ); // scale painter from mm to dots
       drawMapFrame( painter );
+      painter->scale( dotsPerMM, dotsPerMM );
     }
 
     mDrawing = false;
