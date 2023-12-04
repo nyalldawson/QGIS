@@ -758,18 +758,14 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
     /**
      * Returns TRUE if the item includes a frame.
      * \see setFrameEnabled()
-     * \see frameStrokeWidth()
-     * \see frameJoinStyle()
-     * \see frameStrokeColor()
+     * \see frameSymbol()
      */
     bool frameEnabled() const { return mFrame; }
 
     /**
      * Sets whether this item has a frame drawn around it or not.
      * \see frameEnabled()
-     * \see setFrameStrokeWidth()
-     * \see setFrameJoinStyle()
-     * \see setFrameStrokeColor()
+     * \see setFrameSymbol()
      */
     virtual void setFrameEnabled( bool drawFrame );
 
@@ -797,8 +793,9 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
      * \see setFrameEnabled()
      * \see setFrameJoinStyle()
      * \see setFrameStrokeWidth()
+     * \deprecated since QGIS 3.36, use setFrameSymbol() instead.
      */
-    void setFrameStrokeColor( const QColor &color );
+    Q_DECL_DEPRECATED void setFrameStrokeColor( const QColor &color ) SIP_DEPRECATED;
 
     /**
      * Returns the frame's stroke color. This is only used if frameEnabled() returns TRUE.
@@ -816,8 +813,9 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
      * \see setFrameEnabled()
      * \see setFrameJoinStyle()
      * \see setFrameStrokeColor()
+     * \deprecated since QGIS 3.36, use setFrameSymbol() instead.
      */
-    virtual void setFrameStrokeWidth( QgsLayoutMeasurement width );
+    Q_DECL_DEPRECATED virtual void setFrameStrokeWidth( QgsLayoutMeasurement width ) SIP_DEPRECATED;
 
     /**
      * Returns the frame's stroke width. This is only used if frameEnabled() returns TRUE.
@@ -825,8 +823,9 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
      * \see setFrameStrokeWidth()
      * \see frameJoinStyle()
      * \see frameStrokeColor()
+     * \deprecated since QGIS 3.36, use frameSymbol() instead.
      */
-    QgsLayoutMeasurement frameStrokeWidth() const { return mFrameWidth; }
+    Q_DECL_DEPRECATED QgsLayoutMeasurement frameStrokeWidth() const SIP_DEPRECATED;
 
     /**
      * Returns the join style used for drawing the item's frame.
@@ -834,8 +833,9 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
      * \see setFrameJoinStyle()
      * \see frameStrokeWidth()
      * \see frameStrokeColor()
+     * \deprecated since QGIS 3.36, use frameSymbol() instead.
      */
-    Qt::PenJoinStyle frameJoinStyle() const { return mFrameJoinStyle; }
+    Q_DECL_DEPRECATED Qt::PenJoinStyle frameJoinStyle() const SIP_DEPRECATED;
 
     /**
      * Sets the join \a style used when drawing the item's frame.
@@ -843,8 +843,9 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
      * \see frameJoinStyle()
      * \see setFrameStrokeWidth()
      * \see setFrameStrokeColor()
+     * \deprecated since QGIS 3.36, use setFrameSymbol() instead.
      */
-    void setFrameJoinStyle( Qt::PenJoinStyle style );
+    Q_DECL_DEPRECATED void setFrameJoinStyle( Qt::PenJoinStyle style ) SIP_DEPRECATED;
 
     /**
      * Returns TRUE if the item has a background.
@@ -1354,22 +1355,21 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
 
     //! True if item has a frame
     bool mFrame = false;
-    //! Item frame color
-    QColor mFrameColor = QColor( 0, 0, 0 );
-    //! Item frame width
-    QgsLayoutMeasurement mFrameWidth = QgsLayoutMeasurement( 0.3, Qgis::LayoutUnit::Millimeters );
-    //! Frame join style
-    Qt::PenJoinStyle mFrameJoinStyle = Qt::MiterJoin;
+
+    //! Frame symbol
+    std::unique_ptr< QgsLineSymbol > mFrameSymbol;
 
     //! True if item has a background
     bool mBackground = true;
+
+    //! Background symbol
+    std::unique_ptr< QgsFillSymbol > mBackgroundSymbol;
+
     //! Background color
     QColor mBackgroundColor = QColor( 255, 255, 255 );
 
     bool mBlockUndoCommands = false;
 
-    std::unique_ptr< QgsLineSymbol > mFrameSymbol;
-    std::unique_ptr< QgsFillSymbol > mBackgroundSymbol;
 
     void initConnectionsToLayout();
 

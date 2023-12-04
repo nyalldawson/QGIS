@@ -928,10 +928,9 @@ void QgsLayoutItem::setFrameStrokeColor( const QColor &color )
     //no change
     return;
   }
+
   mFrameSymbol->setColor( color );
-  // apply any datadefined overrides
-  refreshFrame( true );
-  emit frameChanged();
+  refreshFrame();
 }
 
 QColor QgsLayoutItem::frameStrokeColor() const
@@ -941,16 +940,87 @@ QColor QgsLayoutItem::frameStrokeColor() const
 
 void QgsLayoutItem::setFrameStrokeWidth( const QgsLayoutMeasurement width )
 {
-  if ( !mFrameSymbol || mFrameSymbol->width() == width.length() )
+  if ( !mFrameSymbol )
   {
-    //no change
     return;
   }
 
-  // TODO - unit conversion
-  mFrameSymbol->setWidth( width.length() );
+  switch ( width.units() )
+  {
+    case Qgis::LayoutUnit::Millimeters:
+      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Millimeters );
+      mFrameSymbol->setWidth( width.length() );
+      break;
+
+    case Qgis::LayoutUnit::Centimeters:
+      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Millimeters );
+      mFrameSymbol->setWidth( width.length() * 10 );
+      break;
+
+    case Qgis::LayoutUnit::Meters:
+      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Millimeters );
+      mFrameSymbol->setWidth( width.length() * 1000 );
+      break;
+
+    case Qgis::LayoutUnit::Inches:
+      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Inches );
+      mFrameSymbol->setWidth( width.length() );
+      break;
+
+    case Qgis::LayoutUnit::Feet:
+      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Inches );
+      mFrameSymbol->setWidth( width.length() * 12 );
+      break;
+
+    case Qgis::LayoutUnit::Points:
+      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Points );
+      mFrameSymbol->setWidth( width.length() );
+      break;
+
+    case Qgis::LayoutUnit::Picas:
+      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Points );
+      mFrameSymbol->setWidth( width.length() * 12 );
+      break;
+
+    case Qgis::LayoutUnit::Pixels:
+      mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Pixels );
+      mFrameSymbol->setWidth( width.length() );
+      break;
+  }
+
   refreshFrame();
-  emit frameChanged();
+}
+
+QgsLayoutMeasurement QgsLayoutItem::frameStrokeWidth() const
+{
+  if ( !mFrameSymbol )
+    return QgsLayoutMeasurement( 0 );
+
+  switch ( mFrameSymbol->outputUnit() )
+  {
+    case Qgis::RenderUnit::Millimeters:
+      return QgsLayoutMeasurement( mFrameSymbol->width(), Qgis::LayoutUnit::Millimeters );
+    case Qgis::RenderUnit::Pixels:
+      return QgsLayoutMeasurement( mFrameSymbol->width(), Qgis::LayoutUnit::Pixels );
+    case Qgis::RenderUnit::Points:
+      return QgsLayoutMeasurement( mFrameSymbol->width(), Qgis::LayoutUnit::Points );
+    case Qgis::RenderUnit::Inches:
+      return QgsLayoutMeasurement( mFrameSymbol->width(), Qgis::LayoutUnit::Inches );
+
+    case Qgis::RenderUnit::Unknown:
+    case Qgis::RenderUnit::MetersInMapUnits:
+    case Qgis::RenderUnit::MapUnits:
+    case Qgis::RenderUnit::Percentage:
+      return QgsLayoutMeasurement( 0 );
+      break;
+  }
+
+  return QgsLayoutMeasurement( 0 );
+}
+
+Qt::PenJoinStyle QgsLayoutItem::frameJoinStyle() const
+{
+
 }
 
 void QgsLayoutItem::setFrameJoinStyle( const Qt::PenJoinStyle style )
@@ -1616,6 +1686,8 @@ void QgsLayoutItem::refreshFrame( bool updateItem )
   {
     update();
   }
+
+  emit frameChanged();
 }
 
 QColor QgsLayoutItem::backgroundColor( bool useDataDefined ) const
