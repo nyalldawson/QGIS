@@ -232,10 +232,6 @@ Returns the label font color.
 
     virtual QRectF boundingRect() const;
 
-    virtual void setFrameEnabled( bool drawFrame );
-
-    virtual void setFrameStrokeWidth( QgsLayoutMeasurement strokeWidth );
-
 
     QgsTextFormat textFormat() const;
 %Docstring

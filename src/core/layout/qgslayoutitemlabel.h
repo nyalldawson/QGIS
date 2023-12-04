@@ -211,8 +211,6 @@ class CORE_EXPORT QgsLayoutItemLabel: public QgsLayoutItem
     // In case of negative margins, the bounding rect may be larger than the
     // label's frame
     QRectF boundingRect() const override;
-    void setFrameEnabled( bool drawFrame ) override;
-    void setFrameStrokeWidth( QgsLayoutMeasurement strokeWidth ) override;
 
     /**
      * Returns the text format used for drawing text in the label.

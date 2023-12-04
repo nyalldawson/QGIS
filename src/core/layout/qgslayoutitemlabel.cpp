@@ -62,6 +62,12 @@ QgsLayoutItemLabel::QgsLayoutItemLabel( QgsLayout *layout )
   {
     updateBoundingRect();
   } );
+  connect( this, &QgsLayoutItem::frameChanged, this, [ = ]
+  {
+    updateBoundingRect();
+    invalidateCache();
+    update();
+  } );
 
   //default to no background
   setBackgroundEnabled( false );
@@ -485,18 +491,6 @@ QString QgsLayoutItemLabel::displayName() const
 QRectF QgsLayoutItemLabel::boundingRect() const
 {
   return mCurrentRectangle;
-}
-
-void QgsLayoutItemLabel::setFrameEnabled( bool drawFrame )
-{
-  QgsLayoutItem::setFrameEnabled( drawFrame );
-  updateBoundingRect();
-}
-
-void QgsLayoutItemLabel::setFrameStrokeWidth( QgsLayoutMeasurement strokeWidth )
-{
-  QgsLayoutItem::setFrameStrokeWidth( strokeWidth );
-  updateBoundingRect();
 }
 
 void QgsLayoutItemLabel::refresh()

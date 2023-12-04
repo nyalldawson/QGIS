@@ -30,6 +30,7 @@
 #include "qgsvectorlayer.h"
 #include "qgslayoutrendercontext.h"
 #include "qgslayoutreportcontext.h"
+#include "qgsfillsymbol.h"
 
 #include <QTimer>
 
@@ -953,7 +954,7 @@ void QgsLayoutItemElevationProfile::recreateCachedImageInBackground()
   if ( hasBackground() )
   {
     //Initially fill image with specified background color
-    mCacheRenderingImage->fill( backgroundColor().rgba() );
+    mCacheRenderingImage->fill( backgroundSymbol()->color().rgba() );
   }
 
   mCacheInvalidated = false;

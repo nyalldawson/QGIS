@@ -20,6 +20,7 @@
 #include "qgslayoutpagecollection.h"
 #include "qgslayoutundostack.h"
 #include "qgsexpressioncontextutils.h"
+#include "qgsfillsymbol.h"
 #include <QUuid>
 
 QgsLayoutMultiFrame::QgsLayoutMultiFrame( QgsLayout *layout )
@@ -255,13 +256,11 @@ QgsLayoutFrame *QgsLayoutMultiFrame::createNewFrame( QgsLayoutFrame *currentFram
   newFrame->attemptSetSceneRect( QRectF( pos.x(), pos.y(), size.width(), size.height() ) );
 
   //copy some settings from the parent frame
-  newFrame->setBackgroundColor( currentFrame->backgroundColor() );
+  newFrame->setBackgroundSymbol( currentFrame->backgroundSymbol()->clone() );
   newFrame->setBackgroundEnabled( currentFrame->hasBackground() );
   newFrame->setBlendMode( currentFrame->blendMode() );
   newFrame->setFrameEnabled( currentFrame->frameEnabled() );
-  newFrame->setFrameStrokeColor( currentFrame->frameStrokeColor() );
-  newFrame->setFrameJoinStyle( currentFrame->frameJoinStyle() );
-  newFrame->setFrameStrokeWidth( currentFrame->frameStrokeWidth() );
+  newFrame->setFrameSymbol( currentFrame->frameSymbol()->clone() );
   newFrame->setItemOpacity( currentFrame->itemOpacity() );
   newFrame->setHideBackgroundIfEmpty( currentFrame->hideBackgroundIfEmpty() );
 

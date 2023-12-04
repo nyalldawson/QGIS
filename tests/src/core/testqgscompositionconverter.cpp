@@ -197,8 +197,10 @@ void TestQgsCompositionConverter::importComposerTemplateLabel()
   QCOMPARE( label->sizeWithUnits().width(), 15.3686 );
   QCOMPARE( label->sizeWithUnits().height(), 7.93747 );
   QCOMPARE( label->referencePoint(), QgsLayoutItem::ReferencePoint::UpperRight );
+  Q_NOWARN_DEPRECATED_PUSH
   QCOMPARE( label->frameStrokeColor(), QColor( 251, 0, 0, 255 ) );
   QCOMPARE( label->frameStrokeWidth().length(), 0.2 );
+  Q_NOWARN_DEPRECATED_POP
   QCOMPARE( ( int )label->rotation(), 4 );
 
   checkRenderedImage( layout.get(), QTest::currentTestFunction(), 0 );
@@ -230,9 +232,11 @@ void TestQgsCompositionConverter::importComposerTemplateShape()
   QCOMPARE( shape->sizeWithUnits().height(), 33.2716 );
   QCOMPARE( shape->sizeWithUnits().units(), Qgis::LayoutUnit::Millimeters );
   QCOMPARE( shape->referencePoint(), QgsLayoutItem::ReferencePoint::MiddleRight );
+  Q_NOWARN_DEPRECATED_PUSH
   QCOMPARE( shape->frameStrokeColor(), QColor( 0, 0, 0, 255 ) );
   QCOMPARE( shape->frameStrokeWidth().length(), 0.3 );
   QCOMPARE( shape->backgroundColor(), QColor( 255, 255, 255, 255 ) );
+  Q_NOWARN_DEPRECATED_POP
   QCOMPARE( ( int )shape->rotation(), 0 );
   QCOMPARE( shape->frameEnabled(), false );
   QCOMPARE( shape->hasBackground(), false );

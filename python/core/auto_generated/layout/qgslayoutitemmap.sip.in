@@ -351,8 +351,7 @@ Sets the map item's ``flags``, which control how the map content is drawn.
 Sets the map :py:func:`~QgsLayoutItemMap.id` to a number not yet used in the layout. The existing :py:func:`~QgsLayoutItemMap.id` is kept if it is not in use.
 %End
 
-    virtual QString displayName() const;
-
+    QString displayName() const final;
 
     static QgsLayoutItemMap *create( QgsLayout *layout ) /Factory/;
 %Docstring

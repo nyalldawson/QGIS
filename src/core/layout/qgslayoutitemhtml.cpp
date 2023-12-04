@@ -32,6 +32,7 @@
 #include "qgslayoutitemmap.h"
 #include "qgslayoutreportcontext.h"
 #include "qgslayoutrendercontext.h"
+#include "qgsfillsymbol.h"
 
 #include <QCoreApplication>
 #include <QPainter>
@@ -113,11 +114,9 @@ QgsLayoutItemHtml *QgsLayoutItemHtml::createFromLabel( QgsLayoutItemLabel *label
   frame->attemptResize( label->sizeWithUnits() );
   frame->setZValue( label->zValue() );
   frame->setParentGroup( label->parentGroup() );
-  frame->setBackgroundColor( label->backgroundColor() );
+  frame->setBackgroundSymbol( label->backgroundSymbol()->clone() );
   frame->setFrameEnabled( label->frameEnabled() );
-  frame->setFrameJoinStyle( label->frameJoinStyle() );
-  frame->setFrameStrokeWidth( label->frameStrokeWidth() );
-  frame->setFrameStrokeColor( label->frameStrokeColor() );
+  frame->setFrameSymbol( label->frameSymbol()->clone() );
   html->addFrame( frame );
   html->setContentMode( QgsLayoutItemHtml::ManualHtml );
   html->setHtml( label->currentText() );

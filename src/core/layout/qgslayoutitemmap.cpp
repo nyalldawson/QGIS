@@ -27,7 +27,7 @@
 #include "qgslayertree.h"
 #include "qgsmaplayerref.h"
 #include "qgsmaplayerlistutils_p.h"
-#include "qgsmaplayerstylemanager.h"
+#include "qgsmaplayerstyle.h"
 #include "qgsvectorlayer.h"
 #include "qgsexpressioncontext.h"
 #include "qgsapplication.h"
@@ -1281,14 +1281,14 @@ void QgsLayoutItemMap::startLayeredExport()
   mCurrentExportPart = Start;
   // only follow export themes if the map isn't set to follow a fixed theme
   mExportThemes = !mFollowVisibilityPreset ? mLayout->renderContext().exportThemes() : QStringList();
-  mExportThemeIt = mExportThemes.begin();
+  mExportThemeIt = mExportThemes.constBegin();
 }
 
 void QgsLayoutItemMap::stopLayeredExport()
 {
   mCurrentExportPart = NotLayered;
   mExportThemes.clear();
-  mExportThemeIt = mExportThemes.begin();
+  mExportThemeIt = mExportThemes.constBegin();
 }
 
 bool QgsLayoutItemMap::nextExportPart()
@@ -1319,7 +1319,7 @@ bool QgsLayoutItemMap::nextExportPart()
         }
       }
 
-      if ( mExportThemeIt != mExportThemes.end() && ++mExportThemeIt != mExportThemes.end() )
+      if ( mExportThemeIt != mExportThemes.constBegin() && ++mExportThemeIt != mExportThemes.constBegin() )
       {
         // move to next theme and continue exporting map layers
         return true;

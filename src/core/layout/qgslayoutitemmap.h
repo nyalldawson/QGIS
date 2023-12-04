@@ -386,7 +386,7 @@ class CORE_EXPORT QgsLayoutItemMap : public QgsLayoutItem, public QgsTemporalRan
     void assignFreeId();
 
     //overridden to show "Map 1" type names
-    QString displayName() const override;
+    QString displayName() const final;
 
     /**
      * Returns a new map item for the specified \a layout.
@@ -1170,7 +1170,7 @@ class CORE_EXPORT QgsLayoutItemMap : public QgsLayoutItem, public QgsTemporalRan
 
     PartType mCurrentExportPart = NotLayered;
     QStringList mExportThemes;
-    QStringList::iterator mExportThemeIt;
+    QStringList::const_iterator mExportThemeIt;
 
     QgsLayoutItemMapAtlasClippingSettings *mAtlasClippingSettings = nullptr;
     QgsLayoutItemMapItemClipPathSettings *mItemClippingSettings = nullptr;

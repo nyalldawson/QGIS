@@ -381,16 +381,14 @@ void QgsLayoutItem::paint( QPainter *painter, const QStyleOptionGraphicsItem *it
       // painter is already scaled to dots
       // need to translate so that item origin is at 0,0 in painter coordinates (not bounding rect origin)
       p.translate( -boundingRect().x() * context.scaleFactor(), -boundingRect().y() * context.scaleFactor() );
-      // scale to layout units for background and frame rendering
-      p.scale( context.scaleFactor(), context.scaleFactor() );
+
       drawBackground( context );
-      p.scale( 1 / context.scaleFactor(), 1 / context.scaleFactor() );
+
       const double viewScale = QgsLayoutUtils::scaleFactorFromItemStyle( itemStyle, painter );
       QgsLayoutItemRenderContext itemRenderContext( context, viewScale );
       draw( itemRenderContext );
-      // p.scale( context.scaleFactor(), context.scaleFactor() );
+
       drawFrame( context );
-      // p.scale( 1 / context.scaleFactor(), 1 / context.scaleFactor() );
       p.end();
 
       QgsImageOperation::multiplyOpacity( image, mEvaluatedOpacity );
@@ -416,17 +414,19 @@ void QgsLayoutItem::paint( QPainter *painter, const QStyleOptionGraphicsItem *it
     preparePainter( painter );
     QgsRenderContext context = QgsLayoutUtils::createRenderContextForLayout( mLayout, painter, destinationDpi );
     context.setExpressionContext( createExpressionContext() );
+
+    // scale painter from mm to dots
+    painter->scale( 1.0 / context.scaleFactor(), 1.0 / context.scaleFactor() );
+
     drawBackground( context );
 
     const double viewScale = QgsLayoutUtils::scaleFactorFromItemStyle( itemStyle, painter );
 
-    // scale painter from mm to dots
-    painter->scale( 1.0 / context.scaleFactor(), 1.0 / context.scaleFactor() );
     QgsLayoutItemRenderContext itemRenderContext( context, viewScale );
     draw( itemRenderContext );
 
-    // painter->scale( context.scaleFactor(), context.scaleFactor() );
     drawFrame( context );
+    painter->scale( context.scaleFactor(), context.scaleFactor() );
   }
 
   if ( isRefreshing() && previewRender )
@@ -929,8 +929,7 @@ void QgsLayoutItem::setFrameEnabled( bool drawFrame )
   }
 
   mFrame = drawFrame;
-  refreshFrame( true );
-  emit frameChanged();
+  refreshFrame();
 }
 
 void QgsLayoutItem::setFrameSymbol( QgsFillSymbol *symbol )
@@ -1716,7 +1715,7 @@ void QgsLayoutItem::refreshFrame( bool updateItem )
   const double maxBleed = std::max( maxFrameSymbolBleed, maxBackgroundSymbolBleed );
   if ( maxBleed > 0 )
   {
-    itemPen.setWidthF( mLayout->convertToLayoutUnits( QgsLayoutMeasurement( maxFrameSymbolBleed, Qgis::LayoutUnit::Millimeters ) ) );
+    itemPen.setWidthF( 2 * mLayout->convertToLayoutUnits( QgsLayoutMeasurement( maxFrameSymbolBleed, Qgis::LayoutUnit::Millimeters ) ) );
   }
   else
   {
