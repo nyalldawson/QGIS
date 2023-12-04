@@ -31,6 +31,8 @@
 #include "qgslayoutrendercontext.h"
 #include "qgssvgcache.h"
 #include "qgslinesymbollayer.h"
+#include "qgslinesymbol.h"
+#include "qgsfillsymbol.h"
 
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
@@ -66,7 +68,7 @@ QgsLayoutItem::QgsLayoutItem( QgsLayout *layout, bool manageZValue )
   // required to initially setup background/frame style
   refreshBackgroundColor( false );
   refreshFrame( false );
-  mFrameSymbol = qgis::make_unique< QgsLineSymbol >();
+  mFrameSymbol = std::make_unique< QgsLineSymbol >();
   mFrameSymbol->setColor( QColor( 0, 0, 0 ) );
   mFrameSymbol->setWidth( 0.3 );
   qgis::down_cast< QgsSimpleLineSymbolLayer * >( mFrameSymbol->symbolLayer( 0 ) )->setPenJoinStyle( Qt::MiterJoin );
@@ -776,8 +778,48 @@ bool QgsLayoutItem::readXml( const QDomElement &element, const QDomDocument &doc
   }
   else
   {
-    mFrameWidth = QgsLayoutMeasurement::decodeMeasurement( element.attribute( QStringLiteral( "outlineWidthM" ) ) );
-    mFrameJoinStyle = QgsSymbolLayerUtils::decodePenJoinStyle( element.attribute( QStringLiteral( "frameJoinStyle" ), QStringLiteral( "miter" ) ) );
+    mFrameSymbol = std::make_unique< QgsLineSymbol >();
+    mFrameSymbol->setColor( QColor( 0, 0, 0 ) );
+    const QgsLayoutMeasurement frameWidth = QgsLayoutMeasurement::decodeMeasurement( element.attribute( QStringLiteral( "outlineWidthM" ) ) );
+    switch ( frameWidth.units() )
+    {
+      case Qgis::LayoutUnit::Millimeters:
+        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Millimeters );
+        mFrameSymbol->setWidth( frameWidth.length() );
+        break;
+      case Qgis::LayoutUnit::Centimeters:
+        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Millimeters );
+        mFrameSymbol->setWidth( frameWidth.length() * 10 );
+        break;
+      case Qgis::LayoutUnit::Meters:
+        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Millimeters );
+        mFrameSymbol->setWidth( frameWidth.length() * 1000 );
+        break;
+      case Qgis::LayoutUnit::Inches:
+        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Inches );
+        mFrameSymbol->setWidth( frameWidth.length() );
+        break;
+      case Qgis::LayoutUnit::Feet:
+        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Inches );
+        mFrameSymbol->setWidth( frameWidth.length() * 12 );
+        break;
+      case Qgis::LayoutUnit::Points:
+        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Points );
+        mFrameSymbol->setWidth( frameWidth.length() );
+        break;
+      case Qgis::LayoutUnit::Picas:
+        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Points );
+        mFrameSymbol->setWidth( frameWidth.length() * 12 );
+        break;
+      case Qgis::LayoutUnit::Pixels:
+        mFrameSymbol->setWidthUnit( Qgis::RenderUnit::Pixels );
+        mFrameSymbol->setWidth( frameWidth.length() );
+        break;
+    }
+
+    qgis::down_cast< QgsSimpleLineSymbolLayer * >( mFrameSymbol->symbolLayer( 0 ) )->setPenJoinStyle(
+      QgsSymbolLayerUtils::decodePenJoinStyle( element.attribute( QStringLiteral( "frameJoinStyle" ), QStringLiteral( "miter" ) ) ) );
+
     QDomNodeList frameColorList = element.elementsByTagName( QStringLiteral( "FrameColor" ) );
     if ( !frameColorList.isEmpty() )
     {
@@ -795,7 +837,7 @@ bool QgsLayoutItem::readXml( const QDomElement &element, const QDomDocument &doc
 
       if ( redOk && greenOk && blueOk && alphaOk )
       {
-        mFrameColor = QColor( penRed, penGreen, penBlue, penAlpha );
+        mFrameSymbol->setColor( QColor( penRed, penGreen, penBlue, penAlpha ) );
       }
     }
     refreshFrame( false );
@@ -890,6 +932,11 @@ void QgsLayoutItem::setFrameStrokeColor( const QColor &color )
   // apply any datadefined overrides
   refreshFrame( true );
   emit frameChanged();
+}
+
+QColor QgsLayoutItem::frameStrokeColor() const
+{
+  return mFrameSymbol ? mFrameSymbol->color() : QColor();
 }
 
 void QgsLayoutItem::setFrameStrokeWidth( const QgsLayoutMeasurement width )

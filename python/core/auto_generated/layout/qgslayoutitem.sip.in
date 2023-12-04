@@ -778,6 +778,26 @@ Sets whether this item has a frame drawn around it or not.
 .. seealso:: :py:func:`setFrameStrokeColor`
 %End
 
+    void setFrameSymbol( QgsLineSymbol *symbol /Transfer/ );
+%Docstring
+Sets the line ``symbol`` used for drawing the item frame.
+
+Ownership of ``symbol`` is transferred to the item.
+
+.. seealso:: :py:func:`frameSymbol`
+
+.. versionadded:: 3.36
+%End
+
+    QgsLineSymbol *frameSymbol() const;
+%Docstring
+Returns the line symbol used for drawing the item frame.
+
+.. seealso:: :py:func:`setFrameSymbol`
+
+.. versionadded:: 3.36
+%End
+
     void setFrameStrokeColor( const QColor &color );
 %Docstring
 Sets the frame stroke ``color``.
@@ -791,7 +811,7 @@ Sets the frame stroke ``color``.
 .. seealso:: :py:func:`setFrameStrokeWidth`
 %End
 
-    QColor frameStrokeColor() const;
+ QColor frameStrokeColor() const /Deprecated/;
 %Docstring
 Returns the frame's stroke color. This is only used if :py:func:`~QgsLayoutItem.frameEnabled` returns ``True``.
 
@@ -802,6 +822,9 @@ Returns the frame's stroke color. This is only used if :py:func:`~QgsLayoutItem.
 .. seealso:: :py:func:`frameJoinStyle`
 
 .. seealso:: :py:func:`setFrameStrokeColor`
+
+.. deprecated:: QGIS 3.36
+  use :py:func:`~QgsLayoutItem.frameSymbol` instead.
 %End
 
     virtual void setFrameStrokeWidth( QgsLayoutMeasurement width );

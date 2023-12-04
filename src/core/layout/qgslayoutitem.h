@@ -779,6 +779,7 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
      * Ownership of \a symbol is transferred to the item.
      *
      * \see frameSymbol()
+     * \since QGIS 3.36
      */
     void setFrameSymbol( QgsLineSymbol *symbol SIP_TRANSFER );
 
@@ -786,6 +787,7 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
      * Returns the line symbol used for drawing the item frame.
      *
      * \see setFrameSymbol()
+     * \since QGIS 3.36
      */
     QgsLineSymbol *frameSymbol() const;
 
@@ -804,8 +806,9 @@ class CORE_EXPORT QgsLayoutItem : public QgsLayoutObject, public QGraphicsRectIt
      * \see setFrameStrokeColor()
      * \see frameJoinStyle()
      * \see setFrameStrokeColor()
+     * \deprecated since QGIS 3.36, use frameSymbol() instead.
      */
-    QColor frameStrokeColor() const { return mFrameColor; }
+    Q_DECL_DEPRECATED QColor frameStrokeColor() const SIP_DEPRECATED;
 
     /**
      * Sets the frame stroke \a width.
