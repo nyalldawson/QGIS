@@ -31,7 +31,6 @@
 #include "qgslayoutrendercontext.h"
 #include "qgssvgcache.h"
 #include "qgslinesymbollayer.h"
-#include "qgslinesymbol.h"
 #include "qgsfillsymbollayer.h"
 #include "qgsfillsymbol.h"
 
@@ -1090,13 +1089,13 @@ void QgsLayoutItem::setFrameJoinStyle( const Qt::PenJoinStyle style )
 void QgsLayoutItem::setBackgroundEnabled( bool drawBackground )
 {
   mBackground = drawBackground;
-  update();
+  refreshFrame();
 }
 
 void QgsLayoutItem::setBackgroundSymbol( QgsFillSymbol *symbol )
 {
   mBackgroundSymbol.reset( symbol );
-  update();
+  refreshFrame();
 }
 
 QgsFillSymbol *QgsLayoutItem::backgroundSymbol() const
@@ -1110,7 +1109,7 @@ void QgsLayoutItem::setBackgroundColor( const QColor &color )
     return;
 
   mBackgroundSymbol->setColor( color );
-  update();
+  refreshFrame();
 }
 
 void QgsLayoutItem::setBlendMode( const QPainter::CompositionMode mode )
@@ -1700,7 +1699,7 @@ void QgsLayoutItem::refreshOpacity( bool updateItem )
 
 void QgsLayoutItem::refreshFrame( bool updateItem )
 {
-  if ( !mFrame )
+  if ( !mLayout )
   {
     setPen( Qt::NoPen );
     return;
@@ -1711,11 +1710,18 @@ void QgsLayoutItem::refreshFrame( bool updateItem )
   const QColor frameColor = QColor( 0, 0, 0, 0 );
   QPen itemPen( frameColor );
 
-  if ( mLayout )
-    itemPen.setWidthF( mLayout->convertToLayoutUnits( mFrameWidth ) );
+  const QgsRenderContext rc = QgsLayoutUtils::createRenderContextForLayout( mLayout, nullptr, mLayout->renderContext().dpi() );
+  const double maxFrameSymbolBleed = mFrame && mFrameSymbol ? ( 25.4 / mLayout->renderContext().dpi() ) * QgsSymbolLayerUtils::estimateMaxSymbolBleed( mFrameSymbol.get(), rc ) : 0;
+  const double maxBackgroundSymbolBleed = mBackground && mBackgroundSymbol ? ( 25.4 / mLayout->renderContext().dpi() ) * QgsSymbolLayerUtils::estimateMaxSymbolBleed( mBackgroundSymbol.get(), rc ) : 0;
+  const double maxBleed = std::max( maxFrameSymbolBleed, maxBackgroundSymbolBleed );
+  if ( maxBleed > 0 )
+  {
+    itemPen.setWidthF( mLayout->convertToLayoutUnits( QgsLayoutMeasurement( maxFrameSymbolBleed, Qgis::LayoutUnit::Millimeters ) ) );
+  }
   else
-    itemPen.setWidthF( mFrameWidth.length() );
-
+  {
+    setPen( Qt::NoPen );
+  }
   setPen( itemPen );
 
   if ( updateItem )

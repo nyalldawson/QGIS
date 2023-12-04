@@ -258,22 +258,9 @@ class GUI_EXPORT QgsLayoutItemPropertiesWidget: public QWidget, private Ui::QgsL
 
   private slots:
 
-    /**
-     * Set the frame color
-     */
-    void mFrameColorButton_colorChanged( const QColor &newFrameColor );
     void frameSymbolChanged();
-
-    /**
-     * Set the background color
-     */
-    void mBackgroundColorButton_colorChanged( const QColor &newBackgroundColor );
-//    void on_mTransparencySlider_valueChanged( int value );
-//    void on_mTransparencySpinBox_valueChanged( int value );
-    void mStrokeWidthSpinBox_valueChanged( double d );
-    void strokeUnitChanged( Qgis::LayoutUnit unit );
+    void backgroundSymbolChanged();
     void mFrameGroupBox_toggled( bool state );
-    void mFrameJoinStyleCombo_currentIndexChanged( int index );
     void mBackgroundGroupBox_toggled( bool state );
     void mItemIdLineEdit_editingFinished();
 

@@ -28,6 +28,8 @@
 #include "qgslayoutpagecollection.h"
 #include "qgslayoutmultiframe.h"
 #include "qgslayoutreportcontext.h"
+#include "qgsfillsymbol.h"
+
 #include <QButtonGroup>
 
 //
@@ -67,8 +69,26 @@ void QgsLayoutConfigObject::updateDataDefinedProperty()
     return;
   }
 
+  const bool propertyAssociatesWithMultiFrame = QgsLayoutObject::propertyAssociatesWithParentMultiframe( key );
+
   //set the data defined property and refresh the item
-  if ( mLayoutObject )
+  if ( propertyAssociatesWithMultiFrame )
+  {
+    if ( QgsLayoutFrame *frame = dynamic_cast< QgsLayoutFrame * >( mLayoutObject.data() ) )
+    {
+      if ( QgsLayoutMultiFrame *multiFrame = frame->multiFrame() )
+      {
+        multiFrame->dataDefinedProperties().setProperty( key, ddButton->toProperty() );
+        multiFrame->refresh();
+      }
+    }
+    else if ( QgsLayoutMultiFrame *multiFrame = dynamic_cast< QgsLayoutMultiFrame * >( mLayoutObject.data() ) )
+    {
+      multiFrame->dataDefinedProperties().setProperty( key, ddButton->toProperty() );
+      multiFrame->refresh();
+    }
+  }
+  else if ( mLayoutObject )
   {
     mLayoutObject->dataDefinedProperties().setProperty( key, ddButton->toProperty() );
     mLayoutObject->refresh();
@@ -101,8 +121,28 @@ void QgsLayoutConfigObject::updateDataDefinedButton( QgsPropertyOverrideButton *
   if ( button->propertyKey() < 0 || !mLayoutObject )
     return;
 
-  QgsLayoutObject::DataDefinedProperty key = static_cast< QgsLayoutObject::DataDefinedProperty >( button->propertyKey() );
-  whileBlocking( button )->setToProperty( mLayoutObject->dataDefinedProperties().property( key ) );
+  const QgsLayoutObject::DataDefinedProperty key = static_cast< QgsLayoutObject::DataDefinedProperty >( button->propertyKey() );
+  const bool propertyAssociatesWithMultiFrame = QgsLayoutObject::propertyAssociatesWithParentMultiframe( key );
+
+  //set the data defined property
+  if ( propertyAssociatesWithMultiFrame )
+  {
+    if ( QgsLayoutFrame *frame = dynamic_cast< QgsLayoutFrame * >( mLayoutObject.data() ) )
+    {
+      if ( QgsLayoutMultiFrame *multiFrame = frame->multiFrame() )
+      {
+        whileBlocking( button )->setToProperty( multiFrame->dataDefinedProperties().property( key ) );
+      }
+    }
+    else if ( QgsLayoutMultiFrame *multiFrame = dynamic_cast< QgsLayoutMultiFrame * >( mLayoutObject.data() ) )
+    {
+      whileBlocking( button )->setToProperty( multiFrame->dataDefinedProperties().property( key ) );
+    }
+  }
+  else if ( mLayoutObject )
+  {
+    whileBlocking( button )->setToProperty( mLayoutObject->dataDefinedProperties().property( key ) );
+  }
 
   // In case the button was initialized to a different config object, we need to reconnect to it here (see https://github.com/qgis/QGIS/issues/26582 )
   connect( button, &QgsPropertyOverrideButton::changed, this, &QgsLayoutConfigObject::updateDataDefinedProperty, Qt::UniqueConnection );
@@ -266,8 +306,6 @@ QgsLayoutItemPropertiesWidget::QgsLayoutItemPropertiesWidget( QWidget *parent, Q
   mVariableEditor->setMinimumHeight( mVariableEditor->fontMetrics().height() * 15 );
 
   mItemRotationSpinBox->setClearValue( 0 );
-  mStrokeUnitsComboBox->linkToWidget( mStrokeWidthSpinBox );
-  mStrokeUnitsComboBox->setConverter( &item->layout()->renderContext().measurementConverter() );
 
   mPosUnitsComboBox->linkToWidget( mXPosSpin );
   mPosUnitsComboBox->linkToWidget( mYPosSpin );
@@ -282,27 +320,22 @@ QgsLayoutItemPropertiesWidget::QgsLayoutItemPropertiesWidget( QWidget *parent, Q
   mSizeLockAspectRatio->setWidthSpinBox( mWidthSpin );
   mSizeLockAspectRatio->setHeightSpinBox( mHeightSpin );
 
-  mItemFrameColorDDBtn->registerLinkedWidget( mFrameColorButton );
-  mItemBackgroundColorDDBtn->registerLinkedWidget( mBackgroundColorButton );
-
-  mFrameSymbolButton->setSymbolType( QgsSymbol::Line );
+  mFrameSymbolButton->setSymbolType( Qgis::SymbolType::Fill );
   connect( mFrameSymbolButton, &QgsSymbolButton::changed, this, &QgsLayoutItemPropertiesWidget::frameSymbolChanged );
 
-  connect( mFrameColorButton, &QgsColorButton::colorChanged, this, &QgsLayoutItemPropertiesWidget::mFrameColorButton_colorChanged );
-  connect( mBackgroundColorButton, &QgsColorButton::colorChanged, this, &QgsLayoutItemPropertiesWidget::mBackgroundColorButton_colorChanged );
-  connect( mStrokeWidthSpinBox, static_cast < void ( QDoubleSpinBox::* )( double ) > ( &QDoubleSpinBox::valueChanged ), this, &QgsLayoutItemPropertiesWidget::mStrokeWidthSpinBox_valueChanged );
-  connect( mStrokeUnitsComboBox, &QgsLayoutUnitsComboBox::changed, this, &QgsLayoutItemPropertiesWidget::strokeUnitChanged );
+  mBackgroundSymbolButton->setSymbolType( Qgis::SymbolType::Fill );
+  connect( mBackgroundSymbolButton, &QgsSymbolButton::changed, this, &QgsLayoutItemPropertiesWidget::backgroundSymbolChanged );
+
   connect( mFrameGroupBox, &QgsCollapsibleGroupBoxBasic::toggled, this, &QgsLayoutItemPropertiesWidget::mFrameGroupBox_toggled );
-  connect( mFrameJoinStyleCombo, static_cast<void ( QComboBox::* )( int )>( &QComboBox::currentIndexChanged ), this, &QgsLayoutItemPropertiesWidget::mFrameJoinStyleCombo_currentIndexChanged );
   connect( mBackgroundGroupBox, &QgsCollapsibleGroupBoxBasic::toggled, this, &QgsLayoutItemPropertiesWidget::mBackgroundGroupBox_toggled );
   connect( mItemIdLineEdit, &QLineEdit::editingFinished, this, &QgsLayoutItemPropertiesWidget::mItemIdLineEdit_editingFinished );
   connect( mPageSpinBox, static_cast < void ( QSpinBox::* )( int ) > ( &QSpinBox::valueChanged ), this, &QgsLayoutItemPropertiesWidget::mPageSpinBox_valueChanged );
   connect( mXPosSpin, static_cast < void ( QDoubleSpinBox::* )( double ) > ( &QDoubleSpinBox::valueChanged ), this, &QgsLayoutItemPropertiesWidget::mXPosSpin_valueChanged );
   connect( mYPosSpin, static_cast < void ( QDoubleSpinBox::* )( double ) > ( &QDoubleSpinBox::valueChanged ), this, &QgsLayoutItemPropertiesWidget::mYPosSpin_valueChanged );
-  connect( mPosUnitsComboBox, &QgsLayoutUnitsComboBox::changed, this, &QgsLayoutItemPropertiesWidget::positionUnitsChanged );
+  connect( mPosUnitsComboBox, &QgsLayoutUnitsComboBox::unitChanged, this, &QgsLayoutItemPropertiesWidget::positionUnitsChanged );
   connect( mWidthSpin, static_cast < void ( QDoubleSpinBox::* )( double ) > ( &QDoubleSpinBox::valueChanged ), this, &QgsLayoutItemPropertiesWidget::mWidthSpin_valueChanged );
   connect( mHeightSpin, static_cast < void ( QDoubleSpinBox::* )( double ) > ( &QDoubleSpinBox::valueChanged ), this, &QgsLayoutItemPropertiesWidget::mHeightSpin_valueChanged );
-  connect( mSizeUnitsComboBox, &QgsLayoutUnitsComboBox::changed, this, &QgsLayoutItemPropertiesWidget::sizeUnitsChanged );
+  connect( mSizeUnitsComboBox, &QgsLayoutUnitsComboBox::unitChanged, this, &QgsLayoutItemPropertiesWidget::sizeUnitsChanged );
   connect( mUpperLeftRadioButton, &QRadioButton::toggled, this, &QgsLayoutItemPropertiesWidget::mUpperLeftCheckBox_stateChanged );
   connect( mUpperMiddleRadioButton, &QRadioButton::toggled, this, &QgsLayoutItemPropertiesWidget::mUpperMiddleCheckBox_stateChanged );
   connect( mUpperRightRadioButton, &QRadioButton::toggled, this, &QgsLayoutItemPropertiesWidget::mUpperRightCheckBox_stateChanged );
@@ -352,10 +385,13 @@ QgsLayoutItemPropertiesWidget::QgsLayoutItemPropertiesWidget( QWidget *parent, Q
     connect( &item->layout()->renderContext(), &QgsLayoutRenderContext::dpiChanged, this, &QgsLayoutItemPropertiesWidget::updateVariables );
     connect( item->layout()->pageCollection(), &QgsLayoutPageCollection::changed, this, &QgsLayoutItemPropertiesWidget::updateVariables );
     connect( &item->layout()->reportContext(), &QgsLayoutReportContext::layerChanged, mFrameSymbolButton, &QgsSymbolButton::setLayer );
+    connect( &item->layout()->reportContext(), &QgsLayoutReportContext::layerChanged, mBackgroundSymbolButton, &QgsSymbolButton::setLayer );
   }
 
   mFrameSymbolButton->registerExpressionContextGenerator( item );
   mFrameSymbolButton->setLayer( mConfigObject->coverageLayer() );
+  mBackgroundSymbolButton->registerExpressionContextGenerator( item );
+  mBackgroundSymbolButton->setLayer( mConfigObject->coverageLayer() );
 }
 
 void QgsLayoutItemPropertiesWidget::showBackgroundGroup( bool showGroup )
@@ -396,40 +432,28 @@ void QgsLayoutItemPropertiesWidget::setMasterLayout( QgsMasterLayoutInterface *m
   }
 }
 
-//slots
-
-void QgsLayoutItemPropertiesWidget::mFrameColorButton_colorChanged( const QColor &newFrameColor )
-{
-  if ( !mItem )
-  {
-    return;
-  }
-  mItem->layout()->undoStack()->beginCommand( mItem, tr( "Change Frame Color" ), QgsLayoutItem::UndoStrokeColor );
-  mItem->setFrameStrokeColor( newFrameColor );
-  mItem->layout()->undoStack()->endCommand();
-  mItem->update();
-}
-
 void QgsLayoutItemPropertiesWidget::frameSymbolChanged()
 {
   if ( !mItem )
     return;
 
   mItem->layout()->undoStack()->beginCommand( mItem, tr( "Change Frame Symbol" ), QgsLayoutItem::UndoStrokeColor );
-  mItem->setFrameSymbol( mFrameSymbolButton->clonedSymbol<QgsLineSymbol>() );
-  mItem->layout()->undoStack()->endCommand();
-}
-
-void QgsLayoutItemPropertiesWidget::mBackgroundColorButton_colorChanged( const QColor &newBackgroundColor )
-{
-  if ( !mItem )
-  {
-    return;
-  }
-  mItem->layout()->undoStack()->beginCommand( mItem, tr( "Change Background Color" ), QgsLayoutItem::UndoBackgroundColor );
-  mItem->setBackgroundColor( newBackgroundColor );
+  mItem->setFrameSymbol( mFrameSymbolButton->clonedSymbol<QgsFillSymbol>() );
   mItem->layout()->undoStack()->endCommand();
   mItem->invalidateCache();
+  mItem->update();
+}
+
+void QgsLayoutItemPropertiesWidget::backgroundSymbolChanged()
+{
+  if ( !mItem )
+    return;
+
+  mItem->layout()->undoStack()->beginCommand( mItem, tr( "Change Background Symbol" ), QgsLayoutItem::UndoBackgroundColor );
+  mItem->setBackgroundSymbol( mBackgroundSymbolButton->clonedSymbol<QgsFillSymbol>() );
+  mItem->layout()->undoStack()->endCommand();
+  mItem->invalidateCache();
+  mItem->update();
 }
 
 void QgsLayoutItemPropertiesWidget::changeItemPosition()
@@ -439,7 +463,7 @@ void QgsLayoutItemPropertiesWidget::changeItemPosition()
 
   mItem->layout()->undoStack()->beginCommand( mItem, tr( "Move Item" ), QgsLayoutItem::UndoIncrementalMove );
 
-  QgsLayoutPoint point( mXPosSpin->value(), mYPosSpin->value(), mPosUnitsComboBox->unit() );
+  const QgsLayoutPoint point( mXPosSpin->value(), mYPosSpin->value(), mPosUnitsComboBox->unit() );
   mItem->attemptMove( point, true, false, mPageSpinBox->value() - 1 );
 
   mItem->layout()->undoStack()->endCommand();
@@ -462,7 +486,7 @@ void QgsLayoutItemPropertiesWidget::changeItemSize()
 
   mItem->layout()->undoStack()->beginCommand( mItem, tr( "Resize Item" ), QgsLayoutItem::UndoIncrementalResize );
 
-  QgsLayoutSize size( mWidthSpin->value(), mHeightSpin->value(), mSizeUnitsComboBox->unit() );
+  const QgsLayoutSize size( mWidthSpin->value(), mHeightSpin->value(), mSizeUnitsComboBox->unit() );
   mItem->attemptResize( size );
 
   mItem->layout()->undoStack()->endCommand();
@@ -527,43 +551,6 @@ QgsLayoutItem::ReferencePoint QgsLayoutItemPropertiesWidget::positionMode() cons
   return QgsLayoutItem::UpperLeft;
 }
 
-void QgsLayoutItemPropertiesWidget::mStrokeWidthSpinBox_valueChanged( double d )
-{
-  if ( !mItem )
-  {
-    return;
-  }
-
-  mItem->layout()->undoStack()->beginCommand( mItem, tr( "Change Frame Stroke Width" ), QgsLayoutItem::UndoStrokeWidth );
-  mItem->setFrameStrokeWidth( QgsLayoutMeasurement( d, mStrokeUnitsComboBox->unit() ) );
-  mItem->layout()->undoStack()->endCommand();
-}
-
-void QgsLayoutItemPropertiesWidget::strokeUnitChanged( QgsUnitTypes::LayoutUnit unit )
-{
-  if ( !mItem )
-  {
-    return;
-  }
-
-  mItem->layout()->undoStack()->beginCommand( mItem, tr( "Change Frame Stroke Width" ), QgsLayoutItem::UndoStrokeWidth );
-  mItem->setFrameStrokeWidth( QgsLayoutMeasurement( mStrokeWidthSpinBox->value(), unit ) );
-  mItem->layout()->undoStack()->endCommand();
-}
-
-void QgsLayoutItemPropertiesWidget::mFrameJoinStyleCombo_currentIndexChanged( int index )
-{
-  Q_UNUSED( index )
-  if ( !mItem )
-  {
-    return;
-  }
-
-  mItem->layout()->undoStack()->beginCommand( mItem, tr( "Change Frame Join Style" ) );
-  mItem->setFrameJoinStyle( mFrameJoinStyleCombo->penJoinStyle() );
-  mItem->layout()->undoStack()->endCommand();
-}
-
 void QgsLayoutItemPropertiesWidget::mFrameGroupBox_toggled( bool state )
 {
   if ( !mItem )
@@ -619,7 +606,7 @@ void QgsLayoutItemPropertiesWidget::setValuesForGuiPositionElements()
   };
   block( true );
 
-  QgsLayoutPoint point = mItem->pagePositionWithUnits();
+  const QgsLayoutPoint point = mItem->pagePositionWithUnits();
 
   if ( !mFreezeXPosSpin )
     mXPosSpin->setValue( point.x() );
@@ -684,7 +671,7 @@ void QgsLayoutItemPropertiesWidget::setValuesForGuiPositionElements()
     }
   }
 
-  QgsLayoutSize size = mItem->sizeWithUnits();
+  const QgsLayoutSize size = mItem->sizeWithUnits();
   if ( !mFreezeWidthSpin )
     mWidthSpin->setValue( size.width() );
   if ( !mFreezeHeightSpin )
@@ -710,26 +697,16 @@ void QgsLayoutItemPropertiesWidget::setValuesForGuiNonPositionElements()
 
   auto block = [ = ]( bool blocked )
   {
-    mStrokeWidthSpinBox->blockSignals( blocked );
-    mStrokeUnitsComboBox->blockSignals( blocked );
     mFrameGroupBox->blockSignals( blocked );
     mBackgroundGroupBox->blockSignals( blocked );
     mItemIdLineEdit->blockSignals( blocked );
     mBlendModeCombo->blockSignals( blocked );
     mOpacityWidget->blockSignals( blocked );
-    mFrameColorButton->blockSignals( blocked );
-    mFrameJoinStyleCombo->blockSignals( blocked );
-    mBackgroundColorButton->blockSignals( blocked );
     mItemRotationSpinBox->blockSignals( blocked );
     mExcludeFromPrintsCheckBox->blockSignals( blocked );
   };
   block( true );
 
-  mBackgroundColorButton->setColor( mItem->backgroundColor() );
-  mFrameColorButton->setColor( mItem->frameStrokeColor() );
-  mStrokeUnitsComboBox->setUnit( mItem->frameStrokeWidth().units() );
-  mStrokeWidthSpinBox->setValue( mItem->frameStrokeWidth().length() );
-  mFrameJoinStyleCombo->setPenJoinStyle( mItem->frameJoinStyle() );
   mItemIdLineEdit->setText( mItem->id() );
   mFrameGroupBox->setChecked( mItem->frameEnabled() );
   mBackgroundGroupBox->setChecked( mItem->hasBackground() );
@@ -739,6 +716,7 @@ void QgsLayoutItemPropertiesWidget::setValuesForGuiNonPositionElements()
   mExcludeFromPrintsCheckBox->setChecked( mItem->excludeFromExports() );
 
   whileBlocking( mFrameSymbolButton )->setSymbol( mItem->frameSymbol()->clone() );
+  whileBlocking( mBackgroundSymbolButton )->setSymbol( mItem->backgroundSymbol()->clone() );
 
   block( false );
 }
@@ -753,8 +731,6 @@ void QgsLayoutItemPropertiesWidget::initializeDataDefinedButtons()
   mConfigObject->initializeDataDefinedButton( mOpacityDDBtn, QgsLayoutObject::Opacity );
   mConfigObject->initializeDataDefinedButton( mBlendModeDDBtn, QgsLayoutObject::BlendMode );
   mConfigObject->initializeDataDefinedButton( mExcludePrintsDDBtn, QgsLayoutObject::ExcludeFromExports );
-  mConfigObject->initializeDataDefinedButton( mItemFrameColorDDBtn, QgsLayoutObject::FrameColor );
-  mConfigObject->initializeDataDefinedButton( mItemBackgroundColorDDBtn, QgsLayoutObject::BackgroundColor );
 }
 
 void QgsLayoutItemPropertiesWidget::populateDataDefinedButtons()
@@ -773,12 +749,8 @@ void QgsLayoutItemPropertiesWidget::setValuesForGuiElements()
     return;
   }
 
-  mBackgroundColorButton->setColorDialogTitle( tr( "Select Background Color" ) );
-  mBackgroundColorButton->setAllowOpacity( true );
-  mBackgroundColorButton->setContext( QStringLiteral( "composer" ) );
-  mFrameColorButton->setColorDialogTitle( tr( "Select Frame Color" ) );
-  mFrameColorButton->setAllowOpacity( true );
-  mFrameColorButton->setContext( QStringLiteral( "composer" ) );
+  mFrameSymbolButton->setDialogTitle( tr( "Frame" ) );
+  mBackgroundSymbolButton->setDialogTitle( tr( "Background" ) );
 
   setValuesForGuiPositionElements();
   setValuesForGuiNonPositionElements();
@@ -840,7 +812,7 @@ void QgsLayoutItemPropertiesWidget::mYPosSpin_valueChanged( double )
   mFreezeYPosSpin = false;
 }
 
-void QgsLayoutItemPropertiesWidget::positionUnitsChanged( QgsUnitTypes::LayoutUnit )
+void QgsLayoutItemPropertiesWidget::positionUnitsChanged( Qgis::LayoutUnit )
 {
   changeItemPosition();
 }
@@ -859,7 +831,7 @@ void QgsLayoutItemPropertiesWidget::mHeightSpin_valueChanged( double )
   mFreezeHeightSpin = false;
 }
 
-void QgsLayoutItemPropertiesWidget::sizeUnitsChanged( QgsUnitTypes::LayoutUnit )
+void QgsLayoutItemPropertiesWidget::sizeUnitsChanged( Qgis::LayoutUnit )
 {
   changeItemSize();
 }

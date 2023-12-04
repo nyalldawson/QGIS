@@ -23,6 +23,7 @@
 #include "qgslayoutitemregistry.h"
 #include "qgsoffscreen3dengine.h"
 #include "qgslayoutrendercontext.h"
+#include "qgsfillsymbol.h"
 
 QgsLayoutItem3DMap::QgsLayoutItem3DMap( QgsLayout *layout )
   : QgsLayoutItem( layout )
@@ -111,9 +112,10 @@ void QgsLayoutItem3DMap::draw( QgsLayoutItemRenderContext &context )
     return;
   }
 
-  if ( mSettings->backgroundColor() != backgroundColor() )
+  const QColor itemBackground = backgroundSymbol() ? backgroundSymbol()->color() : QColor();
+  if ( mSettings->backgroundColor() != itemBackground )
   {
-    mSettings->setBackgroundColor( backgroundColor() );
+    mSettings->setBackgroundColor( itemBackground );
     mCapturedImage = QImage();
   }
 

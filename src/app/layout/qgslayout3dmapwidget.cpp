@@ -21,6 +21,7 @@
 #include "qgscameracontroller.h"
 #include <QMenu>
 #include "qgs3dmapcanvaswidget.h"
+#include "qgsfillsymbol.h"
 
 float _normalizedAngle( float x )
 {
@@ -111,7 +112,9 @@ void QgsLayout3DMapWidget::copy3DMapSettings( Qgs3DMapCanvasWidget *widget )
   if ( !mMap3D->mapSettings() )
   {
     // copy background color
-    mMap3D->setBackgroundColor( settings->backgroundColor() );
+    QgsFillSymbol *symbol = mMap3D->backgroundSymbol()->clone();
+    symbol->setColor( settings->backgroundColor() );
+    mMap3D->setBackgroundSymbol( symbol );
 
     // copy camera position details
     mMap3D->setCameraPose( widget->mapCanvas3D()->cameraController()->cameraPose() );

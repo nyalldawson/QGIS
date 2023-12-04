@@ -22,6 +22,8 @@
 #include "qgsproject.h"
 #include "qgsrasterlayer.h"
 #include "qgslayout.h"
+#include "qgsfillsymbol.h"
+#include "qgsfillsymbollayer.h"
 
 #include <QObject>
 #include "qgstest.h"
@@ -97,7 +99,10 @@ void TestQgsLayout3DMap::testBasic()
   l.initializeDefaults();
 
   QgsLayoutItem3DMap *map3dItem = new QgsLayoutItem3DMap( &l );
-  map3dItem->setBackgroundColor( QColor( 0, 0, 0 ) );
+  std::unique_ptr< QgsFillSymbol > fillSymbol = std::make_unique< QgsFillSymbol >();
+  qgis::down_cast< QgsSimpleFillSymbolLayer * >( fillSymbol->symbolLayer( 0 ) )->setColor( QColor( 0, 0, 0 ) );
+  qgis::down_cast< QgsSimpleFillSymbolLayer * >( fillSymbol->symbolLayer( 0 ) )->setStrokeStyle( Qt::NoPen );
+  map3dItem->setBackgroundSymbol( fillSymbol.release() );
   map3dItem->attemptSetSceneRect( QRectF( 0, 0, 297, 210 ) );
   map3dItem->setCameraPose( cam );
   map3dItem->setMapSettings( map );

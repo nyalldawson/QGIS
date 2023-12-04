@@ -485,103 +485,7 @@
       <bool>true</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="2" column="0">
-       <widget class="QLabel" name="mStrokeWidthLabel">
-        <property name="text">
-         <string>Thickness</string>
-        </property>
-        <property name="wordWrap">
-         <bool>true</bool>
-        </property>
-        <property name="buddy">
-         <cstring>mStrokeWidthSpinBox</cstring>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_8">
-        <property name="text">
-         <string>Join style</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QgsPenJoinStyleComboBox" name="mFrameJoinStyleCombo">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Color</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayout_8">
-        <item>
-         <widget class="QgsDoubleSpinBox" name="mStrokeWidthSpinBox">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="suffix">
-           <string/>
-          </property>
-          <property name="maximum">
-           <double>99.989999999999995</double>
-          </property>
-          <property name="singleStep">
-           <double>0.100000000000000</double>
-          </property>
-          <property name="showClearButton" stdset="0">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QgsLayoutUnitsComboBox" name="mStrokeUnitsComboBox"/>
-        </item>
-       </layout>
-      </item>
-      <item row="1" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayout_6">
-        <item>
-         <widget class="QgsColorButton" name="mFrameColorButton">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>120</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QgsPropertyOverrideButton" name="mItemFrameColorDDBtn">
-          <property name="text">
-           <string>…</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="0" column="1">
+      <item row="0" column="0">
        <widget class="QgsSymbolButton" name="mFrameSymbolButton">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -615,42 +519,18 @@
       <bool>true</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_7">
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_4">
+      <item row="0" column="0" colspan="2">
+       <widget class="QgsSymbolButton" name="mBackgroundSymbolButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
-         <string>Color</string>
+         <string>Change…</string>
         </property>
        </widget>
-      </item>
-      <item row="0" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayout_5">
-        <item>
-         <widget class="QgsColorButton" name="mBackgroundColorButton">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>120</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QgsPropertyOverrideButton" name="mItemBackgroundColorDDBtn">
-          <property name="text">
-           <string>…</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
       </item>
      </layout>
     </widget>
@@ -804,12 +684,6 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>QgsColorButton</class>
-   <extends>QToolButton</extends>
-   <header>qgscolorbutton.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>QgsPropertyOverrideButton</class>
    <extends>QToolButton</extends>
    <header>qgspropertyoverridebutton.h</header>
@@ -823,11 +697,6 @@
    <class>QgsSpinBox</class>
    <extends>QSpinBox</extends>
    <header>qgsspinbox.h</header>
-  </customwidget>
-  <customwidget>
-   <class>QgsPenJoinStyleComboBox</class>
-   <extends>QComboBox</extends>
-   <header>qgspenstylecombobox.h</header>
   </customwidget>
   <customwidget>
    <class>QgsCollapsibleGroupBoxBasic</class>
@@ -903,14 +772,7 @@
   <tabstop>mItemRotationSpinBox</tabstop>
   <tabstop>mItemRotationDDBtn</tabstop>
   <tabstop>mFrameGroupBox</tabstop>
-  <tabstop>mFrameColorButton</tabstop>
-  <tabstop>mItemFrameColorDDBtn</tabstop>
-  <tabstop>mStrokeWidthSpinBox</tabstop>
-  <tabstop>mStrokeUnitsComboBox</tabstop>
-  <tabstop>mFrameJoinStyleCombo</tabstop>
   <tabstop>mBackgroundGroupBox</tabstop>
-  <tabstop>mBackgroundColorButton</tabstop>
-  <tabstop>mItemBackgroundColorDDBtn</tabstop>
   <tabstop>groupBox</tabstop>
   <tabstop>mItemIdLineEdit</tabstop>
   <tabstop>groupRendering</tabstop>
