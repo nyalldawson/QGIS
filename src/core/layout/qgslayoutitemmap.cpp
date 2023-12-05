@@ -39,6 +39,7 @@
 #include "qgslabelingresults.h"
 #include "qgsvectortileutils.h"
 #include "qgsunittypes.h"
+#include "qgsfillsymbol.h"
 
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
@@ -60,6 +61,12 @@ QgsLayoutItemMap::QgsLayoutItemMap( QgsLayout *layout )
   connect( this, &QgsLayoutItem::sizePositionChanged, this, [ = ]
   {
     shapeChanged();
+  } );
+  connect( this, &QgsLayoutItem::frameChanged, this, [ = ]
+  {
+    updateBoundingRect();
+    invalidateCache();
+    update();
   } );
 
   mGridStack = std::make_unique< QgsLayoutItemMapGridStack >( this );
@@ -553,7 +560,7 @@ bool QgsLayoutItemMap::requiresRasterization() const
 
   // WARNING -- modifying this logic? Then ALSO update containsAdvancedEffects accordingly!
 
-  if ( hasBackground() && qgsDoubleNear( backgroundColor().alphaF(), 1.0 ) )
+  if ( hasBackground() && qgsDoubleNear( backgroundSymbol()->color().alphaF(), 1.0 ) )
     return false;
 
   return true;
@@ -1129,7 +1136,12 @@ void QgsLayoutItemMap::paint( QPainter *painter, const QStyleOptionGraphicsItem 
     mOverviewStack->drawItems( painter, false );
     mGridStack->drawItems( painter );
     drawAnnotations( painter );
+
+    const double dotsPerMM = painter->device()->logicalDpiX() / 25.4;
+    painter->scale( 1 / dotsPerMM, 1 / dotsPerMM ); // scale painter from mm to dots
+
     drawMapFrame( painter );
+    painter->scale( dotsPerMM,  dotsPerMM );
 
     if ( renderInProgress )
     {
@@ -1502,12 +1514,6 @@ QgsLayoutItem::ExportLayerDetail QgsLayoutItemMap::exportLayerDetails() const
   }
 
   return detail;
-}
-
-void QgsLayoutItemMap::setFrameStrokeWidth( const QgsLayoutMeasurement width )
-{
-  QgsLayoutItem::setFrameStrokeWidth( width );
-  updateBoundingRect();
 }
 
 void QgsLayoutItemMap::drawMap( QPainter *painter, const QgsRectangle &extent, QSizeF size, double dpi )

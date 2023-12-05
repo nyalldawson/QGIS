@@ -403,7 +403,6 @@ class CORE_EXPORT QgsLayoutItemMap : public QgsLayoutItem, public QgsTemporalRan
     bool nextExportPart() override;
     ExportLayerBehavior exportLayerBehavior() const override;
     QgsLayoutItem::ExportLayerDetail exportLayerDetails() const override;
-    void setFrameStrokeWidth( QgsLayoutMeasurement width ) override;
 
     /**
      * Returns the map scale.
