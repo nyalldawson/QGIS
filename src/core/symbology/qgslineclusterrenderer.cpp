@@ -187,6 +187,7 @@ QgsLineClusterRenderer *QgsLineClusterRenderer::convertFromRenderer( const QgsFe
 
 void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVector<GroupedFeature> &features, const QHash<QgsFeatureId, QList<int> > &, const QHash<int, QList<int> > &segmentGroups, const QHash<int, SplitSegment> &splitSegments ) const
 {
+#if 0
   // process segment groups to generate clustered segments
   QHash< int, QVector< double > > processedGroups;
   QHash< int, QSet< int > > reversedSegments;
@@ -237,6 +238,7 @@ void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVecto
     }
   }
 
+
   // concatenate segments back to linestrings
   struct CollapsedSegment
   {
@@ -278,6 +280,7 @@ void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVecto
 
     collapsedSegments[it->feature.id()].append( collapsedSegment );
   }
+#endif
 
   for ( const GroupedFeature &feature : features )
   {
@@ -285,6 +288,22 @@ void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVecto
       continue;
 
     context.expressionContext().setFeature( feature.feature );
+    const QList< int > segmentIdsForFeature = mFeatureIdToSegments.value( feature.feature.id() );
+    for ( int segmentId : segmentIdsForFeature )
+    {
+      const SegmentData &segmentData = mSegmentData[segmentId];
+      QPolygonF currentPolyline;
+      currentPolyline << QPointF( segmentData.x1, segmentData.y1 );
+      currentPolyline << QPointF( segmentData.x2, segmentData.y2 );
+
+      feature.symbol()->renderPolyline( currentPolyline, &feature.feature, context, -1, feature.isSelected );
+    }
+
+
+  }
+
+#if 0
+  {
     QVector< CollapsedSegment > segments = collapsedSegments.value( feature.feature.id() );
     std::sort( segments.begin(), segments.end(), []( const CollapsedSegment & s1, const CollapsedSegment & s2 )
     {
@@ -340,6 +359,8 @@ void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVecto
     }
   }
 
+
+
   // lastly, draw all the clustered segments once
   for ( auto it = segmentGroups.constBegin(); it != segmentGroups.constEnd(); ++it )
   {
@@ -354,4 +375,5 @@ void QgsLineClusterRenderer::drawGroups( QgsRenderContext &context, const QVecto
                                                                   } ), nullptr, context, -1, false );
     }
   }
+#endif
 }
