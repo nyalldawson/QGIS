@@ -949,8 +949,9 @@ int main( int argc, char *argv[] )
   // As suggested by Qt documentation at:
   //   - https://doc.qt.io/qt-5/qtwebengine.html
   //   - https://code.qt.io/cgit/qt/qtwebengine.git/plain/src/webenginewidgets/api/qtwebenginewidgetsglobal.cpp
-#if 0
-  // this is disabled, because it breaks Qt 3D. See
+#ifdef HAVE_WEBENGINE
+  // warning -- this breaks Qt 3D! That's why HAVE_WEBENGINE and HAVE_3D are mutually exclusive for now.
+  // See
   // https://interest.qt-project.narkive.com/GYwuMDac/qwebengineview-qsurfaceformat-errors-in-console
   // https://bugreports.qt.io/browse/QTBUG-60614
   // https://bugreports.qt.io/browse/QTBUG-60605
