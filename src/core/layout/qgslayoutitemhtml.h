@@ -21,9 +21,15 @@
 #include "qgslayoutmultiframe.h"
 #include "qgsfeature.h"
 #include "qgsdistancearea.h"
+#include "qgsconfig.h"
 #include <QUrl>
 
+#ifdef HAVE_WEBENGINE
+class QWebEnginePage;
+class QWebEngineView;
+#else
 class QgsWebPage;
+#endif
 class QImage;
 class QgsLayoutItemLabel;
 class QgsVectorLayer;
@@ -242,7 +248,12 @@ class CORE_EXPORT QgsLayoutItemHtml: public QgsLayoutMultiFrame
   private:
     ContentMode mContentMode = QgsLayoutItemHtml::Url;
     QUrl mUrl;
+#ifdef HAVE_WEBENGINE
+    std::unique_ptr< QWebEngineView > mWebView;
+    QWebEnginePage *mWebPage = nullptr;
+#else
     std::unique_ptr< QgsWebPage > mWebPage;
+#endif
     QString mHtml;
     QString mFetchedHtml;
     QString mLastFetchedUrl;
