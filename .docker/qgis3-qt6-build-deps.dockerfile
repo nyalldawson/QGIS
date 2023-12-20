@@ -14,6 +14,8 @@ RUN dnf -y --refresh install \
     expat-devel \
     fcgi-devel \
     flex \
+    fontconfig-devel \
+    freetype-devel \
     git \
     gdal-devel \
     geos-devel \
@@ -21,6 +23,8 @@ RUN dnf -y --refresh install \
     grass \
     grass-devel \
     gsl-devel \
+    lcms2-devel \
+    libjpeg-turbo-devel \
     libpq-devel \
     libspatialite-devel \
     libxml2-devel \
@@ -29,6 +33,7 @@ RUN dnf -y --refresh install \
     netcdf-devel \
     ninja-build \
     ocl-icd-devel \
+    openjpeg2-devel \
     PDAL \
     PDAL-libs \
     PDAL-devel \
