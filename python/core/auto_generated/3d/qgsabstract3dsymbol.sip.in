@@ -68,6 +68,9 @@ Returns the list of the vector layer geometry types which are compatible with th
     {
       PropertyHeight,
       PropertyExtrusionHeight,
+      PropertyScaleX,
+      PropertyScaleY,
+      PropertyScaleZ,
     };
 
     static const QgsPropertiesDefinition &propertyDefinitions();

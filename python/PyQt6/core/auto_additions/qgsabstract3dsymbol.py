@@ -1,3 +1,6 @@
 # The following has been generated automatically from src/core/./3d/qgsabstract3dsymbol.h
 QgsAbstract3DSymbol.PropertyHeight = QgsAbstract3DSymbol.Property.PropertyHeight
 QgsAbstract3DSymbol.PropertyExtrusionHeight = QgsAbstract3DSymbol.Property.PropertyExtrusionHeight
+QgsAbstract3DSymbol.PropertyScaleX = QgsAbstract3DSymbol.Property.PropertyScaleX
+QgsAbstract3DSymbol.PropertyScaleY = QgsAbstract3DSymbol.Property.PropertyScaleY
+QgsAbstract3DSymbol.PropertyScaleZ = QgsAbstract3DSymbol.Property.PropertyScaleZ

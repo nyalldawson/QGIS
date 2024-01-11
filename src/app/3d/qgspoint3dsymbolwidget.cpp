@@ -78,6 +78,10 @@ QgsPoint3DSymbolWidget::QgsPoint3DSymbolWidget( QWidget *parent )
   // Sync between billboard height and TZ
   connect( spinBillboardHeight, static_cast<void ( QDoubleSpinBox::* )( double )>( &QDoubleSpinBox::valueChanged ), spinTZ,  &QDoubleSpinBox::setValue );
   connect( spinTZ, static_cast<void ( QDoubleSpinBox::* )( double )>( &QDoubleSpinBox::valueChanged ), spinBillboardHeight,  &QDoubleSpinBox::setValue );
+
+  connect( mButtonDDScaleX, &QgsPropertyOverrideButton::changed, this, &QgsPoint3DSymbolWidget::changed );
+  connect( mButtonDDScaleY, &QgsPropertyOverrideButton::changed, this, &QgsPoint3DSymbolWidget::changed );
+  connect( mButtonDDScaleZ, &QgsPropertyOverrideButton::changed, this, &QgsPoint3DSymbolWidget::changed );
 }
 
 Qgs3DSymbolWidget *QgsPoint3DSymbolWidget::create( QgsVectorLayer * )
@@ -179,6 +183,11 @@ void QgsPoint3DSymbolWidget::setSymbol( const QgsAbstract3DSymbol *symbol, QgsVe
   spinRX->setValue( QgsLayoutUtils::normalizedAngle( rot.x() ) );
   spinRY->setValue( QgsLayoutUtils::normalizedAngle( 360.0 - rot.z() ) );
   spinRZ->setValue( QgsLayoutUtils::normalizedAngle( rot.y() ) );
+
+  mButtonDDScaleX->init( QgsAbstract3DSymbol::PropertyScaleX, pointSymbol->dataDefinedProperties(), QgsAbstract3DSymbol::propertyDefinitions(), layer, true );
+  // note that z/y are flipped here, as we show z as elevation in UI
+  mButtonDDScaleY->init( QgsAbstract3DSymbol::PropertyScaleZ, pointSymbol->dataDefinedProperties(), QgsAbstract3DSymbol::propertyDefinitions(), layer, true );
+  mButtonDDScaleZ->init( QgsAbstract3DSymbol::PropertyScaleY, pointSymbol->dataDefinedProperties(), QgsAbstract3DSymbol::propertyDefinitions(), layer, true );
 }
 
 QgsAbstract3DSymbol *QgsPoint3DSymbolWidget::symbol()
@@ -224,7 +233,9 @@ QgsAbstract3DSymbol *QgsPoint3DSymbolWidget::symbol()
   // The rotation, scale and translation values need to be converted in the 3D world.
   const QgsVector3D translationWorldCoords( spinTX->value(), spinTZ->value(), -spinTY->value() );
   const QQuaternion rot( QQuaternion::fromEulerAngles( static_cast<float>( spinRX->value() ), static_cast<float>( spinRZ->value() ), static_cast<float>( 360.0 - spinRY->value() ) ) );
-  const QVector3D sca( static_cast<float>( spinSX->value() ), static_cast<float>( spinSZ->value() ), static_cast<float>( spinSY->value() ) );
+  const QVector3D sca( mButtonDDScaleX->isActive() ? 1 : static_cast<float>( spinSX->value() ),
+                       mButtonDDScaleZ->isActive() ? 1 : static_cast<float>( spinSZ->value() ),
+                       mButtonDDScaleY->isActive() ? 1 : static_cast<float>( spinSY->value() ) );
   const QVector3D tra( static_cast<float>( translationWorldCoords.x() ), static_cast<float>( translationWorldCoords.y() ), static_cast<float>( translationWorldCoords.z() ) );
 
   QMatrix4x4 tr;
@@ -237,6 +248,14 @@ QgsAbstract3DSymbol *QgsPoint3DSymbolWidget::symbol()
   sym->setShapeProperties( vm );
   sym->setMaterialSettings( widgetMaterial->settings() );
   sym->setTransform( tr );
+
+  QgsPropertyCollection ddp;
+  ddp.setProperty( QgsAbstract3DSymbol::PropertyScaleX, mButtonDDScaleX->toProperty() );
+  // note that z/y are flipped here, as we show z as elevation in UI
+  ddp.setProperty( QgsAbstract3DSymbol::PropertyScaleZ, mButtonDDScaleY->toProperty() );
+  ddp.setProperty( QgsAbstract3DSymbol::PropertyScaleY, mButtonDDScaleZ->toProperty() );
+  sym->setDataDefinedProperties( ddp );
+
   return sym.release();
 }
 

@@ -70,6 +70,9 @@ class CORE_EXPORT QgsAbstract3DSymbol
     {
       PropertyHeight = 0,       //!< Height (altitude)
       PropertyExtrusionHeight,  //!< Extrusion height (zero means no extrusion)
+      PropertyScaleX, //!< X-axis scaling (since QGIS 3.36)
+      PropertyScaleY, //!< Y-axis scaling (since QGIS 3.36)
+      PropertyScaleZ, //!< Z-axis scaling (since QGIS 3.36)
     };
 
     //! Returns the symbol layer property definitions.

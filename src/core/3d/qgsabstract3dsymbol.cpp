@@ -45,7 +45,10 @@ void QgsAbstract3DSymbol::initPropertyDefinitions()
   sPropertyDefinitions = QgsPropertiesDefinition
   {
     { PropertyHeight, QgsPropertyDefinition( "height", QObject::tr( "Height" ), QgsPropertyDefinition::Double, origin ) },
-    { PropertyExtrusionHeight, QgsPropertyDefinition( "extrusionHeight", QObject::tr( "ExtrusionHeight" ), QgsPropertyDefinition::DoublePositive, origin ) },
+    { PropertyExtrusionHeight, QgsPropertyDefinition( "extrusionHeight", QObject::tr( "Extrusion Height" ), QgsPropertyDefinition::DoublePositive, origin ) },
+    { PropertyScaleX, QgsPropertyDefinition( "scaleX", QObject::tr( "X-axis scale" ), QgsPropertyDefinition::Double, origin ) },
+    { PropertyScaleY, QgsPropertyDefinition( "scaleY", QObject::tr( "Y-axis scale" ), QgsPropertyDefinition::Double, origin ) },
+    { PropertyScaleZ, QgsPropertyDefinition( "scaleZ", QObject::tr( "Z-axis scale" ), QgsPropertyDefinition::Double, origin ) },
   };
 
 }
