@@ -16,7 +16,14 @@
 #include "qgslayoutitemhtml.h"
 #include "qgslayoutframe.h"
 #include "qgslayout.h"
+
+#ifdef HAVE_WEBENGINE
+// webengine uses its own network framework, so no logging/cookies/auth/ssl
+// support for you!
+#else
 #include "qgsnetworkaccessmanager.h"
+#endif
+
 #include "qgsmessagelog.h"
 #include "qgsexpression.h"
 #include "qgslogger.h"
@@ -32,6 +39,12 @@
 #include "qgslayoutitemmap.h"
 #include "qgslayoutreportcontext.h"
 #include "qgslayoutrendercontext.h"
+#ifdef HAVE_WEBENGINE
+#include "qgswebenginepage.h"
+#include <QWebEnginePage>
+#include <QWebEngineSettings>
+#include <QWebEngineScript>
+#endif
 
 #include <QCoreApplication>
 #include <QPainter>
@@ -50,7 +63,11 @@ QgsLayoutItemHtml::QgsLayoutItemHtml( QgsLayout *layout )
   // only possible on the main thread!
   if ( QThread::currentThread() == QApplication::instance()->thread() )
   {
+#ifdef HAVE_WEBENGINE
+    mWebPage = std::make_unique< QgsWebEnginePage >();
+#else
     mWebPage = std::make_unique< QgsWebPage >();
+#endif
   }
   else
   {
@@ -59,6 +76,14 @@ QgsLayoutItemHtml::QgsLayoutItemHtml( QgsLayout *layout )
 
   if ( mWebPage )
   {
+#ifdef HAVE_WEBENGINE
+    // TODO: doesn't seem supported in webengine?
+    // mWebPage->setIdentifier( tr( "Layout HTML item" ) );
+    mWebPage->page()->settings()->setAttribute( QWebEngineSettings::ShowScrollBars, false );
+
+    // TODO: doesn't seem to be possible to have a transparent background? Maybe we need to handle this
+    // in the web page -> PDF output or in the PDF rendering?
+#else
     mWebPage->setIdentifier( tr( "Layout HTML item" ) );
     mWebPage->mainFrame()->setScrollBarPolicy( Qt::Horizontal, Qt::ScrollBarAlwaysOff );
     mWebPage->mainFrame()->setScrollBarPolicy( Qt::Vertical, Qt::ScrollBarAlwaysOff );
@@ -69,6 +94,7 @@ QgsLayoutItemHtml::QgsLayoutItemHtml( QgsLayout *layout )
     mWebPage->setPalette( palette );
 
     mWebPage->setNetworkAccessManager( QgsNetworkAccessManager::instance() );
+#endif
   }
 
   //a html item added to a layout needs to have the initial expression context set,
@@ -211,20 +237,67 @@ void QgsLayoutItemHtml::loadHtml( const bool useCache, const QgsExpressionContex
   bool loaded = false;
 
   QEventLoop loop;
+#ifdef HAVE_WEBENGINE
+  connect( mWebPage.get(), &QgsWebEnginePage::loadFinished, &loop, [&loaded, &loop, this]
+  {
+    // this requires an event loop, let's calculate it using the same event loop upfront.
+    ( void )mWebPage->documentSize();
+    loaded = true;
+    loop.quit();
+  } );
+#else
   connect( mWebPage.get(), &QWebPage::loadFinished, &loop, [&loaded, &loop ] { loaded = true; loop.quit(); } );
+#endif
+
   connect( mFetcher, &QgsNetworkContentFetcher::finished, &loop, [&loaded, &loop ] { loaded = true; loop.quit(); } );
 
   //reset page size. otherwise viewport size increases but never decreases again
+#ifdef HAVE_WEBENGINE
+  // TODO: is there anyway to restrict document size in webengine?
+  //mWebPage->setViewportSize( QSize( maxFrameWidth() * mHtmlUnitsToLayoutUnits, 0 ) );
+#else
   mWebPage->setViewportSize( QSize( maxFrameWidth() * mHtmlUnitsToLayoutUnits, 0 ) );
+#endif
 
   //set html, using the specified url as base if in Url mode or the project file if in manual mode
   const QUrl baseUrl = mContentMode == QgsLayoutItemHtml::Url ?
                        QUrl( mActualFetchedUrl ) :
                        QUrl::fromLocalFile( mLayout->project()->absoluteFilePath() );
 
+#ifdef HAVE_WEBENGINE
+  mWebPage->setHtml( loadedHtml, baseUrl );
+#else
   mWebPage->mainFrame()->setHtml( loadedHtml, baseUrl );
+#endif
 
   //set user stylesheet
+#ifdef HAVE_WEBENGINE
+  //our only option is injecting javascript -- see
+  // https://doc.qt.io/qt-5/qtwebengine-webenginewidgets-stylesheetbrowser-example.html
+  // https://bugreports.qt.io/browse/QTBUG-51192?jql=text%20~%20%22setUserStyleSheetUrl%22
+  if ( mEnableUserStylesheet && ! mUserStylesheet.isEmpty() )
+  {
+    const QString script = QString::fromLatin1( "(function() {"\
+                           "    css = document.createElement('style');"\
+                           "    css.type = 'text/css';"\
+                           "    css.id = '__qgis_user_stylesheet';"\
+                           "    document.head.appendChild(css);"\
+                           "    css.innerText = '%1';"\
+                           "})()" ).arg( mUserStylesheet );
+    mWebPage->page()->runJavaScript( script, QWebEngineScript::ApplicationWorld );
+  }
+  else
+  {
+    const QString script = QString::fromLatin1( "(function() {"\
+                           "    var element = document.getElementById('__qgis_user_stylesheet');"\
+                           "    if ( element ) {"
+                           "      element.outerHTML = '';"\
+                           "      delete element;"\
+                           "    }" \
+                           "})()" );
+    mWebPage->page()->runJavaScript( script, QWebEngineScript::ApplicationWorld );
+  }
+#else
   QWebSettings *settings = mWebPage->settings();
   if ( mEnableUserStylesheet && ! mUserStylesheet.isEmpty() )
   {
@@ -237,6 +310,7 @@ void QgsLayoutItemHtml::loadHtml( const bool useCache, const QgsExpressionContex
   {
     settings->setUserStyleSheetUrl( QUrl() );
   }
+#endif
 
   if ( !loaded )
     loop.exec( QEventLoop::ExcludeUserInputEvents );
@@ -244,12 +318,19 @@ void QgsLayoutItemHtml::loadHtml( const bool useCache, const QgsExpressionContex
   //inject JSON feature
   if ( !mAtlasFeatureJSON.isEmpty() )
   {
+#ifdef HAVE_WEBENGINE
+    const QString script = QStringLiteral( "(function() {"\
+                                           "   if ( typeof setFeature === \"function\" ) { try{ setFeature(%1); } catch (err) {} };"\
+                                           "})()" ).arg( mAtlasFeatureJSON );
+    mWebPage->page()->runJavaScript( script, QWebEngineScript::ApplicationWorld );
+#else
     JavascriptExecutorLoop jsLoop;
 
     mWebPage->mainFrame()->addToJavaScriptWindowObject( QStringLiteral( "loop" ), &jsLoop );
     mWebPage->mainFrame()->evaluateJavaScript( QStringLiteral( "if ( typeof setFeature === \"function\" ) { try{ setFeature(%1); } catch (err) { loop.reportError(err.message); } }; loop.done();" ).arg( mAtlasFeatureJSON ) );
 
     jsLoop.execIfNotDone();
+#endif
   }
 
   recalculateFrameSizes();
@@ -276,14 +357,23 @@ void QgsLayoutItemHtml::recalculateFrameSizes()
   if ( !mWebPage )
     return;
 
+#ifdef HAVE_WEBENGINE
+  QSize contentsSize = mWebPage->documentSize();
+#else
   QSize contentsSize = mWebPage->mainFrame()->contentsSize();
+#endif
 
   //find maximum frame width
   const double maxWidth = maxFrameWidth();
   //set content width to match maximum frame width
   contentsSize.setWidth( maxWidth * mHtmlUnitsToLayoutUnits );
 
+#ifdef HAVE_WEBENGINE
+  // TODO -- is it possible to restrict the document size in web engine??
+  //mWebPage->setViewportSize( contentsSize );
+#else
   mWebPage->setViewportSize( contentsSize );
+#endif
   mSize.setWidth( contentsSize.width() / mHtmlUnitsToLayoutUnits );
   mSize.setHeight( contentsSize.height() / mHtmlUnitsToLayoutUnits );
   if ( contentsSize.isValid() )
@@ -300,7 +390,12 @@ void QgsLayoutItemHtml::renderCachedImage()
     return;
 
   //render page to cache image
+#ifdef HAVE_WEBENGINE
+  mRenderedPage = QImage( mWebPage->documentSize(), QImage::Format_ARGB32 );
+#else
   mRenderedPage = QImage( mWebPage->viewportSize(), QImage::Format_ARGB32 );
+#endif
+
   if ( mRenderedPage.isNull() )
   {
     return;
@@ -308,7 +403,11 @@ void QgsLayoutItemHtml::renderCachedImage()
   mRenderedPage.fill( Qt::transparent );
   QPainter painter;
   painter.begin( &mRenderedPage );
+#ifdef HAVE_WEBENGINE
+  mWebPage->render( &painter, mRenderedPage.rect() );
+#else
   mWebPage->mainFrame()->render( &painter );
+#endif
   painter.end();
 }
 
@@ -343,7 +442,15 @@ void QgsLayoutItemHtml::render( QgsLayoutItemRenderContext &context, const QRect
   // painter is scaled to dots, so scale back to layout units
   painter->scale( context.renderContext().scaleFactor() / mHtmlUnitsToLayoutUnits, context.renderContext().scaleFactor() / mHtmlUnitsToLayoutUnits );
   painter->translate( 0.0, -renderExtent.top() * mHtmlUnitsToLayoutUnits );
+#ifdef HAVE_WEBENGINE
+  // CRASH! This will crash when in app, because it involves a local event loop which WILL
+  // trigger additional render requests from the QGraphicsView.
+  // We'll need to do something like rendering on a different thread and use a semaphore or wait lock
+  // to block here until that rendering thread is complete.
+  mWebPage->render( painter, QRectF( renderExtent.left(), renderExtent.top() * mHtmlUnitsToLayoutUnits, renderExtent.width() * mHtmlUnitsToLayoutUnits, renderExtent.height() * mHtmlUnitsToLayoutUnits ) );
+#else
   mWebPage->mainFrame()->render( painter, QRegion( renderExtent.left(), renderExtent.top() * mHtmlUnitsToLayoutUnits, renderExtent.width() * mHtmlUnitsToLayoutUnits, renderExtent.height() * mHtmlUnitsToLayoutUnits ) );
+#endif
 }
 
 double QgsLayoutItemHtml::htmlUnitsToLayoutUnits()
