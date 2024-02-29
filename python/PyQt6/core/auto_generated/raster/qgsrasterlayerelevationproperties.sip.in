@@ -61,9 +61,31 @@ Sets whether the elevation properties are enabled, i.e. the raster layer values 
 .. seealso:: :py:func:`isEnabled`
 %End
 
+    Qgis::RasterElevationMode mode() const;
+%Docstring
+Returns the elevation mode.
+
+.. seealso:: :py:func:`setMode`
+
+.. versionadded:: 3.38
+%End
+
+    void setMode( Qgis::RasterElevationMode mode );
+%Docstring
+Sets the elevation ``mode``.
+
+.. seealso:: :py:func:`mode`
+
+.. versionadded:: 3.38
+%End
+
     int bandNumber() const;
 %Docstring
 Returns the band number from which the elevation should be taken.
+
+.. note::
+
+   This is only considered when :py:func:`~QgsRasterLayerElevationProperties.mode` is :py:class:`Qgis`.RasterElevationMode.RepresentsElevationSurface.
 
 .. seealso:: :py:func:`setBandNumber`
 %End
@@ -72,7 +94,37 @@ Returns the band number from which the elevation should be taken.
 %Docstring
 Sets the ``band`` number from which the elevation should be taken.
 
+.. note::
+
+   This is only considered when :py:func:`~QgsRasterLayerElevationProperties.mode` is :py:class:`Qgis`.RasterElevationMode.RepresentsElevationSurface.
+
 .. seealso:: :py:func:`bandNumber`
+%End
+
+    QgsDoubleRange fixedRange() const;
+%Docstring
+Returns the fixed elevation range for the raster.
+
+.. note::
+
+   This is only considered when :py:func:`~QgsRasterLayerElevationProperties.mode` is :py:class:`Qgis`.RasterElevationMode.FixedElevationRange.
+
+.. seealso:: :py:func:`setFixedRange`
+
+.. versionadded:: 3.38
+%End
+
+    void setFixedRange( const QgsDoubleRange &range );
+%Docstring
+Sets the fixed elevation ``range`` for the raster.
+
+.. note::
+
+   This is only considered when :py:func:`~QgsRasterLayerElevationProperties.mode` is :py:class:`Qgis`.RasterElevationMode.FixedElevationRange.
+
+.. seealso:: :py:func:`fixedRange`
+
+.. versionadded:: 3.38
 %End
 
     QgsLineSymbol *profileLineSymbol() const;

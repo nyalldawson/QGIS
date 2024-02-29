@@ -3220,6 +3220,12 @@ Qgis.AltitudeBinding.__doc__ = "Altitude binding.\n\n.. versionadded:: 3.26\n\n"
 # --
 Qgis.AltitudeBinding.baseClass = Qgis
 # monkey patching scoped based enum
+Qgis.RasterElevationMode.FixedElevationRange.__doc__ = "Layer has a fixed elevation range"
+Qgis.RasterElevationMode.RepresentsElevationSurface.__doc__ = "Pixel values represent an elevation surface"
+Qgis.RasterElevationMode.__doc__ = "Raster layer elevation modes.\n\n.. versionadded:: 3.38\n\n" + '* ``FixedElevationRange``: ' + Qgis.RasterElevationMode.FixedElevationRange.__doc__ + '\n' + '* ``RepresentsElevationSurface``: ' + Qgis.RasterElevationMode.RepresentsElevationSurface.__doc__
+# --
+Qgis.RasterElevationMode.baseClass = Qgis
+# monkey patching scoped based enum
 Qgis.NoConstraint = Qgis.BetweenLineConstraint.NoConstraint
 Qgis.NoConstraint.is_monkey_patched = True
 Qgis.BetweenLineConstraint.NoConstraint.__doc__ = "No additional constraint"

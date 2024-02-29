@@ -1835,6 +1835,12 @@ The development version
       Centroid,
     };
 
+    enum class RasterElevationMode /BaseType=IntEnum/
+    {
+      FixedElevationRange,
+      RepresentsElevationSurface
+    };
+
     enum class BetweenLineConstraint /BaseType=IntEnum/
     {
       NoConstraint,
