@@ -193,7 +193,16 @@ QgsAbstractProfileGenerator *QgsRasterLayer::createProfileGenerator( const QgsPr
   if ( !mElevationProperties->isEnabled() )
     return nullptr;
 
-  return new QgsRasterLayerProfileGenerator( this, request );
+  switch ( mElevationProperties->mode() )
+  {
+    case Qgis::RasterElevationMode::FixedElevationRange:
+      // Maybe we DO want this?
+      return nullptr;
+
+    case Qgis::RasterElevationMode::RepresentsElevationSurface:
+      return new QgsRasterLayerProfileGenerator( this, request );;
+  }
+  BUILTIN_UNREACHABLE
 }
 
 //////////////////////////////////////////////////////////
