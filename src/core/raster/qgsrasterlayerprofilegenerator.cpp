@@ -26,6 +26,7 @@
 #include "qgsprofilepoint.h"
 #include "qgsfillsymbol.h"
 #include "qgsthreadingutils.h"
+#include "qgsrasterrenderer.h"
 
 #include <QPolygonF>
 #include <QThread>
@@ -41,16 +42,120 @@ QString QgsRasterLayerProfileResults::type() const
 
 QVector<QgsProfileIdentifyResults> QgsRasterLayerProfileResults::identify( const QgsProfilePoint &point, const QgsProfileIdentifyContext &context )
 {
-  const QVector<QgsProfileIdentifyResults> noLayerResults = QgsAbstractProfileSurfaceResults::identify( point, context );
-
-  // we have to make a new list, with the correct layer reference set
-  QVector<QgsProfileIdentifyResults> res;
-  res.reserve( noLayerResults.size() );
-  for ( const QgsProfileIdentifyResults &result : noLayerResults )
+  switch ( mMode )
   {
-    res.append( QgsProfileIdentifyResults( mLayer, result.results() ) );
+    case Qgis::RasterElevationMode::FixedElevationRange:
+    {
+      // TODO -- consider an index if performance is an issue
+      std::optional< QgsProfileIdentifyResults > result;
+
+      double prevDistance = std::numeric_limits< double >::max();
+      double prevElevation = 0;
+      for ( auto it = mDistanceToHeightMap.constBegin(); it != mDistanceToHeightMap.constEnd(); ++it )
+      {
+        // find segment which corresponds to the given distance along curve
+        if ( it != mDistanceToHeightMap.constBegin() && prevDistance <= point.distance() && it.key() >= point.distance() )
+        {
+          const double dx = it.key() - prevDistance;
+          const double dy = it.value() - prevElevation;
+          const double snappedZ = ( dy / dx ) * ( point.distance() - prevDistance ) + prevElevation;
+
+          if ( std::fabs( point.elevation() - snappedZ ) > context.maximumSurfaceElevationDelta )
+            return {};
+
+          result = QgsProfileIdentifyResults( mLayer,
+          {
+            QVariantMap(
+            {
+              {QStringLiteral( "distance" ),  point.distance() },
+              {QStringLiteral( "elevation" ), snappedZ },
+              {QStringLiteral( "value" ), mDistanceToValueMap.value( it.key() )}
+            } )
+          } );
+          break;
+        }
+
+        prevDistance = it.key();
+        prevElevation = it.value();
+      }
+      if ( result.has_value() )
+        return {result.value()};
+      else
+        return {};
+    }
+
+    case Qgis::RasterElevationMode::RepresentsElevationSurface:
+    {
+      const QVector<QgsProfileIdentifyResults> noLayerResults = QgsAbstractProfileSurfaceResults::identify( point, context );
+
+      // we have to make a new list, with the correct layer reference set
+      QVector<QgsProfileIdentifyResults> res;
+      res.reserve( noLayerResults.size() );
+      for ( const QgsProfileIdentifyResults &result : noLayerResults )
+      {
+        res.append( QgsProfileIdentifyResults( mLayer, result.results() ) );
+      }
+      return res;
+    }
   }
-  return res;
+  BUILTIN_UNREACHABLE
+}
+
+void QgsRasterLayerProfileResults::renderResults( QgsProfileRenderContext &context )
+{
+  switch ( mMode )
+  {
+    case Qgis::RasterElevationMode::FixedElevationRange:
+    {
+      QPainter *painter = context.renderContext().painter();
+      if ( !painter )
+        return;
+
+      const QgsScopedQPainterState painterState( painter );
+
+      painter->setBrush( Qt::NoBrush );
+      painter->setPen( Qt::NoPen );
+
+      const double minDistance = context.distanceRange().lower();
+      const double maxDistance = context.distanceRange().upper();
+      double minZ = context.elevationRange().lower();
+      double maxZ = context.elevationRange().upper();
+
+      const QRectF visibleRegion( minDistance, minZ, maxDistance - minDistance, maxZ - minZ );
+      QPainterPath clipPath;
+      clipPath.addPolygon( context.worldTransform().map( visibleRegion ) );
+      painter->setClipPath( clipPath, Qt::ClipOperation::IntersectClip );
+
+      double prevDistance = std::numeric_limits< double >::quiet_NaN();
+      for ( auto pointIt = mDistanceToHeightMap.constBegin(); pointIt != mDistanceToHeightMap.constEnd(); ++pointIt )
+      {
+        if ( std::isnan( pointIt.value() ) )
+        {
+
+        }
+
+        if ( !std::isnan( prevDistance ) )
+        {
+          const QColor currentColor = mDistanceToColorMap.value( pointIt.key() );
+          QPolygonF currentPolygon;
+          currentPolygon.append( context.worldTransform().map( QPointF( prevDistance, mFixedRange.lower() ) ) );
+          currentPolygon.append( context.worldTransform().map( QPointF( pointIt.key(), mFixedRange.lower() ) ) );
+          currentPolygon.append( context.worldTransform().map( QPointF( pointIt.key(), mFixedRange.upper() ) ) );
+          currentPolygon.append( context.worldTransform().map( QPointF( prevDistance, mFixedRange.upper() ) ) );
+          currentPolygon.append( currentPolygon.at( 0 ) );
+          painter->setBrush( QBrush( currentColor ) );
+          painter->setPen( QPen( currentColor ) );
+          painter->drawPolygon( currentPolygon );
+        }
+        prevDistance = pointIt.key();
+      }
+      break;
+    }
+
+    case Qgis::RasterElevationMode::RepresentsElevationSurface:
+      QgsAbstractProfileSurfaceResults::renderResults( context );
+      break;
+  }
 }
 
 
@@ -67,10 +172,7 @@ QgsRasterLayerProfileGenerator::QgsRasterLayerProfileGenerator( QgsRasterLayer *
   , mSourceCrs( layer->crs() )
   , mTargetCrs( request.crs() )
   , mTransformContext( request.transformContext() )
-  , mOffset( layer->elevationProperties()->zOffset() )
-  , mScale( layer->elevationProperties()->zScale() )
   , mLayer( layer )
-  , mBand( qgis::down_cast< QgsRasterLayerElevationProperties * >( layer->elevationProperties() )->bandNumber() )
   , mRasterUnitsPerPixelX( layer->rasterUnitsPerPixelX() )
   , mRasterUnitsPerPixelY( layer->rasterUnitsPerPixelY() )
   , mStepDistance( request.stepDistance() )
@@ -78,10 +180,37 @@ QgsRasterLayerProfileGenerator::QgsRasterLayerProfileGenerator( QgsRasterLayer *
   mRasterProvider.reset( layer->dataProvider()->clone() );
   mRasterProvider->moveToThread( nullptr );
 
-  mSymbology = qgis::down_cast< QgsRasterLayerElevationProperties * >( layer->elevationProperties() )->profileSymbology();
-  mElevationLimit = qgis::down_cast< QgsRasterLayerElevationProperties * >( layer->elevationProperties() )->elevationLimit();
-  mLineSymbol.reset( qgis::down_cast< QgsRasterLayerElevationProperties * >( layer->elevationProperties() )->profileLineSymbol()->clone() );
-  mFillSymbol.reset( qgis::down_cast< QgsRasterLayerElevationProperties * >( layer->elevationProperties() )->profileFillSymbol()->clone() );
+  const QgsRasterLayerElevationProperties *elevationProperties = qgis::down_cast< QgsRasterLayerElevationProperties * >( layer->elevationProperties() );
+
+  mMode = qgis::down_cast< QgsRasterLayerElevationProperties * >( layer->elevationProperties() )->mode();
+  mSymbology = elevationProperties->profileSymbology();
+  mElevationLimit = elevationProperties->elevationLimit();
+  if ( elevationProperties->profileLineSymbol() )
+    mLineSymbol.reset( elevationProperties->profileLineSymbol()->clone() );
+  if ( elevationProperties->profileFillSymbol() )
+    mFillSymbol.reset( elevationProperties->profileFillSymbol()->clone() );
+
+  mFixedRange = elevationProperties->fixedRange();
+
+  switch ( mMode )
+  {
+    case Qgis::RasterElevationMode::FixedElevationRange:
+    {
+      mRasterRenderer.reset( layer->renderer()->clone() );
+      const QList<int> rendererBands = mRasterRenderer->usesBands();
+      if ( rendererBands.size() == 1 )
+      {
+        mBand = rendererBands.at( 0 );
+      }
+      break;
+    }
+
+    case Qgis::RasterElevationMode::RepresentsElevationSurface:
+      mBand = elevationProperties->bandNumber();
+      mOffset = layer->elevationProperties()->zOffset();
+      mScale = layer->elevationProperties()->zScale();
+      break;
+  }
 }
 
 QString QgsRasterLayerProfileGenerator::sourceId() const
@@ -102,6 +231,8 @@ bool QgsRasterLayerProfileGenerator::generateProfile( const QgsProfileGeneration
     return false;
 
   QgsScopedAssignObjectToCurrentThread assignProviderToCurrentThread( mRasterProvider.get() );
+  if ( mRasterRenderer )
+    mRasterRenderer->setInput( mRasterProvider.get() );
 
   const double startDistanceOffset = std::max( !context.distanceRange().isInfinite() ? context.distanceRange().lower() : 0, 0.0 );
   const double endDistance = context.distanceRange().upper();
@@ -144,6 +275,8 @@ bool QgsRasterLayerProfileGenerator::generateProfile( const QgsProfileGeneration
   mResults = std::make_unique< QgsRasterLayerProfileResults >();
   mResults->mLayer = mLayer;
   mResults->mId = mId;
+  mResults->mMode = mMode;
+  mResults->mFixedRange = mFixedRange;
   mResults->copyPropertiesFromGenerator( this );
 
   std::unique_ptr< QgsGeometryEngine > curveEngine( QgsGeometry::createGeometryEngine( transformedCurve.get() ) );
@@ -252,6 +385,12 @@ bool QgsRasterLayerProfileGenerator::generateProfile( const QgsProfileGeneration
     if ( !block )
       continue;
 
+    std::unique_ptr< QgsRasterBlock > renderedBlock;
+    if ( mRasterRenderer )
+    {
+      renderedBlock.reset( mRasterRenderer->block( mBand, blockExtent, blockColumns, blockRows, mFeedback.get() ) );
+    }
+
     bool isNoData = false;
 
     // there's two potential code paths we use here, depending on if we want to sample at every pixel, or if we only want to
@@ -278,17 +417,31 @@ bool QgsRasterLayerProfileGenerator::generateProfile( const QgsProfileGeneration
             row = std::clamp( static_cast< int >( std::round( ( blockExtent.yMaximum() - it->y() ) / mRasterUnitsPerPixelY ) ), 0, blockRows - 1 );
             col = std::clamp( static_cast< int >( std::round( ( it->x() - blockExtent.xMinimum() ) / mRasterUnitsPerPixelX ) ),  0, blockColumns - 1 );
           }
-          double val = block->valueAndNoData( row, col, isNoData );
+          const double val = block->valueAndNoData( row, col, isNoData );
+          double z = 0;
+          QColor pixelColor;
           if ( !isNoData )
           {
-            val = val * mScale + mOffset;
+            switch ( mMode )
+            {
+              case Qgis::RasterElevationMode::FixedElevationRange:
+              {
+                z = mFixedRange.lower();
+                pixelColor = renderedBlock->color( row, col );
+                break;
+              }
+
+              case Qgis::RasterElevationMode::RepresentsElevationSurface:
+                z = val * mScale + mOffset;
+                break;
+            }
           }
           else
           {
-            val = std::numeric_limits<double>::quiet_NaN();
+            z = std::numeric_limits<double>::quiet_NaN();
           }
 
-          QgsPoint pixel( it->x(), it->y(), val );
+          QgsPoint pixel( it->x(), it->y(), z, val );
           try
           {
             pixel.transform( rasterToTargetTransform );
@@ -298,6 +451,18 @@ bool QgsRasterLayerProfileGenerator::generateProfile( const QgsProfileGeneration
             continue;
           }
           mResults->mRawPoints.append( pixel );
+
+          switch ( mMode )
+          {
+            case Qgis::RasterElevationMode::FixedElevationRange:
+            {
+              mResults->mRenderedColors.append( pixelColor );
+              break;
+            }
+
+            case Qgis::RasterElevationMode::RepresentsElevationSurface:
+              break;
+          }
 
           it = profilePoints.erase( it );
         }
@@ -331,7 +496,21 @@ bool QgsRasterLayerProfileGenerator::generateProfile( const QgsProfileGeneration
           if ( !curveEngine->intersects( pixelRectGeometry.constGet() ) )
             continue;
 
-          QgsPoint pixel( currentX, currentY, isNoData ? std::numeric_limits<double>::quiet_NaN() : val * mScale + mOffset );
+          double z = 0;
+          QColor pixelColor;
+          switch ( mMode )
+          {
+            case Qgis::RasterElevationMode::FixedElevationRange:
+              z = mFixedRange.lower();
+              pixelColor = renderedBlock->color( row, col );
+              break;
+
+            case Qgis::RasterElevationMode::RepresentsElevationSurface:
+              z = val * mScale + mOffset;
+              break;
+          }
+
+          QgsPoint pixel( currentX, currentY, isNoData ? std::numeric_limits<double>::quiet_NaN() : z, val );
           try
           {
             pixel.transform( rasterToTargetTransform );
@@ -341,6 +520,18 @@ bool QgsRasterLayerProfileGenerator::generateProfile( const QgsProfileGeneration
             continue;
           }
           mResults->mRawPoints.append( pixel );
+
+          switch ( mMode )
+          {
+            case Qgis::RasterElevationMode::FixedElevationRange:
+            {
+              mResults->mRenderedColors.append( pixelColor );
+              break;
+            }
+
+            case Qgis::RasterElevationMode::RepresentsElevationSurface:
+              break;
+          }
         }
         currentY -= mRasterUnitsPerPixelY;
       }
@@ -354,6 +545,7 @@ bool QgsRasterLayerProfileGenerator::generateProfile( const QgsProfileGeneration
   QgsGeos originalCurveGeos( sourceCurve );
   originalCurveGeos.prepareGeometry();
   QString lastError;
+  int pixelIndex = 0;
   for ( const QgsPoint &pixel : std::as_const( mResults->mRawPoints ) )
   {
     if ( mFeedback->isCanceled() )
@@ -367,6 +559,19 @@ bool QgsRasterLayerProfileGenerator::generateProfile( const QgsProfileGeneration
       mResults->maxZ = std::max( pixel.z(), mResults->maxZ );
     }
     mResults->mDistanceToHeightMap.insert( distance, pixel.z() );
+
+    switch ( mMode )
+    {
+      case Qgis::RasterElevationMode::FixedElevationRange:
+        mResults->mDistanceToValueMap.insert( distance, pixel.m() );
+        mResults->mDistanceToColorMap.insert( distance, mResults->mRenderedColors.at( pixelIndex ) );
+        break;
+
+      case Qgis::RasterElevationMode::RepresentsElevationSurface:
+        break;
+    }
+
+    pixelIndex++;
   }
 
   return true;

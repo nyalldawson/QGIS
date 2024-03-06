@@ -30,6 +30,7 @@ class QgsProfileRequest;
 class QgsRasterLayer;
 class QgsRasterDataProvider;
 class QgsRasterBlockFeedback;
+class QgsRasterRenderer;
 class QgsLineSymbol;
 class QgsProfileSnapContext;
 
@@ -49,10 +50,16 @@ class CORE_EXPORT QgsRasterLayerProfileResults : public QgsAbstractProfileSurfac
 
     QString type() const override;
     QVector<QgsProfileIdentifyResults> identify( const QgsProfilePoint &point, const QgsProfileIdentifyContext &context ) override;
+    void renderResults( QgsProfileRenderContext &context ) override;
+    QMap< double, double > mDistanceToValueMap;
+    QMap< double, QColor > mDistanceToColorMap;
+    QVector< QColor > mRenderedColors;
 
   private:
 
     QPointer< QgsRasterLayer > mLayer;
+    Qgis::RasterElevationMode mMode = Qgis::RasterElevationMode::RepresentsElevationSurface;
+    QgsDoubleRange mFixedRange;
 
     friend class QgsRasterLayerProfileGenerator;
 };
@@ -92,11 +99,14 @@ class CORE_EXPORT QgsRasterLayerProfileGenerator : public QgsAbstractProfileSurf
     QgsCoordinateReferenceSystem mTargetCrs;
     QgsCoordinateTransformContext mTransformContext;
 
+    Qgis::RasterElevationMode mMode = Qgis::RasterElevationMode::RepresentsElevationSurface;
     double mOffset = 0;
     double mScale = 1;
+    QgsDoubleRange mFixedRange;
 
     QPointer< QgsRasterLayer > mLayer;
     std::unique_ptr< QgsRasterDataProvider > mRasterProvider;
+    std::unique_ptr< QgsRasterRenderer > mRasterRenderer;
 
     std::unique_ptr< QgsRasterLayerProfileResults > mResults;
 

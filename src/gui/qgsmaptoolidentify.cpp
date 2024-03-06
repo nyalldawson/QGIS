@@ -1393,7 +1393,8 @@ void QgsMapToolIdentify::fromElevationProfileLayerIdentificationToIdentifyResult
           attributes.insert( tr( "Distance along curve" ), QString::number( map.value( QStringLiteral( "distance" ) ).toDouble() ) );
         if ( map.value( QStringLiteral( "elevation" ) ).isValid() )
           attributes.insert( tr( "Elevation" ), QString::number( map.value( QStringLiteral( "elevation" ) ).toDouble() ) );
-
+        if ( map.value( QStringLiteral( "value" ) ).isValid() )
+          attributes.insert( tr( "Value" ), QString::number( map.value( QStringLiteral( "value" ) ).toDouble() ) );
         results.append( IdentifyResult( layer, layer->name(), {}, attributes ) );
       }
 
