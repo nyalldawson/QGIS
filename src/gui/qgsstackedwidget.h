@@ -72,9 +72,15 @@ class GUI_EXPORT QgsStackedWidget : public QStackedWidget
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
+    int heightForWidth(int width) const override;
+    bool hasHeightForWidth() const override ;
+  private slots:
+
+    void onCurrentChanged();
 
   private:
     SizeMode mSizeMode;
+
 };
 
 #endif // QGSSTACKEDWIDGET_H
