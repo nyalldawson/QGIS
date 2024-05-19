@@ -1750,6 +1750,7 @@ QgsLayoutExporter::ExportResult QgsLayoutExporter::handleLayeredExport( const QL
 
   int prevType = -1;
   QgsLayoutItem::ExportLayerBehavior prevItemBehavior = QgsLayoutItem::CanGroupWithAnyOtherItem;
+  QString previousItemGroup;
   unsigned int layerId = 1;
   QgsLayoutItem::ExportLayerDetail layerDetails;
   itemHider.hideAll();
@@ -1762,7 +1763,15 @@ QgsLayoutExporter::ExportResult QgsLayoutExporter::handleLayeredExport( const QL
     bool canPlaceInExistingLayer = false;
     if ( layoutItem )
     {
-      switch ( layoutItem->exportLayerBehavior() )
+      QgsLayoutItem::ExportLayerBehavior itemExportBehavior = layoutItem->exportLayerBehavior();
+      const QString exportGroup = layoutItem->exportLayerName();
+      if ( !exportGroup.isEmpty() )
+      {
+        if ( exportGroup != previousItemGroup )
+          itemExportBehavior = QgsLayoutItem::MustPlaceInOwnLayer;
+      }
+
+      switch ( itemExportBehavior )
       {
         case QgsLayoutItem::CanGroupWithAnyOtherItem:
         {
@@ -1811,12 +1820,15 @@ QgsLayoutExporter::ExportResult QgsLayoutExporter::handleLayeredExport( const QL
           canPlaceInExistingLayer = false;
           break;
       }
-      prevItemBehavior = layoutItem->exportLayerBehavior();
+      prevItemBehavior = itemExportBehavior;
       prevType = layoutItem->type();
+      previousItemGroup = exportGroup;
+      layerDetails.groupName = exportGroup;
     }
     else
     {
       prevItemBehavior = QgsLayoutItem::MustPlaceInOwnLayer;
+      previousItemGroup.clear();
     }
 
     if ( canPlaceInExistingLayer )
