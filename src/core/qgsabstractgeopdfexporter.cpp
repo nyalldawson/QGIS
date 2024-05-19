@@ -297,7 +297,8 @@ QString QgsAbstractGeoPdfExporter::createCompositionXml( const QList<ComponentLa
           group.setAttribute( QStringLiteral( "id" ), QStringLiteral( "group_%1" ).arg( component.group ) );
           group.setAttribute( QStringLiteral( "name" ), component.group );
           group.setAttribute( QStringLiteral( "initiallyVisible" ), groupLayerMap.empty() ? QStringLiteral( "true" ) : QStringLiteral( "false" ) );
-          group.setAttribute( QStringLiteral( "mutuallyExclusiveGroupId" ), QStringLiteral( "__mutually_exclusive_groups__" ) );
+          if ( details.mutuallyExclusiveGroups.contains( component.group ) )
+            group.setAttribute( QStringLiteral( "mutuallyExclusiveGroupId" ), QStringLiteral( "__mutually_exclusive_groups__" ) );
           pendingLayerTreeElements.insert( component.mapLayerId, group );
           group.appendChild( layer );
           groupLayerMap[ component.group ] = group;
@@ -337,7 +338,8 @@ QString QgsAbstractGeoPdfExporter::createCompositionXml( const QList<ComponentLa
         group.setAttribute( QStringLiteral( "id" ), QStringLiteral( "group_%1" ).arg( component.group ) );
         group.setAttribute( QStringLiteral( "name" ), component.group );
         group.setAttribute( QStringLiteral( "initiallyVisible" ), groupLayerMap.empty() ? QStringLiteral( "true" ) : QStringLiteral( "false" ) );
-        group.setAttribute( QStringLiteral( "mutuallyExclusiveGroupId" ), QStringLiteral( "__mutually_exclusive_groups__" ) );
+        if ( details.mutuallyExclusiveGroups.contains( component.group ) )
+          group.setAttribute( QStringLiteral( "mutuallyExclusiveGroupId" ), QStringLiteral( "__mutually_exclusive_groups__" ) );
         pendingLayerTreeElements.insert( component.mapLayerId, group );
         group.appendChild( layer );
         groupLayerMap[ component.group ] = group;

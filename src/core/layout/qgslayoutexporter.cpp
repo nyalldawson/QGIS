@@ -589,7 +589,9 @@ QgsLayoutExporter::ExportResult QgsLayoutExporter::exportToPdf( const QString &f
     const QDir baseDir = settings.exportLayersAsSeperateFiles ? QFileInfo( filePath ).dir() : QDir();  //#spellok
     const QString baseFileName = settings.exportLayersAsSeperateFiles ? QFileInfo( filePath ).completeBaseName() : QString();  //#spellok
 
-    auto exportFunc = [this, &subSettings, &pdfComponents, &geoPdfExporter, &settings, &baseDir, &baseFileName]( unsigned int layerId, const QgsLayoutItem::ExportLayerDetail & layerDetail )->QgsLayoutExporter::ExportResult
+    QSet<QString> mutuallyExclusiveGroups;
+
+    auto exportFunc = [this, &subSettings, &pdfComponents, &geoPdfExporter, &settings, &baseDir, &baseFileName, &mutuallyExclusiveGroups]( unsigned int layerId, const QgsLayoutItem::ExportLayerDetail & layerDetail )->QgsLayoutExporter::ExportResult
     {
       ExportResult layerExportResult = Success;
       QgsLayoutGeoPdfExporter::ComponentLayerDetail component;
@@ -597,7 +599,16 @@ QgsLayoutExporter::ExportResult QgsLayoutExporter::exportToPdf( const QString &f
       component.mapLayerId = layerDetail.mapLayerId;
       component.opacity = layerDetail.opacity;
       component.compositionMode = layerDetail.compositionMode;
-      component.group = layerDetail.mapTheme;
+      if ( !layerDetail.mapTheme.isEmpty() )
+      {
+        component.group = layerDetail.mapTheme;
+        mutuallyExclusiveGroups.insert( layerDetail.mapTheme );
+      }
+      else
+      {
+        component.group = layerDetail.groupName;
+      }
+
       component.sourcePdfPath = settings.writeGeoPdf ? geoPdfExporter->generateTemporaryFilepath( QStringLiteral( "layer_%1.pdf" ).arg( layerId ) ) : baseDir.filePath( QStringLiteral( "%1_%2.pdf" ).arg( baseFileName ).arg( layerId, 4, 10, QChar( '0' ) ) );
       pdfComponents << component;
       QPdfWriter printer = QPdfWriter( component.sourcePdfPath );
@@ -626,6 +637,7 @@ QgsLayoutExporter::ExportResult QgsLayoutExporter::exportToPdf( const QString &f
       QgsLayoutSize pageSize = mLayout->pageCollection()->page( 0 )->sizeWithUnits();
       QgsLayoutSize pageSizeMM = mLayout->renderContext().measurementConverter().convert( pageSize, Qgis::LayoutUnit::Millimeters );
       details.pageSizeMm = pageSizeMM.toQSizeF();
+      details.mutuallyExclusiveGroups = mutuallyExclusiveGroups;
 
       if ( settings.exportMetadata )
       {
