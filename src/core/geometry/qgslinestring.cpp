@@ -1428,6 +1428,125 @@ QgsPoint *QgsLineString::interpolatePoint( const double distance ) const
   return res.release();
 }
 
+bool QgsLineString::lineLocatePointByM( double m, double &x, double &y, double &z, double &distanceFromStart ) const
+{
+  if ( !isMeasure() )
+    return false;
+
+  distanceFromStart = 0;
+  const int totalPoints = numPoints();
+  if ( totalPoints == 0 )
+    return false;
+
+  const double *xData = mX.constData();
+  const double *yData = mY.constData();
+  const double *mData = mM.constData();
+  const double *zData = is3D() ? mZ.constData() : nullptr;
+
+  double prevX = *xData++;
+  double prevY = *yData++;
+  double prevZ = zData ? *zData++ : 0;
+  double prevM = *mData++;
+
+  int i = 1;
+  while ( i < totalPoints )
+  {
+    double thisX = *xData++;
+    double thisY = *yData++;
+    double thisZ = zData ? *zData++ : 0;
+    double thisM = *mData++;
+    const double segmentLength = QgsGeometryUtilsBase::distance2D( thisX, thisY, prevX, prevY );
+
+    if ( std::isnan( thisM ) )
+    {
+      int j = 0;
+      double scanAheadX = thisX;
+      double scanAheadY = thisY;
+      double scanAheadZ = thisZ;
+      double distanceToNextValidM = segmentLength;
+      while ( i + j < totalPoints - 1 )
+      {
+        double nextScanAheadX = xData[j];
+        double nextScanAheadY = yData[j];
+        double nextScanAheadZ = zData ? zData[j] : 0;
+        double nextScanAheadM = mData[ j ];
+        const double scanAheadSegmentLength = QgsGeometryUtilsBase::distance2D( scanAheadX, scanAheadY, nextScanAheadX, nextScanAheadY );
+        distanceToNextValidM += scanAheadSegmentLength;
+
+        if ( !std::isnan( nextScanAheadM ) )
+        {
+          // check if target m value falls within this segment's range
+          if ( ( prevM < m && nextScanAheadM > m ) || ( prevM > m && nextScanAheadM < m ) || qgsDoubleNear( prevM, m ) || qgsDoubleNear( nextScanAheadM, m ) )
+          {
+            const double distanceToPoint = ( m - prevM ) / ( nextScanAheadM - prevM ) * distanceToNextValidM;
+            double traversedDistance = 0;
+            // ok, jump back to last valid m and then step along line until we hit distanceToPoint
+            int k = -1;
+            scanAheadX = prevX;
+            scanAheadY = prevY;
+            scanAheadZ = prevZ;
+            while ( i + k < totalPoints - 1 )
+            {
+              nextScanAheadX = xData[k];
+              nextScanAheadY = yData[k];
+              nextScanAheadZ = zData ? zData[k] : 0;
+              const double scanAheadSegmentLength = QgsGeometryUtilsBase::distance2D( scanAheadX, scanAheadY, nextScanAheadX, nextScanAheadY );
+              if ( traversedDistance + scanAheadSegmentLength > distanceToPoint || qgsDoubleNear( traversedDistance + scanAheadSegmentLength, distanceToPoint ) )
+              {
+                const double delta = ( distanceToPoint - traversedDistance ) / scanAheadSegmentLength;
+                const double distanceToPoint = delta * scanAheadSegmentLength;
+
+                QgsGeometryUtilsBase::pointOnLineWithDistance( scanAheadX, scanAheadY, nextScanAheadX, nextScanAheadY, distanceToPoint, x, y );
+                z = scanAheadZ + ( nextScanAheadZ - scanAheadZ ) * delta;
+                distanceFromStart += distanceToPoint;
+                return true;
+              }
+              traversedDistance += scanAheadSegmentLength;
+              distanceFromStart += scanAheadSegmentLength;
+              scanAheadX = nextScanAheadX;
+              scanAheadY = nextScanAheadY;
+              scanAheadZ = nextScanAheadZ;
+              ++k;
+            }
+          }
+
+          break;
+        }
+
+        scanAheadX = nextScanAheadX;
+        scanAheadY = nextScanAheadY;
+        scanAheadZ = nextScanAheadZ;
+        ++j;
+      }
+    }
+    else
+    {
+      // TODO -- use centroid for constant value m segments
+
+      // check if target m value falls within this segment's range
+      if ( ( prevM < m && thisM > m ) || ( prevM > m && thisM < m ) || qgsDoubleNear( prevM, m ) || qgsDoubleNear( thisM, m ) )
+      {
+        const double delta = ( m - prevM ) / ( thisM - prevM );
+
+        const double distanceToPoint = delta * segmentLength;
+
+        QgsGeometryUtilsBase::pointOnLineWithDistance( prevX, prevY, thisX, thisY, distanceToPoint, x, y );
+        z = prevZ + ( thisZ - prevZ ) * delta;
+        distanceFromStart += distanceToPoint;
+        return true;
+      }
+    }
+
+    distanceFromStart += segmentLength;
+    prevX = thisX;
+    prevY = thisY;
+    prevZ = thisZ;
+    prevM = thisM;
+    ++i;
+  }
+  return false;
+}
+
 QgsLineString *QgsLineString::curveSubstring( double startDistance, double endDistance ) const
 {
   if ( startDistance < 0 && endDistance < 0 )
