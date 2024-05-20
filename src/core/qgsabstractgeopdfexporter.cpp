@@ -349,10 +349,10 @@ QString QgsAbstractGeoPdfExporter::createCompositionXml( const QList<ComponentLa
   // some PDF components may not be linked to vector components - e.g. layers with labels but no features (or raster layers)
   for ( const ComponentLayerDetail &component : components )
   {
-    if ( component.mapLayerId.isEmpty() || createdLayerIds.value( component.group ).contains( component.mapLayerId ) )
+    if ( ( component.mapLayerId.isEmpty() && component.group.isEmpty() ) || createdLayerIds.value( component.group ).contains( component.mapLayerId ) )
       continue;
 
-    if ( details.customLayerTreeGroups.contains( component.mapLayerId ) )
+    if ( !component.mapLayerId.isEmpty() && details.customLayerTreeGroups.contains( component.mapLayerId ) )
       continue;
 
     QDomElement layer = doc.createElement( QStringLiteral( "Layer" ) );
@@ -553,7 +553,7 @@ QString QgsAbstractGeoPdfExporter::createCompositionXml( const QList<ComponentLa
   QDomElement content = doc.createElement( QStringLiteral( "Content" ) );
   for ( const ComponentLayerDetail &component : components )
   {
-    if ( component.mapLayerId.isEmpty() )
+    if ( component.mapLayerId.isEmpty() && component.group.isEmpty() )
     {
       content.appendChild( createPdfDatasetElement( component ) );
     }
