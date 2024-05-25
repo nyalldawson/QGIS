@@ -78,6 +78,11 @@ void QgsTextFormatWidget::initWidget()
   QColor iconTextColor = palette().color( QPalette::Text );
   if ( iconTextColor.lightnessF() < 0.2 )
     iconTextColor = QColor( 66, 68, 69 );
+  QColor iconBaseColor = palette().color( QPalette::Window );
+  if ( iconBaseColor.lightnessF() > 0.8 )
+    iconBaseColor = QColor( 255, 255, 255 );
+  if ( iconBaseColor.lightnessF() < 0.2 )
+    iconBaseColor = QColor( 0, 0, 0 );
 
   mOptionsTab->setTabIcon( mOptionsTab->indexOf( textTab ),
                            QgsApplication::getThemeIcon( QStringLiteral( "mIconLabelText.svg" ), iconTextColor ) );
@@ -86,6 +91,10 @@ void QgsTextFormatWidget::initWidget()
   mOptionsTab->setTabIcon( mOptionsTab->indexOf( bufferTab ),
                            QgsApplication::getThemeIcon( QStringLiteral( "mIconLabelBuffer.svg" ), iconTextColor,
                                QColor( 149, 178, 241 ) ) );
+  mOptionsTab->setTabIcon( mOptionsTab->indexOf( shadowTab ),
+                           QgsApplication::getThemeIcon( QStringLiteral( "mIconLabelShadow.svg" ),
+                               iconTextColor,
+                               iconBaseColor ) );
 
   mGeometryGeneratorGroupBox->setCollapsed( true );
 

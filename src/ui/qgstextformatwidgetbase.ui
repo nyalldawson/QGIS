@@ -388,7 +388,7 @@
               <string/>
              </attribute>
             </widget>
-            <widget class="QWidget" name="tab_4">
+            <widget class="QWidget" name="shadowTab">
              <attribute name="icon">
               <iconset resource="../../images/images.qrc">
                <normaloff>:/images/themes/default/propertyicons/labelshadow.svg</normaloff>:/images/themes/default/propertyicons/labelshadow.svg</iconset>
