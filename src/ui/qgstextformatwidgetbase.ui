@@ -352,7 +352,7 @@
               <string/>
              </attribute>
             </widget>
-            <widget class="QWidget" name="tab_2">
+            <widget class="QWidget" name="formattingTab">
              <attribute name="icon">
               <iconset resource="../../images/images.qrc">
                <normaloff>:/images/themes/default/propertyicons/labelformatting.svg</normaloff>:/images/themes/default/propertyicons/labelformatting.svg</iconset>
@@ -361,7 +361,7 @@
               <string/>
              </attribute>
             </widget>
-            <widget class="QWidget" name="tab">
+            <widget class="QWidget" name="bufferTab">
              <attribute name="icon">
               <iconset resource="../../images/images.qrc">
                <normaloff>:/images/themes/default/propertyicons/labelbuffer.svg</normaloff>:/images/themes/default/propertyicons/labelbuffer.svg</iconset>
