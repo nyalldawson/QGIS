@@ -45,6 +45,7 @@
 
 #include <QRegularExpression>
 #include <QUrl>
+#include <qgsgraduatedsymbolrenderer.h>
 
 QMetaType::Type QgsArcGisRestUtils::convertFieldType( const QString &esriFieldType )
 {
@@ -946,7 +947,7 @@ QgsFeatureRenderer *QgsArcGisRestUtils::convertRenderer( const QVariantMap &rend
   else if ( type == QLatin1String( "classBreaks" ) )
   {
     // currently unsupported
-    return nullptr;
+      return new QgsGraduatedSymbolRenderer();
   }
   else if ( type == QLatin1String( "heatmap" ) )
   {
