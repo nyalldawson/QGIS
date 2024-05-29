@@ -15,6 +15,8 @@
 
 #include "qgscodeeditorhistorydialog.h"
 #include "qgscodeeditor.h"
+#include "qgsmessagebar.h"
+
 #include <QStandardItemModel>
 #include <QShortcut>
 
@@ -44,6 +46,11 @@ QgsCodeEditorHistoryDialog::QgsCodeEditorHistoryDialog( QgsCodeEditor *editor, Q
   connect( mButtonRunHistory, &QPushButton::clicked, this, &QgsCodeEditorHistoryDialog::executeSelectedHistory );
 }
 
+void QgsCodeEditorHistoryDialog::setMessageBar( QgsMessageBar *bar )
+{
+  mMessageBar = bar;
+}
+
 void QgsCodeEditorHistoryDialog::executeSelectedHistory()
 {
   if ( !mEditor )
@@ -71,6 +78,11 @@ void QgsCodeEditorHistoryDialog::saveHistory()
     return;
 
   mEditor->writeHistoryFile();
+
+  if ( mMessageBar )
+  {
+    mMessageBar->pushMessage( "yay" );
+  }
 }
 
 void QgsCodeEditorHistoryDialog::reloadHistory()

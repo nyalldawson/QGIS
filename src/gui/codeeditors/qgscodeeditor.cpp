@@ -878,6 +878,7 @@ void QgsCodeEditor::showHistory()
 {
   QgsCodeEditorHistoryDialog *dialog = new QgsCodeEditorHistoryDialog( this, this );
   dialog->setAttribute( Qt::WA_DeleteOnClose );
+  dialog->setMessageBar( mMessageBar );
 
   dialog->show();
   dialog->activateWindow();
@@ -1173,4 +1174,9 @@ int QgsCodeInterpreter::exec( const QString &command )
 {
   mState = execCommandImpl( command );
   return mState;
+}
+
+void QgsCodeEditor::setMessageBar( QgsMessageBar *bar )
+{
+  mMessageBar = bar;
 }

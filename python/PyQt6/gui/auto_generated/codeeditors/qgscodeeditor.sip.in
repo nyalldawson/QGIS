@@ -123,6 +123,8 @@ Set the widget title
 :param title: widget title
 %End
 
+    void setMessageBar( QgsMessageBar *bar );
+
     virtual Qgis::ScriptLanguage language() const;
 %Docstring
 Returns the associated scripting language.

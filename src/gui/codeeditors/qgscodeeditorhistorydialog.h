@@ -26,6 +26,7 @@
 #define SIP_NO_FILE
 
 class QgsCodeEditor;
+class QgsMessageBar;
 
 
 ///@cond PRIVATE
@@ -66,6 +67,8 @@ class GUI_EXPORT QgsCodeEditorHistoryDialog : public QDialog, private Ui::QgsCod
      */
     QgsCodeEditorHistoryDialog( QgsCodeEditor *editor, QWidget *parent SIP_TRANSFERTHIS = nullptr );
 
+    void setMessageBar( QgsMessageBar *bar );
+
   private slots:
 
     void executeSelectedHistory();
@@ -78,6 +81,8 @@ class GUI_EXPORT QgsCodeEditorHistoryDialog : public QDialog, private Ui::QgsCod
 
     QPointer< QgsCodeEditor > mEditor;
     CodeHistoryModel *mModel = nullptr;
+    QgsMessageBar *mMessageBar = nullptr;
+
 
 };
 

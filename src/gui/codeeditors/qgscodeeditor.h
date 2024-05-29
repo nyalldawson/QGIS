@@ -33,6 +33,7 @@
 class QgsFilterLineEdit;
 class QToolButton;
 class QCheckBox;
+class QgsMessageBar;
 
 SIP_IF_MODULE( HAVE_QSCI_SIP )
 
@@ -178,6 +179,8 @@ class GUI_EXPORT QgsCodeEditor : public QsciScintilla
      * \param title widget title
      */
     void setTitle( const QString &title );
+
+    void setMessageBar( QgsMessageBar *bar );
 
     /**
      * Returns the associated scripting language.
@@ -657,6 +660,7 @@ class GUI_EXPORT QgsCodeEditor : public QsciScintilla
     QString mHistoryFilePath;
 
     QgsCodeInterpreter *mInterpreter = nullptr;
+    QgsMessageBar *mMessageBar = nullptr;
 
     static QMap< QgsCodeEditorColorScheme::ColorRole, QString > sColorRoleToSettingsKey;
 

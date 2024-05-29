@@ -45,6 +45,7 @@ from qgis.gui import (
     QgsCodeEditor,
     QgsCodeInterpreter
 )
+from qgis.utils import iface
 
 from .process_wrapper import ProcessWrapper
 if TYPE_CHECKING:
@@ -293,6 +294,8 @@ class ShellScintilla(QgsCodeEditorPython):
         self.console_widget: PythonConsoleWidget = console_widget
         self._interpreter = PythonInterpreter(shell=self)
         self.setInterpreter(self._interpreter)
+
+        self.setMessageBar(iface.messageBar())
 
         self.opening = ['(', '{', '[', "'", '"']
         self.closing = [')', '}', ']', "'", '"']
