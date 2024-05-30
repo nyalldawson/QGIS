@@ -949,6 +949,9 @@ QgsFeatureRenderer *QgsArcGisRestUtils::convertRenderer( const QVariantMap &rend
       const QString attrName = rendererData.value( QStringLiteral( "field" ) ).toString();
       QgsGraduatedSymbolRenderer* graduatedRenderer = new QgsGraduatedSymbolRenderer(attrName);
 
+      const QVariantMap symbolData = rendererData.value( QStringLiteral( "symbol" ) ).toMap();
+      std::unique_ptr< QgsSymbol > symbol( QgsArcGisRestUtils::convertSymbol( symbolData ) );
+      graduatedRenderer->setSourceSymbol( symbol.release() );
 
       return graduatedRenderer;
   }
