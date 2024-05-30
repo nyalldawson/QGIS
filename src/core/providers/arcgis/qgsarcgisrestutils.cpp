@@ -946,8 +946,11 @@ QgsFeatureRenderer *QgsArcGisRestUtils::convertRenderer( const QVariantMap &rend
   }
   else if ( type == QLatin1String( "classBreaks" ) )
   {
-    // currently unsupported
-      return new QgsGraduatedSymbolRenderer();
+      const QString attrName = rendererData.value( QStringLiteral( "field" ) ).toString();
+      QgsGraduatedSymbolRenderer* graduatedRenderer = new QgsGraduatedSymbolRenderer(attrName);
+
+
+      return graduatedRenderer;
   }
   else if ( type == QLatin1String( "heatmap" ) )
   {
