@@ -953,6 +953,44 @@ QgsFeatureRenderer *QgsArcGisRestUtils::convertRenderer( const QVariantMap &rend
       std::unique_ptr< QgsSymbol > symbol( QgsArcGisRestUtils::convertSymbol( symbolData ) );
       graduatedRenderer->setSourceSymbol( symbol.release() );
 
+      const QVariantList visualVariablesData = rendererData.value( QStringLiteral( "visualVariables" ) ).toList();
+      const QVariantList stops = visualVariablesData.at(0).toMap().value( QStringLiteral( "stops" ) ).toList();
+      double lastValue = 0;
+      for (int i = 0; i < stops.size(); ++i)
+      {
+          const QVariant& stop = stops.at(i);
+          const QVariantMap stopData = stop.toMap();
+          const QString label = stopData.value( QStringLiteral( "label" ) ).toString();
+          const double breakpoint = stopData.value( QStringLiteral( "value" ) ).toFloat();
+
+          QColor fillColor = convertColor( stopData.value( QStringLiteral( "color" ) ) );
+          Qt::BrushStyle brushStyle = convertFillStyle( symbolData.value( QStringLiteral( "style" ) ).toString() );
+
+          const QVariantMap outlineData = symbolData.value( QStringLiteral( "outline" ) ).toMap();
+          QColor lineColor = convertColor( outlineData.value( QStringLiteral( "color" ) ) );
+          Qt::PenStyle penStyle = convertLineStyle( outlineData.value( QStringLiteral( "style" ) ).toString() );
+          bool ok = false;
+          double penWidthInPoints = outlineData.value( QStringLiteral( "width" ) ).toDouble( &ok );
+
+          QgsSymbolLayerList layers;
+          std::unique_ptr< QgsSimpleFillSymbolLayer > fillLayer = std::make_unique< QgsSimpleFillSymbolLayer >( fillColor, brushStyle, lineColor, penStyle, penWidthInPoints );
+          fillLayer->setStrokeWidthUnit( Qgis::RenderUnit::Points );
+          layers.append( fillLayer.release() );
+
+          std::unique_ptr< QgsFillSymbol > symbol = std::make_unique< QgsFillSymbol >( layers );
+
+          QgsRendererRange range;
+
+          range.setLowerValue( lastValue );
+          range.setUpperValue( breakpoint );
+          range.setLabel( label );
+          range.setSymbol( symbol.release() );
+
+          lastValue = breakpoint;
+
+          graduatedRenderer->addClass( range );
+      }
+
       return graduatedRenderer;
   }
   else if ( type == QLatin1String( "heatmap" ) )
