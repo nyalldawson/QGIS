@@ -946,6 +946,7 @@ QgsFeatureRenderer *QgsArcGisRestUtils::convertRenderer( const QVariantMap &rend
   }
   else if ( type == QLatin1String( "classBreaks" ) )
   {
+      const std::list<QString> visVarTypes = {QStringLiteral( "colorInfo" )};
       const QString attrName = rendererData.value( QStringLiteral( "field" ) ).toString();
       QgsGraduatedSymbolRenderer* graduatedRenderer = new QgsGraduatedSymbolRenderer(attrName);
 
@@ -966,32 +967,23 @@ QgsFeatureRenderer *QgsArcGisRestUtils::convertRenderer( const QVariantMap &rend
               const QString label = stopData.value( QStringLiteral( "label" ) ).toString();
               const double breakpoint = stopData.value( QStringLiteral( "value" ) ).toFloat();
 
-              QColor fillColor = convertColor( stopData.value( QStringLiteral( "color" ) ) );
-              Qt::BrushStyle brushStyle = convertFillStyle( symbolData.value( QStringLiteral( "style" ) ).toString() );
+              if ( (std::find(visVarTypes.begin(), visVarTypes.end(), visualVariable.toMap().value( QStringLiteral( "type" ) ).toString()) != visVarTypes.end() ) )
+              {
+                  // handle color change stops:
+                  QColor fillColor = convertColor( stopData.value( QStringLiteral( "color" ) ) );
+                  std::unique_ptr< QgsSymbol > symbolForStop( graduatedRenderer->sourceSymbol()->clone() );
+                  // symbolForStop->setColor( fillColor );
 
-              const QVariantMap outlineData = symbolData.value( QStringLiteral( "outline" ) ).toMap();
-              QColor lineColor = convertColor( outlineData.value( QStringLiteral( "color" ) ) );
-              Qt::PenStyle penStyle = convertLineStyle( outlineData.value( QStringLiteral( "style" ) ).toString() );
-              bool ok = false;
-              double penWidthInPoints = outlineData.value( QStringLiteral( "width" ) ).toDouble( &ok );
+                  QgsRendererRange range;
 
-              QgsSymbolLayerList layers;
-              std::unique_ptr< QgsSimpleFillSymbolLayer > fillLayer = std::make_unique< QgsSimpleFillSymbolLayer >( fillColor, brushStyle, lineColor, penStyle, penWidthInPoints );
-              fillLayer->setStrokeWidthUnit( Qgis::RenderUnit::Points );
-              layers.append( fillLayer.release() );
+                  range.setLowerValue( lastValue );
+                  range.setUpperValue( breakpoint );
+                  range.setLabel( label );
+                  range.setSymbol( symbolForStop.release() );
 
-              std::unique_ptr< QgsFillSymbol > symbol = std::make_unique< QgsFillSymbol >( layers );
-
-              QgsRendererRange range;
-
-              range.setLowerValue( lastValue );
-              range.setUpperValue( breakpoint );
-              range.setLabel( label );
-              range.setSymbol( symbol.release() );
-
-              lastValue = breakpoint;
-
-              graduatedRenderer->addClass( range );
+                  lastValue = breakpoint;
+                  graduatedRenderer->addClass( range );
+              }
           }
       }
 
