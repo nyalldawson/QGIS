@@ -946,48 +946,57 @@ QgsFeatureRenderer *QgsArcGisRestUtils::convertRenderer( const QVariantMap &rend
   }
   else if ( type == QLatin1String( "classBreaks" ) )
   {
-      const std::list<QString> visVarTypes = {QStringLiteral( "colorInfo" )};
-      const QString attrName = rendererData.value( QStringLiteral( "field" ) ).toString();
-      QgsGraduatedSymbolRenderer* graduatedRenderer = new QgsGraduatedSymbolRenderer(attrName);
+    const std::list<QString> visVarTypes = {QStringLiteral( "colorInfo" )};
+    const QString attrName = rendererData.value( QStringLiteral( "field" ) ).toString();
+    QgsGraduatedSymbolRenderer *graduatedRenderer = new QgsGraduatedSymbolRenderer( attrName );
 
-      const QVariantMap symbolData = rendererData.value( QStringLiteral( "symbol" ) ).toMap();
-      std::unique_ptr< QgsSymbol > symbol( QgsArcGisRestUtils::convertSymbol( symbolData ) );
-      graduatedRenderer->setSourceSymbol( symbol.release() );
+    const QVariantList classBreakInfos = rendererData.value( QStringLiteral( "classBreakInfos" ) ).toList();
+    QVariantMap symbolData;
+    if ( !classBreakInfos.isEmpty() )
+    {
+      symbolData = classBreakInfos.at( 0 ).toMap().value( QStringLiteral( "symbol" ) ).toMap();
+    }
 
-      const QVariantList visualVariablesData = rendererData.value( QStringLiteral( "visualVariables" ) ).toList();
-      double lastValue = 0;
-      for ( const QVariant& visualVariable : visualVariablesData )
+    std::unique_ptr< QgsSymbol > symbol( QgsArcGisRestUtils::convertSymbol( symbolData ) );
+    if ( !symbol )
+      return nullptr;
+
+    graduatedRenderer->setSourceSymbol( symbol.release() );
+
+    const QVariantList visualVariablesData = rendererData.value( QStringLiteral( "visualVariables" ) ).toList();
+    double lastValue = 0;
+    for ( const QVariant &visualVariable : visualVariablesData )
+    {
+      const QVariantList stops = visualVariable.toMap().value( QStringLiteral( "stops" ) ).toList();
+
+      for ( int i = 0; i < stops.size(); ++i )
       {
-          const QVariantList stops = visualVariable.toMap().value( QStringLiteral( "stops" ) ).toList();
+        const QVariant &stop = stops.at( i );
+        const QVariantMap stopData = stop.toMap();
+        const QString label = stopData.value( QStringLiteral( "label" ) ).toString();
+        const double breakpoint = stopData.value( QStringLiteral( "value" ) ).toFloat();
 
-          for (int i = 0; i < stops.size(); ++i)
-          {
-              const QVariant& stop = stops.at(i);
-              const QVariantMap stopData = stop.toMap();
-              const QString label = stopData.value( QStringLiteral( "label" ) ).toString();
-              const double breakpoint = stopData.value( QStringLiteral( "value" ) ).toFloat();
+        if ( ( std::find( visVarTypes.begin(), visVarTypes.end(), visualVariable.toMap().value( QStringLiteral( "type" ) ).toString() ) != visVarTypes.end() ) )
+        {
+          // handle color change stops:
+          QColor fillColor = convertColor( stopData.value( QStringLiteral( "color" ) ) );
+          std::unique_ptr< QgsSymbol > symbolForStop( graduatedRenderer->sourceSymbol()->clone() );
+          symbolForStop->setColor( fillColor );
 
-              if ( (std::find(visVarTypes.begin(), visVarTypes.end(), visualVariable.toMap().value( QStringLiteral( "type" ) ).toString()) != visVarTypes.end() ) )
-              {
-                  // handle color change stops:
-                  QColor fillColor = convertColor( stopData.value( QStringLiteral( "color" ) ) );
-                  std::unique_ptr< QgsSymbol > symbolForStop( graduatedRenderer->sourceSymbol()->clone() );
-                  // symbolForStop->setColor( fillColor );
+          QgsRendererRange range;
 
-                  QgsRendererRange range;
+          range.setLowerValue( lastValue );
+          range.setUpperValue( breakpoint );
+          range.setLabel( label );
+          range.setSymbol( symbolForStop.release() );
 
-                  range.setLowerValue( lastValue );
-                  range.setUpperValue( breakpoint );
-                  range.setLabel( label );
-                  range.setSymbol( symbolForStop.release() );
-
-                  lastValue = breakpoint;
-                  graduatedRenderer->addClass( range );
-              }
-          }
+          lastValue = breakpoint;
+          graduatedRenderer->addClass( range );
+        }
       }
+    }
 
-      return graduatedRenderer;
+    return graduatedRenderer;
   }
   else if ( type == QLatin1String( "heatmap" ) )
   {
