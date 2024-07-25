@@ -107,8 +107,8 @@ public:
         setGeometry( mGeom );
 
 
-        const double radius = 1;
-        constexpr int numberOfSubDivisions = 5;
+        const double radius = 50;
+        constexpr int numberOfSubDivisions = 3;
         constexpr double rootTwoOverThree = M_SQRT2 / 3.0;
         constexpr double oneThird = 1.0 / 3.0;
         constexpr double rootSixOverThree = 2.449489742783178 / 3.0;
@@ -122,10 +122,10 @@ public:
         positions.append( QVector3D( rootSixOverThree, -rootTwoOverThree, -oneThird ) * radius );
 
 
-        positions.append( QVector3D( 0, 0, 1).normalized() );
-        positions.append( QVector3D( 0, 2 * rootTwoOverThree, -oneThird ).normalized() );
-        positions.append( QVector3D( -rootSixOverThree, -rootTwoOverThree, -oneThird ).normalized() );
-        positions.append( QVector3D( rootSixOverThree, -rootTwoOverThree, -oneThird ).normalized() );
+        normals.append( QVector3D( 0, 0, 1).normalized() );
+        normals.append( QVector3D( 0, 2 * rootTwoOverThree, -oneThird ).normalized() );
+        normals.append( QVector3D( -rootSixOverThree, -rootTwoOverThree, -oneThird ).normalized() );
+        normals.append( QVector3D( rootSixOverThree, -rootTwoOverThree, -oneThird ).normalized() );
 
 
         subdivide( positions, normals, indices, {0,1,2}, numberOfSubDivisions, radius );
@@ -298,7 +298,7 @@ void initCanvas3D( Qgs3DMapCanvas *canvas )
   ms.setDestinationCrs( QgsProject::instance()->crs() );
   ms.setLayers( visibleLayers );
   QgsRectangle fullExtent = QgsProject::instance()->viewSettings()->fullExtent();
-  fullExtent = QgsRectangle( -2, -2, 2, 2 );
+  fullExtent = QgsRectangle( -50, -50, 50, 50 );
 
   Qgs3DMapSettings *map = new Qgs3DMapSettings;
   map->setCrs( QgsProject::instance()->crs() );
