@@ -34,8 +34,253 @@
 #include "qgsterrainprovider.h"
 #include "qgstiledscenelayer.h"
 #include "qgstiledscenelayer3drenderer.h"
+#include "qgschunkboundsentity_p.h"
+#include "qgs3dwiredmesh_p.h"
+#include "qgsgoochmaterialsettings.h"
+#include "qgsphongmaterialsettings.h"
+#include "qgsdirectionallightsettings.h"
 
 #include <QScreen>
+
+#include <Qt3DExtras/QGoochMaterial>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#include <Qt3DRender/QAttribute>
+#include <Qt3DRender/QGeometry>
+typedef Qt3DRender::QAttribute Qt3DQAttribute;
+typedef Qt3DRender::QGeometry Qt3DQGeometry;
+typedef Qt3DRender::QBuffer Qt3DQBuffer;
+#else
+#include <Qt3DCore/QAttribute>
+#include <Qt3DCore/QGeometry>
+typedef Qt3DCore::QAttribute Qt3DQAttribute;
+typedef Qt3DCore::QGeometry Qt3DQGeometry;
+typedef Qt3DCore::QBuffer Qt3DQBuffer;
+#endif
+
+class Mesh : public Qt3DRender::QGeometryRenderer
+{
+
+public:
+
+
+    Mesh( Qt3DCore::QNode *parent = nullptr )
+        : Qt3DRender::QGeometryRenderer( parent )
+        , mPositionAttribute( new Qt3DQAttribute( this ) )
+        , mNormalAttribute( new Qt3DQAttribute( this ) )
+        , mIndexAttribute( new Qt3DQAttribute( this ) )
+        , mVertexBuffer( new Qt3DQBuffer( this ) )
+        , mNormalBuffer( new Qt3DQBuffer( this ) )
+        , mIndexBuffer( new Qt3DQBuffer( this ) )
+    {
+        mPositionAttribute->setAttributeType( Qt3DQAttribute::VertexAttribute );
+        mPositionAttribute->setBuffer( mVertexBuffer );
+        mPositionAttribute->setVertexBaseType( Qt3DQAttribute::Float );
+        mPositionAttribute->setVertexSize( 3 );
+        mPositionAttribute->setByteStride( 3 * sizeof( float ) );
+        mPositionAttribute->setByteOffset( 0 );
+        mPositionAttribute->setName( Qt3DQAttribute::defaultPositionAttributeName() );
+
+        mNormalAttribute->setAttributeType( Qt3DQAttribute::VertexAttribute );
+        mNormalAttribute->setBuffer( mNormalBuffer );
+        mNormalAttribute->setVertexBaseType( Qt3DQAttribute::Float );
+        mNormalAttribute->setVertexSize( 3 );
+        mNormalAttribute->setByteStride( 3 * sizeof( float ) );
+        mNormalAttribute->setByteOffset( 0 );
+        mNormalAttribute->setName( Qt3DQAttribute::defaultNormalAttributeName() );
+
+        mIndexAttribute->setAttributeType(Qt3DQAttribute::IndexAttribute);
+        mIndexAttribute->setVertexBaseType(Qt3DQAttribute::UnsignedInt);
+          mIndexAttribute->setByteStride( sizeof( uint ) );
+          mIndexAttribute->setByteOffset( 0 );
+        mIndexAttribute->setBuffer(mIndexBuffer);
+
+        mGeom = new Qt3DQGeometry( this );
+        mGeom->addAttribute( mPositionAttribute );
+        mGeom->addAttribute( mIndexAttribute );
+        mGeom->addAttribute( mNormalAttribute );
+
+        setInstanceCount( 1 );
+        setIndexOffset( 0 );
+        setFirstInstance( 0 );
+        setPrimitiveType( Qt3DRender::QGeometryRenderer::Triangles );
+        //setPrimitiveType( Qt3DRender::QGeometryRenderer::Lines);
+        setGeometry( mGeom );
+
+
+        const double radius = 1;
+        constexpr int numberOfSubDivisions = 5;
+        constexpr double rootTwoOverThree = M_SQRT2 / 3.0;
+        constexpr double oneThird = 1.0 / 3.0;
+        constexpr double rootSixOverThree = 2.449489742783178 / 3.0;
+
+        QList<QVector3D> positions;
+        QList<QVector3D> normals;
+        QList<int> indices;
+        positions.append( QVector3D( 0, 0, 1) * radius );
+        positions.append( QVector3D( 0, 2 * rootTwoOverThree, -oneThird ) * radius );
+        positions.append( QVector3D( -rootSixOverThree, -rootTwoOverThree, -oneThird ) * radius );
+        positions.append( QVector3D( rootSixOverThree, -rootTwoOverThree, -oneThird ) * radius );
+
+
+        positions.append( QVector3D( 0, 0, 1).normalized() );
+        positions.append( QVector3D( 0, 2 * rootTwoOverThree, -oneThird ).normalized() );
+        positions.append( QVector3D( -rootSixOverThree, -rootTwoOverThree, -oneThird ).normalized() );
+        positions.append( QVector3D( rootSixOverThree, -rootTwoOverThree, -oneThird ).normalized() );
+
+
+        subdivide( positions, normals, indices, {0,1,2}, numberOfSubDivisions, radius );
+        subdivide( positions, normals, indices, {0,2,3}, numberOfSubDivisions, radius );
+        subdivide( positions, normals, indices, {0,3,1}, numberOfSubDivisions, radius );
+        subdivide( positions, normals, indices, {1,3,2}, numberOfSubDivisions, radius );
+
+        setVertices( positions, normals,  indices );
+    }
+
+    void subdivide( QList<QVector3D> & positions, QList<QVector3D> & normals, QList<int> &indices, QList< int > triangle, int level, double radius )
+    {
+        if ( level > 0 )
+        {
+            QVector3D p1 = QVector3D(( positions[triangle[0]] + positions[triangle[1]] ) / 2).normalized();
+            QVector3D p2 = QVector3D(( positions[triangle[1]] + positions[triangle[2]] ) / 2).normalized();
+            QVector3D p3 = QVector3D(( positions[triangle[2]] + positions[triangle[0]] ) / 2).normalized();
+            positions.append( p1 * radius );
+            positions.append( p2* radius );
+            positions.append( p3 * radius );
+
+            normals.append( p1 );
+            normals.append( p2 );
+            normals.append( p3 );
+
+            int index01 = positions.size() - 3;
+            int index12 = positions.size() - 2;
+            int index20 = positions.size() - 1;
+            level--;
+
+            subdivide( positions, normals, indices, {triangle[0], index01, index20}, level, radius );
+            subdivide( positions, normals, indices, {index01, triangle[1], index12}, level, radius );
+            subdivide( positions, normals, indices, {index01, index12, index20}, level, radius );
+            subdivide( positions, normals, indices, {index20, index12, triangle[2]}, level, radius );
+        }
+        else
+        {
+#if 1
+            indices.append( triangle[0]);
+            indices.append( triangle[1]);
+            indices.append( triangle[2]);
+
+            const QVector3D t0 = positions[triangle[0]];
+            const QVector3D t1 = positions[triangle[1]];
+            const QVector3D t2 = positions[triangle[2]];
+
+            const QVector3D center = (t0+t1+t2);
+
+            QVector3D m( center.x() / ( radius * radius ), center.y()/ ( radius * radius ), center.z()/ ( radius * radius ) );
+
+
+
+
+
+#else
+            indices.append( triangle[0]);
+            indices.append( triangle[1]);
+
+            indices.append( triangle[1]);
+            indices.append( triangle[2]);
+
+            indices.append( triangle[2]);
+            indices.append( triangle[0]);
+#endif
+        }
+    }
+
+    void setVertices( const QList<QVector3D> &vertices, const QList<QVector3D> &normals, const QList<int> &indices )
+    {
+        QByteArray vertexBufferData;
+        vertexBufferData.resize( static_cast<int>( static_cast<long>( vertices.size() ) * 3 * sizeof( float ) ) );
+
+        QByteArray indexBufferData;
+        indexBufferData.resize( static_cast<int>( static_cast<long>( indices.size() ) * sizeof( uint ) ) );
+
+        float *rawVertexArray = reinterpret_cast<float *>( vertexBufferData.data() );
+        int idx = 0;
+
+        uint *rawIndexArray = reinterpret_cast<uint *>( indexBufferData.data() );
+
+        for ( const QVector3D &v : std::as_const( vertices ) )
+        {
+            rawVertexArray[idx++] = v.x();
+            rawVertexArray[idx++] = v.y();
+            rawVertexArray[idx++] = v.z();
+        }
+
+        idx = 0;
+        for ( int index : indices )
+        {
+            rawIndexArray[idx++] = index;
+        }
+
+        mVertexBuffer->setData( vertexBufferData );
+        //setVertexCount( vertices.count() );
+        mPositionAttribute->setCount( vertices.count() );
+
+        mIndexBuffer->setData( indexBufferData );
+        mIndexAttribute->setCount(indices.size() );
+
+        QByteArray normalBufferData;
+        normalBufferData.resize( static_cast<int>( static_cast<long>( normals.size() ) * 3 * sizeof( float ) ) );
+
+        float *rawNormalArray = reinterpret_cast<float *>( normalBufferData.data() );
+        idx = 0;
+
+        for ( const QVector3D &v : std::as_const( normals ) )
+        {
+            rawNormalArray[idx++] = v.x();
+            rawNormalArray[idx++] = v.y();
+            rawNormalArray[idx++] = v.z();
+        }
+        mNormalBuffer->setData( normalBufferData );
+        //setVertexCount( vertices.count() );
+        mNormalAttribute->setCount( normals.count() );
+    }
+
+private:
+    Qt3DRender::QGeometry *mGeom = nullptr;
+    Qt3DRender::QAttribute *mPositionAttribute = nullptr;
+    Qt3DRender::QAttribute *mIndexAttribute = nullptr;
+    Qt3DRender::QAttribute *mNormalAttribute = nullptr;
+    Qt3DRender::QBuffer *mVertexBuffer = nullptr;
+    Qt3DRender::QBuffer *mNormalBuffer = nullptr;
+      Qt3DRender::QBuffer *mIndexBuffer = nullptr;
+};
+
+class TetrahedronEntity : public Qt3DCore::QEntity
+{
+
+public:
+    TetrahedronEntity( Qt3DCore::QNode *parent = nullptr );
+
+private:
+    Mesh *mMesh = nullptr;
+};
+
+TetrahedronEntity::TetrahedronEntity( Qt3DCore::QNode *parent )
+    : Qt3DCore::QEntity( parent )
+{
+
+    mMesh = new Mesh;
+    addComponent( mMesh );
+
+    QgsPhongMaterialSettings settings;
+
+    Qt3DRender::QMaterial *bboxesMaterial = settings.toMaterial( QgsMaterialSettingsRenderingTechnique::Triangles,
+                        QgsMaterialContext() );
+
+
+
+    addComponent( bboxesMaterial );
+
+}
+
 
 void initCanvas3D( Qgs3DMapCanvas *canvas )
 {
@@ -53,16 +298,18 @@ void initCanvas3D( Qgs3DMapCanvas *canvas )
   ms.setDestinationCrs( QgsProject::instance()->crs() );
   ms.setLayers( visibleLayers );
   QgsRectangle fullExtent = QgsProject::instance()->viewSettings()->fullExtent();
+  fullExtent = QgsRectangle( -2, -2, 2, 2 );
 
   Qgs3DMapSettings *map = new Qgs3DMapSettings;
   map->setCrs( QgsProject::instance()->crs() );
   map->setOrigin( QgsVector3D( fullExtent.center().x(), fullExtent.center().y(), 0 ) );
   map->setLayers( visibleLayers );
+  map->setBackgroundColor( QColor( 255,255,255 ) );
 
   map->setExtent( fullExtent );
 
   Qgs3DAxisSettings axis;
-  axis.setMode( Qgs3DAxisSettings::Mode::Off );
+  axis.setMode( Qgs3DAxisSettings::Mode::Crs );
   map->set3DAxisSettings( axis );
 
   map->setTransformContext( QgsProject::instance()->transformContext() );
@@ -75,12 +322,12 @@ void initCanvas3D( Qgs3DMapCanvas *canvas )
 
   QgsFlatTerrainGenerator *flatTerrain = new QgsFlatTerrainGenerator;
   flatTerrain->setCrs( map->crs() );
-  map->setTerrainGenerator( flatTerrain );
+  //map->setTerrainGenerator( flatTerrain );
   map->setTerrainElevationOffset( QgsProject::instance()->elevationProperties()->terrainProvider()->offset() );
 
-  QgsPointLightSettings defaultPointLight;
-  defaultPointLight.setPosition( QgsVector3D( 0, 1000, 0 ) );
-  defaultPointLight.setConstantAttenuation( 0 );
+  QgsDirectionalLightSettings defaultPointLight;
+  //defaultPointLight.setPosition( QgsVector3D( 0, 1000, 0 ) );
+  //defaultPointLight.setConstantAttenuation( 0 );
   map->setLightSources( {defaultPointLight.clone() } );
   if ( QScreen *screen = QGuiApplication::primaryScreen() )
   {
@@ -92,6 +339,10 @@ void initCanvas3D( Qgs3DMapCanvas *canvas )
   }
 
   canvas->setMapSettings( map );
+
+  TetrahedronEntity* tetrahedron = new TetrahedronEntity();
+  //chunkBoundsEntity->setBoxes( {QgsAABB( -50, -50, -50, 50, 50, 50 ) });
+  canvas->scene()->addEntity( tetrahedron );
 
   QgsRectangle extent = fullExtent;
   extent.scale( 1.3 );
@@ -115,6 +366,7 @@ int main( int argc, char *argv[] )
   QgsApplication::initQgis();
   Qgs3D::initialize();
 
+  /*
   if ( argc < 2 )
   {
     qDebug() << "need QGIS project file";
@@ -128,6 +380,7 @@ int main( int argc, char *argv[] )
     qDebug() << "can't open project file" << projectFile;
     return 1;
   }
+*/
 
   // a hack to assign 3D renderer
   for ( QgsMapLayer *layer : QgsProject::instance()->layerTreeRoot()->checkedLayers() )

@@ -28,7 +28,7 @@
 //
 
 #include <Qt3DCore/QEntity>
-
+#include "qgis_3d.h"
 class QgsAABB;
 class Qgs3DWiredMesh;
 
@@ -40,7 +40,7 @@ class Qgs3DWiredMesh;
  * \brief Draws bounds of axis aligned bounding boxes
  * \note Not available in Python bindings
  */
-class QgsChunkBoundsEntity : public Qt3DCore::QEntity
+class _3D_EXPORT QgsChunkBoundsEntity : public Qt3DCore::QEntity
 {
     Q_OBJECT
 

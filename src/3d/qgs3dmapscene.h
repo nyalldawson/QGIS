@@ -151,6 +151,8 @@ class _3D_EXPORT Qgs3DMapScene : public QObject
      */
     Qt3DCore::QEntity *layerEntity( QgsMapLayer *layer ) const SIP_SKIP { return mLayerEntities.value( layer ); }
 
+    void addEntity( Qt3DCore::QEntity* entity );
+
     /**
      * Returns the scene extent in the map's CRS
      *

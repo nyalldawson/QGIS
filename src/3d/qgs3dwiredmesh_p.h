@@ -35,7 +35,7 @@
 #include <Qt3DCore/QBuffer>
 #endif
 #include <Qt3DRender/QGeometryRenderer>
-
+#include "qgis_3d.h"
 class QgsAABB;
 
 #define SIP_NO_FILE
@@ -46,7 +46,7 @@ class QgsAABB;
  *
  * \since QGIS 3.26
  */
-class Qgs3DWiredMesh : public Qt3DRender::QGeometryRenderer
+class _3D_EXPORT Qgs3DWiredMesh : public Qt3DRender::QGeometryRenderer
 {
     Q_OBJECT
 

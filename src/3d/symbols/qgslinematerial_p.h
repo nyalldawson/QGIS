@@ -29,7 +29,7 @@
 
 #include <Qt3DRender/QMaterial>
 #include <Qt3DRender/QCamera>
-
+#include "qgis_3d.h"
 #define SIP_NO_FILE
 
 /**
@@ -51,7 +51,7 @@
  * we have access to previous (p0) and next (p3) points). Geometry shader generates two triangles
  * for each segment and possibly another triangle for bevel join.
  */
-class QgsLineMaterial : public Qt3DRender::QMaterial
+class _3D_EXPORT QgsLineMaterial : public Qt3DRender::QMaterial
 {
     Q_OBJECT
   public:

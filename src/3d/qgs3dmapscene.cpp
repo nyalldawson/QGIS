@@ -1043,6 +1043,31 @@ QVector<const QgsChunkNode *> Qgs3DMapScene::getLayerActiveChunkNodes( QgsMapLay
   return chunks;
 }
 
+void Qgs3DMapScene::addEntity(Qt3DCore::QEntity* entity)
+{
+        entity->setParent( this );
+        finalizeNewEntity( entity );
+
+        bool needsSceneUpdate = false;
+        if ( Qgs3DMapSceneEntity *sceneNewEntity = qobject_cast<Qgs3DMapSceneEntity *>( entity ) )
+        {
+            needsSceneUpdate = true;
+            mSceneEntities.append( sceneNewEntity );
+
+            connect( sceneNewEntity, &Qgs3DMapSceneEntity::newEntityCreated, this, [this]( Qt3DCore::QEntity * entity )
+                    {
+                        finalizeNewEntity( entity );
+                        // this ensures to update the near/far planes with the exact bounding box of the new entity.
+                        updateCameraNearFarPlanes();
+                    } );
+
+            connect( sceneNewEntity, &Qgs3DMapSceneEntity::pendingJobsCountChanged, this, &Qgs3DMapScene::totalPendingJobsCountChanged );
+        }
+
+        if ( needsSceneUpdate )
+            onCameraChanged();   // needed for chunked entities
+}
+
 QgsRectangle Qgs3DMapScene::sceneExtent() const
 {
   return mMap.extent();
