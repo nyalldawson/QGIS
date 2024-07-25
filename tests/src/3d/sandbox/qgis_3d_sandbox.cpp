@@ -30,13 +30,10 @@
 #include "qgs3dmapcanvas.h"
 #include "qgsprojectelevationproperties.h"
 #include "qgsprojectviewsettings.h"
-#include "qgspointlightsettings.h"
 #include "qgsterrainprovider.h"
 #include "qgstiledscenelayer.h"
 #include "qgstiledscenelayer3drenderer.h"
 #include "qgschunkboundsentity_p.h"
-#include "qgs3dwiredmesh_p.h"
-#include "qgsgoochmaterialsettings.h"
 #include "qgsphongmaterialsettings.h"
 #include "qgsdirectionallightsettings.h"
 
@@ -46,12 +43,14 @@
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <Qt3DRender/QAttribute>
 #include <Qt3DRender/QGeometry>
+#include <Qt3DRender/QBuffer>
 typedef Qt3DRender::QAttribute Qt3DQAttribute;
 typedef Qt3DRender::QGeometry Qt3DQGeometry;
 typedef Qt3DRender::QBuffer Qt3DQBuffer;
 #else
 #include <Qt3DCore/QAttribute>
 #include <Qt3DCore/QGeometry>
+#include <Qt3DCore/QBuffer>
 typedef Qt3DCore::QAttribute Qt3DQAttribute;
 typedef Qt3DCore::QGeometry Qt3DQGeometry;
 typedef Qt3DCore::QBuffer Qt3DQBuffer;
@@ -107,7 +106,7 @@ class Mesh : public Qt3DRender::QGeometryRenderer
 
 
       const double radius = 50;
-      constexpr int numberOfSubDivisions = 3;
+      constexpr int numberOfSubDivisions = 2;
       constexpr double rootTwoOverThree = M_SQRT2 / 3.0;
       constexpr double oneThird = 1.0 / 3.0;
       constexpr double rootSixOverThree = 2.449489742783178 / 3.0;
@@ -255,11 +254,12 @@ class TetrahedronEntity : public Qt3DCore::QEntity
 TetrahedronEntity::TetrahedronEntity( Qt3DCore::QNode *parent )
   : Qt3DCore::QEntity( parent )
 {
-
   mMesh = new Mesh;
   addComponent( mMesh );
 
   QgsPhongMaterialSettings settings;
+  settings.setAmbient( QColor( 0, 100, 30 ) );
+  settings.setDiffuse( QColor( 0, 200, 100 ) );
 
   Qt3DRender::QMaterial *bboxesMaterial = settings.toMaterial( QgsMaterialSettingsRenderingTechnique::Triangles,
                                           QgsMaterialContext() );
@@ -267,9 +267,7 @@ TetrahedronEntity::TetrahedronEntity( Qt3DCore::QNode *parent )
 
 
   addComponent( bboxesMaterial );
-
 }
-
 
 void initCanvas3D( Qgs3DMapCanvas *canvas )
 {
@@ -398,3 +396,4 @@ int main( int argc, char *argv[] )
 
   return myApp.exec();
 }
+
