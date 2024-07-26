@@ -58,14 +58,21 @@ typedef Qt3DCore::QGeometry Qt3DQGeometry;
 typedef Qt3DCore::QBuffer Qt3DQBuffer;
 #endif
 
-class TetrahedronMesh : public Qt3DRender::QGeometryRenderer
+class GlobeMesh : public Qt3DRender::QGeometryRenderer
 {
 
   public:
 
+    enum class Algorithm
+    {
+      SubdivisionSurface,
+      CubeMapTessellation
+    };
 
-    TetrahedronMesh( double radiusA, double radiusB, double radiusC, bool useLines, Qt3DCore::QNode *parent = nullptr )
+
+    GlobeMesh( Algorithm algorithm, double radiusA, double radiusB, double radiusC, bool useLines, Qt3DCore::QNode *parent = nullptr )
       : Qt3DRender::QGeometryRenderer( parent )
+      , mAlgorithm( algorithm )
       , mUseLines( useLines )
       , mRadius( QVector3D( radiusA * ( useLines ? 1.001 : 1 ),
                             radiusB * ( useLines ? 1.001 : 1 ),
@@ -118,23 +125,197 @@ class TetrahedronMesh : public Qt3DRender::QGeometryRenderer
       setGeometry( mGeom );
 
 
-      constexpr int numberOfSubDivisions = 3;
-      constexpr double rootTwoOverThree = M_SQRT2 / 3.0;
-      constexpr double oneThird = 1.0 / 3.0;
-      constexpr double rootSixOverThree = 2.449489742783178 / 3.0;
-
       QList<QVector3D> positions;
       QList<int> indices;
 
-      positions.append( QVector3D( 0, 0, 1 ) );
-      positions.append( QVector3D( 0, 2 * rootTwoOverThree, -oneThird ) );
-      positions.append( QVector3D( -rootSixOverThree, -rootTwoOverThree, -oneThird ) );
-      positions.append( QVector3D( rootSixOverThree, -rootTwoOverThree, -oneThird ) );
+      switch ( mAlgorithm )
+      {
+        case Algorithm::SubdivisionSurface:
+        {
 
-      subdivide( positions, indices, {0, 1, 2}, numberOfSubDivisions );
-      subdivide( positions, indices, {0, 2, 3}, numberOfSubDivisions );
-      subdivide( positions, indices, {0, 3, 1}, numberOfSubDivisions );
-      subdivide( positions, indices, {1, 3, 2}, numberOfSubDivisions );
+          constexpr int numberOfSubDivisions = 5;
+          constexpr double rootTwoOverThree = M_SQRT2 / 3.0;
+          constexpr double oneThird = 1.0 / 3.0;
+          constexpr double rootSixOverThree = 2.449489742783178 / 3.0;
+
+          positions.append( QVector3D( 0, 0, 1 ) );
+          positions.append( QVector3D( 0, 2 * rootTwoOverThree, -oneThird ) );
+          positions.append( QVector3D( -rootSixOverThree, -rootTwoOverThree, -oneThird ) );
+          positions.append( QVector3D( rootSixOverThree, -rootTwoOverThree, -oneThird ) );
+
+          subdivide( positions, indices, {0, 1, 2}, numberOfSubDivisions );
+          subdivide( positions, indices, {0, 2, 3}, numberOfSubDivisions );
+          subdivide( positions, indices, {0, 3, 1}, numberOfSubDivisions );
+          subdivide( positions, indices, {1, 3, 2}, numberOfSubDivisions );
+
+          break;
+        }
+
+        case Algorithm::CubeMapTessellation:
+        {
+          positions.append( QVector3D( -1, 0, -1 ) );
+          positions.append( QVector3D( 0, -1, -1 ) );
+          positions.append( QVector3D( 1, 0, -1 ) );
+          positions.append( QVector3D( 0, 1, -1 ) );
+          positions.append( QVector3D( -1, 0, 1 ) );
+          positions.append( QVector3D( 0, -1, 1 ) );
+          positions.append( QVector3D( 1, 0, 1 ) );
+          positions.append( QVector3D( 0, 1, 1 ) );
+
+
+          constexpr int numberOfPartitions = 8; //CubeMapMesh.NumberOfPartitions;
+
+
+          auto addEdgePositions = [&positions]( int i0, int i1 )
+          {
+            QVector< int > indices;
+            indices.resize( 2 + ( numberOfPartitions - 1 ) );
+
+            indices[0] = i0;
+            indices[indices.size() - 1] = i1;
+
+            QVector3D origin = positions[i0];
+            QVector3D direction = positions[i1] - positions[i0];
+
+            for ( int i = 1; i < numberOfPartitions; ++i )
+            {
+              double delta = i / ( double )numberOfPartitions;
+
+              indices[i] = positions.size();
+              positions.append( origin + ( delta * direction ) );
+            }
+
+            return indices;
+          };
+
+          auto addFaceTriangles = [this, &positions, &indices](
+                                    const QVector< int > &leftBottomToTop,
+                                    const QVector< int > &bottomLeftToRight,
+                                    const QVector< int > &rightBottomToTop,
+                                    const QVector< int > &topLeftToRight )
+          {
+            QVector3D origin = positions[bottomLeftToRight[0]];
+            QVector3D x = positions[bottomLeftToRight[bottomLeftToRight.size() - 1]] - origin;
+            QVector3D y = positions[topLeftToRight[0]] - origin;
+
+            QVector<int> bottomIndicesBuffer;
+            bottomIndicesBuffer.resize( numberOfPartitions + 1 );
+            QVector<int> topIndicesBuffer;
+            topIndicesBuffer.resize( numberOfPartitions + 1 );
+
+            const QVector<int> *bottomIndices = &bottomLeftToRight;
+            const QVector<int> *topIndices = &topIndicesBuffer;
+
+            for ( int j = 1; j <= numberOfPartitions; ++j )
+            {
+              if ( j != numberOfPartitions )
+              {
+                if ( j != 1 )
+                {
+                  //
+                  // This copy could be avoided by ping ponging buffers.
+                  //
+                  bottomIndicesBuffer = topIndicesBuffer; //.CopyTo(bottomIndicesBuffer, 0);
+                  bottomIndices = &bottomIndicesBuffer;
+                }
+
+                topIndicesBuffer[0] = leftBottomToTop[j];
+                topIndicesBuffer[numberOfPartitions] = rightBottomToTop[j];
+
+                double deltaY = j / ( double )numberOfPartitions;
+                QVector3D offsetY = deltaY * y;
+
+                for ( int i = 1; i < numberOfPartitions; ++i )
+                {
+                  double deltaX = i / ( double )numberOfPartitions;
+                  QVector3D offsetX = deltaX * x;
+
+                  topIndicesBuffer[i] = positions.size();
+                  positions.append( origin + offsetX + offsetY );
+                }
+              }
+              else
+              {
+                if ( j != 1 )
+                {
+                  bottomIndices = &topIndicesBuffer;
+                }
+                topIndices = &topLeftToRight;
+              }
+
+              for ( int i = 0; i < numberOfPartitions; ++i )
+              {
+                if ( !mUseLines )
+                {
+                  indices.append(
+                  {( *bottomIndices )[i], ( *bottomIndices )[i + 1], ( *topIndices )[i + 1]} );
+                  indices.append(
+                  {
+                    ( *bottomIndices )[i], ( *topIndices )[i + 1], ( *topIndices )[i]} );
+                }
+                else
+                {
+                  indices.append(
+                  {
+                    ( *bottomIndices )[i], ( *bottomIndices )[i + 1],
+                    ( *bottomIndices )[i + 1], ( *topIndices )[i + 1],
+                    ( *topIndices )[i + 1], ( *bottomIndices )[i]} );
+                  indices.append(
+                  {
+                    ( *bottomIndices )[i], ( *topIndices )[i + 1],
+                    ( *topIndices )[i + 1], ( *topIndices )[i],
+                    ( *topIndices )[i], ( *bottomIndices )[i]} );
+                }
+              }
+            }
+          };
+
+          QVector< int > edge0to1 = addEdgePositions( 0, 1 );
+          QVector< int > edge1to2 = addEdgePositions( 1, 2 );
+          QVector< int > edge2to3 = addEdgePositions( 2, 3 );
+          QVector< int > edge3to0 = addEdgePositions( 3, 0 );
+
+          QVector< int > edge4to5 = addEdgePositions( 4, 5 );
+          QVector< int > edge5to6 = addEdgePositions( 5, 6 );
+          QVector< int > edge6to7 = addEdgePositions( 6, 7 );
+          QVector< int > edge7to4 = addEdgePositions( 7, 4 );
+
+          QVector< int > edge0to4 = addEdgePositions( 0, 4 );
+          QVector< int > edge1to5 = addEdgePositions( 1, 5 );
+          QVector< int > edge2to6 = addEdgePositions( 2, 6 );
+          QVector< int > edge3to7 = addEdgePositions( 3, 7 );
+
+          addFaceTriangles( edge0to4, edge0to1, edge1to5, edge4to5 ); // Q3 Face
+          addFaceTriangles( edge1to5, edge1to2, edge2to6, edge5to6 ); // Q4 Face
+          addFaceTriangles( edge2to6, edge2to3, edge3to7, edge6to7 ); // Q1 Face
+          addFaceTriangles( edge3to7, edge3to0, edge0to4, edge7to4 ); // Q2 Face
+
+          QVector< int > reversedEdge7to4 = edge7to4;
+          std::reverse( reversedEdge7to4.begin(), reversedEdge7to4.end() );
+          QVector< int > reversedEdge6to7 = edge6to7;
+          std::reverse( reversedEdge6to7.begin(), reversedEdge6to7.end() );
+          QVector< int > reversedEdge0to1 = edge0to1;
+          std::reverse( reversedEdge0to1.begin(), reversedEdge0to1.end() );
+          QVector< int > reversedEdge3to0 = edge3to0;
+          std::reverse( reversedEdge3to0.begin(), reversedEdge3to0.end() );
+
+          addFaceTriangles( reversedEdge7to4, edge4to5, edge5to6, reversedEdge6to7 ); // Plane z = 1
+          addFaceTriangles( edge1to2, reversedEdge0to1, reversedEdge3to0, edge2to3 ); // Plane z = -1
+
+
+          auto cubeToEllipsoid = [&positions]
+          {
+            for ( int i = 0; i < positions.size(); ++i )
+            {
+              positions[i] = positions[i].normalized();
+            }
+          };
+
+          cubeToEllipsoid();
+
+          break;
+        }
+      }
 
       setVertices( positions, indices );
     }
@@ -225,6 +406,7 @@ class TetrahedronMesh : public Qt3DRender::QGeometryRenderer
     }
 
   private:
+    Algorithm mAlgorithm = Algorithm::SubdivisionSurface;
     bool mUseLines = false;
     QVector3D mRadius;
     QVector3D mOneOverRadiiSquared;
@@ -237,20 +419,20 @@ class TetrahedronMesh : public Qt3DRender::QGeometryRenderer
     Qt3DRender::QBuffer *mIndexBuffer = nullptr;
 };
 
-class TetrahedronEntity : public Qt3DCore::QEntity
+class GlobeEntity : public Qt3DCore::QEntity
 {
 
   public:
-    TetrahedronEntity( bool useLines, const QgsAbstractMaterialSettings &material, Qt3DCore::QNode *parent = nullptr );
+    GlobeEntity( GlobeMesh::Algorithm algorithm, bool useLines, const QgsAbstractMaterialSettings &material, Qt3DCore::QNode *parent = nullptr );
 
   private:
-    TetrahedronMesh *mMesh = nullptr;
+    GlobeMesh *mMesh = nullptr;
 };
 
-TetrahedronEntity::TetrahedronEntity( bool useLines, const QgsAbstractMaterialSettings &material, Qt3DCore::QNode *parent )
+GlobeEntity::GlobeEntity( GlobeMesh::Algorithm algorithm, bool useLines, const QgsAbstractMaterialSettings &material, Qt3DCore::QNode *parent )
   : Qt3DCore::QEntity( parent )
 {
-  mMesh = new TetrahedronMesh( 50, 30, 10, useLines );
+  mMesh = new GlobeMesh( algorithm, 50, 50, 45, useLines );
   addComponent( mMesh );
 
   Qt3DRender::QMaterial *bboxesMaterial = material.toMaterial( QgsMaterialSettingsRenderingTechnique::Triangles,
@@ -323,12 +505,12 @@ void initCanvas3D( Qgs3DMapCanvas *canvas )
   QgsPhongMaterialSettings phong;
   phong.setAmbient( QColor( 0, 100, 30 ) );
   phong.setDiffuse( QColor( 0, 200, 100 ) );
-  TetrahedronEntity *tetrahedron = new TetrahedronEntity( false, phong );
+  GlobeEntity *tetrahedron = new GlobeEntity( GlobeMesh::Algorithm::CubeMapTessellation, false, phong );
   canvas->scene()->addEntity( tetrahedron );
 
   phong.setAmbient( QColor( 0, 0, 0 ) );
   phong.setDiffuse( QColor( 0, 0, 0 ) );
-  tetrahedron = new TetrahedronEntity( true, phong );
+  tetrahedron = new GlobeEntity( GlobeMesh::Algorithm::CubeMapTessellation,  true, phong );
   canvas->scene()->addEntity( tetrahedron );
 
   QgsRectangle extent = fullExtent;
