@@ -64,15 +64,25 @@ class TetrahedronMesh : public Qt3DRender::QGeometryRenderer
   public:
 
 
-    TetrahedronMesh( bool useLines, Qt3DCore::QNode *parent = nullptr )
+    TetrahedronMesh( double radiusA, double radiusB, double radiusC, bool useLines, Qt3DCore::QNode *parent = nullptr )
       : Qt3DRender::QGeometryRenderer( parent )
       , mUseLines( useLines )
+      , mRadius( QVector3D( radiusA * ( useLines ? 1.001 : 1 ),
+                            radiusB * ( useLines ? 1.001 : 1 ),
+                            radiusC * ( useLines ? 1.001 : 1 ) ) )
       , mPositionAttribute( new Qt3DQAttribute( this ) )
       , mNormalAttribute( new Qt3DQAttribute( this ) )
       , mIndexAttribute( new Qt3DQAttribute( this ) )
       , mVertexBuffer( new Qt3DQBuffer( this ) )
       , mIndexBuffer( new Qt3DQBuffer( this ) )
     {
+      mOneOverRadiiSquared = QVector3D(
+                               1.0 / ( mRadius.x() * mRadius.x() ),
+                               1.0 / ( mRadius.y() * mRadius.y() ),
+                               1.0 / ( mRadius.z() * mRadius.z() )
+                             );
+
+
       mPositionAttribute->setAttributeType( Qt3DQAttribute::VertexAttribute );
       mPositionAttribute->setBuffer( mVertexBuffer );
       mPositionAttribute->setVertexBaseType( Qt3DQAttribute::Float );
@@ -108,59 +118,47 @@ class TetrahedronMesh : public Qt3DRender::QGeometryRenderer
       setGeometry( mGeom );
 
 
-      const double radius = 50 * ( mUseLines ? 1.001 : 1 );
-      constexpr int numberOfSubDivisions = 5;
+      constexpr int numberOfSubDivisions = 3;
       constexpr double rootTwoOverThree = M_SQRT2 / 3.0;
       constexpr double oneThird = 1.0 / 3.0;
       constexpr double rootSixOverThree = 2.449489742783178 / 3.0;
 
       QList<QVector3D> positions;
-      QList<QVector3D> normals;
       QList<int> indices;
-      positions.append( QVector3D( 0, 0, 1 ) * radius );
-      positions.append( QVector3D( 0, 2 * rootTwoOverThree, -oneThird ) * radius );
-      positions.append( QVector3D( -rootSixOverThree, -rootTwoOverThree, -oneThird ) * radius );
-      positions.append( QVector3D( rootSixOverThree, -rootTwoOverThree, -oneThird ) * radius );
 
+      positions.append( QVector3D( 0, 0, 1 ) );
+      positions.append( QVector3D( 0, 2 * rootTwoOverThree, -oneThird ) );
+      positions.append( QVector3D( -rootSixOverThree, -rootTwoOverThree, -oneThird ) );
+      positions.append( QVector3D( rootSixOverThree, -rootTwoOverThree, -oneThird ) );
 
-      normals.append( QVector3D( 0, 0, 1 ).normalized() );
-      normals.append( QVector3D( 0, 2 * rootTwoOverThree, -oneThird ).normalized() );
-      normals.append( QVector3D( -rootSixOverThree, -rootTwoOverThree, -oneThird ).normalized() );
-      normals.append( QVector3D( rootSixOverThree, -rootTwoOverThree, -oneThird ).normalized() );
+      subdivide( positions, indices, {0, 1, 2}, numberOfSubDivisions );
+      subdivide( positions, indices, {0, 2, 3}, numberOfSubDivisions );
+      subdivide( positions, indices, {0, 3, 1}, numberOfSubDivisions );
+      subdivide( positions, indices, {1, 3, 2}, numberOfSubDivisions );
 
-
-      subdivide( positions, normals, indices, {0, 1, 2}, numberOfSubDivisions, radius );
-      subdivide( positions, normals, indices, {0, 2, 3}, numberOfSubDivisions, radius );
-      subdivide( positions, normals, indices, {0, 3, 1}, numberOfSubDivisions, radius );
-      subdivide( positions, normals, indices, {1, 3, 2}, numberOfSubDivisions, radius );
-
-      setVertices( positions, normals,  indices );
+      setVertices( positions, indices );
     }
 
-    void subdivide( QList<QVector3D> &positions, QList<QVector3D> &normals, QList<int> &indices, QList< int > triangle, int level, double radius )
+    void subdivide( QList<QVector3D> &positions, QList<int> &indices, QList< int > triangle, int level )
     {
       if ( level > 0 )
       {
         QVector3D p1 = QVector3D( ( positions[triangle[0]] + positions[triangle[1]] ) / 2 ).normalized();
         QVector3D p2 = QVector3D( ( positions[triangle[1]] + positions[triangle[2]] ) / 2 ).normalized();
         QVector3D p3 = QVector3D( ( positions[triangle[2]] + positions[triangle[0]] ) / 2 ).normalized();
-        positions.append( p1 * radius );
-        positions.append( p2 * radius );
-        positions.append( p3 * radius );
-
-        normals.append( p1 );
-        normals.append( p2 );
-        normals.append( p3 );
+        positions.append( p1 );
+        positions.append( p2 );
+        positions.append( p3 );
 
         int index01 = positions.size() - 3;
         int index12 = positions.size() - 2;
         int index20 = positions.size() - 1;
         level--;
 
-        subdivide( positions, normals, indices, {triangle[0], index01, index20}, level, radius );
-        subdivide( positions, normals, indices, {index01, triangle[1], index12}, level, radius );
-        subdivide( positions, normals, indices, {index01, index12, index20}, level, radius );
-        subdivide( positions, normals, indices, {index20, index12, triangle[2]}, level, radius );
+        subdivide( positions, indices, {triangle[0], index01, index20}, level );
+        subdivide( positions, indices, {index01, triangle[1], index12}, level );
+        subdivide( positions, indices, {index01, index12, index20}, level );
+        subdivide( positions, indices, {index20, index12, triangle[2]}, level );
       }
       else
       {
@@ -170,14 +168,6 @@ class TetrahedronMesh : public Qt3DRender::QGeometryRenderer
           indices.append( triangle[0] );
           indices.append( triangle[1] );
           indices.append( triangle[2] );
-
-          const QVector3D t0 = positions[triangle[0]];
-          const QVector3D t1 = positions[triangle[1]];
-          const QVector3D t2 = positions[triangle[2]];
-
-          const QVector3D center = ( t0 + t1 + t2 );
-
-          QVector3D m( center.x() / ( radius * radius ), center.y() / ( radius * radius ), center.z() / ( radius * radius ) );
         }
         else
         {
@@ -193,7 +183,7 @@ class TetrahedronMesh : public Qt3DRender::QGeometryRenderer
       }
     }
 
-    void setVertices( const QList<QVector3D> &vertices, const QList<QVector3D> &normals, const QList<int> &indices )
+    void setVertices( const QList<QVector3D> &vertices, const QList<int> &indices )
     {
       QByteArray vertexBufferData;
       vertexBufferData.resize( static_cast<int>( static_cast<long>( vertices.size() ) * 3 * sizeof( float ) * 2 ) );
@@ -206,14 +196,15 @@ class TetrahedronMesh : public Qt3DRender::QGeometryRenderer
 
       uint *rawIndexArray = reinterpret_cast<uint *>( indexBufferData.data() );
 
-
       for ( int i = 0; i < vertices.size(); ++i )
       {
         const QVector3D &v = vertices[i];
-        rawVertexArray[idx++] = v.x();
-        rawVertexArray[idx++] = v.y();
-        rawVertexArray[idx++] = v.z();
-        const QVector3D &normal = normals[i];
+        rawVertexArray[idx++] = v.x() * mRadius.x();
+        rawVertexArray[idx++] = v.y() * mRadius.y();
+        rawVertexArray[idx++] = v.z() * mRadius.z();
+
+        const QVector3D normal = ( v * mOneOverRadiiSquared ).normalized();
+
         rawVertexArray[idx++] = normal.x();
         rawVertexArray[idx++] = normal.y();
         rawVertexArray[idx++] = normal.z();
@@ -227,7 +218,7 @@ class TetrahedronMesh : public Qt3DRender::QGeometryRenderer
 
       mVertexBuffer->setData( vertexBufferData );
       mPositionAttribute->setCount( vertices.count() );
-      mNormalAttribute->setCount( normals.count() );
+      mNormalAttribute->setCount( vertices.count() );
 
       mIndexBuffer->setData( indexBufferData );
       mIndexAttribute->setCount( indices.size() );
@@ -235,6 +226,8 @@ class TetrahedronMesh : public Qt3DRender::QGeometryRenderer
 
   private:
     bool mUseLines = false;
+    QVector3D mRadius;
+    QVector3D mOneOverRadiiSquared;
     Qt3DRender::QGeometry *mGeom = nullptr;
     Qt3DRender::QAttribute *mPositionAttribute = nullptr;
     Qt3DRender::QAttribute *mNormalAttribute = nullptr;
@@ -257,7 +250,7 @@ class TetrahedronEntity : public Qt3DCore::QEntity
 TetrahedronEntity::TetrahedronEntity( bool useLines, const QgsAbstractMaterialSettings &material, Qt3DCore::QNode *parent )
   : Qt3DCore::QEntity( parent )
 {
-  mMesh = new TetrahedronMesh( useLines );
+  mMesh = new TetrahedronMesh( 50, 30, 10, useLines );
   addComponent( mMesh );
 
   Qt3DRender::QMaterial *bboxesMaterial = material.toMaterial( QgsMaterialSettingsRenderingTechnique::Triangles,
@@ -331,10 +324,10 @@ void initCanvas3D( Qgs3DMapCanvas *canvas )
   phong.setAmbient( QColor( 0, 100, 30 ) );
   phong.setDiffuse( QColor( 0, 200, 100 ) );
   TetrahedronEntity *tetrahedron = new TetrahedronEntity( false, phong );
+  canvas->scene()->addEntity( tetrahedron );
 
   phong.setAmbient( QColor( 0, 0, 0 ) );
   phong.setDiffuse( QColor( 0, 0, 0 ) );
-  canvas->scene()->addEntity( tetrahedron );
   tetrahedron = new TetrahedronEntity( true, phong );
   canvas->scene()->addEntity( tetrahedron );
 
