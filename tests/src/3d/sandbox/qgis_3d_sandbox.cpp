@@ -36,6 +36,7 @@
 #include "qgschunkboundsentity_p.h"
 #include "qgsphongmaterialsettings.h"
 #include "qgsdirectionallightsettings.h"
+#include "qgssimplelinematerialsettings.h"
 
 #include <QScreen>
 
@@ -44,6 +45,7 @@
 #include <Qt3DRender/QAttribute>
 #include <Qt3DRender/QGeometry>
 #include <Qt3DRender/QBuffer>
+#include <Qt3DRender/QPolygonOffset>
 typedef Qt3DRender::QAttribute Qt3DQAttribute;
 typedef Qt3DRender::QGeometry Qt3DQGeometry;
 typedef Qt3DRender::QBuffer Qt3DQBuffer;
@@ -56,14 +58,15 @@ typedef Qt3DCore::QGeometry Qt3DQGeometry;
 typedef Qt3DCore::QBuffer Qt3DQBuffer;
 #endif
 
-class Mesh : public Qt3DRender::QGeometryRenderer
+class TetrahedronMesh : public Qt3DRender::QGeometryRenderer
 {
 
   public:
 
 
-    Mesh( Qt3DCore::QNode *parent = nullptr )
+    TetrahedronMesh( bool useLines, Qt3DCore::QNode *parent = nullptr )
       : Qt3DRender::QGeometryRenderer( parent )
+      , mUseLines( useLines )
       , mPositionAttribute( new Qt3DQAttribute( this ) )
       , mNormalAttribute( new Qt3DQAttribute( this ) )
       , mIndexAttribute( new Qt3DQAttribute( this ) )
@@ -100,13 +103,13 @@ class Mesh : public Qt3DRender::QGeometryRenderer
       setInstanceCount( 1 );
       setIndexOffset( 0 );
       setFirstInstance( 0 );
-      setPrimitiveType( Qt3DRender::QGeometryRenderer::Triangles );
-      //setPrimitiveType( Qt3DRender::QGeometryRenderer::Lines);
+      setPrimitiveType( mUseLines ? Qt3DRender::QGeometryRenderer::Lines
+                        : Qt3DRender::QGeometryRenderer::Triangles );
       setGeometry( mGeom );
 
 
-      const double radius = 50;
-      constexpr int numberOfSubDivisions = 2;
+      const double radius = 50 * ( mUseLines ? 1.001 : 1 );
+      constexpr int numberOfSubDivisions = 5;
       constexpr double rootTwoOverThree = M_SQRT2 / 3.0;
       constexpr double oneThird = 1.0 / 3.0;
       constexpr double rootSixOverThree = 2.449489742783178 / 3.0;
@@ -161,33 +164,32 @@ class Mesh : public Qt3DRender::QGeometryRenderer
       }
       else
       {
-#if 1
-        indices.append( triangle[0] );
-        indices.append( triangle[1] );
-        indices.append( triangle[2] );
 
-        const QVector3D t0 = positions[triangle[0]];
-        const QVector3D t1 = positions[triangle[1]];
-        const QVector3D t2 = positions[triangle[2]];
+        if ( !mUseLines )
+        {
+          indices.append( triangle[0] );
+          indices.append( triangle[1] );
+          indices.append( triangle[2] );
 
-        const QVector3D center = ( t0 + t1 + t2 );
+          const QVector3D t0 = positions[triangle[0]];
+          const QVector3D t1 = positions[triangle[1]];
+          const QVector3D t2 = positions[triangle[2]];
 
-        QVector3D m( center.x() / ( radius * radius ), center.y() / ( radius * radius ), center.z() / ( radius * radius ) );
+          const QVector3D center = ( t0 + t1 + t2 );
 
+          QVector3D m( center.x() / ( radius * radius ), center.y() / ( radius * radius ), center.z() / ( radius * radius ) );
+        }
+        else
+        {
+          indices.append( triangle[0] );
+          indices.append( triangle[1] );
 
+          indices.append( triangle[1] );
+          indices.append( triangle[2] );
 
-
-
-#else
-        indices.append( triangle[0] );
-        indices.append( triangle[1] );
-
-        indices.append( triangle[1] );
-        indices.append( triangle[2] );
-
-        indices.append( triangle[2] );
-        indices.append( triangle[0] );
-#endif
+          indices.append( triangle[2] );
+          indices.append( triangle[0] );
+        }
       }
     }
 
@@ -232,6 +234,7 @@ class Mesh : public Qt3DRender::QGeometryRenderer
     }
 
   private:
+    bool mUseLines = false;
     Qt3DRender::QGeometry *mGeom = nullptr;
     Qt3DRender::QAttribute *mPositionAttribute = nullptr;
     Qt3DRender::QAttribute *mNormalAttribute = nullptr;
@@ -245,28 +248,24 @@ class TetrahedronEntity : public Qt3DCore::QEntity
 {
 
   public:
-    TetrahedronEntity( Qt3DCore::QNode *parent = nullptr );
+    TetrahedronEntity( bool useLines, const QgsAbstractMaterialSettings &material, Qt3DCore::QNode *parent = nullptr );
 
   private:
-    Mesh *mMesh = nullptr;
+    TetrahedronMesh *mMesh = nullptr;
 };
 
-TetrahedronEntity::TetrahedronEntity( Qt3DCore::QNode *parent )
+TetrahedronEntity::TetrahedronEntity( bool useLines, const QgsAbstractMaterialSettings &material, Qt3DCore::QNode *parent )
   : Qt3DCore::QEntity( parent )
 {
-  mMesh = new Mesh;
+  mMesh = new TetrahedronMesh( useLines );
   addComponent( mMesh );
 
-  QgsPhongMaterialSettings settings;
-  settings.setAmbient( QColor( 0, 100, 30 ) );
-  settings.setDiffuse( QColor( 0, 200, 100 ) );
-
-  Qt3DRender::QMaterial *bboxesMaterial = settings.toMaterial( QgsMaterialSettingsRenderingTechnique::Triangles,
+  Qt3DRender::QMaterial *bboxesMaterial = material.toMaterial( QgsMaterialSettingsRenderingTechnique::Triangles,
                                           QgsMaterialContext() );
 
 
-
   addComponent( bboxesMaterial );
+
 }
 
 void initCanvas3D( Qgs3DMapCanvas *canvas )
@@ -327,8 +326,16 @@ void initCanvas3D( Qgs3DMapCanvas *canvas )
 
   canvas->setMapSettings( map );
 
-  TetrahedronEntity *tetrahedron = new TetrahedronEntity();
-  //chunkBoundsEntity->setBoxes( {QgsAABB( -50, -50, -50, 50, 50, 50 ) });
+
+  QgsPhongMaterialSettings phong;
+  phong.setAmbient( QColor( 0, 100, 30 ) );
+  phong.setDiffuse( QColor( 0, 200, 100 ) );
+  TetrahedronEntity *tetrahedron = new TetrahedronEntity( false, phong );
+
+  phong.setAmbient( QColor( 0, 0, 0 ) );
+  phong.setDiffuse( QColor( 0, 0, 0 ) );
+  canvas->scene()->addEntity( tetrahedron );
+  tetrahedron = new TetrahedronEntity( true, phong );
   canvas->scene()->addEntity( tetrahedron );
 
   QgsRectangle extent = fullExtent;
