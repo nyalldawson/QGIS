@@ -66,7 +66,8 @@ class GlobeMesh : public Qt3DRender::QGeometryRenderer
     enum class Algorithm
     {
       SubdivisionSurface,
-      CubeMapTessellation
+      CubeMapTessellation,
+      GeographicGrid
     };
 
 
@@ -315,6 +316,127 @@ class GlobeMesh : public Qt3DRender::QGeometryRenderer
 
           break;
         }
+
+        case Algorithm::GeographicGrid:
+        {
+          constexpr int numberOfSlicePartitions = 36;
+          constexpr int numberOfStackPartitions = 20;
+          double cosTheta[numberOfSlicePartitions];
+          double sinTheta[numberOfSlicePartitions];
+
+          for ( int j = 0; j < numberOfSlicePartitions; ++j )
+          {
+            double theta = 2 * M_PI * static_cast< double >( j ) / numberOfSlicePartitions;
+            cosTheta[j] = std::cos( theta );
+            sinTheta[j] = std::sin( theta );
+          }
+
+          positions.append( QVector3D( 0, 0, 1 ) );
+          for ( int i = 1; i < numberOfStackPartitions; ++i )
+          {
+            double phi = M_PI * ( static_cast<double>( i ) / numberOfStackPartitions );
+            double sinPhi = std::sin( phi );
+
+            double xSinPhi = 1 * sinPhi;
+            double ySinPhi = 1 * sinPhi;
+            double zCosPhi = 1 * std::cos( phi );
+
+            for ( int j = 0; j < numberOfSlicePartitions; ++j )
+            {
+              positions.append( QVector3D( cosTheta[j] * xSinPhi, sinTheta[j] * ySinPhi, zCosPhi ) );
+            }
+          }
+          positions.append( QVector3D( 0, 0, -1 ) );
+
+          for ( int j = 1; j < numberOfSlicePartitions; ++j )
+          {
+            if ( mUseLines )
+            {
+              indices.append( { 0, j,
+                                j, j + 1,
+                                j + 1, 0 } );
+            }
+            else
+            {
+              indices.append( { 0, j, j + 1 } );
+            }
+          }
+          if ( mUseLines )
+          {
+            indices.append( {0, numberOfSlicePartitions,
+                             numberOfSlicePartitions, 1,
+                             1, 0 } );
+          }
+          else
+          {
+            indices.append( {0, numberOfSlicePartitions, 1 } );
+          }
+
+          for ( int i = 0; i < numberOfStackPartitions - 2; ++i )
+          {
+            int topRowOffset = ( i * numberOfSlicePartitions ) + 1;
+            int bottomRowOffset = ( ( i + 1 ) * numberOfSlicePartitions ) + 1;
+
+            for ( int j = 0; j < numberOfSlicePartitions - 1; ++j )
+            {
+              if ( mUseLines )
+              {
+                indices.append( { bottomRowOffset + j, bottomRowOffset + j + 1,
+                                  bottomRowOffset + j + 1, topRowOffset + j + 1,
+                                  topRowOffset + j + 1, bottomRowOffset + j } );
+                indices.append( { bottomRowOffset + j, topRowOffset + j + 1,
+                                  topRowOffset + j + 1, topRowOffset + j,
+                                  topRowOffset + j, bottomRowOffset + j } );
+              }
+              else
+              {
+                indices.append( { bottomRowOffset + j, bottomRowOffset + j + 1, topRowOffset + j + 1 } );
+                indices.append( { bottomRowOffset + j, topRowOffset + j + 1, topRowOffset + j } );
+              }
+            }
+            if ( mUseLines )
+            {
+              indices.append( { bottomRowOffset + numberOfSlicePartitions - 1, bottomRowOffset,
+                                bottomRowOffset, topRowOffset,
+                                topRowOffset, bottomRowOffset + numberOfSlicePartitions - 1 } );
+              indices.append( { bottomRowOffset + numberOfSlicePartitions - 1, topRowOffset,
+                                topRowOffset, topRowOffset + numberOfSlicePartitions - 1,
+                                topRowOffset + numberOfSlicePartitions - 1, bottomRowOffset + numberOfSlicePartitions - 1 } );
+            }
+            else
+            {
+              indices.append( { bottomRowOffset + numberOfSlicePartitions - 1, bottomRowOffset, topRowOffset } );
+              indices.append( { bottomRowOffset + numberOfSlicePartitions - 1, topRowOffset, topRowOffset + numberOfSlicePartitions - 1 } );
+            }
+          }
+
+          int lastPosition = positions.size() - 1;
+          for ( int j = lastPosition - 1; j > lastPosition - numberOfSlicePartitions; --j )
+          {
+            if ( mUseLines )
+            {
+              indices.append( { lastPosition, j,
+                                j, j - 1,
+                                j - 1, lastPosition } );
+            }
+            else
+            {
+              indices.append( { lastPosition, j, j - 1 } );
+            }
+          }
+          if ( mUseLines )
+          {
+            indices.append( { lastPosition, lastPosition - numberOfSlicePartitions,
+                              lastPosition - numberOfSlicePartitions, lastPosition - 1,
+                              lastPosition - 1, lastPosition} );
+          }
+          else
+          {
+            indices.append( { lastPosition, lastPosition - numberOfSlicePartitions, lastPosition - 1 } );
+          }
+
+          break;
+        }
       }
 
       setVertices( positions, indices );
@@ -432,7 +554,7 @@ class GlobeEntity : public Qt3DCore::QEntity
 GlobeEntity::GlobeEntity( GlobeMesh::Algorithm algorithm, bool useLines, const QgsAbstractMaterialSettings &material, Qt3DCore::QNode *parent )
   : Qt3DCore::QEntity( parent )
 {
-  mMesh = new GlobeMesh( algorithm, 50, 50, 45, useLines );
+  mMesh = new GlobeMesh( algorithm, 50, 40, 40, useLines );
   addComponent( mMesh );
 
   Qt3DRender::QMaterial *bboxesMaterial = material.toMaterial( QgsMaterialSettingsRenderingTechnique::Triangles,
@@ -505,12 +627,12 @@ void initCanvas3D( Qgs3DMapCanvas *canvas )
   QgsPhongMaterialSettings phong;
   phong.setAmbient( QColor( 0, 100, 30 ) );
   phong.setDiffuse( QColor( 0, 200, 100 ) );
-  GlobeEntity *tetrahedron = new GlobeEntity( GlobeMesh::Algorithm::CubeMapTessellation, false, phong );
+  GlobeEntity *tetrahedron = new GlobeEntity( GlobeMesh::Algorithm::GeographicGrid, false, phong );
   canvas->scene()->addEntity( tetrahedron );
 
   phong.setAmbient( QColor( 0, 0, 0 ) );
   phong.setDiffuse( QColor( 0, 0, 0 ) );
-  tetrahedron = new GlobeEntity( GlobeMesh::Algorithm::CubeMapTessellation,  true, phong );
+  tetrahedron = new GlobeEntity( GlobeMesh::Algorithm::GeographicGrid,  true, phong );
   canvas->scene()->addEntity( tetrahedron );
 
   QgsRectangle extent = fullExtent;
