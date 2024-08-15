@@ -39,6 +39,15 @@ class QgsProject;
 class _3D_EXPORT QgsAbstractTerrainSettings
 {
 
+#ifdef SIP_RUN
+    SIP_CONVERT_TO_SUBCLASS_CODE
+    if ( sipCpp->type() == "flat" )
+      sipType = sipType_QgsFlatTerrainSettings;
+    else
+      sipType = 0;
+    SIP_END
+#endif
+
   public:
 
     virtual ~QgsAbstractTerrainSettings();

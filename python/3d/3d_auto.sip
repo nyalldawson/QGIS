@@ -28,5 +28,6 @@
 %Include auto_generated/symbols/qgspoint3dsymbol.sip
 %Include auto_generated/symbols/qgspolygon3dsymbol.sip
 %Include auto_generated/symbols/qgspointcloud3dsymbol.sip
+%Include auto_generated/terrain/qgsflatterrainsettings.sip
 %Include auto_generated/terrain/qgsterrainsettings.sip
 %Include auto_generated/qgs3dmapexportsettings.sip

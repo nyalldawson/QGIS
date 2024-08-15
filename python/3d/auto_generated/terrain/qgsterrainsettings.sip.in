@@ -28,6 +28,12 @@ of terrain generators.
 %TypeHeaderCode
 #include "qgsterrainsettings.h"
 %End
+%ConvertToSubClassCode
+    if ( sipCpp->type() == "flat" )
+      sipType = sipType_QgsFlatTerrainSettings;
+    else
+      sipType = 0;
+%End
   public:
 
     virtual ~QgsAbstractTerrainSettings();
