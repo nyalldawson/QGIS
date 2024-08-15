@@ -19,10 +19,9 @@
 #include "qgis_3d.h"
 #include "qgis_sip.h"
 #include "qgsterrainsettings.h"
+#include "qgsmaplayerref.h"
 
-class QDomElement;
-class QgsReadWriteContext;
-class QgsProject;
+class QgsRasterLayer;
 
 /**
  * \ingroup 3d
@@ -42,7 +41,61 @@ class _3D_EXPORT QgsDemTerrainSettings : public QgsAbstractTerrainSettings
     QString type() const final;
     void readXml( const QDomElement &element, const QgsReadWriteContext &context ) final;
     void writeXml( QDomElement &element, const QgsReadWriteContext &context ) const final;
+    void resolveReferences( const QgsProject *project ) final;
 
+    /**
+     * Sets the raster \a layer with elevation model to be used for terrain generation.
+     * \see layer()
+     */
+    void setLayer( QgsRasterLayer *layer );
+
+    /**
+     * Returns the raster layer with elevation model to be used for terrain generation.
+     *
+     * \see setLayer()
+     */
+    QgsRasterLayer *layer() const;
+
+    /**
+     * Sets the \a resolution of the terrain (how many elevation samples are taken on one side of a terrain tile).
+     *
+     * \see resolution()
+     */
+    void setResolution( int resolution ) { mResolution = resolution; }
+
+    /**
+     * Returns the resolution of the terrain (how many elevation samples are taken on one side of a terrain tile).
+     *
+     * \see resolution()
+     */
+    int resolution() const { return mResolution; }
+
+    /**
+     * Sets the skirt \a height (in world units).
+     *
+     * Skirts at the edges of terrain tiles help hide cracks between adjacent tiles.
+     *
+     * \see skirtHeight()
+     */
+    void setSkirtHeight( double height ) { mSkirtHeight = height; }
+
+    /**
+     * Returns the skirt height (in world units).
+     *
+     * Skirts at the edges of terrain tiles help hide cracks between adjacent tiles.
+     *
+     * \see setSkirtHeight()
+     */
+    double skirtHeight() const { return mSkirtHeight; }
+
+  private:
+
+    //! source layer for heights
+    QgsMapLayerRef mLayer;
+    //! how many vertices to place on one side of the tile
+    int mResolution = 16;
+    //! height of the "skirts" at the edges of tiles to hide cracks between adjacent cracks
+    double mSkirtHeight = 10.;
 };
 
 

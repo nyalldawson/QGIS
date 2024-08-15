@@ -19,10 +19,12 @@
 #include "qgis_3d.h"
 #include "qgis_sip.h"
 #include "qgsterrainsettings.h"
+#include "qgsmaplayerref.h"
 
 class QDomElement;
 class QgsReadWriteContext;
 class QgsProject;
+class QgsMeshLayer;
 
 /**
  * \ingroup 3d
@@ -42,6 +44,23 @@ class _3D_EXPORT QgsMeshTerrainSettings : public QgsAbstractTerrainSettings
     QString type() const final;
     void readXml( const QDomElement &element, const QgsReadWriteContext &context ) final;
     void writeXml( QDomElement &element, const QgsReadWriteContext &context ) const final;
+    void resolveReferences( const QgsProject *project ) final;
+
+    /**
+     * Sets the mesh \a layer with elevation model to be used for terrain generation.
+     * \see layer()
+     */
+    void setLayer( QgsMeshLayer *layer );
+
+    /**
+     * Returns the mesh layer with elevation model to be used for terrain generation.
+     *
+     * \see setLayer()
+     */
+    QgsMeshLayer *layer() const;
+
+  private:
+    QgsMapLayerRef mLayer;
 
 };
 

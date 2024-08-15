@@ -14,6 +14,7 @@
  ***************************************************************************/
 
 #include "qgsmeshterrainsettings.h"
+#include "qgsmeshlayer.h"
 
 QgsMeshTerrainSettings *QgsMeshTerrainSettings::clone() const
 {
@@ -25,12 +26,27 @@ QString QgsMeshTerrainSettings::type() const
   return QStringLiteral( "mesh" );
 }
 
-void QgsMeshTerrainSettings::readXml( const QDomElement &, const QgsReadWriteContext & )
+void QgsMeshTerrainSettings::readXml( const QDomElement &element, const QgsReadWriteContext & )
 {
-
+  mLayer = QgsMapLayerRef( element.attribute( QStringLiteral( "layer" ) ) );
 }
 
-void QgsMeshTerrainSettings::writeXml( QDomElement &, const QgsReadWriteContext & ) const
+void QgsMeshTerrainSettings::writeXml( QDomElement &element, const QgsReadWriteContext & ) const
 {
+  element.setAttribute( QStringLiteral( "layer" ), mLayer.layerId );
+}
 
+void QgsMeshTerrainSettings::resolveReferences( const QgsProject *project )
+{
+  mLayer.resolve( project );
+}
+
+void QgsMeshTerrainSettings::setLayer( QgsMeshLayer *layer )
+{
+  mLayer = QgsMapLayerRef( layer );
+}
+
+QgsMeshLayer *QgsMeshTerrainSettings::layer() const
+{
+  return qobject_cast<QgsMeshLayer *>( mLayer.layer.data() );
 }
