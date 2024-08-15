@@ -67,6 +67,11 @@ class _3D_EXPORT QgsAbstractTerrainSettings
     virtual QString type() const = 0;
 
     /**
+     * Returns TRUE if this settings is exactly equal to another \a other settings.
+     */
+    virtual bool equals( const QgsAbstractTerrainSettings *other ) const = 0;
+
+    /**
      * Reads settings from a DOM \a element.
      *
      * Subclasses should take care to call readCommonProperties() to read common properties from the element.

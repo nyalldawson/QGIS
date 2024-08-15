@@ -34,3 +34,8 @@ void QgsFlatTerrainSettings::writeXml( QDomElement &element, const QgsReadWriteC
 {
   writeCommonProperties( element, context );
 }
+
+bool QgsFlatTerrainSettings::equals( const QgsAbstractTerrainSettings *other ) const
+{
+
+}

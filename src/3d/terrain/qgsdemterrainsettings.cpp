@@ -47,6 +47,11 @@ void QgsDemTerrainSettings::resolveReferences( const QgsProject *project )
   mLayer.resolve( project );
 }
 
+bool QgsDemTerrainSettings::equals( const QgsAbstractTerrainSettings *other ) const
+{
+
+}
+
 void QgsDemTerrainSettings::setLayer( QgsRasterLayer *layer )
 {
   mLayer = QgsMapLayerRef( layer );

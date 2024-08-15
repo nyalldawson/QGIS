@@ -70,7 +70,7 @@ QgsTerrainEntity::QgsTerrainEntity( Qgs3DMapSettings *map, Qt3DCore::QNode *pare
   connect( map, &Qgs3DMapSettings::layersChanged, this, &QgsTerrainEntity::onLayersChanged );
   connect( map, &Qgs3DMapSettings::backgroundColorChanged, this, &QgsTerrainEntity::invalidateMapImages );
   connect( map, &Qgs3DMapSettings::terrainMapThemeChanged, this, &QgsTerrainEntity::invalidateMapImages );
-  connect( map, &Qgs3DMapSettings::terrainElevationOffsetChanged, this, &QgsTerrainEntity::onTerrainElevationOffsetChanged );
+  connect( map, &Qgs3DMapSettings::terrainSettingsChanged, this, &QgsTerrainEntity::onTerrainElevationOffsetChanged );
 
   connectToLayersRepaintRequest();
 
@@ -209,8 +209,9 @@ void QgsTerrainEntity::connectToLayersRepaintRequest()
   }
 }
 
-void QgsTerrainEntity::onTerrainElevationOffsetChanged( float newOffset )
+void QgsTerrainEntity::onTerrainElevationOffsetChanged()
 {
+  float newOffset = qobject_cast< Qgs3DMapSettings * >( sender() )->terrainSettings()->elevationOffset();
   mTerrainTransform->setTranslation( QVector3D( 0.0f, newOffset, 0.0f ) );
 }
 

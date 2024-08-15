@@ -42,7 +42,7 @@ class _3D_EXPORT QgsFlatTerrainSettings : public QgsAbstractTerrainSettings
     QString type() const final;
     void readXml( const QDomElement &element, const QgsReadWriteContext &context ) final;
     void writeXml( QDomElement &element, const QgsReadWriteContext &context ) const final;
-
+    bool equals( const QgsAbstractTerrainSettings *other ) const final;
 };
 
 

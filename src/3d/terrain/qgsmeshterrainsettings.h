@@ -45,6 +45,7 @@ class _3D_EXPORT QgsMeshTerrainSettings : public QgsAbstractTerrainSettings
     void readXml( const QDomElement &element, const QgsReadWriteContext &context ) final;
     void writeXml( QDomElement &element, const QgsReadWriteContext &context ) const final;
     void resolveReferences( const QgsProject *project ) final;
+    bool equals( const QgsAbstractTerrainSettings *other ) const final;
 
     /**
      * Sets the mesh \a layer with elevation model to be used for terrain generation.

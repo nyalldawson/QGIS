@@ -196,7 +196,7 @@ QgsRuleBasedChunkedEntity::QgsRuleBasedChunkedEntity( Qgs3DMapSettings *map, Qgs
     mTransform->setTranslation( QVector3D( 0.0f, map->terrainSettings()->elevationOffset(), 0.0f ) );
   }
   this->addComponent( mTransform );
-  connect( map, &Qgs3DMapSettings::terrainElevationOffsetChanged, this, &QgsRuleBasedChunkedEntity::onTerrainElevationOffsetChanged );
+  connect( map, &Qgs3DMapSettings::terrainSettingsChanged, this, &QgsRuleBasedChunkedEntity::onTerrainElevationOffsetChanged );
 
   setShowBoundingBoxes( tilingSettings.showBoundingBoxes() );
 }
@@ -251,9 +251,10 @@ bool QgsRuleBasedChunkedEntity::applyTerrainOffset() const
   return true;
 }
 
-void QgsRuleBasedChunkedEntity::onTerrainElevationOffsetChanged( float newOffset )
+void QgsRuleBasedChunkedEntity::onTerrainElevationOffsetChanged()
 {
   float previousOffset = mTransform->translation()[1];
+  float newOffset = qobject_cast< Qgs3DMapSettings * >( sender() )->terrainSettings()->elevationOffset();
   if ( !applyTerrainOffset() )
   {
     newOffset = 0.0;

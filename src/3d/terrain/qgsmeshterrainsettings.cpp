@@ -43,6 +43,11 @@ void QgsMeshTerrainSettings::resolveReferences( const QgsProject *project )
   mLayer.resolve( project );
 }
 
+bool QgsMeshTerrainSettings::equals( const QgsAbstractTerrainSettings *other ) const
+{
+
+}
+
 void QgsMeshTerrainSettings::setLayer( QgsMeshLayer *layer )
 {
   mLayer = QgsMapLayerRef( layer );

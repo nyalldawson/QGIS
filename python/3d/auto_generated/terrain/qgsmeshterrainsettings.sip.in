@@ -32,6 +32,7 @@ Terrain settings for a terrain generator that uses uses the Z values of a mesh l
     void readXml( const QDomElement &element, const QgsReadWriteContext &context ) final;
     void writeXml( QDomElement &element, const QgsReadWriteContext &context ) const final;
     void resolveReferences( const QgsProject *project ) final;
+    bool equals( const QgsAbstractTerrainSettings *other ) const final;
 
     void setLayer( QgsMeshLayer *layer );
 %Docstring

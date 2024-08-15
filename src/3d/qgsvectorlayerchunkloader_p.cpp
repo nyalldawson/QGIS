@@ -198,7 +198,7 @@ QgsVectorLayerChunkedEntity::QgsVectorLayerChunkedEntity( Qgs3DMapSettings *map,
   }
   this->addComponent( mTransform );
 
-  connect( map, &Qgs3DMapSettings::terrainElevationOffsetChanged, this, &QgsVectorLayerChunkedEntity::onTerrainElevationOffsetChanged );
+  connect( map, &Qgs3DMapSettings::terrainSettingsChanged, this, &QgsVectorLayerChunkedEntity::onTerrainElevationOffsetChanged );
 
   setShowBoundingBoxes( tilingSettings.showBoundingBoxes() );
 }
@@ -249,9 +249,10 @@ bool QgsVectorLayerChunkedEntity::applyTerrainOffset() const
   return true;
 }
 
-void QgsVectorLayerChunkedEntity::onTerrainElevationOffsetChanged( float newOffset )
+void QgsVectorLayerChunkedEntity::onTerrainElevationOffsetChanged()
 {
   QgsDebugMsgLevel( QStringLiteral( "QgsVectorLayerChunkedEntity::onTerrainElevationOffsetChanged" ), 2 );
+  float newOffset = qobject_cast< Qgs3DMapSettings * >( sender() )->terrainSettings()->elevationOffset();
   if ( !applyTerrainOffset() )
   {
     newOffset = 0.0;

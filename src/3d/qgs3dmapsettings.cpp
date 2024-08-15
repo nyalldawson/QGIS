@@ -608,7 +608,10 @@ void Qgs3DMapSettings::setTerrainVerticalScale( double zScale )
     return;
 
   mTerrainSettings->setVerticalScale( zScale );
+  Q_NOWARN_DEPRECATED_PUSH
   emit terrainVerticalScaleChanged();
+  Q_NOWARN_DEPRECATED_POP
+  emit terrainSettingsChanged();
 }
 
 double Qgs3DMapSettings::terrainVerticalScale() const
@@ -698,18 +701,40 @@ void Qgs3DMapSettings::configureTerrainFromProject( QgsProjectElevationPropertie
   }
 }
 
-QgsAbstractTerrainSettings *Qgs3DMapSettings::terrainSettings()
+const QgsAbstractTerrainSettings *Qgs3DMapSettings::terrainSettings() const
 {
   QGIS_PROTECT_QOBJECT_THREAD_ACCESS
 
   return mTerrainSettings.get();
 }
 
-const QgsAbstractTerrainSettings *Qgs3DMapSettings::terrainSettings() const
+void Qgs3DMapSettings::setTerrainSettings( QgsAbstractTerrainSettings *settings )
 {
-  QGIS_PROTECT_QOBJECT_THREAD_ACCESS
+  bool hasChanged = false;
+  if ( settings == mTerrainSettings.get() )
+  {
+    // emit signals anyway. We don't know if the called changed settings on the pointer before calling this..
+    hasChanged = true;
+  }
+  else
+  {
+    hasChanged = !settings->equals( mTerrainSettings.get() );
+  }
 
-  return mTerrainSettings.get();
+  mTerrainSettings.reset( settings );
+  if ( hasChanged )
+  {
+    // emit all the signals, we don't know exactly what's changed
+    Q_NOWARN_DEPRECATED_PUSH
+    emit mapTileResolutionChanged();
+    emit maxTerrainScreenErrorChanged();
+    emit maxTerrainGroundErrorChanged();
+    emit terrainElevationOffsetChanged( mTerrainSettings->elevationOffset() );
+    emit terrainVerticalScaleChanged();
+    Q_NOWARN_DEPRECATED_POP
+
+    emit terrainSettingsChanged();
+  }
 }
 
 void Qgs3DMapSettings::setMapTileResolution( int res )
@@ -720,7 +745,10 @@ void Qgs3DMapSettings::setMapTileResolution( int res )
     return;
 
   mTerrainSettings->setMapTileResolution( res );
+  Q_NOWARN_DEPRECATED_PUSH
   emit mapTileResolutionChanged();
+  Q_NOWARN_DEPRECATED_POP
+  emit terrainSettingsChanged();
 }
 
 int Qgs3DMapSettings::mapTileResolution() const
@@ -738,7 +766,10 @@ void Qgs3DMapSettings::setMaxTerrainScreenError( double error )
     return;
 
   mTerrainSettings->setMaximumScreenError( error );
+  Q_NOWARN_DEPRECATED_PUSH
   emit maxTerrainScreenErrorChanged();
+  Q_NOWARN_DEPRECATED_POP
+  emit terrainSettingsChanged();
 }
 
 double Qgs3DMapSettings::maxTerrainScreenError() const
@@ -756,7 +787,11 @@ void Qgs3DMapSettings::setMaxTerrainGroundError( double error )
     return;
 
   mTerrainSettings->setMaximumGroundError( error );
+  Q_NOWARN_DEPRECATED_PUSH
   emit maxTerrainGroundErrorChanged();
+  Q_NOWARN_DEPRECATED_POP
+
+  emit terrainSettingsChanged();
 }
 
 void Qgs3DMapSettings::setTerrainElevationOffset( double offset )
@@ -766,7 +801,10 @@ void Qgs3DMapSettings::setTerrainElevationOffset( double offset )
   if ( mTerrainSettings->elevationOffset() == offset )
     return;
   mTerrainSettings->setElevationOffset( offset );
+  Q_NOWARN_DEPRECATED_PUSH
   emit terrainElevationOffsetChanged( offset );
+  Q_NOWARN_DEPRECATED_POP
+  emit terrainSettingsChanged();
 }
 
 double Qgs3DMapSettings::terrainElevationOffset() const
@@ -1389,11 +1427,7 @@ void Qgs3DMapSettings::connectChangedSignalsToSettingsChanged()
   connect( this, &Qgs3DMapSettings::selectionColorChanged, this, &Qgs3DMapSettings::settingsChanged );
   connect( this, &Qgs3DMapSettings::layersChanged, this, &Qgs3DMapSettings::settingsChanged );
   connect( this, &Qgs3DMapSettings::terrainGeneratorChanged, this, &Qgs3DMapSettings::settingsChanged );
-  connect( this, &Qgs3DMapSettings::terrainVerticalScaleChanged, this, &Qgs3DMapSettings::settingsChanged );
-  connect( this, &Qgs3DMapSettings::mapTileResolutionChanged, this, &Qgs3DMapSettings::settingsChanged );
-  connect( this, &Qgs3DMapSettings::maxTerrainScreenErrorChanged, this, &Qgs3DMapSettings::settingsChanged );
-  connect( this, &Qgs3DMapSettings::maxTerrainGroundErrorChanged, this, &Qgs3DMapSettings::settingsChanged );
-  connect( this, &Qgs3DMapSettings::terrainElevationOffsetChanged, this, &Qgs3DMapSettings::settingsChanged );
+  connect( this, &Qgs3DMapSettings::terrainSettingsChanged, this, &Qgs3DMapSettings::settingsChanged );
   connect( this, &Qgs3DMapSettings::terrainShadingChanged, this, &Qgs3DMapSettings::settingsChanged );
   connect( this, &Qgs3DMapSettings::terrainMapThemeChanged, this, &Qgs3DMapSettings::settingsChanged );
   connect( this, &Qgs3DMapSettings::renderersChanged, this, &Qgs3DMapSettings::settingsChanged );

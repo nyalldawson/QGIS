@@ -223,16 +223,21 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
     /**
      * Returns the terrain settings.
      *
+     * \warning Modifications should never be made to the returned object. Instead use setTerrainSettings(), so that
+     * the corresponding changed signals are correctly emitted.
+     *
+     * \see setTerrainSettings()
      * \since QGIS 3.40
      */
-    QgsAbstractTerrainSettings *terrainSettings();
+    const QgsAbstractTerrainSettings *terrainSettings() const;
 
     /**
-     * Returns the terrain settings.
+     * Sets the terrain settings.
      *
+     * \see terrainSettings()
      * \since QGIS 3.40
      */
-    const QgsAbstractTerrainSettings *terrainSettings() const SIP_SKIP;
+    void setTerrainSettings( QgsAbstractTerrainSettings *settings SIP_TRANSFER );
 
     /**
      * Sets vertical scale (exaggeration) of terrain
@@ -763,20 +768,45 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
 
     //! Emitted when the terrain generator has changed
     void terrainGeneratorChanged();
-    //! Emitted when the vertical scale of the terrain has changed
-    void terrainVerticalScaleChanged();
-    //! Emitted when the map tile resoulution has changed
-    void mapTileResolutionChanged();
-    //! Emitted when the maximum terrain screen error has changed
-    void maxTerrainScreenErrorChanged();
-    //! Emitted when the maximum terrain ground error has changed
-    void maxTerrainGroundErrorChanged();
+
+    /**
+     * Emitted when the terrain settings are changed.
+     *
+     * \since QGIS 3.40
+     */
+    void terrainSettingsChanged();
+
+    /**
+     * Emitted when the vertical scale of the terrain has changed
+     * \deprecated use terrainSettingsChanged() instead.
+     */
+    Q_DECL_DEPRECATED void terrainVerticalScaleChanged() SIP_DEPRECATED;
+
+    /**
+     * Emitted when the map tile resoulution has changed
+     * \deprecated use terrainSettingsChanged() instead.
+     */
+    Q_DECL_DEPRECATED void mapTileResolutionChanged() SIP_DEPRECATED;
+
+    /**
+     * Emitted when the maximum terrain screen error has changed
+     * \deprecated use terrainSettingsChanged() instead.
+     */
+    Q_DECL_DEPRECATED void maxTerrainScreenErrorChanged() SIP_DEPRECATED;
+
+    /**
+     * Emitted when the maximum terrain ground error has changed
+     *
+     * \deprecated use terrainSettingsChanged() instead.
+     */
+    Q_DECL_DEPRECATED void maxTerrainGroundErrorChanged() SIP_DEPRECATED;
 
     /**
      * Emitted when the terrain elevation offset is changed
-     * \since QGIS 3.16
+     *
+     * \deprecated use terrainSettingsChanged() instead.
      */
-    void terrainElevationOffsetChanged( float newElevation );
+    Q_DECL_DEPRECATED void terrainElevationOffsetChanged( double newElevation ) SIP_DEPRECATED;
 
     /**
      * Emitted when terrain shading enabled flag or terrain shading material has changed
