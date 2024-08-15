@@ -32,6 +32,7 @@
 #include "qgsshadowrenderingsettingswidget.h"
 #include "qgsambientocclusionsettingswidget.h"
 #include "qgs3dmapcanvas.h"
+#include "qgsterrainsettings.h"
 
 Qgs3DMapConfigWidget::Qgs3DMapConfigWidget( Qgs3DMapSettings *map, QgsMapCanvas *mainCanvas, Qgs3DMapCanvas *mapCanvas3D, QWidget *parent )
   : QWidget( parent )
@@ -140,10 +141,10 @@ Qgs3DMapConfigWidget::Qgs3DMapConfigWidget( Qgs3DMapSettings *map, QgsMapCanvas 
   cboCameraProjectionType->setCurrentIndex( cboCameraProjectionType->findData( mMap->projectionType() ) );
   mCameraNavigationModeCombo->setCurrentIndex( mCameraNavigationModeCombo->findData( QVariant::fromValue( mMap->cameraNavigationMode() ) ) );
   mCameraMovementSpeed->setValue( mMap->cameraMovementSpeed() );
-  spinTerrainScale->setValue( mMap->terrainVerticalScale() );
-  spinMapResolution->setValue( mMap->mapTileResolution() );
-  spinScreenError->setValue( mMap->maxTerrainScreenError() );
-  spinGroundError->setValue( mMap->maxTerrainGroundError() );
+  spinTerrainScale->setValue( mMap->terrainSettings()->verticalScale() );
+  spinMapResolution->setValue( mMap->terrainSettings()->mapTileResolution() );
+  spinScreenError->setValue( mMap->terrainSettings()->maximumScreenError() );
+  spinGroundError->setValue( mMap->terrainSettings()->maximumGroundError() );
   terrainElevationOffsetSpinBox->setValue( mMap->terrainElevationOffset() );
   chkShowLabels->setChecked( mMap->showLabels() );
   chkShowTileInfo->setChecked( mMap->showTerrainTilesInfo() );

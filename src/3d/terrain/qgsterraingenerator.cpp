@@ -19,6 +19,7 @@
 #include "qgs3dmapsettings.h"
 #include "qgs3dutils.h"
 #include "qgscoordinatetransform.h"
+#include "qgsterrainsettings.h"
 
 QgsAABB QgsTerrainGenerator::rootChunkBbox( const Qgs3DMapSettings &map ) const
 {
@@ -26,7 +27,7 @@ QgsAABB QgsTerrainGenerator::rootChunkBbox( const Qgs3DMapSettings &map ) const
 
   float hMin, hMax;
   rootChunkHeightRange( hMin, hMax );
-  return Qgs3DUtils::mapToWorldExtent( te, hMin * map.terrainVerticalScale(), hMax * map.terrainVerticalScale(), map.origin() );
+  return Qgs3DUtils::mapToWorldExtent( te, hMin * map.terrainSettings()->verticalScale(), hMax * map.terrainSettings()->verticalScale(), map.origin() );
 }
 
 float QgsTerrainGenerator::rootChunkError( const Qgs3DMapSettings &map ) const
@@ -34,7 +35,7 @@ float QgsTerrainGenerator::rootChunkError( const Qgs3DMapSettings &map ) const
   QgsRectangle te = Qgs3DUtils::tryReprojectExtent2D( rootChunkExtent(), crs(), map.crs(), map.transformContext() );
 
   // use texel size as the error
-  return te.width() / map.mapTileResolution();
+  return te.width() / map.terrainSettings()->mapTileResolution();
 }
 
 void QgsTerrainGenerator::rootChunkHeightRange( float &hMin, float &hMax ) const

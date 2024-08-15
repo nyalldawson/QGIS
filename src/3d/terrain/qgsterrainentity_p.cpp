@@ -26,6 +26,7 @@
 #include "qgsterraintextureimage_p.h"
 #include "qgsterraintileentity_p.h"
 #include "qgs3dutils.h"
+#include "qgsterrainsettings.h"
 
 #include "qgscoordinatetransform.h"
 
@@ -58,7 +59,7 @@ class TerrainMapUpdateJobFactory : public QgsChunkQueueJobFactory
 
 
 QgsTerrainEntity::QgsTerrainEntity( Qgs3DMapSettings *map, Qt3DCore::QNode *parent )
-  : QgsChunkedEntity( map, map->maxTerrainScreenError(), map->terrainGenerator(), false, std::numeric_limits<int>::max(), parent )
+  : QgsChunkedEntity( map, map->terrainSettings()->maximumScreenError(), map->terrainGenerator(), false, std::numeric_limits<int>::max(), parent )
 {
   map->terrainGenerator()->setTerrain( this );
   mIsValid = map->terrainGenerator()->isValid();
@@ -79,7 +80,7 @@ QgsTerrainEntity::QgsTerrainEntity( Qgs3DMapSettings *map, Qt3DCore::QNode *pare
 
   mTerrainTransform = new Qt3DCore::QTransform;
   mTerrainTransform->setScale( 1.0f );
-  mTerrainTransform->setTranslation( QVector3D( 0.0f, map->terrainElevationOffset(), 0.0f ) );
+  mTerrainTransform->setTranslation( QVector3D( 0.0f, map->terrainSettings()->elevationOffset(), 0.0f ) );
   addComponent( mTerrainTransform );
 }
 
@@ -105,7 +106,7 @@ QVector<QgsRayCastingUtils::RayHit> QgsTerrainEntity::rayIntersection( const Qgs
       if ( ray.direction().y() == 0 )
         break;  // the ray is parallel to the flat terrain
 
-      const float dist = static_cast<float>( mMapSettings->terrainElevationOffset() - ray.origin().y() ) / ray.direction().y();
+      const float dist = static_cast<float>( mMapSettings->terrainSettings()->elevationOffset() - ray.origin().y() ) / ray.direction().y();
       const QVector3D terrainPlanePoint = ray.origin() + ray.direction() * dist;
       const QgsVector3D mapCoords = Qgs3DUtils::worldToMapCoordinates( terrainPlanePoint, mMapSettings->origin() );
       if ( mMapSettings->extent().contains( mapCoords.x(), mapCoords.y() ) )
@@ -215,7 +216,7 @@ void QgsTerrainEntity::onTerrainElevationOffsetChanged( float newOffset )
 
 float QgsTerrainEntity::terrainElevationOffset() const
 {
-  return mMapSettings->terrainElevationOffset();
+  return mMapSettings->terrainSettings()->elevationOffset();
 }
 
 

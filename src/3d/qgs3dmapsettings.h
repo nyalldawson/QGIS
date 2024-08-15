@@ -40,6 +40,7 @@ class QgsLightSource;
 class QgsAbstract3DRenderer;
 class QgsReadWriteContext;
 class QgsProject;
+class QgsAbstractTerrainSettings;
 
 class QDomElement;
 
@@ -220,30 +221,57 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
     void configureTerrainFromProject( QgsProjectElevationProperties *properties, const QgsRectangle &fullExtent ) SIP_SKIP;
 
     /**
+     * Returns the terrain settings.
+     *
+     * \since QGIS 3.40
+     */
+    QgsAbstractTerrainSettings *terrainSettings();
+
+    /**
+     * Returns the terrain settings.
+     *
+     * \since QGIS 3.40
+     */
+    const QgsAbstractTerrainSettings *terrainSettings() const SIP_SKIP;
+
+    /**
      * Sets vertical scale (exaggeration) of terrain
      * (1 = true scale, > 1 = hills get more pronounced)
+     *
+     * \deprecated Since QGIS 3.40 use terrainSettings() instead.
      */
-    void setTerrainVerticalScale( double zScale );
-    //! Returns vertical scale (exaggeration) of terrain
-    double terrainVerticalScale() const;
+    Q_DECL_DEPRECATED void setTerrainVerticalScale( double zScale ) SIP_DEPRECATED;
+
+    /**
+     * Returns vertical scale (exaggeration) of terrain
+     *
+     * \deprecated Since QGIS 3.40 use terrainSettings() instead.
+     */
+    Q_DECL_DEPRECATED double terrainVerticalScale() const SIP_DEPRECATED;
 
     /**
      * Sets resolution (in pixels) of the texture of a terrain tile
      * \see mapTileResolution()
+     *
+     * \deprecated Since QGIS 3.40 use terrainSettings() instead.
      */
-    void setMapTileResolution( int res );
+    Q_DECL_DEPRECATED void setMapTileResolution( int res ) SIP_DEPRECATED;
 
     /**
      * Returns resolution (in pixels) of the texture of a terrain tile. This parameter influences
      * how many zoom levels for terrain tiles there will be (together with maxTerrainGroundError())
+     *
+     * \deprecated Since QGIS 3.40 use terrainSettings() instead.
      */
-    int mapTileResolution() const;
+    Q_DECL_DEPRECATED int mapTileResolution() const SIP_DEPRECATED;
 
     /**
      * Sets maximum allowed screen error of terrain tiles in pixels.
      * \see maxTerrainScreenError()
+     *
+     * \deprecated Since QGIS 3.40 use terrainSettings() instead.
      */
-    void setMaxTerrainScreenError( float error );
+    Q_DECL_DEPRECATED void setMaxTerrainScreenError( double error ) SIP_DEPRECATED;
 
     /**
      * Returns maximum allowed screen error of terrain tiles in pixels. This parameter decides
@@ -251,34 +279,42 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
      * Each tile has its error defined in world units - this error gets projected to screen pixels
      * according to camera view and if the tile's error is greater than the allowed error, it will
      * be swapped by more detailed tiles with lower error.
+     *
+     * \deprecated Since QGIS 3.40 use terrainSettings() instead.
      */
-    float maxTerrainScreenError() const;
+    Q_DECL_DEPRECATED double maxTerrainScreenError() const SIP_DEPRECATED;
 
     /**
      * Sets the maximum ground error of terrain tiles in world units.
      * \see maxTerrainGroundError()
+     *
+     * \deprecated Since QGIS 3.40 use terrainSettings() instead.
      */
-    void setMaxTerrainGroundError( float error );
+    Q_DECL_DEPRECATED void setMaxTerrainGroundError( double error ) SIP_DEPRECATED;
 
     /**
      * Returns maximum ground error of terrain tiles in world units. This parameter influences
      * how many zoom levels there will be (together with mapTileResolution()).
      * This value tells that when the given ground error is reached (e.g. 10 meters), it makes no sense
      * to further split terrain tiles into finer ones because they will not add extra details anymore.
+     *
+     * \deprecated Since QGIS 3.40 use terrainSettings() instead.
      */
-    float maxTerrainGroundError() const;
+    Q_DECL_DEPRECATED double maxTerrainGroundError() const SIP_DEPRECATED;
 
     /**
      * Sets the terrain elevation offset (used to move the terrain up or down)
      * \see terrainElevationOffset()
-     * \since QGIS 3.18
+     * \deprecated Since QGIS 3.40 use terrainSettings() instead.
      */
-    void setTerrainElevationOffset( float offset );
+    Q_DECL_DEPRECATED void setTerrainElevationOffset( double offset ) SIP_DEPRECATED;
 
     /**
      * Returns the elevation offset of the terrain (used to move the terrain up or down)
+     *
+     * \deprecated Since QGIS 3.40 use terrainSettings() instead.
      */
-    float terrainElevationOffset() const;
+    Q_DECL_DEPRECATED double terrainElevationOffset() const SIP_DEPRECATED;
 
     /**
      * Sets terrain generator and sets extent() as the generator's extent.
@@ -931,12 +967,8 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
     QgsCoordinateReferenceSystem mCrs;   //!< Destination coordinate system of the world
     QColor mBackgroundColor = Qt::black;   //!< Background color of the scene
     QColor mSelectionColor; //!< Color to be used for selected map features
-    double mTerrainVerticalScale = 1;   //!< Multiplier of terrain heights to make the terrain shape more pronounced
     std::unique_ptr<QgsTerrainGenerator> mTerrainGenerator;  //!< Implementation of the terrain generation
-    int mMapTileResolution = 512;   //!< Size of map textures of tiles in pixels (width/height)
-    float mMaxTerrainScreenError = 3.f;   //!< Maximum allowed terrain error in pixels (determines when tiles are switched to more detailed ones)
-    float mMaxTerrainGroundError = 1.f;  //!< Maximum allowed horizontal map error in map units (determines how many zoom levels will be used)
-    float mTerrainElevationOffset = 0.0f; //!< Terrain elevation offset (used to adjust the position of the terrain and move it up and down)
+    std::unique_ptr<QgsAbstractTerrainSettings> mTerrainSettings;
     bool mTerrainShadingEnabled = false;   //!< Whether terrain should be shaded taking lights into account
     QgsPhongMaterialSettings mTerrainShadingMaterial;  //!< Material to use for the terrain (if shading is enabled). Diffuse color is ignored.
     QString mTerrainMapTheme;  //!< Name of map theme used for terrain's texture (empty means use the current map theme)

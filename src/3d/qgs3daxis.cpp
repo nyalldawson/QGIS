@@ -42,6 +42,7 @@
 #include "qgswindow3dengine.h"
 #include "qgsraycastingutils_p.h"
 #include "qgs3dwiredmesh_p.h"
+#include "qgsterrainsettings.h"
 
 Qgs3DAxis::Qgs3DAxis( Qgs3DMapCanvas *canvas,
                       Qt3DCore::QEntity *parent3DScene,
@@ -755,7 +756,7 @@ void Qgs3DAxis::onCameraViewChange( float pitch, float yaw )
       QgsDebugMsgLevel( "Unable to obtain elevation from terrain", 2 );
     }
   }
-  pos.set( pos.x(), elevation + mMapSettings->terrainElevationOffset(), pos.z() );
+  pos.set( pos.x(), elevation + mMapSettings->terrainSettings()->elevationOffset(), pos.z() );
 
   mCameraController->setLookingAtPoint( pos, ( mCameraController->camera()->position() - pos.toVector3D() ).length(),
                                         pitch, yaw );

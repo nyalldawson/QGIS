@@ -208,14 +208,29 @@ This setting dictates which layers are to be rendered using their 3D rendering c
 
 
 
-    void setTerrainVerticalScale( double zScale );
+    QgsAbstractTerrainSettings *terrainSettings();
+%Docstring
+Returns the terrain settings.
+
+.. versionadded:: 3.40
+%End
+
+
+ void setTerrainVerticalScale( double zScale ) /Deprecated/;
 %Docstring
 Sets vertical scale (exaggeration) of terrain
 (1 = true scale, > 1 = hills get more pronounced)
+
+.. deprecated:: QGIS 3.40
+   use :py:func:`~Qgs3DMapSettings.terrainSettings` instead.
 %End
-    double terrainVerticalScale() const;
+
+ double terrainVerticalScale() const /Deprecated/;
 %Docstring
 Returns vertical scale (exaggeration) of terrain
+
+.. deprecated:: QGIS 3.40
+   use :py:func:`~Qgs3DMapSettings.terrainSettings` instead.
 %End
 
     void setMapTileResolution( int res );

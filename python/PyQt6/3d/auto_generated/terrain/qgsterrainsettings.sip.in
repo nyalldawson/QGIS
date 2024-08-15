@@ -89,7 +89,7 @@ Sets the vertical ``scale`` (exaggeration) for terrain.
 .. seealso:: :py:func:`verticalScale`
 %End
 
-    double terrainVerticalScale() const;
+    double verticalScale() const;
 %Docstring
 Returns the vertical scale (exaggeration) for terrain.
 

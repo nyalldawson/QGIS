@@ -73,6 +73,7 @@
 #include "qgs3dmapexportsettings.h"
 #include "qgsmessageoutput.h"
 #include "qgsframegraph.h"
+#include "qgsterrainsettings.h"
 
 #include "qgsskyboxentity.h"
 #include "qgsskyboxsettings.h"
@@ -463,7 +464,7 @@ void Qgs3DMapScene::createTerrainDeferred()
   if ( mMap.terrainRenderingEnabled() && mMap.terrainGenerator() )
   {
     double tile0width = mMap.terrainGenerator()->rootChunkExtent().width();
-    int maxZoomLevel = Qgs3DUtils::maxZoomLevel( tile0width, mMap.mapTileResolution(), mMap.maxTerrainGroundError() );
+    int maxZoomLevel = Qgs3DUtils::maxZoomLevel( tile0width, mMap.terrainSettings()->mapTileResolution(), mMap.terrainSettings()->maximumGroundError() );
     QgsAABB rootBbox = mMap.terrainGenerator()->rootChunkBbox( mMap );
     float rootError = mMap.terrainGenerator()->rootChunkError( mMap );
     const QgsAABB clippingBbox = Qgs3DUtils::mapToWorldExtent( mMap.extent(), rootBbox.zMin, rootBbox.zMax, mMap.origin() );

@@ -29,6 +29,7 @@
 #include "qgsapplication.h"
 #include "qgs3dsymbolregistry.h"
 #include "qgsabstract3dsymbol.h"
+#include "qgsterrainsettings.h"
 
 #include <QtConcurrent>
 #include <Qt3DCore/QTransform>
@@ -193,7 +194,7 @@ QgsVectorLayerChunkedEntity::QgsVectorLayerChunkedEntity( Qgs3DMapSettings *map,
   mTransform = new Qt3DCore::QTransform;
   if ( applyTerrainOffset() )
   {
-    mTransform->setTranslation( QVector3D( 0.0f, map->terrainElevationOffset(), 0.0f ) );
+    mTransform->setTranslation( QVector3D( 0.0f, map->terrainSettings()->elevationOffset(), 0.0f ) );
   }
   this->addComponent( mTransform );
 

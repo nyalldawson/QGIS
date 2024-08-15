@@ -25,6 +25,7 @@
 #include "qgsterraintexturegenerator_p.h"
 #include "qgsterraintileentity_p.h"
 #include "qgsterraingenerator.h"
+#include "qgsterrainsettings.h"
 
 #include <Qt3DRender/QGeometryRenderer>
 #include <Qt3DCore/QTransform>
@@ -107,7 +108,7 @@ Qt3DCore::QEntity *QgsDemTerrainTileLoader::createEntity( Qt3DCore::QEntity *par
   // create geometry renderer
 
   Qt3DRender::QGeometryRenderer *mesh = new Qt3DRender::QGeometryRenderer;
-  mesh->setGeometry( new DemTerrainTileGeometry( mResolution, side, map->terrainVerticalScale(), mSkirtHeight, mHeightMap, mesh ) );
+  mesh->setGeometry( new DemTerrainTileGeometry( mResolution, side, map->terrainSettings()->verticalScale(), mSkirtHeight, mHeightMap, mesh ) );
   entity->addComponent( mesh ); // takes ownership if the component has no parent
 
   // create material
@@ -123,7 +124,7 @@ Qt3DCore::QEntity *QgsDemTerrainTileLoader::createEntity( Qt3DCore::QEntity *par
   transform->setScale( side );
   transform->setTranslation( QVector3D( x0 + half, 0, - ( y0 + half ) ) );
 
-  mNode->setExactBbox( QgsAABB( x0, zMin * map->terrainVerticalScale(), -y0, x0 + side, zMax * map->terrainVerticalScale(), -( y0 + side ) ) );
+  mNode->setExactBbox( QgsAABB( x0, zMin * map->terrainSettings()->verticalScale(), -y0, x0 + side, zMax * map->terrainSettings()->vrticalScale(), -( y0 + side ) ) );
   mNode->updateParentBoundingBoxesRecursively();
 
   entity->setParent( parent );

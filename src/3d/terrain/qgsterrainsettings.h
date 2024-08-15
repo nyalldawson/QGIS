@@ -110,7 +110,7 @@ class _3D_EXPORT QgsAbstractTerrainSettings
      *
      * \see setVerticalScale()
      */
-    double terrainVerticalScale() const { return mTerrainVerticalScale; }
+    double verticalScale() const { return mTerrainVerticalScale; }
 
     /**
      * Sets the \a resolution (in pixels) of the texture of a terrain tile

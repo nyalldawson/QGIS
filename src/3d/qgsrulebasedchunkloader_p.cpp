@@ -29,6 +29,7 @@
 
 #include "qgsrulebased3drenderer.h"
 #include "qgstessellatedpolygongeometry.h"
+#include "qgsterrainsettings.h"
 
 #include <QtConcurrent>
 #include <Qt3DCore/QTransform>
@@ -192,7 +193,7 @@ QgsRuleBasedChunkedEntity::QgsRuleBasedChunkedEntity( Qgs3DMapSettings *map, Qgs
   mTransform = new Qt3DCore::QTransform;
   if ( applyTerrainOffset() )
   {
-    mTransform->setTranslation( QVector3D( 0.0f, map->terrainElevationOffset(), 0.0f ) );
+    mTransform->setTranslation( QVector3D( 0.0f, map->terrainSettings()->elevationOffset(), 0.0f ) );
   }
   this->addComponent( mTransform );
   connect( map, &Qgs3DMapSettings::terrainElevationOffsetChanged, this, &QgsRuleBasedChunkedEntity::onTerrainElevationOffsetChanged );
