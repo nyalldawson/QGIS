@@ -69,13 +69,17 @@ class _3D_EXPORT QgsAbstractTerrainSettings
     /**
      * Reads settings from a DOM \a element.
      *
+     * Subclasses should take care to call readCommonProperties() to read common properties from the element.
+     *
      * \see resolveReferences()
      * \see writeXml()
      */
     virtual void readXml( const QDomElement &element, const QgsReadWriteContext &context ) = 0;
 
     /**
-     * Writes settings to a DOM \a element
+     * Writes settings to a DOM \a element.
+     *
+     * Subclasses should take care to call writeCommonProperties() to write common properties to the element.
      *
      * \see readXml()
      */
@@ -88,6 +92,115 @@ class _3D_EXPORT QgsAbstractTerrainSettings
      */
     virtual void resolveReferences( const QgsProject *project );
 
+    // common settings
+
+    /**
+     * Sets the vertical \a scale (exaggeration) for terrain.
+     *
+     * (1 = true scale, > 1 = hills get more pronounced)
+     *
+     * \see verticalScale()
+     */
+    void setVerticalScale( double scale ) { mTerrainVerticalScale = scale; }
+
+    /**
+     * Returns the vertical scale (exaggeration) for terrain.
+     *
+     * (1 = true scale, > 1 = hills get more pronounced)
+     *
+     * \see setVerticalScale()
+     */
+    double terrainVerticalScale() const { return mTerrainVerticalScale; }
+
+    /**
+     * Sets the \a resolution (in pixels) of the texture of a terrain tile
+     * \see mapTileResolution()
+     */
+    void setMapTileResolution( int resolution ) { mMapTileResolution = resolution; }
+
+    /**
+     * Returns the resolution (in pixels) of the texture of a terrain tile.
+     *
+     * This parameter influences how many zoom levels for terrain tiles there will be (together with maxTerrainGroundError())
+     *
+     * \see setMapTileResolution()
+     */
+    int mapTileResolution() const { return mMapTileResolution; }
+
+    /**
+     * Sets the maximum allowed screen \a error of terrain tiles in pixels.
+     *
+     * \see maximumScreenError()
+     */
+    void setMaximumScreenError( double error ) { mMaxTerrainScreenError = error; }
+
+    /**
+     * Returns the maximum allowed screen error of terrain tiles in pixels.
+     *
+     * This parameter decides how aggressively less detailed terrain tiles are swapped to more detailed ones as camera gets closer.
+     * Each tile has its error defined in world units - this error gets projected to screen pixels
+     * according to camera view and if the tile's error is greater than the allowed error, it will
+     * be swapped by more detailed tiles with lower error.
+     *
+     * see setMaximumScreenError()
+     */
+    double maximumScreenError() const { return mMaxTerrainScreenError; }
+
+    /**
+     * Sets the maximum ground \a error of terrain tiles in world units.
+     *
+     * \see maximumGroundError()
+     */
+    void setMaximumGroundError( double error ) { mMaxTerrainGroundError = error; }
+
+    /**
+     * Returns the maximum ground error of terrain tiles in world units.
+     *
+     * This parameter influences how many zoom levels there will be (together with mapTileResolution()).
+     * This value tells that when the given ground error is reached (e.g. 10 meters), it makes no sense
+     * to further split terrain tiles into finer ones because they will not add extra details anymore.
+     *
+     * \see setMaximumGroundError()
+     */
+    double maximumGroundError() const { return mMaxTerrainGroundError; }
+
+    /**
+     * Sets the terrain elevation \a offset (used to move the terrain up or down).
+     *
+     * \see elevationOffset()
+     */
+    void setElevationOffset( double offset ) { mTerrainElevationOffset = offset; }
+
+    /**
+     * Returns the elevation offset of the terrain (used to move the terrain up or down).
+     *
+     * \see setElevationOffset()
+     */
+    double elevationOffset() const { return mTerrainElevationOffset; }
+
+  protected:
+
+    /**
+     * Writes common properties from the base class into an XML \a element.
+     *
+     * \see writeXml()
+     */
+    void writeCommonProperties( QDomElement &element, const QgsReadWriteContext &context ) const;
+
+    /**
+     * Reads common properties from the base class from the given DOM \a element.
+     *
+     * \see readXml()
+     */
+    void readCommonProperties( const QDomElement &element, const QgsReadWriteContext &context );
+
+  private:
+
+    double mTerrainVerticalScale = 1;   //!< Multiplier of terrain heights to make the terrain shape more pronounced
+    int mMapTileResolution = 512;   //!< Size of map textures of tiles in pixels (width/height)
+    double mMaxTerrainScreenError = 3.0;   //!< Maximum allowed terrain error in pixels (determines when tiles are switched to more detailed ones)
+    double mMaxTerrainGroundError = 1.0;  //!< Maximum allowed horizontal map error in map units (determines how many zoom levels will be used)
+    double mTerrainElevationOffset = 0.0; //!< Terrain elevation offset (used to adjust the position of the terrain and move it up and down)
 };
 
 

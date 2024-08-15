@@ -26,14 +26,16 @@ QString QgsMeshTerrainSettings::type() const
   return QStringLiteral( "mesh" );
 }
 
-void QgsMeshTerrainSettings::readXml( const QDomElement &element, const QgsReadWriteContext & )
+void QgsMeshTerrainSettings::readXml( const QDomElement &element, const QgsReadWriteContext &context )
 {
   mLayer = QgsMapLayerRef( element.attribute( QStringLiteral( "layer" ) ) );
+  readCommonProperties( element, context );
 }
 
-void QgsMeshTerrainSettings::writeXml( QDomElement &element, const QgsReadWriteContext & ) const
+void QgsMeshTerrainSettings::writeXml( QDomElement &element, const QgsReadWriteContext &context ) const
 {
   element.setAttribute( QStringLiteral( "layer" ), mLayer.layerId );
+  writeCommonProperties( element, context );
 }
 
 void QgsMeshTerrainSettings::resolveReferences( const QgsProject *project )

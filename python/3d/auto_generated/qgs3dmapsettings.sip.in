@@ -249,7 +249,7 @@ be swapped by more detailed tiles with lower error.
 
     void setMaxTerrainGroundError( float error );
 %Docstring
-Returns maximum ground error of terrain tiles in world units.
+Sets the maximum ground error of terrain tiles in world units.
 
 .. seealso:: :py:func:`maxTerrainGroundError`
 %End

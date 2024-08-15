@@ -255,7 +255,7 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
     float maxTerrainScreenError() const;
 
     /**
-     * Returns maximum ground error of terrain tiles in world units.
+     * Sets the maximum ground error of terrain tiles in world units.
      * \see maxTerrainGroundError()
      */
     void setMaxTerrainGroundError( float error );

@@ -25,12 +25,12 @@ QString QgsFlatTerrainSettings::type() const
   return QStringLiteral( "flat" );
 }
 
-void QgsFlatTerrainSettings::readXml( const QDomElement &, const QgsReadWriteContext & )
+void QgsFlatTerrainSettings::readXml( const QDomElement &element, const QgsReadWriteContext &context )
 {
-
+  readCommonProperties( element, context );
 }
 
-void QgsFlatTerrainSettings::writeXml( QDomElement &, const QgsReadWriteContext & ) const
+void QgsFlatTerrainSettings::writeXml( QDomElement &element, const QgsReadWriteContext &context ) const
 {
-
+  writeCommonProperties( element, context );
 }

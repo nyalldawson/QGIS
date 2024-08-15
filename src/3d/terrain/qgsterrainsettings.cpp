@@ -14,10 +14,29 @@
  ***************************************************************************/
 
 #include "qgsterrainsettings.h"
+#include <QDomElement>
 
 QgsAbstractTerrainSettings::~QgsAbstractTerrainSettings() = default;
 
 void QgsAbstractTerrainSettings::resolveReferences( const QgsProject * )
 {
 
+}
+
+void QgsAbstractTerrainSettings::writeCommonProperties( QDomElement &element, const QgsReadWriteContext & ) const
+{
+  element.setAttribute( QStringLiteral( "exaggeration" ), mTerrainVerticalScale );
+  element.setAttribute( QStringLiteral( "texture-size" ), mMapTileResolution );
+  element.setAttribute( QStringLiteral( "max-terrain-error" ), mMaxTerrainScreenError );
+  element.setAttribute( QStringLiteral( "max-ground-error" ), mMaxTerrainGroundError );
+  element.setAttribute( QStringLiteral( "elevation-offset" ), mTerrainElevationOffset );
+}
+
+void QgsAbstractTerrainSettings::readCommonProperties( const QDomElement &element, const QgsReadWriteContext & )
+{
+  mTerrainVerticalScale = element.attribute( QStringLiteral( "exaggeration" ), QStringLiteral( "1" ) ).toDouble();
+  mMapTileResolution = element.attribute( QStringLiteral( "texture-size" ), QStringLiteral( "512" ) ).toInt();
+  mMaxTerrainScreenError = element.attribute( QStringLiteral( "max-terrain-error" ), QStringLiteral( "3" ) ).toDouble();
+  mMaxTerrainGroundError = element.attribute( QStringLiteral( "max-ground-error" ), QStringLiteral( "1" ) ).toDouble();
+  mTerrainElevationOffset = element.attribute( QStringLiteral( "elevation-offset" ), QStringLiteral( "0.0" ) ).toDouble();
 }

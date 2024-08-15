@@ -26,18 +26,20 @@ QString QgsDemTerrainSettings::type() const
   return QStringLiteral( "dem" );
 }
 
-void QgsDemTerrainSettings::readXml( const QDomElement &element, const QgsReadWriteContext & )
+void QgsDemTerrainSettings::readXml( const QDomElement &element, const QgsReadWriteContext &context )
 {
   mLayer = QgsMapLayerRef( element.attribute( QStringLiteral( "layer" ) ) );
   mResolution = element.attribute( QStringLiteral( "resolution" ) ).toInt();
   mSkirtHeight = element.attribute( QStringLiteral( "skirt-height" ) ).toDouble();
+  readCommonProperties( element, context );
 }
 
-void QgsDemTerrainSettings::writeXml( QDomElement &element, const QgsReadWriteContext & ) const
+void QgsDemTerrainSettings::writeXml( QDomElement &element, const QgsReadWriteContext &context ) const
 {
   element.setAttribute( QStringLiteral( "layer" ), mLayer.layerId );
   element.setAttribute( QStringLiteral( "resolution" ), mResolution );
   element.setAttribute( QStringLiteral( "skirt-height" ), mSkirtHeight );
+  writeCommonProperties( element, context );
 }
 
 void QgsDemTerrainSettings::resolveReferences( const QgsProject *project )
