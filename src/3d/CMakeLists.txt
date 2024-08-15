@@ -103,6 +103,7 @@ set(QGIS_3D_SRCS
   terrain/qgsterraindownloader.cpp
   terrain/qgsterrainentity_p.cpp
   terrain/qgsterraingenerator.cpp
+  terrain/qgsterrainsettings.cpp
   terrain/qgsterraintexturegenerator_p.cpp
   terrain/qgsterraintextureimage_p.cpp
   terrain/qgsterraintileloader_p.cpp
@@ -187,6 +188,7 @@ set(QGIS_3D_HDRS
   terrain/qgsonlineterraingenerator.h
   terrain/qgsterraindownloader.h
   terrain/qgsterraingenerator.h
+  terrain/qgsterrainsettings.h
   terrain/qgsterraintileloader_p.h
 
   chunks/qgschunkloader_p.h
