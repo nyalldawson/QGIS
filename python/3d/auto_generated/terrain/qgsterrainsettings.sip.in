@@ -31,6 +31,10 @@ of terrain generators.
 %ConvertToSubClassCode
     if ( sipCpp->type() == "flat" )
       sipType = sipType_QgsFlatTerrainSettings;
+    else if ( sipCpp->type() == "dem" )
+      sipType = sipType_QgsDemTerrainSettings;
+    else if ( sipCpp->type() == "mesh" )
+      sipType = sipType_QgsMeshTerrainSettings;
     else
       sipType = 0;
 %End

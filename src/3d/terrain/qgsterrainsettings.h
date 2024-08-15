@@ -43,6 +43,10 @@ class _3D_EXPORT QgsAbstractTerrainSettings
     SIP_CONVERT_TO_SUBCLASS_CODE
     if ( sipCpp->type() == "flat" )
       sipType = sipType_QgsFlatTerrainSettings;
+    else if ( sipCpp->type() == "dem" )
+      sipType = sipType_QgsDemTerrainSettings;
+    else if ( sipCpp->type() == "mesh" )
+      sipType = sipType_QgsMeshTerrainSettings;
     else
       sipType = 0;
     SIP_END
