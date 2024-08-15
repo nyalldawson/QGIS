@@ -28,6 +28,7 @@
 
 class QgsTerrainGenerator;
 class Qgs3DMapSettings;
+class QgsAbstractTerrainSettings;
 
 #define SIP_NO_FILE
 
@@ -120,9 +121,11 @@ class _3D_EXPORT Qgs3DRenderContext
     bool terrainRenderingEnabled() const { return mTerrainRenderingEnabled; }
 
     /**
-     * Returns vertical scale (exaggeration) of terrain
+     * Returns the terrain settings.
+     *
+     * \see setTerrainSettings()
      */
-    double terrainVerticalScale() const { return mTerrainVerticalScale; }
+    QgsAbstractTerrainSettings *terrainSettings() const;
 
     /**
      * Returns the terrain generator.
@@ -163,8 +166,7 @@ class _3D_EXPORT Qgs3DRenderContext
     double mDpi = 96;  //!< Dot per inch value for the screen / painter
     float mFieldOfView = 45.0f; //!< Camera lens field of view value
     bool mTerrainRenderingEnabled = true;
-    double mTerrainVerticalScale = 1;   //!< Multiplier of terrain heights to make the terrain shape more pronounced
-
+    std::unique_ptr< QgsAbstractTerrainSettings > mTerrainSettings;
     //! Expression context
     QgsExpressionContext mExpressionContext;
 

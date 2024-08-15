@@ -31,7 +31,7 @@ Qgs3DRenderContext Qgs3DRenderContext::fromMapSettings( const Qgs3DMapSettings *
   res.mDpi = mapSettings->outputDpi();
   res.mFieldOfView = mapSettings->fieldOfView();
   res.mTerrainRenderingEnabled = mapSettings->terrainRenderingEnabled();
-  res.mTerrainVerticalScale = mapSettings->terrainVerticalScale();
+  res.setTerrainSettings( std::unique_ptr< QgsAbstractTerrainSettings >( mapSettings->terrainSettings()->clone() ) );
   res.mTerrainGenerator = mapSettings->terrainGenerator();
   return res;
 }
@@ -44,4 +44,14 @@ QgsVector3D Qgs3DRenderContext::mapToWorldCoordinates( const QgsVector3D &mapCoo
 QgsVector3D Qgs3DRenderContext::worldToMapCoordinates( const QgsVector3D &worldCoords ) const
 {
   return Qgs3DUtils::worldToMapCoordinates( worldCoords, mOrigin );
+}
+
+void Qgs3DRenderContext::setTerrainSettings( std::unique_ptr<QgsAbstractTerrainSettings> settings )
+{
+  mTerrainSettings = std::move( settings );
+}
+
+QgsAbstractTerrainSettings *Qgs3DRenderContext::terrainSettings() const
+{
+  return mTerrainSettings.get();
 }
