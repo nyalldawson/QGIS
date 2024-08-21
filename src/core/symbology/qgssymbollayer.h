@@ -100,6 +100,8 @@ class CORE_EXPORT QgsSymbolLayer
           sipType = sipType_QgsRasterLineSymbolLayer;
         else if ( sipCpp->layerType() == "Lineburst" )
           sipType = sipType_QgsLineburstSymbolLayer;
+        else if ( sipCpp->layerType() == "LinearReferencing" )
+          sipType = sipType_QgsLinearReferencingSymbolLayer;
         else
           sipType = sipType_QgsLineSymbolLayer;
         break;
