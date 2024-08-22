@@ -125,6 +125,20 @@ labeling every 100 in a normal font and every 1000 in a bold, larger font.
 .. seealso:: :py:func:`skipMultiplesOf`
 %End
 
+    bool rotateLabels() const;
+%Docstring
+Returns ``True`` if the labels and symbols are to be rotated to match their line segment orientation.
+
+.. seealso:: :py:func:`setRotateLabels`
+%End
+
+    void setRotateLabels( bool rotate );
+%Docstring
+Sets whether the labels and symbols should be rotated to match their line segment orientation.
+
+.. seealso:: :py:func:`rotateLabels`
+%End
+
 };
 
 /************************************************************************

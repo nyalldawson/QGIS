@@ -21,6 +21,7 @@
 #include "qgsnumericformatregistry.h"
 #include "qgsapplication.h"
 #include "qgsbasicnumericformat.h"
+#include "qgsgeometryutils.h"
 
 QgsLinearReferencingSymbolLayer::QgsLinearReferencingSymbolLayer()
   : QgsLineSymbolLayer()
@@ -41,6 +42,7 @@ QgsSymbolLayer *QgsLinearReferencingSymbolLayer::create( const QVariantMap &prop
   const double skipMultiples = properties.value( QStringLiteral( "skip_multiples" ) ).toDouble( &ok );
   if ( ok )
     res->setSkipMultiplesOf( skipMultiples );
+  res->setRotateLabels( properties.value( QStringLiteral( "rotate" ), true ).toBool() );
 
   // it's impossible to get the project's path resolver here :(
   // TODO QGIS 4.0 -- force use of QgsReadWriteContext in create methods
@@ -76,6 +78,7 @@ QgsLinearReferencingSymbolLayer *QgsLinearReferencingSymbolLayer::clone() const
   std::unique_ptr< QgsLinearReferencingSymbolLayer > res = std::make_unique< QgsLinearReferencingSymbolLayer >();
   res->setInterval( mInterval );
   res->setSkipMultiplesOf( mSkipMultiplesOf );
+  res->setRotateLabels( mRotateLabels );
 
   res->mTextFormat = mTextFormat;
   res->mMarkerSymbol.reset( mMarkerSymbol ? mMarkerSymbol->clone() : nullptr );
@@ -104,6 +107,9 @@ QVariantMap QgsLinearReferencingSymbolLayer::properties() const
   {
     {
       QStringLiteral( "interval" ), mInterval
+    },
+    {
+      QStringLiteral( "rotate" ), mRotateLabels
     },
     {
       QStringLiteral( "text_format" ), textFormatDoc.toString()
@@ -151,7 +157,11 @@ void QgsLinearReferencingSymbolLayer::startRender( QgsSymbolRenderContext &conte
 {
   if ( mMarkerSymbol )
   {
-    mMarkerSymbol->setRenderHints( mMarkerSymbol->renderHints() | Qgis::SymbolRenderHint::IsSymbolLayerSubSymbol );
+    Qgis::SymbolRenderHints hints = mMarkerSymbol->renderHints() | Qgis::SymbolRenderHint::IsSymbolLayerSubSymbol;
+    if ( mRotateLabels )
+      hints |= Qgis::SymbolRenderHint::DynamicRotation;
+    mMarkerSymbol->setRenderHints( hints );
+
     mMarkerSymbol->startRender( context.renderContext(), context.fields() );
   }
 }
@@ -163,7 +173,6 @@ void QgsLinearReferencingSymbolLayer::stopRender( QgsSymbolRenderContext &contex
     mMarkerSymbol->stopRender( context.renderContext() );
   }
 }
-
 
 void visitPointsByRegularDistance( const QgsLineString *line, const double distance, const std::function<bool ( double, double, double, double, double, double, double, double, double, double, double, double )> &visitPoint )
 {
@@ -244,17 +253,8 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
 
   if ( const QgsLineString *line = qgsgeometry_cast< const QgsLineString * >( geometry ) )
   {
-    double currentDistance = 0;
-    visitPointsByRegularDistance( line, distance, [&context, &currentDistance, &numericContext, distance, skipMultiples, this]( double x, double y, double z, double m,
-                                  double startSegmentX, double startSegmentY, double startSegmentZ, double startSegmentM,
-                                  double endSegmentX, double endSegmentY, double endSegmentZ, double endSegmentM
-                                                                                                                              ) -> bool
+    auto pointToPainter = [&context]( double x, double y, double z ) -> QPointF
     {
-      currentDistance += distance;
-      if ( skipMultiples > 0 && qgsDoubleNear( std::fmod( currentDistance,  skipMultiples ), 0 ) )
-        return true;
-
-      // need to convert layer point to painter paint
       QPointF pt;
       if ( context.renderContext().coordinateTransform().isValid() )
       {
@@ -268,10 +268,37 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
       }
 
       context.renderContext().mapToPixel().transformInPlace( pt.rx(), pt.ry() );
-      if ( mMarkerSymbol )
-        mMarkerSymbol->renderPoint( pt, context.feature(), context.renderContext() );
+      return pt;
+    };
+    double currentDistance = 0;
+    visitPointsByRegularDistance( line, distance, [&context, &currentDistance, &numericContext, distance, skipMultiples, &pointToPainter, this]( double x, double y, double z, double m,
+                                  double startSegmentX, double startSegmentY, double startSegmentZ, double startSegmentM,
+                                  double endSegmentX, double endSegmentY, double endSegmentZ, double endSegmentM
+                                                                                                                                               ) -> bool
+    {
+      ( void )startSegmentM;
+      ( void )endSegmentM;
 
-      QgsTextRenderer::drawText( pt, 0, Qgis::TextHorizontalAlignment::Left, { mNumericFormat->formatDouble( currentDistance, numericContext ) }, context.renderContext(), mTextFormat );
+      currentDistance += distance;
+      if ( skipMultiples > 0 && qgsDoubleNear( std::fmod( currentDistance,  skipMultiples ), 0 ) )
+        return true;
+
+      const QPointF pt = pointToPainter( x, y, z );
+      const QPointF segmentStartPt = pointToPainter( startSegmentX, startSegmentY, startSegmentZ );
+      const QPointF segmentEndPt = pointToPainter( endSegmentX, endSegmentY, endSegmentZ );
+
+      double angle = mRotateLabels ? std::fmod( QgsGeometryUtilsBase::azimuth( segmentStartPt.x(), segmentStartPt.y(), segmentEndPt.x(), segmentEndPt.y() ) + 360, 360 ) : 0;
+      if ( angle > 90 && angle < 270 )
+        angle += 180;
+
+      if ( mMarkerSymbol )
+      {
+        if ( mRotateLabels )
+          mMarkerSymbol->setLineAngle( 90 - angle );
+        mMarkerSymbol->renderPoint( pt, context.feature(), context.renderContext() );
+      }
+
+      QgsTextRenderer::drawText( pt, angle *M_PI / 180.0, Qgis::TextHorizontalAlignment::Left, { mNumericFormat->formatDouble( currentDistance, numericContext ) }, context.renderContext(), mTextFormat );
 
       return true;
     } );

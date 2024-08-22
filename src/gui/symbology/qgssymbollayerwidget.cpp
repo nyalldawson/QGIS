@@ -5498,6 +5498,14 @@ QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( Qg
       emit changed();
     }
   } );
+  connect( mCheckRotate, &QCheckBox::toggled, this, [ = ]( bool checked )
+  {
+    if ( mLayer && !mBlockChangesSignal )
+    {
+      mLayer->setRotateLabels( checked );
+      emit changed();
+    }
+  } );
 
   connect( mNumberFormatPushButton, &QPushButton::clicked, this, &QgsLinearReferencingSymbolLayerWidget::changeNumberFormat );
 
@@ -5520,6 +5528,7 @@ void QgsLinearReferencingSymbolLayerWidget::setSymbolLayer( QgsSymbolLayer *laye
   mTextFormatButton->setTextFormat( mLayer->textFormat() );
   spinInterval->setValue( mLayer->interval() );
   mSpinSkipMultiples->setValue( mLayer->skipMultiplesOf() );
+  mCheckRotate->setChecked( mLayer->rotateLabels() );
 
   mBlockChangesSignal = false;
 }

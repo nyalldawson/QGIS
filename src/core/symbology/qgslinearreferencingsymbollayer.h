@@ -127,10 +127,25 @@ class CORE_EXPORT QgsLinearReferencingSymbolLayer : public QgsLineSymbolLayer
      */
     void setSkipMultiplesOf( double multiple );
 
+    /**
+     * Returns TRUE if the labels and symbols are to be rotated to match their line segment orientation.
+     *
+     * \see setRotateLabels()
+     */
+    bool rotateLabels() const { return mRotateLabels; }
+
+    /**
+     * Sets whether the labels and symbols should be rotated to match their line segment orientation.
+     *
+     * \see rotateLabels()
+     */
+    void setRotateLabels( bool rotate ) { mRotateLabels = rotate; }
+
   private:
 
     double mInterval = 1000;
     double mSkipMultiplesOf = 0;
+    bool mRotateLabels = true;
 
     QgsTextFormat mTextFormat;
     std::unique_ptr<QgsMarkerSymbol> mMarkerSymbol;

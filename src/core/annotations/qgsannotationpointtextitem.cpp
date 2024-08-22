@@ -86,7 +86,7 @@ void QgsAnnotationPointTextItem::render( QgsRenderContext &context, QgsFeedback 
     renderCallout( context, QRectF( pt.x(), pt.y() - textHeight, textWidth, textHeight ), angle, calloutContext, feedback );
   }
 
-  QgsTextRenderer::drawText( pt, - angle * M_PI / 180.0,
+  QgsTextRenderer::drawText( pt, angle * M_PI / 180.0,
                              QgsTextRenderer::convertQtHAlignment( mAlignment ),
                              mTextFormat.allowHtmlFormatting() ? QStringList{displayText }: displayText.split( '\n' ), context, mTextFormat );
 }
