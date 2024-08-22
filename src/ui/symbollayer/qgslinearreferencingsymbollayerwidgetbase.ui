@@ -221,7 +221,7 @@
      <item row="0" column="1">
       <layout class="QHBoxLayout" name="horizontalLayout_4">
        <item>
-        <widget class="QRadioButton" name="mCheckInterval">
+        <widget class="QRadioButton" name="mRadioInterval">
          <property name="text">
           <string>With interval</string>
          </property>
@@ -274,7 +274,7 @@
       </spacer>
      </item>
      <item row="1" column="1">
-      <widget class="QRadioButton" name="mCheckVertex">
+      <widget class="QRadioButton" name="mRadioVertex">
        <property name="text">
         <string>On every vertex</string>
        </property>

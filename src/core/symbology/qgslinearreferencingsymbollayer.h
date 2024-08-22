@@ -209,7 +209,23 @@ class CORE_EXPORT QgsLinearReferencingSymbolLayer : public QgsLineSymbolLayer
      */
     void setShowMarker( bool show );
 
+    /**
+     * Returns the placement mode for the labels.
+     *
+     * \see setPlacement()
+     */
+    Qgis::LinearReferencingPlacement placement() const;
+
+    /**
+     * Sets the \a placement mode for the labels.
+     *
+     * \see placement()
+     */
+    void setPlacement( Qgis::LinearReferencingPlacement placement );
+
   private:
+
+    Qgis::LinearReferencingPlacement mPlacement = Qgis::LinearReferencingPlacement::Interval;
 
     double mInterval = 1000;
     double mSkipMultiplesOf = 0;

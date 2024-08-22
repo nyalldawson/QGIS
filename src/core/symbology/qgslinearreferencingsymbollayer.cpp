@@ -36,6 +36,7 @@ QgsLinearReferencingSymbolLayer::~QgsLinearReferencingSymbolLayer() = default;
 QgsSymbolLayer *QgsLinearReferencingSymbolLayer::create( const QVariantMap &properties )
 {
   std::unique_ptr< QgsLinearReferencingSymbolLayer > res = std::make_unique< QgsLinearReferencingSymbolLayer >();
+  res->setPlacement( qgsEnumKeyToValue( properties.value( QStringLiteral( "placement" ) ).toString(), Qgis::LinearReferencingPlacement::Interval ) );
   bool ok = false;
   const double interval = properties.value( QStringLiteral( "interval" ) ).toDouble( &ok );
   if ( ok )
@@ -91,6 +92,7 @@ QgsSymbolLayer *QgsLinearReferencingSymbolLayer::create( const QVariantMap &prop
 QgsLinearReferencingSymbolLayer *QgsLinearReferencingSymbolLayer::clone() const
 {
   std::unique_ptr< QgsLinearReferencingSymbolLayer > res = std::make_unique< QgsLinearReferencingSymbolLayer >();
+  res->setPlacement( mPlacement );
   res->setInterval( mInterval );
   res->setSkipMultiplesOf( mSkipMultiplesOf );
   res->setRotateLabels( mRotateLabels );
@@ -124,6 +126,9 @@ QVariantMap QgsLinearReferencingSymbolLayer::properties() const
 
   QVariantMap res
   {
+    {
+      QStringLiteral( "placement" ), qgsEnumValueToKey( mPlacement )
+    },
     {
       QStringLiteral( "interval" ), mInterval
     },
@@ -401,4 +406,14 @@ void QgsLinearReferencingSymbolLayer::setShowMarker( bool show )
   {
     mMarkerSymbol.reset( QgsMarkerSymbol::createSimple( {} ) );
   }
+}
+
+Qgis::LinearReferencingPlacement QgsLinearReferencingSymbolLayer::placement() const
+{
+  return mPlacement;
+}
+
+void QgsLinearReferencingSymbolLayer::setPlacement( Qgis::LinearReferencingPlacement placement )
+{
+  mPlacement = placement;
 }

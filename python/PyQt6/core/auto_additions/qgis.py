@@ -2911,6 +2911,12 @@ Qgis.MarkerLinePlacement.baseClass = Qgis
 Qgis.MarkerLinePlacements = lambda flags=0: Qgis.MarkerLinePlacement(flags)
 Qgis.MarkerLinePlacements.baseClass = Qgis
 MarkerLinePlacements = Qgis  # dirty hack since SIP seems to introduce the flags in module
+# monkey patching scoped based enum
+Qgis.LinearReferencingPlacement.Interval.__doc__ = "Place labels at regular intervals"
+Qgis.LinearReferencingPlacement.Vertex.__doc__ = "Place labels on every vertex in the line"
+Qgis.LinearReferencingPlacement.__doc__ = "Defines how/where the labels should be placed in a linear referencing symbol layer.\n\n.. versionadded:: 3.40\n\n" + '* ``Interval``: ' + Qgis.LinearReferencingPlacement.Interval.__doc__ + '\n' + '* ``Vertex``: ' + Qgis.LinearReferencingPlacement.Vertex.__doc__
+# --
+Qgis.LinearReferencingPlacement.baseClass = Qgis
 QgsGradientFillSymbolLayer.GradientColorType = Qgis.GradientColorSource
 # monkey patching scoped based enum
 QgsGradientFillSymbolLayer.SimpleTwoColor = Qgis.GradientColorSource.SimpleTwoColor

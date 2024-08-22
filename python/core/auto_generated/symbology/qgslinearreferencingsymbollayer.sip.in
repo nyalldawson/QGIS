@@ -211,6 +211,20 @@ The marker symbol is set using :py:func:`~QgsLinearReferencingSymbolLayer.setSub
 .. seealso:: :py:func:`showMarker`
 %End
 
+    Qgis::LinearReferencingPlacement placement() const;
+%Docstring
+Returns the placement mode for the labels.
+
+.. seealso:: :py:func:`setPlacement`
+%End
+
+    void setPlacement( Qgis::LinearReferencingPlacement placement );
+%Docstring
+Sets the ``placement`` mode for the labels.
+
+.. seealso:: :py:func:`placement`
+%End
+
 };
 
 /************************************************************************

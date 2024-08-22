@@ -2792,6 +2792,18 @@ class CORE_EXPORT Qgis
     Q_FLAG( MarkerLinePlacements )
 
     /**
+     * Defines how/where the labels should be placed in a linear referencing symbol layer.
+     *
+     * \since QGIS 3.40
+     */
+    enum class LinearReferencingPlacement : int SIP_ENUM_BASETYPE( IntFlag )
+    {
+      Interval = 1 << 0, //!< Place labels at regular intervals
+      Vertex = 1 << 1, //!< Place labels on every vertex in the line
+    };
+    Q_ENUM( LinearReferencingPlacement )
+
+    /**
      * Gradient color sources.
      *
      * \note Prior to QGIS 3.24 this was available as QgsGradientFillSymbolLayer::GradientColorType

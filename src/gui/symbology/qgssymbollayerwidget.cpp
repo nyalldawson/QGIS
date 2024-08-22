@@ -5546,6 +5546,26 @@ QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( Qg
     }
   } );
 
+  connect( mRadioInterval, &QCheckBox::toggled, this, [ = ]( bool checked )
+  {
+    if ( mLayer && !mBlockChangesSignal && checked )
+    {
+      mLayer->setPlacement( Qgis::LinearReferencingPlacement::Interval );
+      spinInterval->setEnabled( true );
+      emit changed();
+    }
+  } );
+
+  connect( mRadioVertex, &QCheckBox::toggled, this, [ = ]( bool checked )
+  {
+    if ( mLayer && !mBlockChangesSignal && checked )
+    {
+      mLayer->setPlacement( Qgis::LinearReferencingPlacement::Vertex );
+      spinInterval->setEnabled( false );
+      emit changed();
+    }
+  } );
+
   connect( mNumberFormatPushButton, &QPushButton::clicked, this, &QgsLinearReferencingSymbolLayerWidget::changeNumberFormat );
 
   mTextFormatButton->registerExpressionContextGenerator( this );
@@ -5563,6 +5583,17 @@ void QgsLinearReferencingSymbolLayerWidget::setSymbolLayer( QgsSymbolLayer *laye
   mLayer = qgis::down_cast<QgsLinearReferencingSymbolLayer *>( layer );
 
   mBlockChangesSignal = true;
+
+  switch ( mLayer->placement() )
+  {
+    case Qgis::LinearReferencingPlacement::Interval:
+      mRadioInterval->setChecked( true );
+      break;
+    case Qgis::LinearReferencingPlacement::Vertex:
+      mRadioVertex->setChecked( true );
+      break;
+  }
+  spinInterval->setEnabled( mRadioInterval->isChecked() );
 
   mTextFormatButton->setTextFormat( mLayer->textFormat() );
   spinInterval->setValue( mLayer->interval() );
