@@ -225,6 +225,82 @@ Sets the ``placement`` mode for the labels.
 .. seealso:: :py:func:`placement`
 %End
 
+    double averageAngleLength() const;
+%Docstring
+Returns the length of line over which the line's direction is averaged when
+calculating individual label angles. Longer lengths smooth out angles from jagged lines to a greater extent.
+
+Units are retrieved through :py:func:`~QgsLinearReferencingSymbolLayer.averageAngleUnit`
+
+.. seealso:: :py:func:`setAverageAngleLength`
+
+.. seealso:: :py:func:`averageAngleUnit`
+
+.. seealso:: :py:func:`averageAngleMapUnitScale`
+%End
+
+    void setAverageAngleLength( double length );
+%Docstring
+Sets the ``length`` of line over which the line's direction is averaged when
+calculating individual label angles. Longer lengths smooth out angles from jagged lines to a greater extent.
+
+Units are set through :py:func:`~QgsLinearReferencingSymbolLayer.setAverageAngleUnit`
+
+.. seealso:: :py:func:`averageAngleLength`
+
+.. seealso:: :py:func:`setAverageAngleUnit`
+
+.. seealso:: :py:func:`setAverageAngleMapUnitScale`
+%End
+
+    void setAverageAngleUnit( Qgis::RenderUnit unit );
+%Docstring
+Sets the ``unit`` for the length over which the line's direction is averaged when
+calculating individual label angles.
+
+.. seealso:: :py:func:`averageAngleUnit`
+
+.. seealso:: :py:func:`setAverageAngleLength`
+
+.. seealso:: :py:func:`setAverageAngleMapUnitScale`
+%End
+
+    Qgis::RenderUnit averageAngleUnit() const;
+%Docstring
+Returns the unit for the length over which the line's direction is averaged when
+calculating individual label angles.
+
+.. seealso:: :py:func:`setAverageAngleUnit`
+
+.. seealso:: :py:func:`averageAngleLength`
+
+.. seealso:: :py:func:`averageAngleMapUnitScale`
+%End
+
+    void setAverageAngleMapUnitScale( const QgsMapUnitScale &scale );
+%Docstring
+Sets the map unit ``scale`` for the length over which the line's direction is averaged when
+calculating individual label angles.
+
+.. seealso:: :py:func:`averageAngleMapUnitScale`
+
+.. seealso:: :py:func:`setAverageAngleLength`
+
+.. seealso:: :py:func:`setAverageAngleUnit`
+%End
+
+    const QgsMapUnitScale &averageAngleMapUnitScale() const;
+%Docstring
+Returns the map unit scale for the length over which the line's direction is averaged when
+calculating individual label angles.
+
+.. seealso:: :py:func:`setAverageAngleMapUnitScale`
+
+.. seealso:: :py:func:`averageAngleLength`
+
+.. seealso:: :py:func:`averageAngleUnit`
+%End
+
 };
 
 /************************************************************************

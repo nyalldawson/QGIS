@@ -223,6 +223,70 @@ class CORE_EXPORT QgsLinearReferencingSymbolLayer : public QgsLineSymbolLayer
      */
     void setPlacement( Qgis::LinearReferencingPlacement placement );
 
+    /**
+     * Returns the length of line over which the line's direction is averaged when
+     * calculating individual label angles. Longer lengths smooth out angles from jagged lines to a greater extent.
+     *
+     * Units are retrieved through averageAngleUnit()
+     *
+     * \see setAverageAngleLength()
+     * \see averageAngleUnit()
+     * \see averageAngleMapUnitScale()
+     */
+    double averageAngleLength() const { return mAverageAngleLength; }
+
+    /**
+     * Sets the \a length of line over which the line's direction is averaged when
+     * calculating individual label angles. Longer lengths smooth out angles from jagged lines to a greater extent.
+     *
+     * Units are set through setAverageAngleUnit()
+     *
+     * \see averageAngleLength()
+     * \see setAverageAngleUnit()
+     * \see setAverageAngleMapUnitScale()
+     */
+    void setAverageAngleLength( double length ) { mAverageAngleLength = length; }
+
+    /**
+     * Sets the \a unit for the length over which the line's direction is averaged when
+     * calculating individual label angles.
+     *
+     * \see averageAngleUnit()
+     * \see setAverageAngleLength()
+     * \see setAverageAngleMapUnitScale()
+    */
+    void setAverageAngleUnit( Qgis::RenderUnit unit ) { mAverageAngleLengthUnit = unit; }
+
+    /**
+     * Returns the unit for the length over which the line's direction is averaged when
+     * calculating individual label angles.
+     *
+     * \see setAverageAngleUnit()
+     * \see averageAngleLength()
+     * \see averageAngleMapUnitScale()
+    */
+    Qgis::RenderUnit averageAngleUnit() const { return mAverageAngleLengthUnit; }
+
+    /**
+     * Sets the map unit \a scale for the length over which the line's direction is averaged when
+     * calculating individual label angles.
+     *
+     * \see averageAngleMapUnitScale()
+     * \see setAverageAngleLength()
+     * \see setAverageAngleUnit()
+    */
+    void setAverageAngleMapUnitScale( const QgsMapUnitScale &scale ) { mAverageAngleLengthMapUnitScale = scale; }
+
+    /**
+     * Returns the map unit scale for the length over which the line's direction is averaged when
+     * calculating individual label angles.
+     *
+     * \see setAverageAngleMapUnitScale()
+     * \see averageAngleLength()
+     * \see averageAngleUnit()
+    */
+    const QgsMapUnitScale &averageAngleMapUnitScale() const { return mAverageAngleLengthMapUnitScale; }
+
   private:
     void renderPolylineInterval( const QPolygonF &points, QgsSymbolRenderContext &context, double skipMultiples, const QPointF &labelOffsetPainterUnits );
     void renderPolylineVertex( const QPolygonF &points, QgsSymbolRenderContext &context, double skipMultiples, const QPointF &labelOffsetPainterUnits );
@@ -243,6 +307,10 @@ class CORE_EXPORT QgsLinearReferencingSymbolLayer : public QgsLineSymbolLayer
 
     bool mShowMarker = false;
     std::unique_ptr<QgsMarkerSymbol> mMarkerSymbol;
+
+    double mAverageAngleLength = 4;
+    Qgis::RenderUnit mAverageAngleLengthUnit = Qgis::RenderUnit::Millimeters;
+    QgsMapUnitScale mAverageAngleLengthMapUnitScale;
 
 };
 

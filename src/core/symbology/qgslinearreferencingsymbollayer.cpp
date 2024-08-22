@@ -85,6 +85,18 @@ QgsSymbolLayer *QgsLinearReferencingSymbolLayer::create( const QVariantMap &prop
   {
     res->setLabelOffsetMapUnitScale( QgsSymbolLayerUtils::decodeMapUnitScale( properties[QStringLiteral( "label_offset_map_unit_scale" )].toString() ) );
   }
+  if ( properties.contains( QStringLiteral( "average_angle_length" ) ) )
+  {
+    res->setAverageAngleLength( properties[QStringLiteral( "average_angle_length" )].toDouble() );
+  }
+  if ( properties.contains( QStringLiteral( "average_angle_unit" ) ) )
+  {
+    res->setAverageAngleUnit( QgsUnitTypes::decodeRenderUnit( properties[QStringLiteral( "average_angle_unit" )].toString() ) );
+  }
+  if ( properties.contains( ( QStringLiteral( "average_angle_map_unit_scale" ) ) ) )
+  {
+    res->setAverageAngleMapUnitScale( QgsSymbolLayerUtils::decodeMapUnitScale( properties[QStringLiteral( "average_angle_map_unit_scale" )].toString() ) );
+  }
 
   return res.release();
 }
@@ -100,6 +112,9 @@ QgsLinearReferencingSymbolLayer *QgsLinearReferencingSymbolLayer::clone() const
   res->setLabelOffsetUnit( mLabelOffsetUnit );
   res->setLabelOffsetMapUnitScale( mLabelOffsetMapUnitScale );
   res->setShowMarker( mShowMarker );
+  res->setAverageAngleLength( mAverageAngleLength );
+  res->setAverageAngleUnit( mAverageAngleLengthUnit );
+  res->setAverageAngleMapUnitScale( mAverageAngleLengthMapUnitScale );
 
   res->mTextFormat = mTextFormat;
   res->mMarkerSymbol.reset( mMarkerSymbol ? mMarkerSymbol->clone() : nullptr );
@@ -152,6 +167,15 @@ QVariantMap QgsLinearReferencingSymbolLayer::properties() const
     },
     {
       QStringLiteral( "label_offset_map_unit_scale" ), QgsSymbolLayerUtils::encodeMapUnitScale( mLabelOffsetMapUnitScale )
+    },
+    {
+      QStringLiteral( "average_angle_length" ), mAverageAngleLength
+    },
+    {
+      QStringLiteral( "average_angle_unit" ), QgsUnitTypes::encodeUnit( mAverageAngleLengthUnit )
+    },
+    {
+      QStringLiteral( "average_angle_map_unit_scale" ), QgsSymbolLayerUtils::encodeMapUnitScale( mAverageAngleLengthMapUnitScale )
     },
   };
 

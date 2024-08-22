@@ -5475,9 +5475,11 @@ QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( Qg
   mSpinSkipMultiples->setClearValue( 0, tr( "Not set" ) );
   mSpinLabelOffsetX->setClearValue( 0 );
   mSpinLabelOffsetY->setClearValue( 0 );
+  mSpinAverageAngleLength->setClearValue( 4.0 );
   mLabelOffsetUnitWidget->setUnits( QgsUnitTypes::RenderUnitList() << Qgis::RenderUnit::Millimeters << Qgis::RenderUnit::MetersInMapUnits << Qgis::RenderUnit::MapUnits << Qgis::RenderUnit::Pixels
                                     << Qgis::RenderUnit::Points << Qgis::RenderUnit::Inches );
-
+  mAverageAngleUnit->setUnits( QgsUnitTypes::RenderUnitList() << Qgis::RenderUnit::Millimeters << Qgis::RenderUnit::MetersInMapUnits << Qgis::RenderUnit::MapUnits << Qgis::RenderUnit::Pixels
+                               << Qgis::RenderUnit::Points << Qgis::RenderUnit::Inches );
 
   connect( mTextFormatButton, &QgsFontButton::changed, this, [ = ]
   {
@@ -5510,6 +5512,8 @@ QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( Qg
       mLayer->setRotateLabels( checked );
       emit changed();
     }
+    mSpinAverageAngleLength->setEnabled( checked );
+    mAverageAngleUnit->setEnabled( mSpinAverageAngleLength->isEnabled() );
   } );
   connect( mCheckShowMarker, &QCheckBox::toggled, this, [ = ]( bool checked )
   {
@@ -5566,6 +5570,24 @@ QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( Qg
     }
   } );
 
+  connect( mSpinAverageAngleLength, qOverload< double >( &QgsDoubleSpinBox::valueChanged ), this, [ = ]
+  {
+    if ( mLayer && !mBlockChangesSignal )
+    {
+      mLayer->setAverageAngleLength( mSpinAverageAngleLength->value() );
+      emit changed();
+    }
+  } );
+  connect( mAverageAngleUnit, &QgsUnitSelectionWidget::changed, this, [ = ]
+  {
+    if ( mLayer && !mBlockChangesSignal )
+    {
+      mLayer->setAverageAngleUnit( mAverageAngleUnit->unit() );
+      mLayer->setAverageAngleMapUnitScale( mAverageAngleUnit->getMapUnitScale() );
+      emit changed();
+    }
+  } );
+
   connect( mNumberFormatPushButton, &QPushButton::clicked, this, &QgsLinearReferencingSymbolLayerWidget::changeNumberFormat );
 
   mTextFormatButton->registerExpressionContextGenerator( this );
@@ -5604,6 +5626,13 @@ void QgsLinearReferencingSymbolLayerWidget::setSymbolLayer( QgsSymbolLayer *laye
   mSpinLabelOffsetY->setValue( mLayer->labelOffset().y() );
   mLabelOffsetUnitWidget->setUnit( mLayer->labelOffsetUnit() );
   mLabelOffsetUnitWidget->setMapUnitScale( mLayer->labelOffsetMapUnitScale() );
+
+  mAverageAngleUnit->setUnit( mLayer->averageAngleUnit() );
+  mAverageAngleUnit->setMapUnitScale( mLayer->averageAngleMapUnitScale() );
+  mSpinAverageAngleLength->setValue( mLayer->averageAngleLength() );
+
+  mSpinAverageAngleLength->setEnabled( mCheckRotate->isChecked() );
+  mAverageAngleUnit->setEnabled( mSpinAverageAngleLength->isEnabled() );
 
   mBlockChangesSignal = false;
 }
