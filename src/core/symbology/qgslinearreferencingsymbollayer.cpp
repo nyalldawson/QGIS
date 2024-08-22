@@ -366,6 +366,8 @@ void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QPolygonF &p
       QgsTextRenderer::drawText( QPointF( pt.x() + dx, pt.y() + dy ), angleRadians, Qgis::TextHorizontalAlignment::Left, { mNumericFormat->formatDouble( currentDistance, numericContext ) }, context.renderContext(), mTextFormat );
 
       return true;
+
+      // TODO -- interruption support!
     } );
 
   }
@@ -373,7 +375,72 @@ void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QPolygonF &p
 
 void QgsLinearReferencingSymbolLayer::renderPolylineVertex( const QPolygonF &points, QgsSymbolRenderContext &context, double skipMultiples, const QPointF &labelOffsetPainterUnits )
 {
+  const QgsAbstractGeometry *geometry = context.renderContext().geometry();
 
+  QgsNumericFormatContext numericContext;
+
+  // TODO if NOT a original geometry, convert points to linestring and scale distance to painter units..
+
+  if ( const QgsLineString *line = qgsgeometry_cast< const QgsLineString * >( geometry ) )
+  {
+    const double *xData = line->xData();
+    const double *yData = line->yData();
+    const double *zData = line->is3D() ? line->zData() : nullptr;
+    const double *mData = line->isMeasure() ? line->mData() : nullptr;
+    const int size = line->numPoints();
+    if ( size < 2 )
+      return;
+
+    double currentDistance = 0;
+    double prevX = *xData++;
+    double prevY = *yData++;
+    double prevZ = zData ? *zData++ : 0;
+    double prevM = mData ? *mData++ : 0;
+
+    for ( int i = 0; i < size; ++i )
+    {
+      // TODO -- interruption support!
+      double thisX = *xData++;
+      double thisY = *yData++;
+      double thisZ = zData ? *zData++ : 0;
+      double thisM = mData ? *mData++ : 0;
+
+      const double thisSegmentLength = QgsGeometryUtilsBase::distance2D( prevX, prevY, thisX, thisY );
+      currentDistance += thisSegmentLength;
+
+      if ( skipMultiples > 0 && qgsDoubleNear( std::fmod( currentDistance,  skipMultiples ), 0 ) )
+        continue;
+
+      const QPointF pt = pointToPainter( context, thisX, thisY, thisZ );
+      //const QPointF segmentStartPt = pointToPainter( context, startSegmentX, startSegmentY, startSegmentZ );
+      //const QPointF segmentEndPt = pointToPainter( context, endSegmentX, endSegmentY, endSegmentZ );
+
+      double angle = 0; // mRotateLabels ? std::fmod( QgsGeometryUtilsBase::azimuth( segmentStartPt.x(), segmentStartPt.y(), segmentEndPt.x(), segmentEndPt.y() ) + 360, 360 ) : 0;
+      if ( angle > 90 && angle < 270 )
+        angle += 180;
+
+      if ( mMarkerSymbol && mShowMarker )
+      {
+        if ( mRotateLabels )
+          mMarkerSymbol->setLineAngle( 90 - angle );
+        mMarkerSymbol->renderPoint( pt, context.feature(), context.renderContext() );
+      }
+
+      const double angleRadians = angle * M_PI / 180.0;
+      const double dx = labelOffsetPainterUnits.x() * std::sin( angleRadians + M_PI_2 )
+                        + labelOffsetPainterUnits.y() * std::sin( angleRadians );
+      const double dy = labelOffsetPainterUnits.x() * std::cos( angleRadians + M_PI_2 )
+                        + labelOffsetPainterUnits.y() * std::cos( angleRadians );
+
+      QgsTextRenderer::drawText( QPointF( pt.x() + dx, pt.y() + dy ), angleRadians, Qgis::TextHorizontalAlignment::Left, { mNumericFormat->formatDouble( currentDistance, numericContext ) }, context.renderContext(), mTextFormat );
+
+      prevX = thisX;
+      prevY = thisY;
+      prevZ = thisZ;
+      prevM = thisM;
+    }
+
+  }
 }
 
 QgsTextFormat QgsLinearReferencingSymbolLayer::textFormat() const
