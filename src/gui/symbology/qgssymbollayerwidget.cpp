@@ -5516,7 +5516,7 @@ QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( Qg
     if ( mLayer && !mBlockChangesSignal )
     {
       mLayer->setShowMarker( checked );
-      emit changed();
+      emit symbolChanged();
     }
   } );
 
