@@ -83,6 +83,48 @@ Ownership of ``format`` is transferred to the layer.
 .. seealso:: :py:func:`numericFormat`
 %End
 
+    double interval() const;
+%Docstring
+Returns the interval between labels.
+
+Units are always in the original layer CRS units.
+
+.. seealso:: :py:func:`setInterval`
+%End
+
+    void setInterval( double interval );
+%Docstring
+Sets the ``interval`` between labels.
+
+Units are always in the original layer CRS units.
+
+.. seealso:: :py:func:`setInterval`
+%End
+
+    double skipMultiplesOf() const;
+%Docstring
+Returns the multiple distance to skip labels for.
+
+If this value is non-zero, then any labels which are integer multiples of the returned
+value will be skipped. This allows creation of advanced referencing styles where a single
+:py:class:`QgsSymbol` has multiple :py:class:`QgsLinearReferencingSymbolLayer` symbol layers, eg allowing
+labeling every 100 in a normal font and every 1000 in a bold, larger font.
+
+.. seealso:: :py:func:`setSkipMultiplesOf`
+%End
+
+    void setSkipMultiplesOf( double multiple );
+%Docstring
+Sets the ``multiple`` distance to skip labels for.
+
+If this value is non-zero, then any labels which are integer multiples of the returned
+value will be skipped. This allows creation of advanced referencing styles where a single
+:py:class:`QgsSymbol` has multiple :py:class:`QgsLinearReferencingSymbolLayer` symbol layers, eg allowing
+labeling every 100 in a normal font and every 1000 in a bold, larger font.
+
+.. seealso:: :py:func:`skipMultiplesOf`
+%End
+
 };
 
 /************************************************************************

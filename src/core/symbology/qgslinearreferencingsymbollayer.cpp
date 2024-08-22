@@ -34,6 +34,13 @@ QgsLinearReferencingSymbolLayer::~QgsLinearReferencingSymbolLayer() = default;
 QgsSymbolLayer *QgsLinearReferencingSymbolLayer::create( const QVariantMap &properties )
 {
   std::unique_ptr< QgsLinearReferencingSymbolLayer > res = std::make_unique< QgsLinearReferencingSymbolLayer >();
+  bool ok = false;
+  const double interval = properties.value( QStringLiteral( "interval" ) ).toDouble( &ok );
+  if ( ok )
+    res->setInterval( interval );
+  const double skipMultiples = properties.value( QStringLiteral( "skip_multiples" ) ).toDouble( &ok );
+  if ( ok )
+    res->setSkipMultiplesOf( skipMultiples );
 
   // it's impossible to get the project's path resolver here :(
   // TODO QGIS 4.0 -- force use of QgsReadWriteContext in create methods
@@ -67,6 +74,9 @@ QgsSymbolLayer *QgsLinearReferencingSymbolLayer::create( const QVariantMap &prop
 QgsLinearReferencingSymbolLayer *QgsLinearReferencingSymbolLayer::clone() const
 {
   std::unique_ptr< QgsLinearReferencingSymbolLayer > res = std::make_unique< QgsLinearReferencingSymbolLayer >();
+  res->setInterval( mInterval );
+  res->setSkipMultiplesOf( mSkipMultiplesOf );
+
   res->mTextFormat = mTextFormat;
   res->mMarkerSymbol.reset( mMarkerSymbol ? mMarkerSymbol->clone() : nullptr );
   if ( mNumericFormat )
@@ -90,8 +100,11 @@ QVariantMap QgsLinearReferencingSymbolLayer::properties() const
   mNumericFormat->writeXml( numericFormatElem, numericFormatDoc, rwContext );
   numericFormatDoc.appendChild( numericFormatElem );
 
-  return
+  QVariantMap res
   {
+    {
+      QStringLiteral( "interval" ), mInterval
+    },
     {
       QStringLiteral( "text_format" ), textFormatDoc.toString()
     },
@@ -99,6 +112,13 @@ QVariantMap QgsLinearReferencingSymbolLayer::properties() const
       QStringLiteral( "numeric_format" ), numericFormatDoc.toString()
     }
   };
+
+  if ( mSkipMultiplesOf >= 0 )
+  {
+    res.insert( QStringLiteral( "skip_multiples" ), mSkipMultiplesOf );
+  }
+
+  return res;
 }
 
 QString QgsLinearReferencingSymbolLayer::layerType() const
@@ -214,7 +234,9 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
   }
 
   const QgsAbstractGeometry *geometry = context.renderContext().geometry();
-  double distance = 0.5;
+  // TODO -- data defined
+  double distance = mInterval;
+  double skipMultiples = mSkipMultiplesOf;
 
   QgsNumericFormatContext numericContext;
 
@@ -223,12 +245,14 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
   if ( const QgsLineString *line = qgsgeometry_cast< const QgsLineString * >( geometry ) )
   {
     double currentDistance = 0;
-    visitPointsByRegularDistance( line, distance, [&context, &currentDistance, &numericContext, distance, this]( double x, double y, double z, double m,
+    visitPointsByRegularDistance( line, distance, [&context, &currentDistance, &numericContext, distance, skipMultiples, this]( double x, double y, double z, double m,
                                   double startSegmentX, double startSegmentY, double startSegmentZ, double startSegmentM,
                                   double endSegmentX, double endSegmentY, double endSegmentZ, double endSegmentM
-                                                                                                               ) -> bool
+                                                                                                                              ) -> bool
     {
       currentDistance += distance;
+      if ( skipMultiples > 0 && qgsDoubleNear( std::fmod( currentDistance,  skipMultiples ), 0 ) )
+        return true;
 
       // need to convert layer point to painter paint
       QPointF pt;
@@ -275,4 +299,22 @@ void QgsLinearReferencingSymbolLayer::setNumericFormat( QgsNumericFormat *format
   mNumericFormat.reset( format );
 }
 
+double QgsLinearReferencingSymbolLayer::interval() const
+{
+  return mInterval;
+}
 
+void QgsLinearReferencingSymbolLayer::setInterval( double interval )
+{
+  mInterval = interval;
+}
+
+double QgsLinearReferencingSymbolLayer::skipMultiplesOf() const
+{
+  return mSkipMultiplesOf;
+}
+
+void QgsLinearReferencingSymbolLayer::setSkipMultiplesOf( double skipMultiplesOf )
+{
+  mSkipMultiplesOf = skipMultiplesOf;
+}

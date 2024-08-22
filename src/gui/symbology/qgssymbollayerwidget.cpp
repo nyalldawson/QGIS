@@ -5472,11 +5472,29 @@ QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( Qg
 
   setupUi( this );
 
+  mSpinSkipMultiples->setClearValue( 0, tr( "Not set" ) );
+
   connect( mTextFormatButton, &QgsFontButton::changed, this, [ = ]
   {
     if ( mLayer && !mBlockChangesSignal )
     {
       mLayer->setTextFormat( mTextFormatButton->textFormat() );
+      emit changed();
+    }
+  } );
+  connect( spinInterval, qOverload< double >( &QgsDoubleSpinBox::valueChanged ), this, [ = ]
+  {
+    if ( mLayer && !mBlockChangesSignal )
+    {
+      mLayer->setInterval( spinInterval->value() );
+      emit changed();
+    }
+  } );
+  connect( mSpinSkipMultiples, qOverload< double >( &QgsDoubleSpinBox::valueChanged ), this, [ = ]
+  {
+    if ( mLayer && !mBlockChangesSignal )
+    {
+      mLayer->setSkipMultiplesOf( mSpinSkipMultiples->value() );
       emit changed();
     }
   } );
@@ -5500,6 +5518,8 @@ void QgsLinearReferencingSymbolLayerWidget::setSymbolLayer( QgsSymbolLayer *laye
   mBlockChangesSignal = true;
 
   mTextFormatButton->setTextFormat( mLayer->textFormat() );
+  spinInterval->setValue( mLayer->interval() );
+  mSpinSkipMultiples->setValue( mLayer->skipMultiplesOf() );
 
   mBlockChangesSignal = false;
 }

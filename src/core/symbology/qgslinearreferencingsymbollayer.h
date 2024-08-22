@@ -85,7 +85,52 @@ class CORE_EXPORT QgsLinearReferencingSymbolLayer : public QgsLineSymbolLayer
      */
     void setNumericFormat( QgsNumericFormat *format SIP_TRANSFER );
 
+    /**
+     * Returns the interval between labels.
+     *
+     * Units are always in the original layer CRS units.
+     *
+     * \see setInterval()
+     */
+    double interval() const;
+
+    /**
+     * Sets the \a interval between labels.
+     *
+     * Units are always in the original layer CRS units.
+     *
+     * \see setInterval()
+     */
+    void setInterval( double interval );
+
+    /**
+     * Returns the multiple distance to skip labels for.
+     *
+     * If this value is non-zero, then any labels which are integer multiples of the returned
+     * value will be skipped. This allows creation of advanced referencing styles where a single
+     * QgsSymbol has multiple QgsLinearReferencingSymbolLayer symbol layers, eg allowing
+     * labeling every 100 in a normal font and every 1000 in a bold, larger font.
+     *
+     * \see setSkipMultiplesOf()
+     */
+    double skipMultiplesOf() const;
+
+    /**
+     * Sets the \a multiple distance to skip labels for.
+     *
+     * If this value is non-zero, then any labels which are integer multiples of the returned
+     * value will be skipped. This allows creation of advanced referencing styles where a single
+     * QgsSymbol has multiple QgsLinearReferencingSymbolLayer symbol layers, eg allowing
+     * labeling every 100 in a normal font and every 1000 in a bold, larger font.
+     *
+     * \see skipMultiplesOf()
+     */
+    void setSkipMultiplesOf( double multiple );
+
   private:
+
+    double mInterval = 1000;
+    double mSkipMultiplesOf = 0;
 
     QgsTextFormat mTextFormat;
     std::unique_ptr<QgsMarkerSymbol> mMarkerSymbol;
