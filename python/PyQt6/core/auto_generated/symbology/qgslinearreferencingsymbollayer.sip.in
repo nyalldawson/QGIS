@@ -139,6 +139,60 @@ Sets whether the labels and symbols should be rotated to match their line segmen
 .. seealso:: :py:func:`rotateLabels`
 %End
 
+    QPointF labelOffset() const;
+%Docstring
+Returns the offset between the line and linear referencing labels.
+
+The unit for the offset is retrievable via :py:func:`~QgsLinearReferencingSymbolLayer.labelOffsetUnit`.
+
+.. seealso:: :py:func:`setLabelOffset`
+
+.. seealso:: :py:func:`labelOffsetUnit`
+%End
+
+    void setLabelOffset( const QPointF &offset );
+%Docstring
+Sets the ``offset`` between the line and linear referencing labels.
+
+The unit for the offset is set via :py:func:`~QgsLinearReferencingSymbolLayer.setLabelOffsetUnit`.
+
+.. seealso:: :py:func:`labelOffset`
+
+.. seealso:: :py:func:`setLabelOffsetUnit`
+%End
+
+    Qgis::RenderUnit labelOffsetUnit() const;
+%Docstring
+Returns the unit used for the offset between the line and linear referencing labels.
+
+.. seealso:: :py:func:`setLabelOffsetUnit`
+
+.. seealso:: :py:func:`labelOffset`
+%End
+
+    void setLabelOffsetUnit( Qgis::RenderUnit unit );
+%Docstring
+Sets the ``unit`` used for the offset between the line and linear referencing labels.
+
+.. seealso:: :py:func:`labelOffsetUnit`
+
+.. seealso:: :py:func:`setLabelOffset`
+%End
+
+    const QgsMapUnitScale &labelOffsetMapUnitScale() const;
+%Docstring
+Returns the map unit scale used for calculating the offset between the line and linear referencing labels.
+
+.. seealso:: :py:func:`setLabelOffsetMapUnitScale`
+%End
+
+    void setLabelOffsetMapUnitScale( const QgsMapUnitScale &scale );
+%Docstring
+Sets the map unit ``scale`` used for calculating the offset between the line and linear referencing labels.
+
+.. seealso:: :py:func:`labelOffsetMapUnitScale`
+%End
+
 };
 
 /************************************************************************

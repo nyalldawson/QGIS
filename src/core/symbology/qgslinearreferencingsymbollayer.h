@@ -141,11 +141,65 @@ class CORE_EXPORT QgsLinearReferencingSymbolLayer : public QgsLineSymbolLayer
      */
     void setRotateLabels( bool rotate ) { mRotateLabels = rotate; }
 
+    /**
+     * Returns the offset between the line and linear referencing labels.
+     *
+     * The unit for the offset is retrievable via labelOffsetUnit().
+     *
+     * \see setLabelOffset()
+     * \see labelOffsetUnit()
+     */
+    QPointF labelOffset() const { return mLabelOffset; }
+
+    /**
+     * Sets the \a offset between the line and linear referencing labels.
+     *
+     * The unit for the offset is set via setLabelOffsetUnit().
+     *
+     * \see labelOffset()
+     * \see setLabelOffsetUnit()
+     */
+    void setLabelOffset( const QPointF &offset ) { mLabelOffset = offset; }
+
+    /**
+     * Returns the unit used for the offset between the line and linear referencing labels.
+     *
+     * \see setLabelOffsetUnit()
+     * \see labelOffset()
+     */
+    Qgis::RenderUnit labelOffsetUnit() const { return mLabelOffsetUnit; }
+
+    /**
+     * Sets the \a unit used for the offset between the line and linear referencing labels.
+     *
+     * \see labelOffsetUnit()
+     * \see setLabelOffset()
+     */
+    void setLabelOffsetUnit( Qgis::RenderUnit unit ) { mLabelOffsetUnit = unit; }
+
+    /**
+     * Returns the map unit scale used for calculating the offset between the line and linear referencing labels.
+     *
+     * \see setLabelOffsetMapUnitScale()
+     */
+    const QgsMapUnitScale &labelOffsetMapUnitScale() const { return mLabelOffsetMapUnitScale; }
+
+    /**
+     * Sets the map unit \a scale used for calculating the offset between the line and linear referencing labels.
+     *
+     * \see labelOffsetMapUnitScale()
+     */
+    void setLabelOffsetMapUnitScale( const QgsMapUnitScale &scale ) { mLabelOffsetMapUnitScale = scale; }
+
   private:
 
     double mInterval = 1000;
     double mSkipMultiplesOf = 0;
     bool mRotateLabels = true;
+
+    QPointF mLabelOffset{ 3, 0 };
+    Qgis::RenderUnit mLabelOffsetUnit = Qgis::RenderUnit::Millimeters;
+    QgsMapUnitScale mLabelOffsetMapUnitScale;
 
     QgsTextFormat mTextFormat;
     std::unique_ptr<QgsMarkerSymbol> mMarkerSymbol;

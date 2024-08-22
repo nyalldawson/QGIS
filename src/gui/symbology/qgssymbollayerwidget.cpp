@@ -5473,6 +5473,11 @@ QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( Qg
   setupUi( this );
 
   mSpinSkipMultiples->setClearValue( 0, tr( "Not set" ) );
+  mSpinLabelOffsetX->setClearValue( 0 );
+  mSpinLabelOffsetY->setClearValue( 0 );
+  mLabelOffsetUnitWidget->setUnits( QgsUnitTypes::RenderUnitList() << Qgis::RenderUnit::Millimeters << Qgis::RenderUnit::MetersInMapUnits << Qgis::RenderUnit::MapUnits << Qgis::RenderUnit::Pixels
+                                    << Qgis::RenderUnit::Points << Qgis::RenderUnit::Inches );
+
 
   connect( mTextFormatButton, &QgsFontButton::changed, this, [ = ]
   {
@@ -5507,6 +5512,32 @@ QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( Qg
     }
   } );
 
+  connect( mSpinLabelOffsetX, qOverload< double >( &QgsDoubleSpinBox::valueChanged ), this, [ = ]
+  {
+    if ( mLayer && !mBlockChangesSignal )
+    {
+      mLayer->setLabelOffset( QPointF( mSpinLabelOffsetX->value(), mSpinLabelOffsetY->value() ) );
+      emit changed();
+    }
+  } );
+  connect( mSpinLabelOffsetY, qOverload< double >( &QgsDoubleSpinBox::valueChanged ), this, [ = ]
+  {
+    if ( mLayer && !mBlockChangesSignal )
+    {
+      mLayer->setLabelOffset( QPointF( mSpinLabelOffsetX->value(), mSpinLabelOffsetY->value() ) );
+      emit changed();
+    }
+  } );
+  connect( mLabelOffsetUnitWidget, &QgsUnitSelectionWidget::changed, this, [ = ]
+  {
+    if ( mLayer && !mBlockChangesSignal )
+    {
+      mLayer->setLabelOffsetUnit( mLabelOffsetUnitWidget->unit() );
+      mLayer->setLabelOffsetMapUnitScale( mLabelOffsetUnitWidget->getMapUnitScale() );
+      emit changed();
+    }
+  } );
+
   connect( mNumberFormatPushButton, &QPushButton::clicked, this, &QgsLinearReferencingSymbolLayerWidget::changeNumberFormat );
 
   mTextFormatButton->registerExpressionContextGenerator( this );
@@ -5529,6 +5560,10 @@ void QgsLinearReferencingSymbolLayerWidget::setSymbolLayer( QgsSymbolLayer *laye
   spinInterval->setValue( mLayer->interval() );
   mSpinSkipMultiples->setValue( mLayer->skipMultiplesOf() );
   mCheckRotate->setChecked( mLayer->rotateLabels() );
+  mSpinLabelOffsetX->setValue( mLayer->labelOffset().x() );
+  mSpinLabelOffsetY->setValue( mLayer->labelOffset().y() );
+  mLabelOffsetUnitWidget->setUnit( mLayer->labelOffsetUnit() );
+  mLabelOffsetUnitWidget->setMapUnitScale( mLayer->labelOffsetMapUnitScale() );
 
   mBlockChangesSignal = false;
 }
