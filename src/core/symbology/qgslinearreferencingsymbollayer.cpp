@@ -210,6 +210,34 @@ void QgsLinearReferencingSymbolLayer::stopRender( QgsSymbolRenderContext &contex
   }
 }
 
+void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, QgsSymbolRenderContext &context )
+{
+  QPainter *p = context.renderContext().painter();
+  if ( !p )
+  {
+    return;
+  }
+
+  // TODO -- data defined
+  double skipMultiples = mSkipMultiplesOf;
+  double labelOffsetX = mLabelOffset.x();
+  double labelOffsetY = mLabelOffset.y();
+
+  const double labelOffsetPainterUnitsX = context.renderContext().convertToPainterUnits( labelOffsetX, mLabelOffsetUnit, mLabelOffsetMapUnitScale );
+  const double labelOffsetPainterUnitsY = context.renderContext().convertToPainterUnits( labelOffsetY, mLabelOffsetUnit, mLabelOffsetMapUnitScale );
+
+  switch ( mPlacement )
+  {
+    case Qgis::LinearReferencingPlacement::Interval:
+      renderPolylineInterval( points, context, skipMultiples, QPointF( labelOffsetPainterUnitsX, labelOffsetPainterUnitsY ) );
+      break;
+
+    case Qgis::LinearReferencingPlacement::Vertex:
+      renderPolylineVertex( points, context, skipMultiples, QPointF( labelOffsetPainterUnitsX, labelOffsetPainterUnitsY ) );
+      break;
+  }
+}
+
 void visitPointsByRegularDistance( const QgsLineString *line, const double distance, const std::function<bool ( double, double, double, double, double, double, double, double, double, double, double, double )> &visitPoint )
 {
   if ( distance < 0 )
@@ -270,23 +298,29 @@ void visitPointsByRegularDistance( const QgsLineString *line, const double dista
   }
 }
 
-void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, QgsSymbolRenderContext &context )
+QPointF QgsLinearReferencingSymbolLayer::pointToPainter( QgsSymbolRenderContext &context, double x, double y, double z )
 {
-  QPainter *p = context.renderContext().painter();
-  if ( !p )
+  QPointF pt;
+  if ( context.renderContext().coordinateTransform().isValid() )
   {
-    return;
+    context.renderContext().coordinateTransform().transformInPlace( x, y, z );
+    pt = QPointF( x, y );
+
+  }
+  else
+  {
+    pt = QPointF( x, y );
   }
 
-  const QgsAbstractGeometry *geometry = context.renderContext().geometry();
-  // TODO -- data defined
-  double distance = mInterval;
-  double skipMultiples = mSkipMultiplesOf;
-  double labelOffsetX = mLabelOffset.x();
-  double labelOffsetY = mLabelOffset.y();
+  context.renderContext().mapToPixel().transformInPlace( pt.rx(), pt.ry() );
+  return pt;
+}
 
-  const double labelOffsetPainterUnitsX = context.renderContext().convertToPainterUnits( labelOffsetX, mLabelOffsetUnit, mLabelOffsetMapUnitScale );
-  const double labelOffsetPainterUnitsY = context.renderContext().convertToPainterUnits( labelOffsetY, mLabelOffsetUnit, mLabelOffsetMapUnitScale );
+void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QPolygonF &points, QgsSymbolRenderContext &context, double skipMultiples, const QPointF &labelOffsetPainterUnits )
+{
+  const QgsAbstractGeometry *geometry = context.renderContext().geometry();
+
+  double distance = mInterval;
 
   QgsNumericFormatContext numericContext;
 
@@ -294,29 +328,12 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
 
   if ( const QgsLineString *line = qgsgeometry_cast< const QgsLineString * >( geometry ) )
   {
-    auto pointToPainter = [&context]( double x, double y, double z ) -> QPointF
-    {
-      QPointF pt;
-      if ( context.renderContext().coordinateTransform().isValid() )
-      {
-        context.renderContext().coordinateTransform().transformInPlace( x, y, z );
-        pt = QPointF( x, y );
-
-      }
-      else
-      {
-        pt = QPointF( x, y );
-      }
-
-      context.renderContext().mapToPixel().transformInPlace( pt.rx(), pt.ry() );
-      return pt;
-    };
     double currentDistance = 0;
-    visitPointsByRegularDistance( line, distance, [&context, &currentDistance, &numericContext, distance, skipMultiples, &pointToPainter,
-                                            labelOffsetPainterUnitsX, labelOffsetPainterUnitsY, this]( double x, double y, double z, double m,
+    visitPointsByRegularDistance( line, distance, [&context, &currentDistance, &numericContext, distance, skipMultiples,
+                                            labelOffsetPainterUnits, this]( double x, double y, double z, double m,
                                       double startSegmentX, double startSegmentY, double startSegmentZ, double startSegmentM,
                                       double endSegmentX, double endSegmentY, double endSegmentZ, double endSegmentM
-                                                                                           ) -> bool
+                                                                ) -> bool
     {
       ( void )startSegmentM;
       ( void )endSegmentM;
@@ -325,9 +342,9 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
       if ( skipMultiples > 0 && qgsDoubleNear( std::fmod( currentDistance,  skipMultiples ), 0 ) )
         return true;
 
-      const QPointF pt = pointToPainter( x, y, z );
-      const QPointF segmentStartPt = pointToPainter( startSegmentX, startSegmentY, startSegmentZ );
-      const QPointF segmentEndPt = pointToPainter( endSegmentX, endSegmentY, endSegmentZ );
+      const QPointF pt = pointToPainter( context, x, y, z );
+      const QPointF segmentStartPt = pointToPainter( context, startSegmentX, startSegmentY, startSegmentZ );
+      const QPointF segmentEndPt = pointToPainter( context, endSegmentX, endSegmentY, endSegmentZ );
 
       double angle = mRotateLabels ? std::fmod( QgsGeometryUtilsBase::azimuth( segmentStartPt.x(), segmentStartPt.y(), segmentEndPt.x(), segmentEndPt.y() ) + 360, 360 ) : 0;
       if ( angle > 90 && angle < 270 )
@@ -341,10 +358,10 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
       }
 
       const double angleRadians = angle *M_PI / 180.0;
-      const double dx = labelOffsetPainterUnitsX * std::sin( angleRadians + M_PI_2 )
-      + labelOffsetPainterUnitsY * std::sin( angleRadians );
-      const double dy = labelOffsetPainterUnitsX * std::cos( angleRadians + M_PI_2 )
-      + labelOffsetPainterUnitsY * std::cos( angleRadians );
+      const double dx = labelOffsetPainterUnits.x() * std::sin( angleRadians + M_PI_2 )
+      + labelOffsetPainterUnits.y() * std::sin( angleRadians );
+      const double dy = labelOffsetPainterUnits.x() * std::cos( angleRadians + M_PI_2 )
+      + labelOffsetPainterUnits.y() * std::cos( angleRadians );
 
       QgsTextRenderer::drawText( QPointF( pt.x() + dx, pt.y() + dy ), angleRadians, Qgis::TextHorizontalAlignment::Left, { mNumericFormat->formatDouble( currentDistance, numericContext ) }, context.renderContext(), mTextFormat );
 
@@ -352,6 +369,11 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
     } );
 
   }
+}
+
+void QgsLinearReferencingSymbolLayer::renderPolylineVertex( const QPolygonF &points, QgsSymbolRenderContext &context, double skipMultiples, const QPointF &labelOffsetPainterUnits )
+{
+
 }
 
 QgsTextFormat QgsLinearReferencingSymbolLayer::textFormat() const
@@ -417,3 +439,4 @@ void QgsLinearReferencingSymbolLayer::setPlacement( Qgis::LinearReferencingPlace
 {
   mPlacement = placement;
 }
+

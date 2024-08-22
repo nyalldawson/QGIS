@@ -224,6 +224,9 @@ class CORE_EXPORT QgsLinearReferencingSymbolLayer : public QgsLineSymbolLayer
     void setPlacement( Qgis::LinearReferencingPlacement placement );
 
   private:
+    void renderPolylineInterval( const QPolygonF &points, QgsSymbolRenderContext &context, double skipMultiples, const QPointF &labelOffsetPainterUnits );
+    void renderPolylineVertex( const QPolygonF &points, QgsSymbolRenderContext &context, double skipMultiples, const QPointF &labelOffsetPainterUnits );
+    static QPointF pointToPainter( QgsSymbolRenderContext &context, double x, double y, double z );
 
     Qgis::LinearReferencingPlacement mPlacement = Qgis::LinearReferencingPlacement::Interval;
 
