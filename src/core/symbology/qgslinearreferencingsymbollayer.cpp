@@ -31,12 +31,31 @@ QgsLinearReferencingSymbolLayer::~QgsLinearReferencingSymbolLayer() = default;
 
 QgsSymbolLayer *QgsLinearReferencingSymbolLayer::create( const QVariantMap &properties )
 {
-  return new QgsLinearReferencingSymbolLayer();
+  std::unique_ptr< QgsLinearReferencingSymbolLayer > res = std::make_unique< QgsLinearReferencingSymbolLayer >();
+  const QString textFormatXml = properties.value( QStringLiteral( "textFormat" ) ).toString();
+  if ( !textFormatXml.isEmpty() )
+  {
+    QDomDocument doc;
+    QDomElement elem;
+    doc.setContent( textFormatXml );
+    elem = doc.documentElement();
+
+    // it's impossible to get the project's path resolver here :(
+    // TODO QGIS 4.0 -- force use of QgsReadWriteContext in create methods
+    QgsReadWriteContext rwContext;
+    //rwContext.setPathResolver( QgsProject::instance()->pathResolver() );
+    QgsTextFormat textFormat;
+    textFormat.readXml( elem, rwContext );
+    res->setTextFormat( textFormat );
+  }
+
+  return res.release();
 }
 
 QgsLinearReferencingSymbolLayer *QgsLinearReferencingSymbolLayer::clone() const
 {
   std::unique_ptr< QgsLinearReferencingSymbolLayer > res = std::make_unique< QgsLinearReferencingSymbolLayer >();
+  res->mTextFormat = mTextFormat;
   res->mMarkerSymbol.reset( mMarkerSymbol ? mMarkerSymbol->clone() : nullptr );
 
   return res.release();
@@ -44,7 +63,19 @@ QgsLinearReferencingSymbolLayer *QgsLinearReferencingSymbolLayer::clone() const
 
 QVariantMap QgsLinearReferencingSymbolLayer::properties() const
 {
-  return {};
+  QDomDocument textFormatDoc;
+  // it's impossible to get the project's path resolver here :(
+  // TODO QGIS 4.0 -- force use of QgsReadWriteContext in properties methods
+  QgsReadWriteContext rwContext;
+  // rwContext.setPathResolver( QgsProject::instance()->pathResolver() );
+  const QDomElement textElem = mTextFormat.writeXml( textFormatDoc, rwContext );
+  textFormatDoc.appendChild( textElem );
+  return
+  {
+    {
+      QStringLiteral( "textFormat" ), textFormatDoc.toString()
+    }
+  };
 }
 
 QString QgsLinearReferencingSymbolLayer::layerType() const
@@ -160,14 +191,6 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
   }
 
   const QgsAbstractGeometry *geometry = context.renderContext().geometry();
-
-  p->setBrush( Qt::NoBrush );
-  QPen pen( QColor( 255, 0, 0 ) );
-  p->setPen( pen );
-  QPainterPath path;
-  path.addPolygon( points );
-  p->drawPath( path );
-
   double distance = 0.5;
 
   // TODO if NOT a original geometry, convert points to linestring and scale distance to painter units..
@@ -205,6 +228,16 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
     } );
 
   }
+}
+
+QgsTextFormat QgsLinearReferencingSymbolLayer::textFormat() const
+{
+  return mTextFormat;
+}
+
+void QgsLinearReferencingSymbolLayer::setTextFormat( const QgsTextFormat &format )
+{
+  mTextFormat = format;
 }
 
 

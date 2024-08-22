@@ -53,6 +53,20 @@ The caller takes ownership of the returned object.
     virtual void renderPolyline( const QPolygonF &points, QgsSymbolRenderContext &context );
 
 
+    QgsTextFormat textFormat() const;
+%Docstring
+Returns the text format used to render the layer.
+
+.. seealso:: :py:func:`setTextFormat`
+%End
+
+    void setTextFormat( const QgsTextFormat &format );
+%Docstring
+Sets the text ``format`` used to render the layer.
+
+.. seealso:: :py:func:`textFormat`
+%End
+
 };
 
 /************************************************************************

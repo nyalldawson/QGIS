@@ -42,6 +42,7 @@
 #include "qgsmarkersymbol.h"
 #include "qgsfillsymbol.h"
 #include "qgsiconutils.h"
+#include "qgslinearreferencingsymbollayer.h"
 
 #include <QAbstractButton>
 #include <QButtonGroup>
@@ -5457,4 +5458,57 @@ void QgsFilledLineSymbolLayerWidget::setSymbolLayer( QgsSymbolLayer *layer )
 QgsSymbolLayer *QgsFilledLineSymbolLayerWidget::symbolLayer()
 {
   return mLayer;
+}
+
+//
+// QgsLinearReferencingSymbolLayerWidget
+//
+
+QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( QgsVectorLayer *vl, QWidget *parent )
+  : QgsSymbolLayerWidget( parent, vl )
+{
+  mLayer = nullptr;
+
+  setupUi( this );
+
+  connect( mTextFormatButton, &QgsFontButton::changed, this, [ = ]
+  {
+    if ( mLayer && !mBlockChangesSignal )
+    {
+      mLayer->setTextFormat( mTextFormatButton->textFormat() );
+      emit changed();
+    }
+  } );
+
+  mTextFormatButton->registerExpressionContextGenerator( this );
+}
+
+QgsLinearReferencingSymbolLayerWidget::~QgsLinearReferencingSymbolLayerWidget() = default;
+
+
+void QgsLinearReferencingSymbolLayerWidget::setSymbolLayer( QgsSymbolLayer *layer )
+{
+  if ( !layer || layer->layerType() != QLatin1String( "LinearReferencing" ) )
+    return;
+
+  // layer type is correct, we can do the cast
+  mLayer = qgis::down_cast<QgsLinearReferencingSymbolLayer *>( layer );
+
+  mBlockChangesSignal = true;
+
+  mTextFormatButton->setTextFormat( mLayer->textFormat() );
+
+  mBlockChangesSignal = false;
+}
+
+QgsSymbolLayer *QgsLinearReferencingSymbolLayerWidget::symbolLayer()
+{
+  return mLayer;
+}
+
+void QgsLinearReferencingSymbolLayerWidget::setContext( const QgsSymbolWidgetContext &context )
+{
+  QgsSymbolLayerWidget::setContext( context );
+  mTextFormatButton->setMapCanvas( context.mapCanvas() );
+  mTextFormatButton->setMessageBar( context.messageBar() );
 }

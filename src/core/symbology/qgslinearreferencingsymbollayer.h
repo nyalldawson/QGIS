@@ -54,6 +54,20 @@ class CORE_EXPORT QgsLinearReferencingSymbolLayer : public QgsLineSymbolLayer
     void stopRender( QgsSymbolRenderContext &context ) override;
     void renderPolyline( const QPolygonF &points, QgsSymbolRenderContext &context ) override;
 
+    /**
+     * Returns the text format used to render the layer.
+     *
+     * \see setTextFormat()
+     */
+    QgsTextFormat textFormat() const;
+
+    /**
+     * Sets the text \a format used to render the layer.
+     *
+     * \see textFormat()
+     */
+    void setTextFormat( const QgsTextFormat &format );
+
   private:
 
     QgsTextFormat mTextFormat;
