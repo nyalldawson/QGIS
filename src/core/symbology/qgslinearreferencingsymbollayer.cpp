@@ -337,6 +337,8 @@ void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QPolygonF &p
     {
       ( void )startSegmentM;
       ( void )endSegmentM;
+      if ( context.renderContext().renderingStopped() )
+        return false;
 
       currentDistance += distance;
       if ( skipMultiples > 0 && qgsDoubleNear( std::fmod( currentDistance,  skipMultiples ), 0 ) )
@@ -366,8 +368,6 @@ void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QPolygonF &p
       QgsTextRenderer::drawText( QPointF( pt.x() + dx, pt.y() + dy ), angleRadians, Qgis::TextHorizontalAlignment::Left, { mNumericFormat->formatDouble( currentDistance, numericContext ) }, context.renderContext(), mTextFormat );
 
       return true;
-
-      // TODO -- interruption support!
     } );
 
   }
@@ -399,7 +399,9 @@ void QgsLinearReferencingSymbolLayer::renderPolylineVertex( const QPolygonF &poi
 
     for ( int i = 0; i < size; ++i )
     {
-      // TODO -- interruption support!
+      if ( context.renderContext().renderingStopped() )
+        break;
+
       double thisX = *xData++;
       double thisY = *yData++;
       double thisZ = zData ? *zData++ : 0;
