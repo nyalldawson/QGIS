@@ -18,13 +18,15 @@
 #include "qgstextrenderer.h"
 #include "qgslinestring.h"
 #include "qgsmarkersymbol.h"
-#include <QPainter>
-#include <QPen>
+#include "qgsnumericformatregistry.h"
+#include "qgsapplication.h"
+#include "qgsbasicnumericformat.h"
 
 QgsLinearReferencingSymbolLayer::QgsLinearReferencingSymbolLayer()
   : QgsLineSymbolLayer()
 {
   mMarkerSymbol.reset( QgsMarkerSymbol::createSimple( {} ) );
+  mNumericFormat = std::make_unique< QgsBasicNumericFormat >();
 }
 
 QgsLinearReferencingSymbolLayer::~QgsLinearReferencingSymbolLayer() = default;
@@ -32,7 +34,13 @@ QgsLinearReferencingSymbolLayer::~QgsLinearReferencingSymbolLayer() = default;
 QgsSymbolLayer *QgsLinearReferencingSymbolLayer::create( const QVariantMap &properties )
 {
   std::unique_ptr< QgsLinearReferencingSymbolLayer > res = std::make_unique< QgsLinearReferencingSymbolLayer >();
-  const QString textFormatXml = properties.value( QStringLiteral( "textFormat" ) ).toString();
+
+  // it's impossible to get the project's path resolver here :(
+  // TODO QGIS 4.0 -- force use of QgsReadWriteContext in create methods
+  QgsReadWriteContext rwContext;
+  //rwContext.setPathResolver( QgsProject::instance()->pathResolver() );
+
+  const QString textFormatXml = properties.value( QStringLiteral( "text_format" ) ).toString();
   if ( !textFormatXml.isEmpty() )
   {
     QDomDocument doc;
@@ -40,13 +48,17 @@ QgsSymbolLayer *QgsLinearReferencingSymbolLayer::create( const QVariantMap &prop
     doc.setContent( textFormatXml );
     elem = doc.documentElement();
 
-    // it's impossible to get the project's path resolver here :(
-    // TODO QGIS 4.0 -- force use of QgsReadWriteContext in create methods
-    QgsReadWriteContext rwContext;
-    //rwContext.setPathResolver( QgsProject::instance()->pathResolver() );
     QgsTextFormat textFormat;
     textFormat.readXml( elem, rwContext );
     res->setTextFormat( textFormat );
+  }
+
+  const QString numericFormatXml = properties.value( QStringLiteral( "numeric_format" ) ).toString();
+  if ( !numericFormatXml.isEmpty() )
+  {
+    QDomDocument doc;
+    doc.setContent( numericFormatXml );
+    res->setNumericFormat( QgsApplication::numericFormatRegistry()->createFromXml( doc.documentElement(), rwContext ) );
   }
 
   return res.release();
@@ -57,6 +69,8 @@ QgsLinearReferencingSymbolLayer *QgsLinearReferencingSymbolLayer::clone() const
   std::unique_ptr< QgsLinearReferencingSymbolLayer > res = std::make_unique< QgsLinearReferencingSymbolLayer >();
   res->mTextFormat = mTextFormat;
   res->mMarkerSymbol.reset( mMarkerSymbol ? mMarkerSymbol->clone() : nullptr );
+  if ( mNumericFormat )
+    res->mNumericFormat.reset( mNumericFormat->clone() );
 
   return res.release();
 }
@@ -70,10 +84,19 @@ QVariantMap QgsLinearReferencingSymbolLayer::properties() const
   // rwContext.setPathResolver( QgsProject::instance()->pathResolver() );
   const QDomElement textElem = mTextFormat.writeXml( textFormatDoc, rwContext );
   textFormatDoc.appendChild( textElem );
+
+  QDomDocument numericFormatDoc;
+  QDomElement numericFormatElem = numericFormatDoc.createElement( QStringLiteral( "numericFormat" ) );
+  mNumericFormat->writeXml( numericFormatElem, numericFormatDoc, rwContext );
+  numericFormatDoc.appendChild( numericFormatElem );
+
   return
   {
     {
-      QStringLiteral( "textFormat" ), textFormatDoc.toString()
+      QStringLiteral( "text_format" ), textFormatDoc.toString()
+    },
+    {
+      QStringLiteral( "numeric_format" ), numericFormatDoc.toString()
     }
   };
 }
@@ -193,15 +216,17 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
   const QgsAbstractGeometry *geometry = context.renderContext().geometry();
   double distance = 0.5;
 
+  QgsNumericFormatContext numericContext;
+
   // TODO if NOT a original geometry, convert points to linestring and scale distance to painter units..
 
   if ( const QgsLineString *line = qgsgeometry_cast< const QgsLineString * >( geometry ) )
   {
     double currentDistance = 0;
-    visitPointsByRegularDistance( line, distance, [&context, &currentDistance, distance, this]( double x, double y, double z, double m,
+    visitPointsByRegularDistance( line, distance, [&context, &currentDistance, &numericContext, distance, this]( double x, double y, double z, double m,
                                   double startSegmentX, double startSegmentY, double startSegmentZ, double startSegmentM,
                                   double endSegmentX, double endSegmentY, double endSegmentZ, double endSegmentM
-                                                                                              ) -> bool
+                                                                                                               ) -> bool
     {
       currentDistance += distance;
 
@@ -222,7 +247,7 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
       if ( mMarkerSymbol )
         mMarkerSymbol->renderPoint( pt, context.feature(), context.renderContext() );
 
-      QgsTextRenderer::drawText( pt, 0, Qgis::TextHorizontalAlignment::Left, { QString::number( currentDistance ) }, context.renderContext(), mTextFormat );
+      QgsTextRenderer::drawText( pt, 0, Qgis::TextHorizontalAlignment::Left, { mNumericFormat->formatDouble( currentDistance, numericContext ) }, context.renderContext(), mTextFormat );
 
       return true;
     } );
@@ -238,6 +263,16 @@ QgsTextFormat QgsLinearReferencingSymbolLayer::textFormat() const
 void QgsLinearReferencingSymbolLayer::setTextFormat( const QgsTextFormat &format )
 {
   mTextFormat = format;
+}
+
+QgsNumericFormat *QgsLinearReferencingSymbolLayer::numericFormat() const
+{
+  return mNumericFormat.get();
+}
+
+void QgsLinearReferencingSymbolLayer::setNumericFormat( QgsNumericFormat *format )
+{
+  mNumericFormat.reset( format );
 }
 
 

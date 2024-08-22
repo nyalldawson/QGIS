@@ -1326,6 +1326,8 @@ class GUI_EXPORT QgsLinearReferencingSymbolLayerWidget : public QgsSymbolLayerWi
     void setContext( const QgsSymbolWidgetContext &context ) override;
 
   private slots:
+    void changeNumberFormat();
+
   private:
 
     QgsLinearReferencingSymbolLayer *mLayer = nullptr;

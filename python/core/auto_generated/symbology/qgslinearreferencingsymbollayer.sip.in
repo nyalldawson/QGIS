@@ -67,6 +67,22 @@ Sets the text ``format`` used to render the layer.
 .. seealso:: :py:func:`textFormat`
 %End
 
+    QgsNumericFormat *numericFormat() const;
+%Docstring
+Returns the numeric format used to format the labels for the layer.
+
+.. seealso:: :py:func:`setNumericFormat`
+%End
+
+    void setNumericFormat( QgsNumericFormat *format /Transfer/ );
+%Docstring
+Sets the numeric ``format`` used to format the labels for the layer.
+
+Ownership of ``format`` is transferred to the layer.
+
+.. seealso:: :py:func:`numericFormat`
+%End
+
 };
 
 /************************************************************************

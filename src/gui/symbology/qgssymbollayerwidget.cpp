@@ -43,6 +43,7 @@
 #include "qgsfillsymbol.h"
 #include "qgsiconutils.h"
 #include "qgslinearreferencingsymbollayer.h"
+#include "qgsnumericformatselectorwidget.h"
 
 #include <QAbstractButton>
 #include <QButtonGroup>
@@ -5480,6 +5481,8 @@ QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( Qg
     }
   } );
 
+  connect( mNumberFormatPushButton, &QPushButton::clicked, this, &QgsLinearReferencingSymbolLayerWidget::changeNumberFormat );
+
   mTextFormatButton->registerExpressionContextGenerator( this );
 }
 
@@ -5511,4 +5514,28 @@ void QgsLinearReferencingSymbolLayerWidget::setContext( const QgsSymbolWidgetCon
   QgsSymbolLayerWidget::setContext( context );
   mTextFormatButton->setMapCanvas( context.mapCanvas() );
   mTextFormatButton->setMessageBar( context.messageBar() );
+}
+
+void QgsLinearReferencingSymbolLayerWidget::changeNumberFormat()
+{
+  QgsPanelWidget *panel = QgsPanelWidget::findParentPanel( this );
+  if ( panel && panel->dockMode() )
+  {
+    QgsNumericFormatSelectorWidget *widget = new QgsNumericFormatSelectorWidget( this );
+    widget->setPanelTitle( tr( "Number Format" ) );
+    widget->setFormat( mLayer->numericFormat() );
+    connect( widget, &QgsNumericFormatSelectorWidget::changed, this, [ = ]
+    {
+      if ( !mBlockChangesSignal )
+      {
+        mLayer->setNumericFormat( widget->format() );
+        emit changed();
+      }
+    } );
+    panel->openPanel( widget );
+  }
+  else
+  {
+    // TODO!! dialog mode
+  }
 }

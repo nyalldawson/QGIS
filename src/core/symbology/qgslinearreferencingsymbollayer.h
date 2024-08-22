@@ -20,6 +20,7 @@
 #include "qgssymbollayer.h"
 #include "qgstextformat.h"
 
+class QgsNumericFormat;
 
 /**
  * \ingroup core
@@ -68,10 +69,27 @@ class CORE_EXPORT QgsLinearReferencingSymbolLayer : public QgsLineSymbolLayer
      */
     void setTextFormat( const QgsTextFormat &format );
 
+    /**
+     * Returns the numeric format used to format the labels for the layer.
+     *
+     * \see setNumericFormat()
+     */
+    QgsNumericFormat *numericFormat() const;
+
+    /**
+     * Sets the numeric \a format used to format the labels for the layer.
+     *
+     * Ownership of \a format is transferred to the layer.
+     *
+     * \see numericFormat()
+     */
+    void setNumericFormat( QgsNumericFormat *format SIP_TRANSFER );
+
   private:
 
     QgsTextFormat mTextFormat;
     std::unique_ptr<QgsMarkerSymbol> mMarkerSymbol;
+    std::unique_ptr<QgsNumericFormat> mNumericFormat;
 
 
 };
