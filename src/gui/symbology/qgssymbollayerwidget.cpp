@@ -5511,6 +5511,14 @@ QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( Qg
       emit changed();
     }
   } );
+  connect( mCheckShowMarker, &QCheckBox::toggled, this, [ = ]( bool checked )
+  {
+    if ( mLayer && !mBlockChangesSignal )
+    {
+      mLayer->setShowMarker( checked );
+      emit changed();
+    }
+  } );
 
   connect( mSpinLabelOffsetX, qOverload< double >( &QgsDoubleSpinBox::valueChanged ), this, [ = ]
   {
@@ -5560,6 +5568,7 @@ void QgsLinearReferencingSymbolLayerWidget::setSymbolLayer( QgsSymbolLayer *laye
   spinInterval->setValue( mLayer->interval() );
   mSpinSkipMultiples->setValue( mLayer->skipMultiplesOf() );
   mCheckRotate->setChecked( mLayer->rotateLabels() );
+  mCheckShowMarker->setChecked( mLayer->showMarker() );
   mSpinLabelOffsetX->setValue( mLayer->labelOffset().x() );
   mSpinLabelOffsetY->setValue( mLayer->labelOffset().y() );
   mLabelOffsetUnitWidget->setUnit( mLayer->labelOffsetUnit() );

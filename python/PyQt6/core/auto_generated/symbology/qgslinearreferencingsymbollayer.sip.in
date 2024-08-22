@@ -193,6 +193,24 @@ Sets the map unit ``scale`` used for calculating the offset between the line and
 .. seealso:: :py:func:`labelOffsetMapUnitScale`
 %End
 
+    bool showMarker() const;
+%Docstring
+Returns ``True`` if a marker symbol should be shown corresponding to the labeled point on line.
+
+The marker symbol is set using :py:func:`~QgsLinearReferencingSymbolLayer.setSubSymbol`
+
+.. seealso:: :py:func:`setShowMarker`
+%End
+
+    void setShowMarker( bool show );
+%Docstring
+Sets whether a marker symbol should be shown corresponding to the labeled point on line.
+
+The marker symbol is set using :py:func:`~QgsLinearReferencingSymbolLayer.setSubSymbol`
+
+.. seealso:: :py:func:`showMarker`
+%End
+
 };
 
 /************************************************************************

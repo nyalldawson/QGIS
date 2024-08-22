@@ -28,7 +28,6 @@
 QgsLinearReferencingSymbolLayer::QgsLinearReferencingSymbolLayer()
   : QgsLineSymbolLayer()
 {
-  mMarkerSymbol.reset( QgsMarkerSymbol::createSimple( {} ) );
   mNumericFormat = std::make_unique< QgsBasicNumericFormat >();
 }
 
@@ -45,6 +44,7 @@ QgsSymbolLayer *QgsLinearReferencingSymbolLayer::create( const QVariantMap &prop
   if ( ok )
     res->setSkipMultiplesOf( skipMultiples );
   res->setRotateLabels( properties.value( QStringLiteral( "rotate" ), true ).toBool() );
+  res->setShowMarker( properties.value( QStringLiteral( "show_marker" ), false ).toBool() );
 
   // it's impossible to get the project's path resolver here :(
   // TODO QGIS 4.0 -- force use of QgsReadWriteContext in create methods
@@ -97,6 +97,7 @@ QgsLinearReferencingSymbolLayer *QgsLinearReferencingSymbolLayer::clone() const
   res->setLabelOffset( mLabelOffset );
   res->setLabelOffsetUnit( mLabelOffsetUnit );
   res->setLabelOffsetMapUnitScale( mLabelOffsetMapUnitScale );
+  res->setShowMarker( mShowMarker );
 
   res->mTextFormat = mTextFormat;
   res->mMarkerSymbol.reset( mMarkerSymbol ? mMarkerSymbol->clone() : nullptr );
@@ -128,6 +129,9 @@ QVariantMap QgsLinearReferencingSymbolLayer::properties() const
     },
     {
       QStringLiteral( "rotate" ), mRotateLabels
+    },
+    {
+      QStringLiteral( "show_marker" ), mShowMarker
     },
     {
       QStringLiteral( "text_format" ), textFormatDoc.toString()
@@ -166,7 +170,7 @@ Qgis::SymbolLayerFlags QgsLinearReferencingSymbolLayer::flags() const
 
 QgsSymbol *QgsLinearReferencingSymbolLayer::subSymbol()
 {
-  return mMarkerSymbol.get();
+  return mShowMarker ? mMarkerSymbol.get() : nullptr;
 }
 
 bool QgsLinearReferencingSymbolLayer::setSubSymbol( QgsSymbol *symbol )
@@ -324,7 +328,7 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
       if ( angle > 90 && angle < 270 )
         angle += 180;
 
-      if ( mMarkerSymbol )
+      if ( mMarkerSymbol && mShowMarker )
       {
         if ( mRotateLabels )
           mMarkerSymbol->setLineAngle( 90 - angle );
@@ -383,4 +387,18 @@ double QgsLinearReferencingSymbolLayer::skipMultiplesOf() const
 void QgsLinearReferencingSymbolLayer::setSkipMultiplesOf( double skipMultiplesOf )
 {
   mSkipMultiplesOf = skipMultiplesOf;
+}
+
+bool QgsLinearReferencingSymbolLayer::showMarker() const
+{
+  return mShowMarker;
+}
+
+void QgsLinearReferencingSymbolLayer::setShowMarker( bool show )
+{
+  mShowMarker = show;
+  if ( show && !mMarkerSymbol )
+  {
+    mMarkerSymbol.reset( QgsMarkerSymbol::createSimple( {} ) );
+  }
 }

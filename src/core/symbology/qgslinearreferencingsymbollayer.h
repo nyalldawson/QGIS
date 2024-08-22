@@ -191,6 +191,24 @@ class CORE_EXPORT QgsLinearReferencingSymbolLayer : public QgsLineSymbolLayer
      */
     void setLabelOffsetMapUnitScale( const QgsMapUnitScale &scale ) { mLabelOffsetMapUnitScale = scale; }
 
+    /**
+     * Returns TRUE if a marker symbol should be shown corresponding to the labeled point on line.
+     *
+     * The marker symbol is set using setSubSymbol()
+     *
+     * \see setShowMarker()
+     */
+    bool showMarker() const;
+
+    /**
+     * Sets whether a marker symbol should be shown corresponding to the labeled point on line.
+     *
+     * The marker symbol is set using setSubSymbol()
+     *
+     * \see showMarker()
+     */
+    void setShowMarker( bool show );
+
   private:
 
     double mInterval = 1000;
@@ -202,9 +220,10 @@ class CORE_EXPORT QgsLinearReferencingSymbolLayer : public QgsLineSymbolLayer
     QgsMapUnitScale mLabelOffsetMapUnitScale;
 
     QgsTextFormat mTextFormat;
-    std::unique_ptr<QgsMarkerSymbol> mMarkerSymbol;
     std::unique_ptr<QgsNumericFormat> mNumericFormat;
 
+    bool mShowMarker = false;
+    std::unique_ptr<QgsMarkerSymbol> mMarkerSymbol;
 
 };
 
