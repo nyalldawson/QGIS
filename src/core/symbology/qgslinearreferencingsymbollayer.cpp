@@ -508,6 +508,11 @@ void QgsLinearReferencingSymbolLayer::renderPolylineVertex( const QPolygonF &poi
 {
   const QgsAbstractGeometry *geometry = context.renderContext().geometry();
 
+  // let's simplify the logic by ALWAYS using the averaging approach for angles, and just
+  // use a very small distance if the user actually set this to 0. It'll be identical
+  // results anyway...
+  averageAngleLengthPainterUnits = std::max( averageAngleLengthPainterUnits, 0.1 );
+
   QgsNumericFormatContext numericContext;
 
   // TODO (maybe?): if we don't have an original geometry, convert points to linestring and scale distance to painter units?
@@ -533,8 +538,8 @@ void QgsLinearReferencingSymbolLayer::renderPolylineVertex( const QPolygonF &poi
     const double *yPainterUnits = painterUnitsGeometry->yData();
 
     double currentDistance = 0;
-    double prevX = *xData++;
-    double prevY = *yData++;
+    double prevX = *xData;
+    double prevY = *yData;
 
     for ( int i = 0; i < size; ++i )
     {
@@ -562,86 +567,85 @@ void QgsLinearReferencingSymbolLayer::renderPolylineVertex( const QPolygonF &poi
       const QPointF pt = pointToPainter( context, thisX, thisY, thisZ );
 
       double calculatedAngle = 0;
-      if ( averageAngleLengthPainterUnits > 0 )
+
+      // track forward by averageAngleLengthPainterUnits
+      double painterDistRemaining = averageAngleLengthPainterUnits;
+      double startAverageSegmentX = thisXPainterUnits;
+      double startAverageSegmentY = thisYPainterUnits;
+
+      const double *xAveragingData = xPainterUnits;
+      const double *yAveragingData = yPainterUnits;
+      double endAverageSegmentX = *xAveragingData;
+      double endAverageSegmentY = *yAveragingData;
+      double averagingSegmentLengthPainterUnits = QgsGeometryUtilsBase::distance2D( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY );
+
+      int j = i;
+      while ( ( j < size - 1 ) && ( painterDistRemaining > averagingSegmentLengthPainterUnits ) )
       {
-        // track forward by averageAngleLengthPainterUnits
-        double painterDistRemaining = averageAngleLengthPainterUnits;
-        double startAverageSegmentX = thisXPainterUnits;
-        double startAverageSegmentY = thisYPainterUnits;
+        painterDistRemaining -= averagingSegmentLengthPainterUnits;
+        startAverageSegmentX = endAverageSegmentX;
+        startAverageSegmentY = endAverageSegmentY;
 
-        const double *xAveragingData = xPainterUnits;
-        const double *yAveragingData = yPainterUnits;
-        double endAverageSegmentX = *xAveragingData;
-        double endAverageSegmentY = *yAveragingData;
-        double averagingSegmentLengthPainterUnits = QgsGeometryUtilsBase::distance2D( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY );
-
-        int j = i;
-        while ( ( j < size - 1 ) && ( painterDistRemaining > averagingSegmentLengthPainterUnits ) )
-        {
-          painterDistRemaining -= averagingSegmentLengthPainterUnits;
-          startAverageSegmentX = endAverageSegmentX;
-          startAverageSegmentY = endAverageSegmentY;
-
-          endAverageSegmentX = *xAveragingData++;
-          endAverageSegmentY = *yAveragingData++;
-          j++;
-          averagingSegmentLengthPainterUnits = QgsGeometryUtilsBase::distance2D( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY );
-        }
-        // fits on this same segment
-        double endAverageXPainterUnits = thisXPainterUnits;
-        double endAverageYPainterUnits = thisYPainterUnits;
-        if ( ( j < size - 1 ) && ( i < size - 2 ) && painterDistRemaining < averagingSegmentLengthPainterUnits )
-        {
-          QgsGeometryUtilsBase::pointOnLineWithDistance( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY, painterDistRemaining, endAverageXPainterUnits, endAverageYPainterUnits,
-              nullptr, nullptr, nullptr,
-              nullptr, nullptr, nullptr );
-        }
-        else if ( i < size - 2 )
-        {
-          endAverageXPainterUnits = endAverageSegmentX;
-          endAverageYPainterUnits = endAverageSegmentY;
-        }
-
-        // also track back by averageAngleLengthPainterUnits
-        j = i;
-        painterDistRemaining = averageAngleLengthPainterUnits;
-        startAverageSegmentX = thisXPainterUnits;
-        startAverageSegmentY = thisYPainterUnits;
-
-        xAveragingData = xPainterUnits - 2;
-        yAveragingData = yPainterUnits - 2;
-
-        endAverageSegmentX = *xAveragingData;
-        endAverageSegmentY = *yAveragingData;
+        endAverageSegmentX = *xAveragingData++;
+        endAverageSegmentY = *yAveragingData++;
+        j++;
         averagingSegmentLengthPainterUnits = QgsGeometryUtilsBase::distance2D( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY );
-
-        while ( j >= 0 && painterDistRemaining > averagingSegmentLengthPainterUnits )
-        {
-          painterDistRemaining -= averagingSegmentLengthPainterUnits;
-          startAverageSegmentX = endAverageSegmentX;
-          startAverageSegmentY = endAverageSegmentY;
-
-          endAverageSegmentX = *xAveragingData--;
-          endAverageSegmentY = *yAveragingData--;
-          j--;
-          averagingSegmentLengthPainterUnits = QgsGeometryUtilsBase::distance2D( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY );
-        }
-        // fits on this same segment
-        double startAverageXPainterUnits;
-        double startAverageYPainterUnits;
-        if ( painterDistRemaining < averagingSegmentLengthPainterUnits )
-        {
-          QgsGeometryUtilsBase::pointOnLineWithDistance( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY, painterDistRemaining, startAverageXPainterUnits, startAverageYPainterUnits,
-              nullptr, nullptr, nullptr,
-              nullptr, nullptr, nullptr );
-        }
-        else
-        {
-          startAverageXPainterUnits = endAverageSegmentX;
-          startAverageYPainterUnits = endAverageSegmentY;
-        }
-        calculatedAngle = std::fmod( QgsGeometryUtilsBase::azimuth( startAverageXPainterUnits, startAverageYPainterUnits, endAverageXPainterUnits, endAverageYPainterUnits ) + 360, 360 );
       }
+      // fits on this same segment
+      double endAverageXPainterUnits = thisXPainterUnits;
+      double endAverageYPainterUnits = thisYPainterUnits;
+      if ( ( j < size - 1 ) && ( i < size - 2 ) && painterDistRemaining < averagingSegmentLengthPainterUnits )
+      {
+        QgsGeometryUtilsBase::pointOnLineWithDistance( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY, painterDistRemaining, endAverageXPainterUnits, endAverageYPainterUnits,
+            nullptr, nullptr, nullptr,
+            nullptr, nullptr, nullptr );
+      }
+      else if ( i < size - 2 )
+      {
+        endAverageXPainterUnits = endAverageSegmentX;
+        endAverageYPainterUnits = endAverageSegmentY;
+      }
+
+      // also track back by averageAngleLengthPainterUnits
+      j = i;
+      painterDistRemaining = averageAngleLengthPainterUnits;
+      startAverageSegmentX = thisXPainterUnits;
+      startAverageSegmentY = thisYPainterUnits;
+
+      xAveragingData = xPainterUnits - 2;
+      yAveragingData = yPainterUnits - 2;
+
+      endAverageSegmentX = *xAveragingData;
+      endAverageSegmentY = *yAveragingData;
+      averagingSegmentLengthPainterUnits = QgsGeometryUtilsBase::distance2D( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY );
+
+      while ( j > 0 && painterDistRemaining > averagingSegmentLengthPainterUnits )
+      {
+        painterDistRemaining -= averagingSegmentLengthPainterUnits;
+        startAverageSegmentX = endAverageSegmentX;
+        startAverageSegmentY = endAverageSegmentY;
+
+        endAverageSegmentX = *xAveragingData--;
+        endAverageSegmentY = *yAveragingData--;
+        j--;
+        averagingSegmentLengthPainterUnits = QgsGeometryUtilsBase::distance2D( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY );
+      }
+      // fits on this same segment
+      double startAverageXPainterUnits = thisXPainterUnits;
+      double startAverageYPainterUnits = thisYPainterUnits;
+      if ( j > 0 && painterDistRemaining < averagingSegmentLengthPainterUnits )
+      {
+        QgsGeometryUtilsBase::pointOnLineWithDistance( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY, painterDistRemaining, startAverageXPainterUnits, startAverageYPainterUnits,
+            nullptr, nullptr, nullptr,
+            nullptr, nullptr, nullptr );
+      }
+      else if ( j > 1 )
+      {
+        startAverageXPainterUnits = endAverageSegmentX;
+        startAverageYPainterUnits = endAverageSegmentY;
+      }
+
+      calculatedAngle = std::fmod( QgsGeometryUtilsBase::azimuth( startAverageXPainterUnits, startAverageYPainterUnits, endAverageXPainterUnits, endAverageYPainterUnits ) + 360, 360 );
 
       if ( calculatedAngle > 90 && calculatedAngle < 270 )
         calculatedAngle += 180;
