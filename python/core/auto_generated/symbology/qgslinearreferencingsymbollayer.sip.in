@@ -225,6 +225,20 @@ Sets the ``placement`` mode for the labels.
 .. seealso:: :py:func:`placement`
 %End
 
+    Qgis::LinearReferencingLabelSource labelSource() const;
+%Docstring
+Returns the label source, which dictates what quantity to use for the labels shown.
+
+.. seealso:: :py:func:`setLabelSource`
+%End
+
+    void setLabelSource( Qgis::LinearReferencingLabelSource source );
+%Docstring
+Sets the label ``source``, which dictates what quantity to use for the labels shown.
+
+.. seealso:: :py:func:`labelSource`
+%End
+
     double averageAngleLength() const;
 %Docstring
 Returns the length of line over which the line's direction is averaged when

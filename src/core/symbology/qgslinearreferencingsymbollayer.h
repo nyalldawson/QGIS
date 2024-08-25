@@ -224,6 +224,20 @@ class CORE_EXPORT QgsLinearReferencingSymbolLayer : public QgsLineSymbolLayer
     void setPlacement( Qgis::LinearReferencingPlacement placement );
 
     /**
+     * Returns the label source, which dictates what quantity to use for the labels shown.
+     *
+     * \see setLabelSource()
+     */
+    Qgis::LinearReferencingLabelSource labelSource() const;
+
+    /**
+     * Sets the label \a source, which dictates what quantity to use for the labels shown.
+     *
+     * \see labelSource()
+     */
+    void setLabelSource( Qgis::LinearReferencingLabelSource source );
+
+    /**
      * Returns the length of line over which the line's direction is averaged when
      * calculating individual label angles. Longer lengths smooth out angles from jagged lines to a greater extent.
      *
@@ -293,6 +307,7 @@ class CORE_EXPORT QgsLinearReferencingSymbolLayer : public QgsLineSymbolLayer
     static QPointF pointToPainter( QgsSymbolRenderContext &context, double x, double y, double z );
 
     Qgis::LinearReferencingPlacement mPlacement = Qgis::LinearReferencingPlacement::Interval;
+    Qgis::LinearReferencingLabelSource mLabelSource = Qgis::LinearReferencingLabelSource::CartesianDistance2D;
 
     double mInterval = 1000;
     double mSkipMultiplesOf = 0;

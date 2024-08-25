@@ -38,6 +38,7 @@ QgsSymbolLayer *QgsLinearReferencingSymbolLayer::create( const QVariantMap &prop
 {
   std::unique_ptr< QgsLinearReferencingSymbolLayer > res = std::make_unique< QgsLinearReferencingSymbolLayer >();
   res->setPlacement( qgsEnumKeyToValue( properties.value( QStringLiteral( "placement" ) ).toString(), Qgis::LinearReferencingPlacement::Interval ) );
+  res->setLabelSource( qgsEnumKeyToValue( properties.value( QStringLiteral( "source" ) ).toString(), Qgis::LinearReferencingLabelSource::CartesianDistance2D ) );
   bool ok = false;
   const double interval = properties.value( QStringLiteral( "interval" ) ).toDouble( &ok );
   if ( ok )
@@ -106,6 +107,7 @@ QgsLinearReferencingSymbolLayer *QgsLinearReferencingSymbolLayer::clone() const
 {
   std::unique_ptr< QgsLinearReferencingSymbolLayer > res = std::make_unique< QgsLinearReferencingSymbolLayer >();
   res->setPlacement( mPlacement );
+  res->setLabelSource( mLabelSource );
   res->setInterval( mInterval );
   res->setSkipMultiplesOf( mSkipMultiplesOf );
   res->setRotateLabels( mRotateLabels );
@@ -144,6 +146,9 @@ QVariantMap QgsLinearReferencingSymbolLayer::properties() const
   {
     {
       QStringLiteral( "placement" ), qgsEnumValueToKey( mPlacement )
+    },
+    {
+      QStringLiteral( "source" ), qgsEnumValueToKey( mLabelSource )
     },
     {
       QStringLiteral( "interval" ), mInterval
@@ -286,12 +291,10 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
   const double labelOffsetPainterUnitsY = context.renderContext().convertToPainterUnits( labelOffsetY, mLabelOffsetUnit, mLabelOffsetMapUnitScale );
   const double averageAngleDistancePainterUnits = context.renderContext().convertToPainterUnits( averageAngle, mAverageAngleLengthUnit, mAverageAngleLengthMapUnitScale ) / 2;
 
-
-
   // TODO (maybe?): if we don't have an original geometry, convert points to linestring and scale distance to painter units?
   // in reality this line type makes no sense for rendering non-real feature geometries...
   ( void )points;
-  const QgsAbstractGeometry *geometry = qgsgeometry_cast< const QgsLineString * >( context.renderContext().geometry() );
+  const QgsAbstractGeometry *geometry = context.renderContext().geometry();
   if ( !geometry )
     return;
 
@@ -754,5 +757,15 @@ Qgis::LinearReferencingPlacement QgsLinearReferencingSymbolLayer::placement() co
 void QgsLinearReferencingSymbolLayer::setPlacement( Qgis::LinearReferencingPlacement placement )
 {
   mPlacement = placement;
+}
+
+Qgis::LinearReferencingLabelSource QgsLinearReferencingSymbolLayer::labelSource() const
+{
+  return mLabelSource;
+}
+
+void QgsLinearReferencingSymbolLayer::setLabelSource( Qgis::LinearReferencingLabelSource source )
+{
+  mLabelSource = source;
 }
 

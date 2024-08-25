@@ -2867,6 +2867,13 @@ Qgis.LinearReferencingPlacement.Vertex.__doc__ = "Place labels on every vertex i
 Qgis.LinearReferencingPlacement.__doc__ = "Defines how/where the labels should be placed in a linear referencing symbol layer.\n\n.. versionadded:: 3.40\n\n" + '* ``Interval``: ' + Qgis.LinearReferencingPlacement.Interval.__doc__ + '\n' + '* ``Vertex``: ' + Qgis.LinearReferencingPlacement.Vertex.__doc__
 # --
 Qgis.LinearReferencingPlacement.baseClass = Qgis
+# monkey patching scoped based enum
+Qgis.LinearReferencingLabelSource.CartesianDistance2D.__doc__ = "Distance along line, calculated using Cartesian calculations on a 2D plane."
+Qgis.LinearReferencingLabelSource.Z.__doc__ = "Z values"
+Qgis.LinearReferencingLabelSource.M.__doc__ = "M values"
+Qgis.LinearReferencingLabelSource.__doc__ = "Defines what quantity to use for the labels shown in a linear referencing symbol layer.\n\n.. versionadded:: 3.40\n\n" + '* ``CartesianDistance2D``: ' + Qgis.LinearReferencingLabelSource.CartesianDistance2D.__doc__ + '\n' + '* ``Z``: ' + Qgis.LinearReferencingLabelSource.Z.__doc__ + '\n' + '* ``M``: ' + Qgis.LinearReferencingLabelSource.M.__doc__
+# --
+Qgis.LinearReferencingLabelSource.baseClass = Qgis
 QgsGradientFillSymbolLayer.GradientColorType = Qgis.GradientColorSource
 # monkey patching scoped based enum
 QgsGradientFillSymbolLayer.SimpleTwoColor = Qgis.GradientColorSource.SimpleTwoColor

@@ -1634,6 +1634,13 @@ The development version
       Vertex,
     };
 
+    enum class LinearReferencingLabelSource
+    {
+      CartesianDistance2D,
+      Z,
+      M,
+    };
+
     enum class GradientColorSource
       {
       SimpleTwoColor,

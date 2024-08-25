@@ -2804,6 +2804,19 @@ class CORE_EXPORT Qgis
     Q_ENUM( LinearReferencingPlacement )
 
     /**
+     * Defines what quantity to use for the labels shown in a linear referencing symbol layer.
+     *
+     * \since QGIS 3.40
+     */
+    enum class LinearReferencingLabelSource : int
+    {
+      CartesianDistance2D, //!< Distance along line, calculated using Cartesian calculations on a 2D plane.
+      Z, //!< Z values
+      M, //!< M values
+    };
+    Q_ENUM( LinearReferencingLabelSource )
+
+    /**
      * Gradient color sources.
      *
      * \note Prior to QGIS 3.24 this was available as QgsGradientFillSymbolLayer::GradientColorType
