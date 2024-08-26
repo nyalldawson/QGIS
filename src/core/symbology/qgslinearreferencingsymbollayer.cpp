@@ -306,7 +306,7 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
   }
 }
 
-typedef std::function<bool ( double, double, double, double, double )> VisitPointFunction;
+typedef std::function<bool ( double x, double y, double z, double m, double distanceFromStart, double angle )> VisitPointFunction;
 typedef std::function< void( const QgsLineString *, const QgsLineString *, bool, double, double, const VisitPointFunction & ) > VisitPointAtDistanceFunction;
 
 void visitPointsByRegularDistance( const QgsLineString *line, const QgsLineString *linePainterUnits, bool emitFirstPoint, const double distance, const double averageAngleLengthPainterUnits, const VisitPointFunction &visitPoint )
@@ -337,7 +337,7 @@ void visitPointsByRegularDistance( const QgsLineString *line, const QgsLineStrin
 
   if ( qgsDoubleNear( distance, 0.0 ) )
   {
-    visitPoint( prevX, prevY, prevZ, prevM, 0 );
+    visitPoint( prevX, prevY, prevZ, prevM, 0, 0 );
     return;
   }
 
@@ -459,7 +459,7 @@ void visitPointsByRegularDistance( const QgsLineString *line, const QgsLineStrin
           calculatedAngle += 180;
       }
 
-      if ( !visitPoint( pX, pY, pZ, pM, calculatedAngle ) )
+      if ( !visitPoint( pX, pY, pZ, pM, nextPointDistance, calculatedAngle ) )
         return;
 
       nextPointDistance += distance;
@@ -502,13 +502,14 @@ void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString
 
   if ( qgsDoubleNear( step, 0.0 ) )
   {
-    visitPoint( prevX, prevY, prevZ, prevM, 0 );
+    visitPoint( prevX, prevY, prevZ, prevM, 0, 0 );
     return;
   }
 
   double currentValue = useZ ? prevZ : prevM;
   bool isFirstPoint = true;
   double nextStepValue = emitFirstPoint ? currentValue : std::ceil( currentValue / step ) * step;
+  double distanceTraversed = 0;
 
   for ( int i = 1; i < totalPoints; ++i )
   {
@@ -642,7 +643,7 @@ void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString
             calculatedAngle += 180;
         }
 
-        if ( !visitPoint( pX, pY, pZ, pM, calculatedAngle ) )
+        if ( !visitPoint( pX, pY, pZ, pM, distanceTraversed + segmentLength * fraction, calculatedAngle ) )
           return;
 
         nextStepValue += direction * step;
@@ -652,7 +653,7 @@ void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString
     }
     else if ( isFirstPoint && emitFirstPoint )
     {
-      if ( !visitPoint( prevX, prevY, prevZ, prevM,
+      if ( !visitPoint( prevX, prevY, prevZ, prevM, distanceTraversed,
                         std::fmod( QgsGeometryUtilsBase::azimuth( prevXPainterUnits, prevYPainterUnits, thisXPainterUnits, thisYPainterUnits ) + 360, 360 ) ) )
         return;
       isFirstPoint = false;
@@ -674,6 +675,7 @@ void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString
     prevYPainterUnits = thisYPainterUnits;
     currentValue = thisValue;
 
+    distanceTraversed += segmentLength;
   }
 
   // Emit the last point of the line
@@ -715,8 +717,6 @@ void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QgsLineStrin
 
   QgsNumericFormatContext numericContext;
 
-  double currentDistance = 0;
-
   std::unique_ptr< QgsLineString > painterUnitsGeometry( line->clone() );
   if ( context.renderContext().coordinateTransform().isValid() )
   {
@@ -748,14 +748,33 @@ void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QgsLineStrin
       return;
   }
 
-  func( line, painterUnitsGeometry.get(), emitFirstPoint, distance, averageAngleLengthPainterUnits, [&context, &currentDistance, &numericContext, distance, skipMultiples,
-                  labelOffsetPainterUnits, hasZ, hasM, this]( double x, double y, double z, double m, double angle ) -> bool
+  func( line, painterUnitsGeometry.get(), emitFirstPoint, distance, averageAngleLengthPainterUnits, [&context, &numericContext, skipMultiples,
+                  labelOffsetPainterUnits, hasZ, hasM, this]( double x, double y, double z, double m, double distanceFromStart, double angle ) -> bool
   {
     if ( context.renderContext().renderingStopped() )
       return false;
 
-    currentDistance += distance;
-    if ( skipMultiples > 0 && qgsDoubleNear( std::fmod( currentDistance,  skipMultiples ), 0 ) )
+    double labelValue = 0;
+    bool labelVertex = true;
+    switch ( mLabelSource )
+    {
+      case Qgis::LinearReferencingLabelSource::CartesianDistance2D:
+        labelValue = distanceFromStart;
+        break;
+      case Qgis::LinearReferencingLabelSource::Z:
+        labelValue = z;
+        labelVertex = hasZ && !std::isnan( labelValue );
+        break;
+      case Qgis::LinearReferencingLabelSource::M:
+        labelValue = m;
+        labelVertex = hasM && !std::isnan( labelValue );
+        break;
+    }
+
+    if ( !labelVertex )
+      return true;
+
+    if ( skipMultiples > 0 && qgsDoubleNear( std::fmod( labelValue,  skipMultiples ), 0 ) )
       return true;
 
     const QPointF pt = pointToPainter( context, x, y, z );
@@ -772,26 +791,6 @@ void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QgsLineStrin
     + labelOffsetPainterUnits.y() * std::sin( angleRadians );
     const double dy = labelOffsetPainterUnits.x() * std::cos( angleRadians + M_PI_2 )
     + labelOffsetPainterUnits.y() * std::cos( angleRadians );
-
-    double labelValue = 0;
-    bool labelVertex = true;
-    switch ( mLabelSource )
-    {
-      case Qgis::LinearReferencingLabelSource::CartesianDistance2D:
-        labelValue = currentDistance;
-        break;
-      case Qgis::LinearReferencingLabelSource::Z:
-        labelValue = z;
-        labelVertex = hasZ && !std::isnan( labelValue );
-        break;
-      case Qgis::LinearReferencingLabelSource::M:
-        labelValue = m;
-        labelVertex = hasM && !std::isnan( labelValue );
-        break;
-    }
-
-    if ( !labelVertex )
-      return true;
 
     QgsTextRenderer::drawText( QPointF( pt.x() + dx, pt.y() + dy ), angleRadians, Qgis::TextHorizontalAlignment::Left, { mNumericFormat->formatDouble( labelValue, numericContext ) }, context.renderContext(), mTextFormat );
 
