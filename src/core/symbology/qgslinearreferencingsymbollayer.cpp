@@ -481,7 +481,7 @@ void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString
     return;
 
   const int totalPoints = line->numPoints();
-  if ( totalPoints == 0 )
+  if ( totalPoints < 2 )
     return;
 
   const double *x = line->xData();
@@ -508,6 +508,7 @@ void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString
 
   double currentValue = useZ ? prevZ : prevM;
   bool isFirstPoint = true;
+  double nextStepValue = emitFirstPoint ? currentValue : std::ceil( currentValue / step ) * step;
 
   for ( int i = 1; i < totalPoints; ++i )
   {
@@ -529,45 +530,10 @@ void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString
     // Determine direction for this segment
     int direction = ( thisValue > currentValue ) ? 1 : ( thisValue < currentValue ) ? -1 : 0;
 
-    // Handle constant value segments
-    if ( direction == 0 )
+    if ( direction != 0 )
     {
-      // For constant segments, we only emit a point if it's the first point or the end of the segment
-      if ( isFirstPoint && emitFirstPoint )
-      {
-        if ( !visitPoint( prevX, prevY, prevZ, prevM,
-                          std::fmod( QgsGeometryUtilsBase::azimuth( prevXPainterUnits, prevYPainterUnits, thisXPainterUnits, thisYPainterUnits ) + 360, 360 ) ) )
-          return;
-        isFirstPoint = false;
-      }
-      else if ( i == totalPoints - 1 ) // Last point of the line
-      {
-        if ( !visitPoint( thisX, thisY, thisZ, thisM,
-                          std::fmod( QgsGeometryUtilsBase::azimuth( prevXPainterUnits, prevYPainterUnits, thisXPainterUnits, thisYPainterUnits ) + 360, 360 ) ) )
-          return;
-      }
-    }
-    else
-    {
-      // Calculate the first step value for this segment
-      double nextStepValue;
-      if ( emitFirstPoint && i == 1 )
-      {
-        nextStepValue = currentValue;
-      }
-      else
-      {
-        nextStepValue = std::ceil( currentValue / step ) * step;
-        if ( direction < 0 )
-        {
-          nextStepValue = std::floor( currentValue / step ) * step;
-        }
-        // Ensure we don't emit a point right at the start of the segment (unless it's the first point)
-        if ( qgsDoubleNear( nextStepValue, currentValue ) )
-        {
-          nextStepValue += direction * step;
-        }
-      }
+      nextStepValue = direction > 0 ? std::ceil( currentValue / step ) * step
+                      :  std::floor( currentValue / step ) * step;
 
       while ( ( direction > 0 && nextStepValue <= thisValue ) ||
               ( direction < 0 && nextStepValue >= thisValue ) )
@@ -680,25 +646,39 @@ void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString
           return;
 
         nextStepValue += direction * step;
+        isFirstPoint = false;
       }
 
-      // Always visit the endpoint of each segment
-      if ( !qgsDoubleNear( currentValue, thisValue ) )
-      {
-        if ( !visitPoint( thisX, thisY, thisZ, thisM,
-                          std::fmod( QgsGeometryUtilsBase::azimuth( prevXPainterUnits, prevYPainterUnits, thisXPainterUnits, thisYPainterUnits ) + 360, 360 ) ) )
-          return;
-      }
-
-      prevX = thisX;
-      prevY = thisY;
-      prevZ = thisZ;
-      prevM = thisM;
-      prevXPainterUnits = thisXPainterUnits;
-      prevYPainterUnits = thisYPainterUnits;
-      currentValue = thisValue;
     }
+    else if ( isFirstPoint && emitFirstPoint )
+    {
+      if ( !visitPoint( prevX, prevY, prevZ, prevM,
+                        std::fmod( QgsGeometryUtilsBase::azimuth( prevXPainterUnits, prevYPainterUnits, thisXPainterUnits, thisYPainterUnits ) + 360, 360 ) ) )
+        return;
+      isFirstPoint = false;
+    }
+
+    // Adjust nextStepValue for the next segment
+    if ( direction != 0 )
+    {
+      nextStepValue = direction > 0 ? std::ceil( thisValue / step ) * step : std::floor( thisValue / step ) * step;
+      if ( qgsDoubleNear( nextStepValue, thisValue ) )
+        nextStepValue += direction * step;
+    }
+
+    prevX = thisX;
+    prevY = thisY;
+    prevZ = thisZ;
+    prevM = thisM;
+    prevXPainterUnits = thisXPainterUnits;
+    prevYPainterUnits = thisYPainterUnits;
+    currentValue = thisValue;
+
   }
+
+  // Emit the last point of the line
+  //if (!emitPoint(prevX, prevY, prevZ, prevM, 0))
+  //  return;
 }
 
 void visitPointsByInterpolatedZ( const QgsLineString *line, const QgsLineString *linePainterUnits, bool emitFirstPoint, const double distance, const double averageAngleLengthPainterUnits, const VisitPointFunction &visitPoint )
