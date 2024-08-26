@@ -480,6 +480,7 @@ void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString
   if ( step < 0 )
     return;
 
+  double distanceTraversed = 0;
   const int totalPoints = line->numPoints();
   if ( totalPoints < 2 )
     return;
@@ -506,11 +507,8 @@ void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString
     return;
   }
 
-  double currentValue = useZ ? prevZ : prevM;
+  double prevValue = useZ ? prevZ : prevM;
   bool isFirstPoint = true;
-  double nextStepValue = emitFirstPoint ? currentValue : std::ceil( currentValue / step ) * step;
-  double distanceTraversed = 0;
-
   for ( int i = 1; i < totalPoints; ++i )
   {
     double thisX = *x++;
@@ -528,27 +526,27 @@ void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString
     const double segmentLength = QgsGeometryUtilsBase::distance2D( thisX, thisY, prevX, prevY );
     const double segmentLengthPainterUnits = QgsGeometryUtilsBase::distance2D( thisXPainterUnits, thisYPainterUnits, prevXPainterUnits, prevYPainterUnits );
 
-    // Determine direction for this segment
-    int direction = ( thisValue > currentValue ) ? 1 : ( thisValue < currentValue ) ? -1 : 0;
-
+    // direction for this segment
+    const int direction = ( thisValue > prevValue ) ? 1 : ( thisValue < prevValue ) ? -1 : 0;
     if ( direction != 0 )
     {
-      nextStepValue = direction > 0 ? std::ceil( currentValue / step ) * step
-                      :  std::floor( currentValue / step ) * step;
+      // non-constant segment
+      double nextStepValue = direction > 0 ? std::ceil( prevValue / step ) * step
+                             :  std::floor( prevValue / step ) * step;
 
-      while ( ( direction > 0 && nextStepValue <= thisValue ) ||
-              ( direction < 0 && nextStepValue >= thisValue ) )
+      while ( ( direction > 0 && ( nextStepValue <= thisValue || qgsDoubleNear( nextStepValue, thisValue ) ) ) ||
+              ( direction < 0 && ( nextStepValue >= thisValue || qgsDoubleNear( nextStepValue, thisValue ) ) ) )
       {
-        // rename to targetPointFractionAlongSegment
-        double fraction = ( nextStepValue - currentValue ) / ( thisValue - currentValue );
+        const double targetPointFractionAlongSegment = ( nextStepValue - prevValue ) / ( thisValue - prevValue );
+        const double targetPointDistanceAlongSegment = targetPointFractionAlongSegment * segmentLengthPainterUnits;
+
         double pX, pY;
-        QgsGeometryUtilsBase::pointOnLineWithDistance( prevX, prevY, thisX, thisY, fraction * segmentLength, pX, pY );
+        QgsGeometryUtilsBase::pointOnLineWithDistance( prevX, prevY, thisX, thisY, targetPointFractionAlongSegment  * segmentLength, pX, pY );
 
         double pZ = nextStepValue;
         double pM = nextStepValue;
         // double pZ = useZ ? nextStepValue : QgsGeometryUtilsBase::interpolateValue(prevZ, thisZ, fraction);
         //double pM = useZ ? QgsGeometryUtilsBase::interpolateValue(prevM, thisM, fraction) : nextStepValue;
-
 
         //pZ = useZ ? nextStepValue : QgsGeometryUtilsBase::interpolateValue(prevZ, thisZ, fraction);
         //pM = useZ ? QgsGeometryUtilsBase::interpolateValue(prevM, thisM, fraction) : nextStepValue;
@@ -556,9 +554,6 @@ void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString
         double calculatedAngle = angle;
         if ( averageAngleLengthPainterUnits > 0 )
         {
-          const double targetPointFractionAlongSegment = fraction;
-          const double targetPointDistanceAlongSegment = targetPointFractionAlongSegment * segmentLengthPainterUnits;
-
           // track forward by averageAngleLengthPainterUnits
           double painterDistRemaining = averageAngleLengthPainterUnits + targetPointDistanceAlongSegment;
           double startAverageSegmentX = prevXPainterUnits;
@@ -643,29 +638,22 @@ void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString
             calculatedAngle += 180;
         }
 
-        if ( !visitPoint( pX, pY, pZ, pM, distanceTraversed + segmentLength * fraction, calculatedAngle ) )
-          return;
+        if ( !qgsDoubleNear( targetPointFractionAlongSegment, 0 ) || isFirstPoint )
+        {
+          if ( !visitPoint( pX, pY, pZ, pM, distanceTraversed + segmentLength * targetPointFractionAlongSegment, calculatedAngle ) )
+            return;
+        }
 
         nextStepValue += direction * step;
-        isFirstPoint = false;
       }
-
     }
     else if ( isFirstPoint && emitFirstPoint )
     {
       if ( !visitPoint( prevX, prevY, prevZ, prevM, distanceTraversed,
                         std::fmod( QgsGeometryUtilsBase::azimuth( prevXPainterUnits, prevYPainterUnits, thisXPainterUnits, thisYPainterUnits ) + 360, 360 ) ) )
         return;
-      isFirstPoint = false;
     }
-
-    // Adjust nextStepValue for the next segment
-    if ( direction != 0 )
-    {
-      nextStepValue = direction > 0 ? std::ceil( thisValue / step ) * step : std::floor( thisValue / step ) * step;
-      if ( qgsDoubleNear( nextStepValue, thisValue ) )
-        nextStepValue += direction * step;
-    }
+    isFirstPoint = false;
 
     prevX = thisX;
     prevY = thisY;
@@ -673,14 +661,9 @@ void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString
     prevM = thisM;
     prevXPainterUnits = thisXPainterUnits;
     prevYPainterUnits = thisYPainterUnits;
-    currentValue = thisValue;
-
+    prevValue = thisValue;
     distanceTraversed += segmentLength;
   }
-
-  // Emit the last point of the line
-  //if (!emitPoint(prevX, prevY, prevZ, prevM, 0))
-  //  return;
 }
 
 void visitPointsByInterpolatedZ( const QgsLineString *line, const QgsLineString *linePainterUnits, bool emitFirstPoint, const double distance, const double averageAngleLengthPainterUnits, const VisitPointFunction &visitPoint )
