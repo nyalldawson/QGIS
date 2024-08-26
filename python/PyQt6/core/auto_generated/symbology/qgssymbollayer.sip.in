@@ -169,6 +169,8 @@ class QgsSymbolLayer
       RandomOffsetX,
       RandomOffsetY,
       LineClipping,
+      SkipMultiples,
+      ShowMarker,
     };
 
     static const QgsPropertiesDefinition &propertyDefinitions();

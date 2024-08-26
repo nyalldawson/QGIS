@@ -214,6 +214,8 @@ class CORE_EXPORT QgsSymbolLayer
       RandomOffsetX SIP_MONKEYPATCH_COMPAT_NAME( PropertyRandomOffsetX ), //!< Random offset X (since QGIS 3.24)
       RandomOffsetY SIP_MONKEYPATCH_COMPAT_NAME( PropertyRandomOffsetY ), //!< Random offset Y (since QGIS 3.24)
       LineClipping SIP_MONKEYPATCH_COMPAT_NAME( PropertyLineClipping ), //!< Line clipping mode (since QGIS 3.24)
+      SkipMultiples, //!< Skip multiples of (since QGIS 3.40)
+      ShowMarker, //!< Show markers (since QGIS 3.40)
     };
     // *INDENT-ON*
 

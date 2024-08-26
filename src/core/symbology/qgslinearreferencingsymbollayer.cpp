@@ -240,23 +240,23 @@ void QgsLinearReferencingSymbolLayer::stopRender( QgsSymbolRenderContext &contex
   }
 }
 
-void QgsLinearReferencingSymbolLayer::renderGeometryPart( QgsSymbolRenderContext &context, const QgsAbstractGeometry *geometry, double labelOffsetPainterUnitsX, double labelOffsetPainterUnitsY, double skipMultiples, double averageAngleDistancePainterUnits )
+void QgsLinearReferencingSymbolLayer::renderGeometryPart( QgsSymbolRenderContext &context, const QgsAbstractGeometry *geometry, double labelOffsetPainterUnitsX, double labelOffsetPainterUnitsY, double skipMultiples, double averageAngleDistancePainterUnits, bool showMarker )
 {
   if ( const QgsLineString *line = qgsgeometry_cast< const QgsLineString * >( geometry ) )
   {
-    renderLineString( context, line, labelOffsetPainterUnitsX, labelOffsetPainterUnitsY, skipMultiples, averageAngleDistancePainterUnits );
+    renderLineString( context, line, labelOffsetPainterUnitsX, labelOffsetPainterUnitsY, skipMultiples, averageAngleDistancePainterUnits, showMarker );
   }
   else if ( const QgsPolygon *polygon = qgsgeometry_cast< const QgsPolygon * >( geometry ) )
   {
-    renderLineString( context, qgsgeometry_cast< const QgsLineString *>( polygon->exteriorRing() ), labelOffsetPainterUnitsX, labelOffsetPainterUnitsY, skipMultiples, averageAngleDistancePainterUnits );
+    renderLineString( context, qgsgeometry_cast< const QgsLineString *>( polygon->exteriorRing() ), labelOffsetPainterUnitsX, labelOffsetPainterUnitsY, skipMultiples, averageAngleDistancePainterUnits, showMarker );
     for ( int i = 0; i < polygon->numInteriorRings(); ++i )
     {
-      renderLineString( context, qgsgeometry_cast< const QgsLineString *>( polygon->interiorRing( i ) ), labelOffsetPainterUnitsX, labelOffsetPainterUnitsY, skipMultiples, averageAngleDistancePainterUnits );
+      renderLineString( context, qgsgeometry_cast< const QgsLineString *>( polygon->interiorRing( i ) ), labelOffsetPainterUnitsX, labelOffsetPainterUnitsY, skipMultiples, averageAngleDistancePainterUnits, showMarker );
     }
   }
 }
 
-void QgsLinearReferencingSymbolLayer::renderLineString( QgsSymbolRenderContext &context, const QgsLineString *line, double labelOffsetPainterUnitsX, double labelOffsetPainterUnitsY, double skipMultiples, double averageAngleDistancePainterUnits )
+void QgsLinearReferencingSymbolLayer::renderLineString( QgsSymbolRenderContext &context, const QgsLineString *line, double labelOffsetPainterUnitsX, double labelOffsetPainterUnitsY, double skipMultiples, double averageAngleDistancePainterUnits, bool showMarker )
 {
   if ( !line )
     return;
@@ -266,11 +266,11 @@ void QgsLinearReferencingSymbolLayer::renderLineString( QgsSymbolRenderContext &
     case Qgis::LinearReferencingPlacement::IntervalCartesian2D:
     case Qgis::LinearReferencingPlacement::IntervalZ:
     case Qgis::LinearReferencingPlacement::IntervalM:
-      renderPolylineInterval( line, context, skipMultiples, QPointF( labelOffsetPainterUnitsX, labelOffsetPainterUnitsY ), averageAngleDistancePainterUnits );
+      renderPolylineInterval( line, context, skipMultiples, QPointF( labelOffsetPainterUnitsX, labelOffsetPainterUnitsY ), averageAngleDistancePainterUnits, showMarker );
       break;
 
     case Qgis::LinearReferencingPlacement::Vertex:
-      renderPolylineVertex( line, context, skipMultiples, QPointF( labelOffsetPainterUnitsX, labelOffsetPainterUnitsY ), averageAngleDistancePainterUnits );
+      renderPolylineVertex( line, context, skipMultiples, QPointF( labelOffsetPainterUnitsX, labelOffsetPainterUnitsY ), averageAngleDistancePainterUnits, showMarker );
       break;
   }
 }
@@ -283,15 +283,33 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
     return;
   }
 
-  // TODO -- data defined
   double skipMultiples = mSkipMultiplesOf;
+  if ( mDataDefinedProperties.isActive( QgsSymbolLayer::Property::SkipMultiples ) )
+  {
+    context.setOriginalValueVariable( mSkipMultiplesOf );
+    skipMultiples = mDataDefinedProperties.valueAsDouble( QgsSymbolLayer::Property::SkipMultiples, context.renderContext().expressionContext(), mSkipMultiplesOf );
+  }
+
   double labelOffsetX = mLabelOffset.x();
   double labelOffsetY = mLabelOffset.y();
-  double averageAngle = mAverageAngleLength;
+
+  double averageOver = mAverageAngleLength;
+  if ( mDataDefinedProperties.isActive( QgsSymbolLayer::Property::AverageAngleLength ) )
+  {
+    context.setOriginalValueVariable( mAverageAngleLength );
+    averageOver = mDataDefinedProperties.valueAsDouble( QgsSymbolLayer::Property::AverageAngleLength, context.renderContext().expressionContext(), mAverageAngleLength );
+  }
+
+  bool showMarker = mShowMarker;
+  if ( mDataDefinedProperties.isActive( QgsSymbolLayer::Property::ShowMarker ) )
+  {
+    context.setOriginalValueVariable( showMarker );
+    showMarker = mDataDefinedProperties.valueAsBool( QgsSymbolLayer::Property::ShowMarker, context.renderContext().expressionContext(), mShowMarker );
+  }
 
   const double labelOffsetPainterUnitsX = context.renderContext().convertToPainterUnits( labelOffsetX, mLabelOffsetUnit, mLabelOffsetMapUnitScale );
   const double labelOffsetPainterUnitsY = context.renderContext().convertToPainterUnits( labelOffsetY, mLabelOffsetUnit, mLabelOffsetMapUnitScale );
-  const double averageAngleDistancePainterUnits = context.renderContext().convertToPainterUnits( averageAngle, mAverageAngleLengthUnit, mAverageAngleLengthMapUnitScale ) / 2;
+  const double averageAngleDistancePainterUnits = context.renderContext().convertToPainterUnits( averageOver, mAverageAngleLengthUnit, mAverageAngleLengthMapUnitScale ) / 2;
 
   // TODO (maybe?): if we don't have an original geometry, convert points to linestring and scale distance to painter units?
   // in reality this line type makes no sense for rendering non-real feature geometries...
@@ -302,7 +320,7 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
 
   for ( auto partIt = geometry->const_parts_begin(); partIt != geometry->const_parts_end(); ++partIt )
   {
-    renderGeometryPart( context, *partIt, labelOffsetPainterUnitsX, labelOffsetPainterUnitsY, skipMultiples, averageAngleDistancePainterUnits );
+    renderGeometryPart( context, *partIt, labelOffsetPainterUnitsX, labelOffsetPainterUnitsY, skipMultiples, averageAngleDistancePainterUnits, showMarker );
   }
 }
 
@@ -694,9 +712,14 @@ QPointF QgsLinearReferencingSymbolLayer::pointToPainter( QgsSymbolRenderContext 
   return pt;
 }
 
-void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QgsLineString *line, QgsSymbolRenderContext &context, double skipMultiples, const QPointF &labelOffsetPainterUnits, double averageAngleLengthPainterUnits )
+void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QgsLineString *line, QgsSymbolRenderContext &context, double skipMultiples, const QPointF &labelOffsetPainterUnits, double averageAngleLengthPainterUnits, bool showMarker )
 {
   double distance = mInterval;
+  if ( mDataDefinedProperties.isActive( QgsSymbolLayer::Property::Interval ) )
+  {
+    context.setOriginalValueVariable( mInterval );
+    distance = mDataDefinedProperties.valueAsDouble( QgsSymbolLayer::Property::Interval, context.renderContext().expressionContext(), mInterval );
+  }
 
   QgsNumericFormatContext numericContext;
 
@@ -731,7 +754,7 @@ void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QgsLineStrin
       return;
   }
 
-  func( line, painterUnitsGeometry.get(), emitFirstPoint, distance, averageAngleLengthPainterUnits, [&context, &numericContext, skipMultiples,
+  func( line, painterUnitsGeometry.get(), emitFirstPoint, distance, averageAngleLengthPainterUnits, [&context, &numericContext, skipMultiples, showMarker,
                   labelOffsetPainterUnits, hasZ, hasM, this]( double x, double y, double z, double m, double distanceFromStart, double angle ) -> bool
   {
     if ( context.renderContext().renderingStopped() )
@@ -762,7 +785,7 @@ void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QgsLineStrin
 
     const QPointF pt = pointToPainter( context, x, y, z );
 
-    if ( mMarkerSymbol && mShowMarker )
+    if ( mMarkerSymbol && showMarker )
     {
       if ( mRotateLabels )
         mMarkerSymbol->setLineAngle( 90 - angle );
@@ -781,7 +804,7 @@ void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QgsLineStrin
   } );
 }
 
-void QgsLinearReferencingSymbolLayer::renderPolylineVertex( const QgsLineString *line, QgsSymbolRenderContext &context, double skipMultiples, const QPointF &labelOffsetPainterUnits, double averageAngleLengthPainterUnits )
+void QgsLinearReferencingSymbolLayer::renderPolylineVertex( const QgsLineString *line, QgsSymbolRenderContext &context, double skipMultiples, const QPointF &labelOffsetPainterUnits, double averageAngleLengthPainterUnits, bool showMarker )
 {
   // let's simplify the logic by ALWAYS using the averaging approach for angles, and just
   // use a very small distance if the user actually set this to 0. It'll be identical
@@ -920,7 +943,7 @@ void QgsLinearReferencingSymbolLayer::renderPolylineVertex( const QgsLineString 
     if ( calculatedAngle > 90 && calculatedAngle < 270 )
       calculatedAngle += 180;
 
-    if ( mMarkerSymbol && mShowMarker )
+    if ( mMarkerSymbol && showMarker )
     {
       if ( mRotateLabels )
         mMarkerSymbol->setLineAngle( 90 - calculatedAngle );

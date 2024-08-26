@@ -5656,6 +5656,11 @@ void QgsLinearReferencingSymbolLayerWidget::setSymbolLayer( QgsSymbolLayer *laye
   mSpinAverageAngleLength->setEnabled( mCheckRotate->isChecked() );
   mAverageAngleUnit->setEnabled( mSpinAverageAngleLength->isEnabled() );
 
+  registerDataDefinedButton( mIntervalDDBtn, QgsSymbolLayer::Property::Interval );
+  registerDataDefinedButton( mAverageAngleDDBtn, QgsSymbolLayer::Property::AverageAngleLength );
+  registerDataDefinedButton( mSkipMultiplesDDBtn, QgsSymbolLayer::Property::SkipMultiples );
+  registerDataDefinedButton( mShowMarkerDDBtn, QgsSymbolLayer::Property::ShowMarker );
+
   mBlockChangesSignal = false;
 }
 
