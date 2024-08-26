@@ -619,7 +619,7 @@ void QgsLinearReferencingSymbolLayer::renderPolylineVertex( const QgsLineString 
     // fits on this same segment
     double endAverageXPainterUnits = thisXPainterUnits;
     double endAverageYPainterUnits = thisYPainterUnits;
-    if ( ( j < size - 1 ) && ( i < size - 2 ) && painterDistRemaining < averagingSegmentLengthPainterUnits )
+    if ( ( j < size - 1 ) && painterDistRemaining < averagingSegmentLengthPainterUnits )
     {
       QgsGeometryUtilsBase::pointOnLineWithDistance( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY, painterDistRemaining, endAverageXPainterUnits, endAverageYPainterUnits,
           nullptr, nullptr, nullptr,
