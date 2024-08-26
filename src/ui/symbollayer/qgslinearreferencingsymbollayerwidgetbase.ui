@@ -259,7 +259,7 @@
         <double>1.000000000000000</double>
        </property>
        <property name="showClearButton" stdset="0">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
       </widget>
      </item>

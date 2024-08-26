@@ -124,6 +124,9 @@ QgsLinearReferencingSymbolLayer *QgsLinearReferencingSymbolLayer::clone() const
   if ( mNumericFormat )
     res->mNumericFormat.reset( mNumericFormat->clone() );
 
+  copyDataDefinedProperties( res.get() );
+  copyPaintEffect( res.get() );
+
   return res.release();
 }
 
@@ -843,7 +846,6 @@ void QgsLinearReferencingSymbolLayer::renderPolylineVertex( const QgsLineString 
     double thisY = *yData++;
     double thisZ = zData ? *zData++ : 0;
     double thisM = mData ? *mData++ : 0;
-    ( void )thisM; // TODO: for label m
     double thisXPainterUnits = *xPainterUnits++;
     double thisYPainterUnits = *yPainterUnits++;
 
