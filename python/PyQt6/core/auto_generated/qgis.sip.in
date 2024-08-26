@@ -1630,7 +1630,9 @@ The development version
 
     enum class LinearReferencingPlacement /BaseType=IntFlag/
     {
-      Interval,
+      IntervalCartesian2D,
+      IntervalZ,
+      IntervalM,
       Vertex,
     };
 

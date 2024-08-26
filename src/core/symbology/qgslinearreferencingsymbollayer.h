@@ -306,7 +306,7 @@ class CORE_EXPORT QgsLinearReferencingSymbolLayer : public QgsLineSymbolLayer
     void renderPolylineVertex( const QgsLineString *line, QgsSymbolRenderContext &context, double skipMultiples, const QPointF &labelOffsetPainterUnits, double averageAngleLengthPainterUnits );
     static QPointF pointToPainter( QgsSymbolRenderContext &context, double x, double y, double z );
 
-    Qgis::LinearReferencingPlacement mPlacement = Qgis::LinearReferencingPlacement::Interval;
+    Qgis::LinearReferencingPlacement mPlacement = Qgis::LinearReferencingPlacement::IntervalCartesian2D;
     Qgis::LinearReferencingLabelSource mLabelSource = Qgis::LinearReferencingLabelSource::CartesianDistance2D;
 
     double mInterval = 1000;

@@ -2912,9 +2912,11 @@ Qgis.MarkerLinePlacements = lambda flags=0: Qgis.MarkerLinePlacement(flags)
 Qgis.MarkerLinePlacements.baseClass = Qgis
 MarkerLinePlacements = Qgis  # dirty hack since SIP seems to introduce the flags in module
 # monkey patching scoped based enum
-Qgis.LinearReferencingPlacement.Interval.__doc__ = "Place labels at regular intervals"
+Qgis.LinearReferencingPlacement.IntervalCartesian2D.__doc__ = "Place labels at regular intervals, using Cartesian distance calculations on a 2D plane"
+Qgis.LinearReferencingPlacement.IntervalZ.__doc__ = "Place labels at regular intervals, linearly interpolated using Z values"
+Qgis.LinearReferencingPlacement.IntervalM.__doc__ = "Place labels at regular intervals, linearly interpolated using M values"
 Qgis.LinearReferencingPlacement.Vertex.__doc__ = "Place labels on every vertex in the line"
-Qgis.LinearReferencingPlacement.__doc__ = "Defines how/where the labels should be placed in a linear referencing symbol layer.\n\n.. versionadded:: 3.40\n\n" + '* ``Interval``: ' + Qgis.LinearReferencingPlacement.Interval.__doc__ + '\n' + '* ``Vertex``: ' + Qgis.LinearReferencingPlacement.Vertex.__doc__
+Qgis.LinearReferencingPlacement.__doc__ = "Defines how/where the labels should be placed in a linear referencing symbol layer.\n\n.. versionadded:: 3.40\n\n" + '* ``IntervalCartesian2D``: ' + Qgis.LinearReferencingPlacement.IntervalCartesian2D.__doc__ + '\n' + '* ``IntervalZ``: ' + Qgis.LinearReferencingPlacement.IntervalZ.__doc__ + '\n' + '* ``IntervalM``: ' + Qgis.LinearReferencingPlacement.IntervalM.__doc__ + '\n' + '* ``Vertex``: ' + Qgis.LinearReferencingPlacement.Vertex.__doc__
 # --
 Qgis.LinearReferencingPlacement.baseClass = Qgis
 # monkey patching scoped based enum

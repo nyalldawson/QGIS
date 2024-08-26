@@ -5472,6 +5472,11 @@ QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( Qg
 
   setupUi( this );
 
+  mComboPlacement->addItem( tr( "Interval (Cartesian 2D Distances)" ), QVariant::fromValue( Qgis::LinearReferencingPlacement::IntervalCartesian2D ) );
+  mComboPlacement->addItem( tr( "Interval (Z Values)" ), QVariant::fromValue( Qgis::LinearReferencingPlacement::IntervalZ ) );
+  mComboPlacement->addItem( tr( "Interval (M Values)" ), QVariant::fromValue( Qgis::LinearReferencingPlacement::IntervalM ) );
+  mComboPlacement->addItem( tr( "On Every Vertex" ), QVariant::fromValue( Qgis::LinearReferencingPlacement::Vertex ) );
+
   mComboQuantity->addItem( tr( "Cartesian 2D Distance" ), QVariant::fromValue( Qgis::LinearReferencingLabelSource::CartesianDistance2D ) );
   mComboQuantity->addItem( tr( "Z Values" ), QVariant::fromValue( Qgis::LinearReferencingLabelSource::Z ) );
   mComboQuantity->addItem( tr( "M Values" ), QVariant::fromValue( Qgis::LinearReferencingLabelSource::M ) );
@@ -5562,22 +5567,23 @@ QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( Qg
     }
   } );
 
-  connect( mRadioInterval, &QCheckBox::toggled, this, [ = ]( bool checked )
+  connect( mComboPlacement, qOverload< int>( &QComboBox::currentIndexChanged ), this, [ = ]
   {
-    if ( mLayer && !mBlockChangesSignal && checked )
+    if ( mLayer && !mBlockChangesSignal )
     {
-      mLayer->setPlacement( Qgis::LinearReferencingPlacement::Interval );
-      spinInterval->setEnabled( true );
-      emit changed();
-    }
-  } );
-
-  connect( mRadioVertex, &QCheckBox::toggled, this, [ = ]( bool checked )
-  {
-    if ( mLayer && !mBlockChangesSignal && checked )
-    {
-      mLayer->setPlacement( Qgis::LinearReferencingPlacement::Vertex );
-      spinInterval->setEnabled( false );
+      const Qgis::LinearReferencingPlacement placement = mComboPlacement->currentData().value< Qgis::LinearReferencingPlacement >();
+      mLayer->setPlacement( placement );
+      switch ( placement )
+      {
+        case Qgis::LinearReferencingPlacement::IntervalCartesian2D:
+        case Qgis::LinearReferencingPlacement::IntervalZ:
+        case Qgis::LinearReferencingPlacement::IntervalM:
+          mIntervalWidget->show();
+          break;
+        case Qgis::LinearReferencingPlacement::Vertex:
+          mIntervalWidget->hide();
+          break;
+      }
       emit changed();
     }
   } );
@@ -5618,16 +5624,18 @@ void QgsLinearReferencingSymbolLayerWidget::setSymbolLayer( QgsSymbolLayer *laye
 
   mBlockChangesSignal = true;
 
+  mComboPlacement->setCurrentIndex( mComboPlacement->findData( QVariant::fromValue( mLayer->placement() ) ) );
   switch ( mLayer->placement() )
   {
-    case Qgis::LinearReferencingPlacement::Interval:
-      mRadioInterval->setChecked( true );
+    case Qgis::LinearReferencingPlacement::IntervalCartesian2D:
+    case Qgis::LinearReferencingPlacement::IntervalZ:
+    case Qgis::LinearReferencingPlacement::IntervalM:
+      mIntervalWidget->show();
       break;
     case Qgis::LinearReferencingPlacement::Vertex:
-      mRadioVertex->setChecked( true );
+      mIntervalWidget->hide();
       break;
   }
-  spinInterval->setEnabled( mRadioInterval->isChecked() );
 
   mComboQuantity->setCurrentIndex( mComboQuantity->findData( QVariant::fromValue( mLayer->labelSource() ) ) );
 

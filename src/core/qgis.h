@@ -2798,8 +2798,10 @@ class CORE_EXPORT Qgis
      */
     enum class LinearReferencingPlacement : int SIP_ENUM_BASETYPE( IntFlag )
     {
-      Interval = 1 << 0, //!< Place labels at regular intervals
-      Vertex = 1 << 1, //!< Place labels on every vertex in the line
+      IntervalCartesian2D = 1 << 0, //!< Place labels at regular intervals, using Cartesian distance calculations on a 2D plane
+      IntervalZ = 1 << 1, //!< Place labels at regular intervals, linearly interpolated using Z values
+      IntervalM = 1 << 2, //!< Place labels at regular intervals, linearly interpolated using M values
+      Vertex = 1 << 3, //!< Place labels on every vertex in the line
     };
     Q_ENUM( LinearReferencingPlacement )
 

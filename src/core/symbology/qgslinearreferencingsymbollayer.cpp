@@ -37,7 +37,7 @@ QgsLinearReferencingSymbolLayer::~QgsLinearReferencingSymbolLayer() = default;
 QgsSymbolLayer *QgsLinearReferencingSymbolLayer::create( const QVariantMap &properties )
 {
   std::unique_ptr< QgsLinearReferencingSymbolLayer > res = std::make_unique< QgsLinearReferencingSymbolLayer >();
-  res->setPlacement( qgsEnumKeyToValue( properties.value( QStringLiteral( "placement" ) ).toString(), Qgis::LinearReferencingPlacement::Interval ) );
+  res->setPlacement( qgsEnumKeyToValue( properties.value( QStringLiteral( "placement" ) ).toString(), Qgis::LinearReferencingPlacement::IntervalCartesian2D ) );
   res->setLabelSource( qgsEnumKeyToValue( properties.value( QStringLiteral( "source" ) ).toString(), Qgis::LinearReferencingLabelSource::CartesianDistance2D ) );
   bool ok = false;
   const double interval = properties.value( QStringLiteral( "interval" ) ).toDouble( &ok );
@@ -263,7 +263,9 @@ void QgsLinearReferencingSymbolLayer::renderLineString( QgsSymbolRenderContext &
 
   switch ( mPlacement )
   {
-    case Qgis::LinearReferencingPlacement::Interval:
+    case Qgis::LinearReferencingPlacement::IntervalCartesian2D:
+    case Qgis::LinearReferencingPlacement::IntervalZ:
+    case Qgis::LinearReferencingPlacement::IntervalM:
       renderPolylineInterval( line, context, skipMultiples, QPointF( labelOffsetPainterUnitsX, labelOffsetPainterUnitsY ), averageAngleDistancePainterUnits );
       break;
 
