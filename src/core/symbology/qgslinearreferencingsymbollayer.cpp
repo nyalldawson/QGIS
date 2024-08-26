@@ -304,7 +304,7 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
   }
 }
 
-void visitPointsByRegularDistance( const QgsLineString *line, const QgsLineString *linePainterUnits, const double distance, const double averageAngleLengthPainterUnits, const std::function<bool ( double, double, double, double, double )> &visitPoint )
+void visitPointsByRegularDistance( const QgsLineString *line, const QgsLineString *linePainterUnits, bool emitFirstPoint, const double distance, const double averageAngleLengthPainterUnits, const std::function<bool ( double, double, double, double, double )> &visitPoint )
 {
   if ( distance < 0 )
     return;
@@ -338,7 +338,7 @@ void visitPointsByRegularDistance( const QgsLineString *line, const QgsLineStrin
 
   double pZ = std::numeric_limits<double>::quiet_NaN();
   double pM = std::numeric_limits<double>::quiet_NaN();
-  double nextPointDistance = distance;
+  double nextPointDistance = emitFirstPoint ? 0 : distance;
   for ( int i = 1; i < totalPoints; ++i )
   {
     double thisX = *x++;
@@ -503,10 +503,12 @@ void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QgsLineStrin
   }
   painterUnitsGeometry->transform( context.renderContext().mapToPixel().transform() );
 
-  visitPointsByRegularDistance( line, painterUnitsGeometry.get(), distance, averageAngleLengthPainterUnits, [&context, &currentDistance, &numericContext, distance, skipMultiples,
-                                          labelOffsetPainterUnits, this]( double x, double y, double z, double m, double angle ) -> bool
+  const bool hasZ = line->is3D();
+  const bool hasM = line->isMeasure();
+  const bool emitFirstPoint = mLabelSource != Qgis::LinearReferencingLabelSource::CartesianDistance2D;
+  visitPointsByRegularDistance( line, painterUnitsGeometry.get(), emitFirstPoint, distance, averageAngleLengthPainterUnits, [&context, &currentDistance, &numericContext, distance, skipMultiples,
+                                          labelOffsetPainterUnits, hasZ, hasM, this]( double x, double y, double z, double m, double angle ) -> bool
   {
-    ( void )m;
     if ( context.renderContext().renderingStopped() )
       return false;
 
@@ -530,18 +532,24 @@ void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QgsLineStrin
     + labelOffsetPainterUnits.y() * std::cos( angleRadians );
 
     double labelValue = 0;
+    bool labelVertex = true;
     switch ( mLabelSource )
     {
       case Qgis::LinearReferencingLabelSource::CartesianDistance2D:
         labelValue = currentDistance;
         break;
       case Qgis::LinearReferencingLabelSource::Z:
-        labelValue = currentDistance;
+        labelValue = z;
+        labelVertex = hasZ && !std::isnan( labelValue );
         break;
       case Qgis::LinearReferencingLabelSource::M:
-        labelValue = currentDistance;
+        labelValue = m;
+        labelVertex = hasM && !std::isnan( labelValue );
         break;
     }
+
+    if ( !labelVertex )
+      return true;
 
     QgsTextRenderer::drawText( QPointF( pt.x() + dx, pt.y() + dy ), angleRadians, Qgis::TextHorizontalAlignment::Left, { mNumericFormat->formatDouble( labelValue, numericContext ) }, context.renderContext(), mTextFormat );
 
