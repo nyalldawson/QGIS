@@ -5472,6 +5472,10 @@ QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( Qg
 
   setupUi( this );
 
+  mComboQuantity->addItem( tr( "Cartesian 2D Distance" ), QVariant::fromValue( Qgis::LinearReferencingLabelSource::CartesianDistance2D ) );
+  mComboQuantity->addItem( tr( "Z Values" ), QVariant::fromValue( Qgis::LinearReferencingLabelSource::Z ) );
+  mComboQuantity->addItem( tr( "M Values" ), QVariant::fromValue( Qgis::LinearReferencingLabelSource::M ) );
+
   mSpinSkipMultiples->setClearValue( 0, tr( "Not set" ) );
   mSpinLabelOffsetX->setClearValue( 0 );
   mSpinLabelOffsetY->setClearValue( 0 );
@@ -5481,6 +5485,14 @@ QgsLinearReferencingSymbolLayerWidget::QgsLinearReferencingSymbolLayerWidget( Qg
   mAverageAngleUnit->setUnits( QgsUnitTypes::RenderUnitList() << Qgis::RenderUnit::Millimeters << Qgis::RenderUnit::MetersInMapUnits << Qgis::RenderUnit::MapUnits << Qgis::RenderUnit::Pixels
                                << Qgis::RenderUnit::Points << Qgis::RenderUnit::Inches );
 
+  connect( mComboQuantity, qOverload< int >( &QComboBox::currentIndexChanged ), this, [ = ]
+  {
+    if ( mLayer && !mBlockChangesSignal )
+    {
+      mLayer->setLabelSource( mComboQuantity->currentData().value< Qgis::LinearReferencingLabelSource >() );
+      emit changed();
+    }
+  } );
   connect( mTextFormatButton, &QgsFontButton::changed, this, [ = ]
   {
     if ( mLayer && !mBlockChangesSignal )
@@ -5616,6 +5628,8 @@ void QgsLinearReferencingSymbolLayerWidget::setSymbolLayer( QgsSymbolLayer *laye
       break;
   }
   spinInterval->setEnabled( mRadioInterval->isChecked() );
+
+  mComboQuantity->setCurrentIndex( mComboQuantity->findData( QVariant::fromValue( mLayer->labelSource() ) ) );
 
   mTextFormatButton->setTextFormat( mLayer->textFormat() );
   spinInterval->setValue( mLayer->interval() );

@@ -516,7 +516,6 @@ void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QgsLineStrin
 
     const QPointF pt = pointToPainter( context, x, y, z );
 
-
     if ( mMarkerSymbol && mShowMarker )
     {
       if ( mRotateLabels )
@@ -530,7 +529,21 @@ void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QgsLineStrin
     const double dy = labelOffsetPainterUnits.x() * std::cos( angleRadians + M_PI_2 )
     + labelOffsetPainterUnits.y() * std::cos( angleRadians );
 
-    QgsTextRenderer::drawText( QPointF( pt.x() + dx, pt.y() + dy ), angleRadians, Qgis::TextHorizontalAlignment::Left, { mNumericFormat->formatDouble( currentDistance, numericContext ) }, context.renderContext(), mTextFormat );
+    double labelValue = 0;
+    switch ( mLabelSource )
+    {
+      case Qgis::LinearReferencingLabelSource::CartesianDistance2D:
+        labelValue = currentDistance;
+        break;
+      case Qgis::LinearReferencingLabelSource::Z:
+        labelValue = currentDistance;
+        break;
+      case Qgis::LinearReferencingLabelSource::M:
+        labelValue = currentDistance;
+        break;
+    }
+
+    QgsTextRenderer::drawText( QPointF( pt.x() + dx, pt.y() + dy ), angleRadians, Qgis::TextHorizontalAlignment::Left, { mNumericFormat->formatDouble( labelValue, numericContext ) }, context.renderContext(), mTextFormat );
 
     return true;
   } );
@@ -688,7 +701,27 @@ void QgsLinearReferencingSymbolLayer::renderPolylineVertex( const QgsLineString 
     const double dy = labelOffsetPainterUnits.x() * std::cos( angleRadians + M_PI_2 )
                       + labelOffsetPainterUnits.y() * std::cos( angleRadians );
 
-    QgsTextRenderer::drawText( QPointF( pt.x() + dx, pt.y() + dy ), angleRadians, Qgis::TextHorizontalAlignment::Left, { mNumericFormat->formatDouble( currentDistance, numericContext ) }, context.renderContext(), mTextFormat );
+    double labelValue = 0;
+    bool labelVertex = true;
+    switch ( mLabelSource )
+    {
+      case Qgis::LinearReferencingLabelSource::CartesianDistance2D:
+        labelValue = currentDistance;
+        break;
+      case Qgis::LinearReferencingLabelSource::Z:
+        labelValue = thisZ;
+        labelVertex = static_cast< bool >( zData ) && !std::isnan( labelValue );
+        break;
+      case Qgis::LinearReferencingLabelSource::M:
+        labelValue = thisM;
+        labelVertex = static_cast< bool >( mData ) && !std::isnan( labelValue );
+        break;
+    }
+
+    if ( !labelVertex )
+      continue;
+
+    QgsTextRenderer::drawText( QPointF( pt.x() + dx, pt.y() + dy ), angleRadians, Qgis::TextHorizontalAlignment::Left, { mNumericFormat->formatDouble( labelValue, numericContext ) }, context.renderContext(), mTextFormat );
 
     prevX = thisX;
     prevY = thisY;
