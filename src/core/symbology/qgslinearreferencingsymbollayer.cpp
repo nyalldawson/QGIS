@@ -475,6 +475,11 @@ void visitPointsByRegularDistance( const QgsLineString *line, const QgsLineStrin
   }
 }
 
+double interpolateValue( double a, double b, double fraction )
+{
+  return a + ( b - a ) * fraction;
+}
+
 void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString *linePainterUnits, bool emitFirstPoint, const double step, const double averageAngleLengthPainterUnits, const VisitPointFunction &visitPoint, bool useZ )
 {
   if ( step < 0 )
@@ -543,13 +548,8 @@ void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString
         double pX, pY;
         QgsGeometryUtilsBase::pointOnLineWithDistance( prevX, prevY, thisX, thisY, targetPointFractionAlongSegment  * segmentLength, pX, pY );
 
-        double pZ = nextStepValue;
-        double pM = nextStepValue;
-        // double pZ = useZ ? nextStepValue : QgsGeometryUtilsBase::interpolateValue(prevZ, thisZ, fraction);
-        //double pM = useZ ? QgsGeometryUtilsBase::interpolateValue(prevM, thisM, fraction) : nextStepValue;
-
-        //pZ = useZ ? nextStepValue : QgsGeometryUtilsBase::interpolateValue(prevZ, thisZ, fraction);
-        //pM = useZ ? QgsGeometryUtilsBase::interpolateValue(prevM, thisM, fraction) : nextStepValue;
+        const double pZ = useZ ? nextStepValue : interpolateValue( prevZ, thisZ, targetPointFractionAlongSegment );
+        const double pM = useZ ? interpolateValue( prevM, thisM, targetPointFractionAlongSegment ) : nextStepValue;
 
         double calculatedAngle = angle;
         if ( averageAngleLengthPainterUnits > 0 )
