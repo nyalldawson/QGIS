@@ -306,7 +306,176 @@ void QgsLinearReferencingSymbolLayer::renderPolyline( const QPolygonF &points, Q
   }
 }
 
-void visitPointsByRegularDistance( const QgsLineString *line, const QgsLineString *linePainterUnits, bool emitFirstPoint, const double distance, const double averageAngleLengthPainterUnits, const std::function<bool ( double, double, double, double, double )> &visitPoint )
+typedef std::function<bool ( double, double, double, double, double )> VisitPointFunction;
+typedef std::function< void( const QgsLineString *, const QgsLineString *, bool, double, double, const VisitPointFunction & ) > VisitPointAtDistanceFunction;
+
+void visitPointsByRegularDistance( const QgsLineString *line, const QgsLineString *linePainterUnits, bool emitFirstPoint, const double distance, const double averageAngleLengthPainterUnits, const VisitPointFunction &visitPoint )
+{
+  if ( distance < 0 )
+    return;
+
+  double distanceTraversed = 0;
+  const int totalPoints = line->numPoints();
+  if ( totalPoints == 0 )
+    return;
+
+  const double *x = line->xData();
+  const double *y = line->yData();
+  const double *z = line->is3D() ? line->zData() : nullptr;
+  const double *m = line->isMeasure() ? line->mData() : nullptr;
+
+  const double *xPainterUnits = linePainterUnits->xData();
+  const double *yPainterUnits = linePainterUnits->yData();
+
+  double prevX = *x++;
+  double prevY = *y++;
+  double prevZ = z ? *z++ : 0.0;
+  double prevM = m ? *m++ : 0.0;
+
+  double prevXPainterUnits = *xPainterUnits++;
+  double prevYPainterUnits = *yPainterUnits++;
+
+  if ( qgsDoubleNear( distance, 0.0 ) )
+  {
+    visitPoint( prevX, prevY, prevZ, prevM, 0 );
+    return;
+  }
+
+  double pZ = std::numeric_limits<double>::quiet_NaN();
+  double pM = std::numeric_limits<double>::quiet_NaN();
+  double nextPointDistance = emitFirstPoint ? 0 : distance;
+  for ( int i = 1; i < totalPoints; ++i )
+  {
+    double thisX = *x++;
+    double thisY = *y++;
+    double thisZ = z ? *z++ : 0.0;
+    double thisM = m ? *m++ : 0.0;
+    double thisXPainterUnits = *xPainterUnits++;
+    double thisYPainterUnits = *yPainterUnits++;
+
+    double angle = std::fmod( QgsGeometryUtilsBase::azimuth( prevXPainterUnits, prevYPainterUnits, thisXPainterUnits, thisYPainterUnits ) + 360, 360 );
+    if ( angle > 90 && angle < 270 )
+      angle += 180;
+
+    const double segmentLength = QgsGeometryUtilsBase::distance2D( thisX, thisY, prevX, prevY );
+    const double segmentLengthPainterUnits = QgsGeometryUtilsBase::distance2D( thisXPainterUnits, thisYPainterUnits, prevXPainterUnits, prevYPainterUnits );
+
+    while ( nextPointDistance < distanceTraversed + segmentLength || qgsDoubleNear( nextPointDistance, distanceTraversed + segmentLength ) )
+    {
+      // point falls on this segment - truncate to segment length if qgsDoubleNear test was actually > segment length
+      const double distanceToPoint = std::min( nextPointDistance - distanceTraversed, segmentLength );
+      double pX, pY;
+      QgsGeometryUtilsBase::pointOnLineWithDistance( prevX, prevY, thisX, thisY, distanceToPoint, pX, pY,
+          z ? &prevZ : nullptr, z ? &thisZ : nullptr, z ? &pZ : nullptr,
+          m ? &prevM : nullptr, m ? &thisM : nullptr, m ? &pM : nullptr );
+
+      double calculatedAngle = angle;
+      if ( averageAngleLengthPainterUnits > 0 )
+      {
+        const double targetPointFractionAlongSegment = distanceToPoint / segmentLength;
+        const double targetPointDistanceAlongSegment = targetPointFractionAlongSegment * segmentLengthPainterUnits;
+
+        // track forward by averageAngleLengthPainterUnits
+        double painterDistRemaining = averageAngleLengthPainterUnits + targetPointDistanceAlongSegment;
+        double startAverageSegmentX = prevXPainterUnits;
+        double startAverageSegmentY = prevYPainterUnits;
+        double endAverageSegmentX = thisXPainterUnits;
+        double endAverageSegmentY = thisYPainterUnits;
+        double averagingSegmentLengthPainterUnits = segmentLengthPainterUnits;
+        const double *xAveragingData = xPainterUnits;
+        const double *yAveragingData = yPainterUnits;
+
+        int j = i;
+        while ( painterDistRemaining > averagingSegmentLengthPainterUnits )
+        {
+          if ( j >= totalPoints - 1 )
+            break;
+
+          painterDistRemaining -= averagingSegmentLengthPainterUnits;
+          startAverageSegmentX = endAverageSegmentX;
+          startAverageSegmentY = endAverageSegmentY;
+
+          endAverageSegmentX = *xAveragingData++;
+          endAverageSegmentY = *yAveragingData++;
+          j++;
+          averagingSegmentLengthPainterUnits = QgsGeometryUtilsBase::distance2D( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY );
+        }
+        // fits on this same segment
+        double endAverageXPainterUnits;
+        double endAverageYPainterUnits;
+        if ( painterDistRemaining < averagingSegmentLengthPainterUnits )
+        {
+          QgsGeometryUtilsBase::pointOnLineWithDistance( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY, painterDistRemaining, endAverageXPainterUnits, endAverageYPainterUnits,
+              nullptr, nullptr, nullptr,
+              nullptr, nullptr, nullptr );
+        }
+        else
+        {
+          endAverageXPainterUnits = endAverageSegmentX;
+          endAverageYPainterUnits = endAverageSegmentY;
+        }
+
+        // also track back by averageAngleLengthPainterUnits
+        j = i;
+        painterDistRemaining = ( segmentLengthPainterUnits - targetPointDistanceAlongSegment ) + averageAngleLengthPainterUnits;
+        startAverageSegmentX = thisXPainterUnits;
+        startAverageSegmentY = thisYPainterUnits;
+        endAverageSegmentX = prevXPainterUnits;
+        endAverageSegmentY = prevYPainterUnits;
+        averagingSegmentLengthPainterUnits = segmentLengthPainterUnits;
+        xAveragingData = xPainterUnits - 2;
+        yAveragingData = yPainterUnits - 2;
+        while ( painterDistRemaining > averagingSegmentLengthPainterUnits )
+        {
+          if ( j < 1 )
+            break;
+
+          painterDistRemaining -= averagingSegmentLengthPainterUnits;
+          startAverageSegmentX = endAverageSegmentX;
+          startAverageSegmentY = endAverageSegmentY;
+
+          endAverageSegmentX = *xAveragingData--;
+          endAverageSegmentY = *yAveragingData--;
+          j--;
+          averagingSegmentLengthPainterUnits = QgsGeometryUtilsBase::distance2D( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY );
+        }
+        // fits on this same segment
+        double startAverageXPainterUnits;
+        double startAverageYPainterUnits;
+        if ( painterDistRemaining < averagingSegmentLengthPainterUnits )
+        {
+          QgsGeometryUtilsBase::pointOnLineWithDistance( startAverageSegmentX, startAverageSegmentY, endAverageSegmentX, endAverageSegmentY, painterDistRemaining, startAverageXPainterUnits, startAverageYPainterUnits,
+              nullptr, nullptr, nullptr,
+              nullptr, nullptr, nullptr );
+        }
+        else
+        {
+          startAverageXPainterUnits = endAverageSegmentX;
+          startAverageYPainterUnits = endAverageSegmentY;
+        }
+
+        calculatedAngle = std::fmod( QgsGeometryUtilsBase::azimuth( startAverageXPainterUnits, startAverageYPainterUnits, endAverageXPainterUnits, endAverageYPainterUnits ) + 360, 360 );
+        if ( calculatedAngle > 90 && calculatedAngle < 270 )
+          calculatedAngle += 180;
+      }
+
+      if ( !visitPoint( pX, pY, pZ, pM, calculatedAngle ) )
+        return;
+
+      nextPointDistance += distance;
+    }
+
+    distanceTraversed += segmentLength;
+    prevX = thisX;
+    prevY = thisY;
+    prevZ = thisZ;
+    prevM = thisM;
+    prevXPainterUnits = thisXPainterUnits;
+    prevYPainterUnits = thisYPainterUnits;
+  }
+}
+
+void visitPointsByInterpolatedZM( const QgsLineString *line, const QgsLineString *linePainterUnits, bool emitFirstPoint, const double distance, const double averageAngleLengthPainterUnits, const VisitPointFunction &visitPoint )
 {
   if ( distance < 0 )
     return;
@@ -508,8 +677,27 @@ void QgsLinearReferencingSymbolLayer::renderPolylineInterval( const QgsLineStrin
   const bool hasZ = line->is3D();
   const bool hasM = line->isMeasure();
   const bool emitFirstPoint = mLabelSource != Qgis::LinearReferencingLabelSource::CartesianDistance2D;
-  visitPointsByRegularDistance( line, painterUnitsGeometry.get(), emitFirstPoint, distance, averageAngleLengthPainterUnits, [&context, &currentDistance, &numericContext, distance, skipMultiples,
-                                          labelOffsetPainterUnits, hasZ, hasM, this]( double x, double y, double z, double m, double angle ) -> bool
+
+  VisitPointAtDistanceFunction func = nullptr;
+
+  switch ( mPlacement )
+  {
+    case Qgis::LinearReferencingPlacement::IntervalCartesian2D:
+      func = visitPointsByRegularDistance;
+      break;
+
+    case Qgis::LinearReferencingPlacement::IntervalZ:
+    case Qgis::LinearReferencingPlacement::IntervalM:
+      func = visitPointsByInterpolatedZM;
+      break;
+
+    case Qgis::LinearReferencingPlacement::Vertex:
+      return;
+  }
+
+
+  func( line, painterUnitsGeometry.get(), emitFirstPoint, distance, averageAngleLengthPainterUnits, [&context, &currentDistance, &numericContext, distance, skipMultiples,
+                  labelOffsetPainterUnits, hasZ, hasM, this]( double x, double y, double z, double m, double angle ) -> bool
   {
     if ( context.renderContext().renderingStopped() )
       return false;
