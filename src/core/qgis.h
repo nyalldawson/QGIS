@@ -171,6 +171,26 @@ class CORE_EXPORT Qgis
     Q_FLAG( LoadStyleFlags )
 
     /**
+     * Entities involved in a style database.
+     *
+     * \note Prior to 3.40 this was available as QgsStyle::StyleEntity.
+     *
+     * \since QGIS 3.40
+     */
+    enum class StyleEntity SIP_MONKEYPATCH_SCOPEENUM_UNNEST( QgsStyle, StyleEntity ) : int
+      {
+      Symbol SIP_MONKEYPATCH_COMPAT_NAME( SymbolEntity ), //!< Symbols
+      Tag SIP_MONKEYPATCH_COMPAT_NAME( TagEntity ), //!< Tags
+      ColorRamp SIP_MONKEYPATCH_COMPAT_NAME( ColorrampEntity ), //!< Color ramps
+      SmartGroup SIP_MONKEYPATCH_COMPAT_NAME( SmartgroupEntity ), //!< Smart groups
+      TextFormat SIP_MONKEYPATCH_COMPAT_NAME( TextFormatEntity ), //!< Text formats
+      LabelSettings SIP_MONKEYPATCH_COMPAT_NAME( LabelSettingsEntity ), //!< Label settings
+      LegendPatchShape SIP_MONKEYPATCH_COMPAT_NAME( LegendPatchShapeEntity ), //!< Legend patch shape (since QGIS 3.14)
+      Symbol3D SIP_MONKEYPATCH_COMPAT_NAME( Symbol3DEntity ), //!< 3D symbol entity (since QGIS 3.14)
+    };
+    Q_ENUM( StyleEntity )
+
+    /**
      * The WKB type describes the number of dimensions a geometry has
      *
      * - Point

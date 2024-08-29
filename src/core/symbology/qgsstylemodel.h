@@ -18,14 +18,18 @@
 
 #include "qgis_core.h"
 #include "qgis_sip.h"
-#include "qgsstyle.h"
+#include "qgis.h"
 #include <QAbstractItemModel>
 #include <QSortFilterProxyModel>
 #include <QIcon>
 #include <QHash>
+#include <QSet>
 
 class QgsSymbol;
 class QgsCombinedStyleModel;
+class QgsStyle;
+class QgsScreenProperties;
+class QgsExpressionContext;
 
 #ifndef SIP_RUN
 
@@ -57,7 +61,7 @@ class CORE_EXPORT QgsAbstractStyleEntityIconGenerator : public QObject
      * Triggers generation of an icon for an entity from the specified \a style database,
      * with matching entity \a type and \a name.
      */
-    virtual void generateIcon( QgsStyle *style, QgsStyle::StyleEntity type, const QString &name ) = 0;
+    virtual void generateIcon( QgsStyle *style, Qgis::StyleEntity type, const QString &name ) = 0;
 
     /**
      * Sets the list of icon \a sizes to generate.
@@ -101,7 +105,7 @@ class CORE_EXPORT QgsAbstractStyleEntityIconGenerator : public QObject
      * Emitted when the \a icon for the style entity with matching \a type and \a name
      * has been generated.
      */
-    void iconGenerated( QgsStyle::StyleEntity type, const QString &name, const QIcon &icon );
+    void iconGenerated( Qgis::StyleEntity type, const QString &name, const QIcon &icon );
 
   private:
 
@@ -219,14 +223,14 @@ class CORE_EXPORT QgsStyleModel: public QAbstractItemModel
 
   private slots:
 
-    void onEntityAdded( QgsStyle::StyleEntity type, const QString &name );
-    void onEntityRemoved( QgsStyle::StyleEntity type, const QString &name );
-    void onEntityChanged( QgsStyle::StyleEntity type, const QString &name );
-    void onFavoriteChanged( QgsStyle::StyleEntity type, const QString &name, bool isFavorite );
-    void onEntityRename( QgsStyle::StyleEntity type, const QString &oldName, const QString &newName );
+    void onEntityAdded( Qgis::StyleEntity type, const QString &name );
+    void onEntityRemoved( Qgis::StyleEntity type, const QString &name );
+    void onEntityChanged( Qgis::StyleEntity type, const QString &name );
+    void onFavoriteChanged( Qgis::StyleEntity type, const QString &name, bool isFavorite );
+    void onEntityRename( Qgis::StyleEntity type, const QString &oldName, const QString &newName );
     void onTagsChanged( int entity, const QString &name, const QStringList &tags );
     void rebuildSymbolIcons();
-    void iconGenerated( QgsStyle::StyleEntity type, const QString &name, const QIcon &icon );
+    void iconGenerated( Qgis::StyleEntity type, const QString &name, const QIcon &icon );
 
   private:
 
@@ -234,21 +238,21 @@ class CORE_EXPORT QgsStyleModel: public QAbstractItemModel
 
     QgsStyle *mStyle = nullptr;
 
-    QHash< QgsStyle::StyleEntity, QStringList > mEntityNames;
+    QHash< Qgis::StyleEntity, QStringList > mEntityNames;
 
     QSet< QgsScreenProperties > mTargetScreenProperties;
 
     QList< QSize > mAdditionalSizes;
     mutable std::unique_ptr< QgsExpressionContext > mExpressionContext;
 
-    mutable QHash< QgsStyle::StyleEntity, QHash< QString, QIcon > > mIconCache;
+    mutable QHash< Qgis::StyleEntity, QHash< QString, QIcon > > mIconCache;
 
     static QgsAbstractStyleEntityIconGenerator *sIconGenerator;
     mutable QSet< QString > mPending3dSymbolIcons;
 
-    QgsStyle::StyleEntity entityTypeFromRow( int row ) const;
+    Qgis::StyleEntity entityTypeFromRow( int row ) const;
 
-    int offsetForEntity( QgsStyle::StyleEntity entity ) const;
+    int offsetForEntity( Qgis::StyleEntity entity ) const;
     static QVariant headerDataStatic( int section, Qt::Orientation orientation,
                                       int role = Qt::DisplayRole );
 
@@ -309,7 +313,7 @@ class CORE_EXPORT QgsStyleProxyModel: public QSortFilterProxyModel
      * \note This filter is only active if entityFilterEnabled() is TRUE.
      * \see setEntityFilter()
      */
-    QgsStyle::StyleEntity entityFilter() const;
+    Qgis::StyleEntity entityFilter() const;
 
     /**
      * Sets the style entity type \a filter.
@@ -318,7 +322,7 @@ class CORE_EXPORT QgsStyleProxyModel: public QSortFilterProxyModel
      *
      * \see entityFilter()
      */
-    void setEntityFilter( QgsStyle::StyleEntity filter );
+    void setEntityFilter( Qgis::StyleEntity filter );
 
     /**
      * Sets the style entity type \a filters.
@@ -329,7 +333,7 @@ class CORE_EXPORT QgsStyleProxyModel: public QSortFilterProxyModel
      * \see setEntityFilter()
      * \since QGIS 3.10
      */
-    void setEntityFilters( const QList<QgsStyle::StyleEntity> &filters ) SIP_SKIP;
+    void setEntityFilters( const QList<Qgis::StyleEntity> &filters ) SIP_SKIP;
 
     /**
      * Returns TRUE if filtering by entity type is enabled.
@@ -540,7 +544,7 @@ class CORE_EXPORT QgsStyleProxyModel: public QSortFilterProxyModel
     bool mFavoritesOnly = false;
 
     bool mEntityFilterEnabled = false;
-    QList< QgsStyle::StyleEntity > mEntityFilters = QList< QgsStyle::StyleEntity >() << QgsStyle::SymbolEntity;
+    QList< Qgis::StyleEntity > mEntityFilters = QList< Qgis::StyleEntity >() << Qgis::StyleEntity::Symbol;
 
     bool mSymbolTypeFilterEnabled = false;
     Qgis::SymbolType mSymbolType = Qgis::SymbolType::Marker;

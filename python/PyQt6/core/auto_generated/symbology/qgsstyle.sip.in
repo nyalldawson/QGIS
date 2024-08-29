@@ -87,18 +87,6 @@ Constructor for QgsStyle, with the specified ``parent`` object.
 %End
     ~QgsStyle();
 
-    enum StyleEntity /BaseType=IntEnum/
-    {
-      SymbolEntity,
-      TagEntity,
-      ColorrampEntity,
-      SmartgroupEntity,
-      TextFormatEntity,
-      LabelSettingsEntity,
-      LegendPatchShapeEntity,
-      Symbol3DEntity,
-    };
-
     QString name() const;
 %Docstring
 Returns the name of the style.

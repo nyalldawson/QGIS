@@ -117,6 +117,18 @@ The development version
     typedef QFlags<Qgis::LoadStyleFlag> LoadStyleFlags;
 
 
+    enum class StyleEntity /BaseType=IntEnum/
+      {
+      Symbol,
+      Tag,
+      ColorRamp,
+      SmartGroup,
+      TextFormat,
+      LabelSettings,
+      LegendPatchShape,
+      Symbol3D,
+    };
+
     enum class WkbType /BaseType=IntEnum/
       {
       Unknown,

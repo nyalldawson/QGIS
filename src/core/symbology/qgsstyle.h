@@ -189,29 +189,6 @@ class CORE_EXPORT QgsStyle : public QObject
     ~QgsStyle() override;
 
     /**
-     * Enum for Entities involved in a style
-     *
-     *  The enumerator is used for identifying the entity being operated on when generic
-     *  database functions are being run.
-     *  \see rename()
-     *  \see remove()
-     *  \see symbolsOfFavorite()
-     *  \see symbolsWithTag()
-     *  \see symbolsOfSmartgroup()
-     */
-    enum StyleEntity
-    {
-      SymbolEntity, //!< Symbols
-      TagEntity, //!< Tags
-      ColorrampEntity, //!< Color ramps
-      SmartgroupEntity, //!< Smart groups
-      TextFormatEntity, //!< Text formats
-      LabelSettingsEntity, //!< Label settings
-      LegendPatchShapeEntity, //!< Legend patch shape (since QGIS 3.14)
-      Symbol3DEntity, //!< 3D symbol entity (since QGIS 3.14)
-    };
-
-    /**
      * Returns the name of the style.
      *
      * \see setName()
@@ -535,7 +512,7 @@ class CORE_EXPORT QgsStyle : public QObject
      *  \param tags is the list of the tags that are to be applied as QStringList
      *  \returns returns the success state of the operation
      */
-    bool tagSymbol( StyleEntity type, const QString &symbol, const QStringList &tags );
+    bool tagSymbol( Qgis::StyleEntity type, const QString &symbol, const QStringList &tags );
 
     /**
      * Detags the symbol with the given list
@@ -546,7 +523,7 @@ class CORE_EXPORT QgsStyle : public QObject
      *  \param tags is the list of tags that are to be removed as QStringList
      *  \returns returns the success state of the operation
      */
-    bool detagSymbol( StyleEntity type, const QString &symbol, const QStringList &tags );
+    bool detagSymbol( Qgis::StyleEntity type, const QString &symbol, const QStringList &tags );
 
     /**
      * Clears the symbol from all attached tags
@@ -556,7 +533,7 @@ class CORE_EXPORT QgsStyle : public QObject
      *  \param symbol is the name of the symbol or colorramp
      *  \returns returns the success state of the operation
      */
-    bool detagSymbol( StyleEntity type, const QString &symbol );
+    bool detagSymbol( Qgis::StyleEntity type, const QString &symbol );
 
     //! Removes symbol from style (and delete it)
     bool removeSymbol( const QString &name );
@@ -568,7 +545,7 @@ class CORE_EXPORT QgsStyle : public QObject
      *
      * \since QGIS 3.14
      */
-    bool renameEntity( StyleEntity type, const QString &oldName, const QString &newName );
+    bool renameEntity( Qgis::StyleEntity type, const QString &oldName, const QString &newName );
 
     /**
      * Renames a symbol from \a oldName to \a newName.
@@ -599,7 +576,7 @@ class CORE_EXPORT QgsStyle : public QObject
      * Returns the id in the style database for the given \a name of the specified entity \a type.
      * Returns 0 if not found.
      */
-    int entityId( StyleEntity type, const QString &name );
+    int entityId( Qgis::StyleEntity type, const QString &name );
 
     //! Returns the database id for the given tag name
     int tagId( const QString &tag );
@@ -610,7 +587,7 @@ class CORE_EXPORT QgsStyle : public QObject
      * Returns a list of the names of all existing entities of the specified \a type.
      * \since QGIS 3.10
      */
-    QStringList allNames( StyleEntity type ) const;
+    QStringList allNames( Qgis::StyleEntity type ) const;
 
     /**
      * Returns the symbol names which are flagged as favorite
@@ -618,7 +595,7 @@ class CORE_EXPORT QgsStyle : public QObject
      *  \param type is either SymbolEntity or ColorampEntity
      *  \returns A QStringList of the symbol or colorramp names flagged as favorite
      */
-    QStringList symbolsOfFavorite( StyleEntity type ) const;
+    QStringList symbolsOfFavorite( Qgis::StyleEntity type ) const;
 
     /**
      * Returns the symbol names with which have the given tag
@@ -627,7 +604,7 @@ class CORE_EXPORT QgsStyle : public QObject
      *  \param tagid is id of the tag which has been applied over the symbol as int
      *  \returns A QStringList of the symbol or colorramp names for the given tag id
      */
-    QStringList symbolsWithTag( StyleEntity type, int tagid ) const;
+    QStringList symbolsWithTag( Qgis::StyleEntity type, int tagid ) const;
 
     /**
      * Adds the specified symbol to favorites
@@ -636,7 +613,7 @@ class CORE_EXPORT QgsStyle : public QObject
      *  \param name is the name of the symbol or coloramp whose is to be added to favorites
      *  \returns returns the success state as bool
      */
-    bool addFavorite( StyleEntity type, const QString &name );
+    bool addFavorite( Qgis::StyleEntity type, const QString &name );
 
     /**
      * Removes the specified symbol from favorites
@@ -645,26 +622,26 @@ class CORE_EXPORT QgsStyle : public QObject
      *  \param name is the name of the symbol or coloramp whose is to be removed from favorites
      *  \returns returns the success state as bool
      */
-    bool removeFavorite( StyleEntity type, const QString &name );
+    bool removeFavorite( Qgis::StyleEntity type, const QString &name );
 
     /**
      * Renames the given entity with the specified id
      *
-     *  \param type is any of the style entities. Refer enum StyleEntity.
+     *  \param type is any of the style entities.
      *  \param id is the database id of the entity which is to be renamed
      *  \param newName is the new name of the entity
      */
-    bool rename( StyleEntity type, int id, const QString &newName );
+    bool rename( Qgis::StyleEntity type, int id, const QString &newName );
 
     /**
      * Removes the specified entity from the database.
      *
-     *  \param type is any of the style entities. Refer enum StyleEntity.
+     *  \param type is any of the style entities
      *  \param id is the database id of the entity to be removed
      *
      * \see removeEntityByName()
      */
-    bool remove( StyleEntity type, int id );
+    bool remove( Qgis::StyleEntity type, int id );
 
     /**
      * Removes the entry of the specified \a type with matching \a name from the database.
@@ -672,7 +649,7 @@ class CORE_EXPORT QgsStyle : public QObject
      * \see remove()
      * \since QGIS 3.14
      */
-    bool removeEntityByName( StyleEntity type, const QString &name );
+    bool removeEntityByName( Qgis::StyleEntity type, const QString &name );
 
     /**
      * Adds the symbol to the database with tags.
@@ -944,7 +921,7 @@ class CORE_EXPORT QgsStyle : public QObject
      *  \param qword is the query string to search the symbols or colorramps.
      *  \returns A QStringList of the matched symbols or colorramps
      */
-    QStringList findSymbols( StyleEntity type, const QString &qword );
+    QStringList findSymbols( Qgis::StyleEntity type, const QString &qword );
 
     /**
      * Returns the tags associated with the symbol
@@ -953,7 +930,7 @@ class CORE_EXPORT QgsStyle : public QObject
      *  \param symbol is the name of the symbol or color ramp
      *  \returns A QStringList of the tags that have been applied to that symbol/colorramp
      */
-    QStringList tagsOfSymbol( StyleEntity type, const QString &symbol );
+    QStringList tagsOfSymbol( Qgis::StyleEntity type, const QString &symbol );
 
     /**
      * Returns TRUE if the symbol with matching \a type and \a name is
@@ -961,7 +938,7 @@ class CORE_EXPORT QgsStyle : public QObject
      *
      * \since QGIS 3.10
      */
-    bool isFavorite( StyleEntity type, const QString &name );
+    bool isFavorite( Qgis::StyleEntity type, const QString &name );
 
     /**
      * Returns whether a given tag is associated with the symbol
@@ -971,7 +948,7 @@ class CORE_EXPORT QgsStyle : public QObject
      *  \param tag the name of the tag to look for
      *  \returns A boolean value identicating whether a tag was found attached to the symbol
      */
-    bool symbolHasTag( StyleEntity type, const QString &symbol, const QString &tag );
+    bool symbolHasTag( Qgis::StyleEntity type, const QString &symbol, const QString &tag );
 
     //! Returns the tag name for the given id
     QString tag( int id ) const;
@@ -991,7 +968,7 @@ class CORE_EXPORT QgsStyle : public QObject
     QString smartgroupOperator( int id );
 
     //! Returns the symbols for the smartgroup
-    QStringList symbolsOfSmartgroup( StyleEntity type, int id );
+    QStringList symbolsOfSmartgroup( Qgis::StyleEntity type, int id );
 
     //! Exports the style as a XML file
     bool exportXml( const QString &filename );
@@ -1073,21 +1050,21 @@ class CORE_EXPORT QgsStyle : public QObject
      *
      * \since QGIS 3.4
      */
-    void entityTagsChanged( QgsStyle::StyleEntity entity, const QString &name, const QStringList &newTags );
+    void entityTagsChanged( Qgis::StyleEntity entity, const QString &name, const QStringList &newTags );
 
     /**
      * Emitted whenever an \a entity is either favorited or un-favorited.
      *
      * \since QGIS 3.4
      */
-    void favoritedChanged( QgsStyle::StyleEntity entity, const QString &name, bool isFavorite );
+    void favoritedChanged( Qgis::StyleEntity entity, const QString &name, bool isFavorite );
 
     /**
      * Emitted every time a new entity has been added to the database.
      *
      * \since QGIS 3.14
      */
-    void entityAdded( QgsStyle::StyleEntity entity, const QString &name );
+    void entityAdded( Qgis::StyleEntity entity, const QString &name );
 
     /**
      * Emitted whenever an entity of the specified type is removed from the style and the database
@@ -1095,13 +1072,13 @@ class CORE_EXPORT QgsStyle : public QObject
      *
      * \since QGIS 3.14
      */
-    void entityRemoved( QgsStyle::StyleEntity entity, const QString &name );
+    void entityRemoved( Qgis::StyleEntity entity, const QString &name );
 
     /**
      * Emitted whenever a entity of the specified type has been renamed from \a oldName to \a newName
      * \since QGIS 3.14
      */
-    void entityRenamed( QgsStyle::StyleEntity entity, const QString &oldName, const QString &newName );
+    void entityRenamed( Qgis::StyleEntity entity, const QString &oldName, const QString &newName );
 
     /**
      * Emitted whenever an entity's definition is changed. This does not include
@@ -1109,7 +1086,7 @@ class CORE_EXPORT QgsStyle : public QObject
      *
      * \since QGIS 3.14
      */
-    void entityChanged( QgsStyle::StyleEntity entity, const QString &name );
+    void entityChanged( Qgis::StyleEntity entity, const QString &name );
 
     /**
      * Emitted whenever a symbol has been removed from the style and the database
@@ -1252,8 +1229,8 @@ class CORE_EXPORT QgsStyle : public QObject
     QMap<QString, QgsLegendPatchShape > mLegendPatchShapes;
     QMap<QString, QgsAbstract3DSymbol * > m3dSymbols;
 
-    QHash< QgsStyle::StyleEntity, QHash< QString, QStringList > > mCachedTags;
-    QHash< QgsStyle::StyleEntity, QHash< QString, bool > > mCachedFavorites;
+    QHash< Qgis::StyleEntity, QHash< QString, QStringList > > mCachedTags;
+    QHash< Qgis::StyleEntity, QHash< QString, bool > > mCachedFavorites;
 
     QString mErrorString;
     QString mFileName;
@@ -1307,9 +1284,9 @@ class CORE_EXPORT QgsStyle : public QObject
      *  \param name is the name of an existing symbol or a color ramp
      *  \returns Success state of the update operation
      */
-    bool updateSymbol( StyleEntity type, const QString &name );
+    bool updateSymbol( Qgis::StyleEntity type, const QString &name );
 
-    void clearCachedTags( StyleEntity type, const QString &name );
+    void clearCachedTags( Qgis::StyleEntity type, const QString &name );
 
     /**
      * Returns TRUE if style metadata table did not exist and was newly created.
@@ -1320,17 +1297,17 @@ class CORE_EXPORT QgsStyle : public QObject
     /**
      * Returns the table name for the specified entity \a type.
      */
-    static QString entityTableName( StyleEntity type );
+    static QString entityTableName( Qgis::StyleEntity type );
 
     /**
      * Returns the tag map table name for the specified entity \a type.
      */
-    static QString tagmapTableName( StyleEntity type );
+    static QString tagmapTableName( Qgis::StyleEntity type );
 
     /**
      * Returns the entity ID field name for for the tag map table for the specified entity \a type.
      */
-    static QString tagmapEntityIdFieldName( StyleEntity type );
+    static QString tagmapEntityIdFieldName( Qgis::StyleEntity type );
 
     friend class Qgs3D;
     friend class TestStyle;
@@ -1382,7 +1359,7 @@ class CORE_EXPORT QgsStyleEntityInterface
     /**
      * Returns the type of style entity.
      */
-    virtual QgsStyle::StyleEntity type() const = 0;
+    virtual Qgis::StyleEntity type() const = 0;
 
 };
 
@@ -1405,7 +1382,7 @@ class CORE_EXPORT QgsStyleSymbolEntity : public QgsStyleEntityInterface
       : mSymbol( symbol )
     {}
 
-    QgsStyle::StyleEntity type() const override;
+    Qgis::StyleEntity type() const override;
 
     /**
      * Returns the entity's symbol.
@@ -1437,7 +1414,7 @@ class CORE_EXPORT QgsStyleColorRampEntity : public QgsStyleEntityInterface
       : mRamp( ramp )
     {}
 
-    QgsStyle::StyleEntity type() const override;
+    Qgis::StyleEntity type() const override;
 
     /**
      * Returns the entity's color ramp.
@@ -1466,7 +1443,7 @@ class CORE_EXPORT QgsStyleTextFormatEntity : public QgsStyleEntityInterface
       : mFormat( format )
     {}
 
-    QgsStyle::StyleEntity type() const override;
+    Qgis::StyleEntity type() const override;
 
     /**
      * Returns the entity's text format.
@@ -1496,7 +1473,7 @@ class CORE_EXPORT QgsStyleLabelSettingsEntity : public QgsStyleEntityInterface
       : mSettings( settings )
     {}
 
-    QgsStyle::StyleEntity type() const override;
+    Qgis::StyleEntity type() const override;
 
 
     /**
@@ -1526,7 +1503,7 @@ class CORE_EXPORT QgsStyleLegendPatchShapeEntity : public QgsStyleEntityInterfac
       : mShape( shape )
     {}
 
-    QgsStyle::StyleEntity type() const override;
+    Qgis::StyleEntity type() const override;
 
 
     /**
@@ -1558,7 +1535,7 @@ class CORE_EXPORT QgsStyleSymbol3DEntity : public QgsStyleEntityInterface
       : mSymbol( symbol )
     {}
 
-    QgsStyle::StyleEntity type() const override;
+    Qgis::StyleEntity type() const override;
 
     /**
      * Returns the entity's symbol.

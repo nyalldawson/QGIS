@@ -50,14 +50,6 @@ QgsStyle.SmartGroupTableColumn.XML.__doc__ = "Smart group definition (as XML)"
 QgsStyle.SmartGroupTableColumn.__doc__ = "Columns available in the smart group table.\n\n.. versionadded:: 3.40.\n\n" + '* ``Id``: ' + QgsStyle.SmartGroupTableColumn.Id.__doc__ + '\n' + '* ``Name``: ' + QgsStyle.SmartGroupTableColumn.Name.__doc__ + '\n' + '* ``XML``: ' + QgsStyle.SmartGroupTableColumn.XML.__doc__
 # --
 QgsStyle.SmartGroupTableColumn.baseClass = QgsStyle
-QgsStyle.SymbolEntity = QgsStyle.StyleEntity.SymbolEntity
-QgsStyle.TagEntity = QgsStyle.StyleEntity.TagEntity
-QgsStyle.ColorrampEntity = QgsStyle.StyleEntity.ColorrampEntity
-QgsStyle.SmartgroupEntity = QgsStyle.StyleEntity.SmartgroupEntity
-QgsStyle.TextFormatEntity = QgsStyle.StyleEntity.TextFormatEntity
-QgsStyle.LabelSettingsEntity = QgsStyle.StyleEntity.LabelSettingsEntity
-QgsStyle.LegendPatchShapeEntity = QgsStyle.StyleEntity.LegendPatchShapeEntity
-QgsStyle.Symbol3DEntity = QgsStyle.StyleEntity.Symbol3DEntity
 # monkey patching scoped based enum
 QgsStyle.TextFormatContext.Labeling.__doc__ = "Text format used in labeling"
 QgsStyle.TextFormatContext.__doc__ = "Text format context.\n\n.. versionadded:: 3.20\n\n" + '* ``Labeling``: ' + QgsStyle.TextFormatContext.Labeling.__doc__
