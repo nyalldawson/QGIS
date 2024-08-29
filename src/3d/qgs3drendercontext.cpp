@@ -16,6 +16,42 @@
 #include "qgs3drendercontext.h"
 #include "qgs3dutils.h"
 #include "qgsthreadingutils.h"
+#include "qgsterrainsettings.h"
+
+Qgs3DRenderContext::Qgs3DRenderContext( const Qgs3DRenderContext &other )
+  : mCrs( other.mCrs )
+  , mTransformContext( other.mTransformContext )
+  , mOrigin( other.mOrigin )
+  , mExtent( other.mExtent )
+  , mTemporalRange( other.mTemporalRange )
+  , mSelectionColor( other.mSelectionColor )
+  , mDpi( other.mDpi )
+  , mFieldOfView( other.mFieldOfView )
+  , mTerrainRenderingEnabled( other.mTerrainRenderingEnabled )
+  , mTerrainSettings( std::unique_ptr< QgsAbstractTerrainSettings >( other.mTerrainSettings->clone() ) )
+  , mTerrainGenerator( other.mTerrainGenerator )
+{
+
+}
+
+Qgs3DRenderContext &Qgs3DRenderContext::operator=( const Qgs3DRenderContext &other )
+{
+  if ( &other == this )
+    return *this;
+
+  mCrs = other.mCrs;
+  mTransformContext = other.mTransformContext;
+  mOrigin = other.mOrigin;
+  mExtent = other.mExtent;
+  mTemporalRange = other.mTemporalRange;
+  mSelectionColor = other.mSelectionColor;
+  mDpi = other.mDpi;
+  mFieldOfView = other.mFieldOfView;
+  mTerrainRenderingEnabled = other.mTerrainRenderingEnabled;
+  mTerrainSettings.reset( other.mTerrainSettings->clone() );
+  mTerrainGenerator = other.mTerrainGenerator;
+  return *this;
+}
 
 Qgs3DRenderContext Qgs3DRenderContext::fromMapSettings( const Qgs3DMapSettings *mapSettings )
 {
@@ -31,7 +67,7 @@ Qgs3DRenderContext Qgs3DRenderContext::fromMapSettings( const Qgs3DMapSettings *
   res.mDpi = mapSettings->outputDpi();
   res.mFieldOfView = mapSettings->fieldOfView();
   res.mTerrainRenderingEnabled = mapSettings->terrainRenderingEnabled();
-  res.setTerrainSettings( std::unique_ptr< QgsAbstractTerrainSettings >( mapSettings->terrainSettings()->clone() ) );
+  res.mTerrainSettings = std::unique_ptr< QgsAbstractTerrainSettings >( mapSettings->terrainSettings()->clone() );
   res.mTerrainGenerator = mapSettings->terrainGenerator();
   return res;
 }
@@ -44,11 +80,6 @@ QgsVector3D Qgs3DRenderContext::mapToWorldCoordinates( const QgsVector3D &mapCoo
 QgsVector3D Qgs3DRenderContext::worldToMapCoordinates( const QgsVector3D &worldCoords ) const
 {
   return Qgs3DUtils::worldToMapCoordinates( worldCoords, mOrigin );
-}
-
-void Qgs3DRenderContext::setTerrainSettings( std::unique_ptr<QgsAbstractTerrainSettings> settings )
-{
-  mTerrainSettings = std::move( settings );
 }
 
 QgsAbstractTerrainSettings *Qgs3DRenderContext::terrainSettings() const

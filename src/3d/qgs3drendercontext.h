@@ -50,6 +50,8 @@ class _3D_EXPORT Qgs3DRenderContext
   public:
 
     Qgs3DRenderContext() = default;
+    Qgs3DRenderContext( const Qgs3DRenderContext &other );
+    Qgs3DRenderContext &operator=( const Qgs3DRenderContext &other );
 
     /**
      * Creates an initialized Qgs3DRenderContext instance from given Qgs3DMapSettings.
