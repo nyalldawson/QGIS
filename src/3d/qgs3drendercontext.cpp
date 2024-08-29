@@ -34,6 +34,8 @@ Qgs3DRenderContext::Qgs3DRenderContext( const Qgs3DRenderContext &other )
 
 }
 
+Qgs3DRenderContext::~Qgs3DRenderContext() = default;
+
 Qgs3DRenderContext &Qgs3DRenderContext::operator=( const Qgs3DRenderContext &other )
 {
   if ( &other == this )
