@@ -43,15 +43,15 @@ class CORE_EXPORT QgsAbstractLabelingEngineRule SIP_ABSTRACT
     {
       sipType = sipType_QgsLabelingEngineRuleMinimumDistanceLabelToFeature;
     }
-    else if ( sipCpp->type() == "minimumDistanceLabelToLabel" )
+    else if ( sipCpp->id() == "minimumDistanceLabelToLabel" )
     {
       sipType = sipType_QgsLabelingEngineRuleMinimumDistanceLabelToLabel;
     }
-    else if ( sipCpp->type() == "maximumDistanceLabelToFeature" )
+    else if ( sipCpp->id() == "maximumDistanceLabelToFeature" )
     {
       sipType = sipType_QgsLabelingEngineRuleMaximumDistanceLabelToFeature;
     }
-    else if ( sipCpp->type() == "avoidLabelOverlapWithFeature" )
+    else if ( sipCpp->id() == "avoidLabelOverlapWithFeature" )
     {
       sipType = sipType_QgsLabelingEngineRuleAvoidLabelOverlapWithFeature;
     }

@@ -37,6 +37,11 @@ default rules.
     ~QgsLabelingEngineRuleRegistry();
 
 
+    QStringList ruleIds() const;
+%Docstring
+Returns a list of the rule IDs for rules present in the registry.
+%End
+
     QgsAbstractLabelingEngineRule *create( const QString &id ) const /Factory/;
 %Docstring
 Creates a new rule from the type with matching ``id``.
@@ -46,11 +51,13 @@ Returns ``None`` if no matching rule was found in the registry.
 The caller takes ownership of the returned object.
 %End
 
-    void addRule( QgsAbstractLabelingEngineRule *rule /Transfer/ );
+    bool addRule( QgsAbstractLabelingEngineRule *rule /Transfer/ );
 %Docstring
 Adds a new ``rule`` type to the registry.
 
 The registry takes ownership of ``rule``.
+
+:return: ``True`` if the rule was successfully added.
 %End
 
   private:

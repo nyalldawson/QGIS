@@ -52,6 +52,11 @@ class CORE_EXPORT QgsLabelingEngineRuleRegistry
     QgsLabelingEngineRuleRegistry &operator=( const QgsLabelingEngineRuleRegistry &other ) = delete;
 
     /**
+     * Returns a list of the rule IDs for rules present in the registry.
+     */
+    QStringList ruleIds() const;
+
+    /**
      * Creates a new rule from the type with matching \a id.
      *
      * Returns NULLPTR if no matching rule was found in the registry.
@@ -64,8 +69,10 @@ class CORE_EXPORT QgsLabelingEngineRuleRegistry
      * Adds a new \a rule type to the registry.
      *
      * The registry takes ownership of \a rule.
+     *
+     * \returns TRUE if the rule was successfully added.
      */
-    void addRule( QgsAbstractLabelingEngineRule *rule SIP_TRANSFER );
+    bool addRule( QgsAbstractLabelingEngineRule *rule SIP_TRANSFER );
 
   private:
 

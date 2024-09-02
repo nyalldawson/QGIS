@@ -14,21 +14,50 @@
  ***************************************************************************/
 #include "qgslabelingengineruleregistry.h"
 #include "qgslabelingenginerule.h"
+#include "qgslabelingenginerule_impl.h"
 
 QgsLabelingEngineRuleRegistry::QgsLabelingEngineRuleRegistry()
 {
-
+  addRule( new QgsLabelingEngineRuleMinimumDistanceLabelToFeature() );
+  addRule( new QgsLabelingEngineRuleMinimumDistanceLabelToLabel() );
+  addRule( new QgsLabelingEngineRuleMaximumDistanceLabelToFeature() );
+  addRule( new QgsLabelingEngineRuleAvoidLabelOverlapWithFeature() );
 }
 
 QgsLabelingEngineRuleRegistry::~QgsLabelingEngineRuleRegistry() = default;
 
-QgsAbstractLabelingEngineRule *QgsLabelingEngineRuleRegistry::create( const QString &id ) const
+QStringList QgsLabelingEngineRuleRegistry::ruleIds() const
 {
-
+  QStringList res;
+  res.reserve( mRules.size() );
+  for ( auto &it : mRules )
+  {
+    res.append( it.first );
+  }
+  return res;
 }
 
-void QgsLabelingEngineRuleRegistry::addRule( QgsAbstractLabelingEngineRule *rule )
+QgsAbstractLabelingEngineRule *QgsLabelingEngineRuleRegistry::create( const QString &id ) const
 {
+  auto it = mRules.find( id );
+  if ( it == mRules.end() )
+    return nullptr;
 
+  return it->second->clone();
+}
+
+bool QgsLabelingEngineRuleRegistry::addRule( QgsAbstractLabelingEngineRule *rule )
+{
+  if ( !rule )
+    return false;
+
+  if ( mRules.find( rule->id() ) != mRules.end() )
+  {
+    delete rule;
+    return false;
+  }
+
+  mRules[ rule->id() ] = std::unique_ptr< QgsAbstractLabelingEngineRule >( rule );
+  return true;
 }
 
