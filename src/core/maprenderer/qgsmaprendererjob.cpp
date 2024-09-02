@@ -1041,7 +1041,8 @@ LabelRenderJob QgsMapRendererJob::prepareLabelingJob( QPainter *painter, QgsLabe
   job.context.setPainter( painter );
   job.context.setLabelingEngine( labelingEngine2 );
   job.context.setFeedback( mLabelingEngineFeedback );
-  job.context.labelingEngine()->prepare( job.context );
+  if ( labelingEngine2 )
+    job.context.labelingEngine()->prepare( job.context );
 
   QgsRectangle r1 = mSettings.visibleExtent();
   r1.grow( mSettings.extentBuffer() );
