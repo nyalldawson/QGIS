@@ -21,7 +21,7 @@
 
 QgsLabelingEngineRuleMinimumDistanceLabelToFeature *QgsLabelingEngineRuleMinimumDistanceLabelToFeature::clone() const
 {
-
+  return new QgsLabelingEngineRuleMinimumDistanceLabelToFeature( *this );
 }
 
 QString QgsLabelingEngineRuleMinimumDistanceLabelToFeature::id() const
@@ -29,7 +29,7 @@ QString QgsLabelingEngineRuleMinimumDistanceLabelToFeature::id() const
   return QStringLiteral( "minimumDistanceLabelToFeature" );
 }
 
-bool QgsLabelingEngineRuleMinimumDistanceLabelToFeature::prepare( QgsRenderContext &context )
+bool QgsLabelingEngineRuleMinimumDistanceLabelToFeature::prepare( QgsRenderContext & )
 {
 
 }
@@ -49,24 +49,30 @@ void QgsLabelingEngineRuleMinimumDistanceLabelToFeature::readXml( const QDomElem
 
 }
 
+void QgsLabelingEngineRuleMinimumDistanceLabelToFeature::resolveReferences( const QgsProject *project )
+{
+  mLabeledLayer.resolve( project );
+  mTargetLayer.resolve( project );
+}
+
 QgsVectorLayer *QgsLabelingEngineRuleMinimumDistanceLabelToFeature::labeledLayer()
 {
-
+  return mLabeledLayer.get();
 }
 
 void QgsLabelingEngineRuleMinimumDistanceLabelToFeature::setLabeledLayer( QgsVectorLayer *layer )
 {
-
+  mLabeledLayer = layer;
 }
 
 QgsVectorLayer *QgsLabelingEngineRuleMinimumDistanceLabelToFeature::targetLayer()
 {
-
+  return mTargetLayer.get();
 }
 
 void QgsLabelingEngineRuleMinimumDistanceLabelToFeature::setTargetLayer( QgsVectorLayer *layer )
 {
-
+  mTargetLayer = layer;
 }
 
 //
@@ -75,15 +81,15 @@ void QgsLabelingEngineRuleMinimumDistanceLabelToFeature::setTargetLayer( QgsVect
 
 QgsLabelingEngineRuleMinimumDistanceLabelToLabel *QgsLabelingEngineRuleMinimumDistanceLabelToLabel::clone() const
 {
-
+  return new QgsLabelingEngineRuleMinimumDistanceLabelToLabel( *this );
 }
 
 QString QgsLabelingEngineRuleMinimumDistanceLabelToLabel::id() const
 {
-
+  return QStringLiteral( "minimumDistanceLabelToLabel" );
 }
 
-bool QgsLabelingEngineRuleMinimumDistanceLabelToLabel::prepare( QgsRenderContext &context )
+bool QgsLabelingEngineRuleMinimumDistanceLabelToLabel::prepare( QgsRenderContext & )
 {
 
 }
@@ -103,24 +109,30 @@ void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::readXml( const QDomElemen
 
 }
 
+void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::resolveReferences( const QgsProject *project )
+{
+  mLabeledLayer.resolve( project );
+  mTargetLayer.resolve( project );
+}
+
 QgsVectorLayer *QgsLabelingEngineRuleMinimumDistanceLabelToLabel::labeledLayer()
 {
-
+  return mLabeledLayer.get();
 }
 
 void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::setLabeledLayer( QgsVectorLayer *layer )
 {
-
+  mLabeledLayer = layer;
 }
 
 QgsVectorLayer *QgsLabelingEngineRuleMinimumDistanceLabelToLabel::targetLayer()
 {
-
+  return mTargetLayer.get();
 }
 
 void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::setTargetLayer( QgsVectorLayer *layer )
 {
-
+  mTargetLayer = layer;
 }
 
 //
@@ -129,15 +141,15 @@ void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::setTargetLayer( QgsVector
 
 QgsLabelingEngineRuleMaximumDistanceLabelToFeature *QgsLabelingEngineRuleMaximumDistanceLabelToFeature::clone() const
 {
-
+  return new QgsLabelingEngineRuleMaximumDistanceLabelToFeature( *this );
 }
 
 QString QgsLabelingEngineRuleMaximumDistanceLabelToFeature::id() const
 {
-
+  return QStringLiteral( "maximumDistanceLabelToFeature" );
 }
 
-bool QgsLabelingEngineRuleMaximumDistanceLabelToFeature::prepare( QgsRenderContext &context )
+bool QgsLabelingEngineRuleMaximumDistanceLabelToFeature::prepare( QgsRenderContext & )
 {
 
 }
@@ -157,24 +169,30 @@ void QgsLabelingEngineRuleMaximumDistanceLabelToFeature::readXml( const QDomElem
 
 }
 
+void QgsLabelingEngineRuleMaximumDistanceLabelToFeature::resolveReferences( const QgsProject *project )
+{
+  mLabeledLayer.resolve( project );
+  mTargetLayer.resolve( project );
+}
+
 QgsVectorLayer *QgsLabelingEngineRuleMaximumDistanceLabelToFeature::labeledLayer()
 {
-
+  return mLabeledLayer.get();
 }
 
 void QgsLabelingEngineRuleMaximumDistanceLabelToFeature::setLabeledLayer( QgsVectorLayer *layer )
 {
-
+  mLabeledLayer = layer;
 }
 
 QgsVectorLayer *QgsLabelingEngineRuleMaximumDistanceLabelToFeature::targetLayer()
 {
-
+  return mTargetLayer.get();
 }
 
 void QgsLabelingEngineRuleMaximumDistanceLabelToFeature::setTargetLayer( QgsVectorLayer *layer )
 {
-
+  mTargetLayer = layer;
 }
 
 //
@@ -183,15 +201,15 @@ void QgsLabelingEngineRuleMaximumDistanceLabelToFeature::setTargetLayer( QgsVect
 
 QgsLabelingEngineRuleAvoidLabelOverlapWithFeature *QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::clone() const
 {
-
+  return new QgsLabelingEngineRuleAvoidLabelOverlapWithFeature( *this );
 }
 
 QString QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::id() const
 {
-
+  return QStringLiteral( "avoidLabelOverlapWithFeature" );
 }
 
-bool QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::prepare( QgsRenderContext &context )
+bool QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::prepare( QgsRenderContext & )
 {
 
 }
@@ -211,22 +229,28 @@ void QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::readXml( const QDomEleme
 
 }
 
+void QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::resolveReferences( const QgsProject *project )
+{
+  mLabeledLayer.resolve( project );
+  mTargetLayer.resolve( project );
+}
+
 QgsVectorLayer *QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::labeledLayer()
 {
-
+  return mLabeledLayer.get();
 }
 
 void QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::setLabeledLayer( QgsVectorLayer *layer )
 {
-
+  mLabeledLayer = layer;
 }
 
 QgsVectorLayer *QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::targetLayer()
 {
-
+  return mTargetLayer.get();
 }
 
 void QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::setTargetLayer( QgsVectorLayer *layer )
 {
-
+  mTargetLayer = layer;
 }

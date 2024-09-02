@@ -38,6 +38,7 @@ class CORE_EXPORT QgsLabelingEngineRuleMinimumDistanceLabelToFeature : public Qg
     bool modifyProblem() override;
     void writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const override;
     void readXml( const QDomElement &element, const QgsReadWriteContext &context ) override;
+    void resolveReferences( const QgsProject *project ) override;
 
     /**
      * Returns the layer providing the labels.
@@ -167,6 +168,7 @@ class CORE_EXPORT QgsLabelingEngineRuleMinimumDistanceLabelToLabel : public QgsA
     bool modifyProblem() override;
     void writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const override;
     void readXml( const QDomElement &element, const QgsReadWriteContext &context ) override;
+    void resolveReferences( const QgsProject *project ) override;
 
     /**
      * Returns the layer providing the labels.
@@ -275,6 +277,7 @@ class CORE_EXPORT QgsLabelingEngineRuleMaximumDistanceLabelToFeature : public Qg
     bool modifyProblem() override;
     void writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const override;
     void readXml( const QDomElement &element, const QgsReadWriteContext &context ) override;
+    void resolveReferences( const QgsProject *project ) override;
 
     /**
      * Returns the layer providing the labels.
@@ -384,6 +387,7 @@ class CORE_EXPORT QgsLabelingEngineRuleAvoidLabelOverlapWithFeature : public Qgs
     bool modifyProblem() override;
     void writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const override;
     void readXml( const QDomElement &element, const QgsReadWriteContext &context ) override;
+    void resolveReferences( const QgsProject *project ) override;
 
     /**
      * Returns the layer providing the labels.

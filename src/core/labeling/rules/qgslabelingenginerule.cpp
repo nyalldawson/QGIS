@@ -17,3 +17,8 @@
 
 
 QgsAbstractLabelingEngineRule::~QgsAbstractLabelingEngineRule() = default;
+
+void QgsAbstractLabelingEngineRule::resolveReferences( const QgsProject * )
+{
+
+}

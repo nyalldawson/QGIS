@@ -23,6 +23,7 @@ class QgsRenderContext;
 class QDomDocument;
 class QDomElement;
 class QgsReadWriteContext;
+class QgsProject;
 
 /**
  * Abstract base class for labeling engine rules.
@@ -100,10 +101,17 @@ class CORE_EXPORT QgsAbstractLabelingEngineRule SIP_ABSTRACT
     /**
      * Reads the rule properties from an XML \a element.
      *
+     * \see resolveReferences()
      * \see writeXml()
      */
     virtual void readXml( const QDomElement &element, const QgsReadWriteContext &context ) = 0;
 
+    /**
+     * Resolves reference to layers from stored layer ID.
+     *
+     * Should be called following a call readXml().
+     */
+    virtual void resolveReferences( const QgsProject *project );
 };
 
 #endif // QGSLABELINGENGINESETTINGS_H
