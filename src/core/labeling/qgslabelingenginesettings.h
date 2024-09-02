@@ -252,6 +252,15 @@ class CORE_EXPORT QgsLabelingEngineSettings
     QList< QgsAbstractLabelingEngineRule * > rules();
 
     /**
+     * Returns a list of labeling engine rules which must be satifisfied
+     * while placing labels.
+     *
+     * \see addRule()
+     * \since QGIS 3.40
+     */
+    QList< const QgsAbstractLabelingEngineRule * > rules() const SIP_SKIP;
+
+    /**
      * Adds a labeling engine \a rule which must be satifisfied
      * while placing labels.
      *

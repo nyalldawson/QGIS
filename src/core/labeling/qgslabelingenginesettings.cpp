@@ -189,6 +189,16 @@ QList<QgsAbstractLabelingEngineRule *> QgsLabelingEngineSettings::rules()
   return res;
 }
 
+QList<const QgsAbstractLabelingEngineRule *> QgsLabelingEngineSettings::rules() const
+{
+  QList<const QgsAbstractLabelingEngineRule *> res;
+  for ( const auto &it : mEngineRules )
+  {
+    res << it.get();
+  }
+  return res;
+}
+
 void QgsLabelingEngineSettings::addRule( QgsAbstractLabelingEngineRule *rule )
 {
   mEngineRules.emplace_back( rule );

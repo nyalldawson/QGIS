@@ -255,6 +255,7 @@ while placing labels.
 .. versionadded:: 3.40
 %End
 
+
     void addRule( QgsAbstractLabelingEngineRule *rule /Transfer/ );
 %Docstring
 Adds a labeling engine ``rule`` which must be satifisfied
