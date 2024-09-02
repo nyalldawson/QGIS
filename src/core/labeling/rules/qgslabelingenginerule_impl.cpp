@@ -33,7 +33,7 @@ QString QgsLabelingEngineRuleMinimumDistanceLabelToFeature::id() const
 
 bool QgsLabelingEngineRuleMinimumDistanceLabelToFeature::prepare( QgsRenderContext & )
 {
-
+  return true;
 }
 
 bool QgsLabelingEngineRuleMinimumDistanceLabelToFeature::modifyProblem()
@@ -129,7 +129,7 @@ QString QgsLabelingEngineRuleMinimumDistanceLabelToLabel::id() const
 
 bool QgsLabelingEngineRuleMinimumDistanceLabelToLabel::prepare( QgsRenderContext & )
 {
-
+  return true;
 }
 
 bool QgsLabelingEngineRuleMinimumDistanceLabelToLabel::modifyProblem()
@@ -225,7 +225,7 @@ QString QgsLabelingEngineRuleMaximumDistanceLabelToFeature::id() const
 
 bool QgsLabelingEngineRuleMaximumDistanceLabelToFeature::prepare( QgsRenderContext & )
 {
-
+  return true;
 }
 
 bool QgsLabelingEngineRuleMaximumDistanceLabelToFeature::modifyProblem()
@@ -321,7 +321,7 @@ QString QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::id() const
 
 bool QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::prepare( QgsRenderContext & )
 {
-
+  return true;
 }
 
 bool QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::modifyProblem()
