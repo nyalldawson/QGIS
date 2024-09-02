@@ -8,7 +8,7 @@
 
 
 
-class QgsAbstractLabelingEngineRule /Abstract/
+class QgsAbstractLabelingEngineRule
 {
 %Docstring(signature="appended")
 Abstract base class for labeling engine rules.
@@ -68,7 +68,6 @@ This must be called on the main render thread, prior to commencing the render op
 logic (such as creation of feature sources) can be performed in this method.
 %End
 
-    virtual bool modifyProblem() = 0;
 
     virtual void writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const = 0;
 %Docstring

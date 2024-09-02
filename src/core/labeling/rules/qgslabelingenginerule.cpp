@@ -18,6 +18,11 @@
 
 QgsAbstractLabelingEngineRule::~QgsAbstractLabelingEngineRule() = default;
 
+bool QgsAbstractLabelingEngineRule::modifyProblem()
+{
+
+}
+
 void QgsAbstractLabelingEngineRule::resolveReferences( const QgsProject * )
 {
 

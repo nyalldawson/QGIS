@@ -34,7 +34,7 @@ class QgsProject;
  * \ingroup core
  * \since QGIS 3.40
  */
-class CORE_EXPORT QgsAbstractLabelingEngineRule SIP_ABSTRACT
+class CORE_EXPORT QgsAbstractLabelingEngineRule
 {
 
 #ifdef SIP_RUN
@@ -89,7 +89,7 @@ class CORE_EXPORT QgsAbstractLabelingEngineRule SIP_ABSTRACT
     /**
      *
      */
-    virtual bool modifyProblem() = 0;
+    virtual bool modifyProblem() SIP_SKIP;
 
     /**
      * Writes the rule properties to an XML \a element.

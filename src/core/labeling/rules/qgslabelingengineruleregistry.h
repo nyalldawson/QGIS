@@ -71,8 +71,17 @@ class CORE_EXPORT QgsLabelingEngineRuleRegistry
      * The registry takes ownership of \a rule.
      *
      * \returns TRUE if the rule was successfully added.
+     *
+     * \see removeRule()
      */
     bool addRule( QgsAbstractLabelingEngineRule *rule SIP_TRANSFER );
+
+    /**
+     * Removes the rule with matching \a id from the registry.
+     *
+     * \see addRule()
+     */
+    void removeRule( const QString &id );
 
   private:
 

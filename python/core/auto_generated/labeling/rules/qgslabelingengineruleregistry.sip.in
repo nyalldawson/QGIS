@@ -58,6 +58,15 @@ Adds a new ``rule`` type to the registry.
 The registry takes ownership of ``rule``.
 
 :return: ``True`` if the rule was successfully added.
+
+.. seealso:: :py:func:`removeRule`
+%End
+
+    void removeRule( const QString &id );
+%Docstring
+Removes the rule with matching ``id`` from the registry.
+
+.. seealso:: :py:func:`addRule`
 %End
 
   private:
