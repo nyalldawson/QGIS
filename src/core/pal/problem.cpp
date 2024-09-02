@@ -290,7 +290,7 @@ void Problem::init_sol_falp()
 
 bool Problem::candidatesAreConflicting( const LabelPosition *lp1, const LabelPosition *lp2 ) const
 {
-  return  pal->candidatesAreConflicting( lp1, lp2 );
+  return pal->candidatesAreConflicting( lp1, lp2 );
 }
 
 inline Chain *Problem::chain( int seed )

@@ -45,6 +45,7 @@
 #include "qgsrendercontext.h"
 #include "qgssettingsentryimpl.h"
 #include "qgsruntimeprofiler.h"
+#include "qgslabelingenginerule.h"
 
 #include <cfloat>
 #include <list>
@@ -625,6 +626,10 @@ QList<LabelPosition *> Pal::solveProblem( Problem *prob, QgsRenderContext &conte
   if ( !prob )
     return QList<LabelPosition *>();
 
+  for ( QgsAbstractLabelingEngineRule *rule : mRules )
+  {
+    QgsDebugError( rule->id() );
+  }
 
   std::unique_ptr< QgsScopedRuntimeProfile > calculatingProfile;
   if ( context.flags() & Qgis::RenderContextFlag::RecordProfile )
@@ -726,13 +731,27 @@ bool Pal::candidatesAreConflicting( const LabelPosition *lp1, const LabelPositio
   // we cache the value -- this can be costly to calculate, and we check this multiple times
   // per candidate during the labeling problem solving
 
+    if ( lp1->getProblemFeatureId() == lp2->getProblemFeatureId() )
+        return false;
+
   // conflicts are commutative - so we always store them in the cache using the smaller id as the first element of the key pair
   auto key = qMakePair( std::min( lp1->globalId(), lp2->globalId() ), std::max( lp1->globalId(), lp2->globalId() ) );
   auto it = mCandidateConflicts.constFind( key );
   if ( it != mCandidateConflicts.constEnd() )
     return *it;
 
-  const bool res = lp1->isInConflict( lp2 );
+  bool res = false;
+  for ( QgsAbstractLabelingEngineRule* rule : mRules )
+  {
+      if ( rule->candidatesAreConflicting( lp1, lp2 ))
+      {
+          res = true;
+          break;
+      }
+  }
+
+  res |= lp1->isInConflict( lp2 );
+
   mCandidateConflicts.insert( key, res );
   return res;
 }

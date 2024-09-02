@@ -27,3 +27,8 @@ void QgsAbstractLabelingEngineRule::resolveReferences( const QgsProject * )
 {
 
 }
+
+bool QgsAbstractLabelingEngineRule::candidatesAreConflicting(const pal::LabelPosition* , const pal::LabelPosition* ) const
+{
+    return false;
+}

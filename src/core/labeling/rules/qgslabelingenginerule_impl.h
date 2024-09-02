@@ -169,6 +169,7 @@ class CORE_EXPORT QgsLabelingEngineRuleMinimumDistanceLabelToLabel : public QgsA
     void writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const override;
     void readXml( const QDomElement &element, const QgsReadWriteContext &context ) override;
     void resolveReferences( const QgsProject *project ) override;
+   bool candidatesAreConflicting( const pal::LabelPosition *lp1, const pal::LabelPosition *lp2 ) const final SIP_SKIP;
 
     /**
      * Returns the layer providing the labels.

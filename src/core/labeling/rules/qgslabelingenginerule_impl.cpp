@@ -189,6 +189,11 @@ void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::resolveReferences( const 
   mTargetLayer.resolve( project );
 }
 
+bool QgsLabelingEngineRuleMinimumDistanceLabelToLabel::candidatesAreConflicting(const pal::LabelPosition* lp1, const pal::LabelPosition* lp2) const
+{
+    return true;
+}
+
 QgsVectorLayer *QgsLabelingEngineRuleMinimumDistanceLabelToLabel::labeledLayer()
 {
   return mLabeledLayer.get();

@@ -24,6 +24,10 @@ class QDomDocument;
 class QDomElement;
 class QgsReadWriteContext;
 class QgsProject;
+namespace pal
+{
+  class LabelPosition;
+}
 
 /**
  * Abstract base class for labeling engine rules.
@@ -112,6 +116,13 @@ class CORE_EXPORT QgsAbstractLabelingEngineRule
      * Should be called following a call readXml().
      */
     virtual void resolveReferences( const QgsProject *project );
+
+    /**
+     * Returns TRUE if a labelling candidate \a lp1 conflicts with \a lp2 after applying the rule.
+     *
+     * The default implementation returns FALSE.
+     */
+    virtual bool candidatesAreConflicting( const pal::LabelPosition *lp1, const pal::LabelPosition *lp2 ) const SIP_SKIP;
 };
 
 #endif // QGSLABELINGENGINESETTINGS_H
