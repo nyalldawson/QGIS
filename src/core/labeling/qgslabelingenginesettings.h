@@ -21,6 +21,8 @@
 #include <QColor>
 
 class QgsProject;
+class QgsAbstractLabelingEngineRule;
+
 
 /**
  * \ingroup core
@@ -46,6 +48,10 @@ class CORE_EXPORT QgsLabelingEngineSettings
     };
 
     QgsLabelingEngineSettings();
+    ~QgsLabelingEngineSettings();
+
+    QgsLabelingEngineSettings( const QgsLabelingEngineSettings &other );
+    QgsLabelingEngineSettings &operator=( const QgsLabelingEngineSettings &other );
 
     //! Returns the configuration to the defaults
     void clear();
@@ -188,6 +194,26 @@ class CORE_EXPORT QgsLabelingEngineSettings
      */
     void setPlacementVersion( Qgis::LabelPlacementEngineVersion version );
 
+    /**
+     * Returns a list of labeling engine rules which must be satifisfied
+     * while placing labels.
+     *
+     * \see addRule()
+     * \since QGIS 3.40
+     */
+    QList< QgsAbstractLabelingEngineRule * > rules();
+
+    /**
+     * Adds a labeling engine \a rule which must be satifisfied
+     * while placing labels.
+     *
+     * Ownership of the rule is transferred to the settings.
+     *
+     * \see rules()
+     * \since QGIS 3.40
+     */
+    void addRule( QgsAbstractLabelingEngineRule *rule SIP_TRANSFER );
+
   private:
     //! Flags
     Qgis::LabelingFlags mFlags = Qgis::LabelingFlag::UsePartialCandidates;
@@ -203,6 +229,8 @@ class CORE_EXPORT QgsLabelingEngineSettings
     Qgis::LabelPlacementEngineVersion mPlacementVersion = Qgis::LabelPlacementEngineVersion::Version2;
 
     Qgis::TextRenderFormat mDefaultTextRenderFormat = Qgis::TextRenderFormat::AlwaysOutlines;
+
+    std::vector< std::unique_ptr< QgsAbstractLabelingEngineRule > > mEngineRules;
 
 };
 

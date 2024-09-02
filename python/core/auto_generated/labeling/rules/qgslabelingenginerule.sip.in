@@ -1,0 +1,73 @@
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/core/labeling/rules/qgslabelingenginerule.h                      *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.py again   *
+ ************************************************************************/
+
+
+
+class QgsAbstractLabelingEngineRule /Abstract/
+{
+%Docstring(signature="appended")
+Abstract base class for labeling engine rules.
+
+Labeling engine rules implement custom logic to modify the labeling solution for a map render,
+e.g. by preventing labels being placed which violate custom constraints.
+
+.. versionadded:: 3.40
+%End
+
+%TypeHeaderCode
+#include "qgslabelingenginerule.h"
+%End
+  public:
+
+    virtual ~QgsAbstractLabelingEngineRule();
+
+    virtual QgsAbstractLabelingEngineRule *clone() const = 0 /Factory/;
+%Docstring
+Creates a clone of this rule.
+
+The caller takes ownership of the returned object.
+%End
+
+    virtual QString id() const = 0;
+%Docstring
+Returns a string uniquely identifying the rule subclass.
+%End
+
+    virtual bool prepare( QgsRenderContext &context ) = 0;
+%Docstring
+Prepares the rule.
+
+This must be called on the main render thread, prior to commencing the render operation. Thread sensitive
+logic (such as creation of feature sources) can be performed in this method.
+%End
+
+    virtual bool modifyProblem() = 0;
+
+    virtual void writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const = 0;
+%Docstring
+Writes the rule properties to an XML ``element``.
+
+.. seealso:: :py:func:`readXml`
+%End
+
+    virtual void readXml( const QDomElement &element, const QgsReadWriteContext &context ) = 0;
+%Docstring
+Reads the rule properties from an XML ``element``.
+
+.. seealso:: :py:func:`writeXml`
+%End
+
+};
+
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/core/labeling/rules/qgslabelingenginerule.h                      *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.py again   *
+ ************************************************************************/

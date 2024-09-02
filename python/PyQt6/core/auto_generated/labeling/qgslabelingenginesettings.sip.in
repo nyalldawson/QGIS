@@ -8,6 +8,7 @@
 
 
 
+
 class QgsLabelingEngineSettings
 {
 %Docstring(signature="appended")
@@ -30,6 +31,9 @@ Stores global configuration for labeling engine
     };
 
     QgsLabelingEngineSettings();
+    ~QgsLabelingEngineSettings();
+
+    QgsLabelingEngineSettings( const QgsLabelingEngineSettings &other );
 
     void clear();
 %Docstring
@@ -187,6 +191,28 @@ Sets the placement engine ``version``, which dictates how the label placement pr
 .. seealso:: :py:func:`placementVersion`
 
 .. versionadded:: 3.10.2
+%End
+
+    QList< QgsAbstractLabelingEngineRule * > rules();
+%Docstring
+Returns a list of labeling engine rules which must be satifisfied
+while placing labels.
+
+.. seealso:: :py:func:`addRule`
+
+.. versionadded:: 3.40
+%End
+
+    void addRule( QgsAbstractLabelingEngineRule *rule /Transfer/ );
+%Docstring
+Adds a labeling engine ``rule`` which must be satifisfied
+while placing labels.
+
+Ownership of the rule is transferred to the settings.
+
+.. seealso:: :py:func:`rules`
+
+.. versionadded:: 3.40
 %End
 
 };
