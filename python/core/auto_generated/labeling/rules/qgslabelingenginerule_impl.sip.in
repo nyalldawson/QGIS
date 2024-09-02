@@ -286,7 +286,6 @@ A labeling engine rule which prevents labels being placed too far from features 
     virtual void readXml( const QDomElement &element, const QgsReadWriteContext &context );
 
 
-
     QgsVectorLayer *labeledLayer();
 %Docstring
 Returns the layer providing the labels.
