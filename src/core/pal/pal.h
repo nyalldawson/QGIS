@@ -51,6 +51,7 @@ class QgsSettingsEntryInteger;
 
 class QgsAbstractLabelProvider;
 class QgsRenderContext;
+class QgsAbstractLabelingEngineRule;
 
 namespace pal
 {
@@ -247,9 +248,21 @@ namespace pal
        */
       bool candidatesAreConflicting( const LabelPosition *lp1, const LabelPosition *lp2 ) const;
 
+      /**
+       * Sets rules which the labeling solution must satisfy.
+       *
+       * Ownership of the rules are not transferred to the engine, and it is the caller's responsibility
+       * to ensure that the lifetime of the rules exceeds that of the pal job.
+       *
+       * \since QGIS 3.40
+       */
+      void setRules( const QList< QgsAbstractLabelingEngineRule * > &rules );
+
     private:
 
       std::unordered_map< QgsAbstractLabelProvider *, std::unique_ptr< Layer > > mLayers;
+
+      QList< QgsAbstractLabelingEngineRule * > mRules;
 
       QMutex mMutex;
 

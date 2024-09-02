@@ -737,6 +737,11 @@ bool Pal::candidatesAreConflicting( const LabelPosition *lp1, const LabelPositio
   return res;
 }
 
+void Pal::setRules( const QList<QgsAbstractLabelingEngineRule *> &rules )
+{
+  mRules = rules;
+}
+
 int Pal::getMinIt() const
 {
   return mTabuMaxIt;
