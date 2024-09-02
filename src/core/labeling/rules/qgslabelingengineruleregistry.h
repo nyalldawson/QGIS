@@ -63,7 +63,7 @@ class CORE_EXPORT QgsLabelingEngineRuleRegistry
      *
      * The caller takes ownership of the returned object.
      */
-    QgsAbstractLabelingEngineRule *create( const QString &id ) const SIP_FACTORY;
+    QgsAbstractLabelingEngineRule *create( const QString &id ) const SIP_TRANSFERBACK;
 
     /**
      * Adds a new \a rule type to the registry.

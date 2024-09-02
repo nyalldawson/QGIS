@@ -14,6 +14,8 @@
  ***************************************************************************/
 
 #include "qgslabelingenginerule_impl.h"
+#include "qgsunittypes.h"
+#include "qgssymbollayerutils.h"
 
 //
 // QgsLabelingEngineRuleMinimumDistanceLabelToFeature
@@ -39,14 +41,50 @@ bool QgsLabelingEngineRuleMinimumDistanceLabelToFeature::modifyProblem()
 
 }
 
-void QgsLabelingEngineRuleMinimumDistanceLabelToFeature::writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const
+void QgsLabelingEngineRuleMinimumDistanceLabelToFeature::writeXml( QDomDocument &, QDomElement &element, const QgsReadWriteContext & ) const
 {
+  element.setAttribute( QStringLiteral( "distance" ), mDistance );
+  element.setAttribute( QStringLiteral( "distanceUnit" ), QgsUnitTypes::encodeUnit( mDistanceUnit ) );
+  element.setAttribute( QStringLiteral( "distanceUnitScale" ), QgsSymbolLayerUtils::encodeMapUnitScale( mDistanceUnitScale ) );
+  element.setAttribute( QStringLiteral( "cost" ), mCost );
 
+  if ( mLabeledLayer )
+  {
+    element.setAttribute( QStringLiteral( "labeledLayer" ), mLabeledLayer.layerId );
+    element.setAttribute( QStringLiteral( "labeledLayerName" ), mLabeledLayer.name );
+    element.setAttribute( QStringLiteral( "labeledLayerSource" ), mLabeledLayer.source );
+    element.setAttribute( QStringLiteral( "labeledLayerProvider" ), mLabeledLayer.provider );
+  }
+  if ( mTargetLayer )
+  {
+    element.setAttribute( QStringLiteral( "targetLayer" ), mTargetLayer.layerId );
+    element.setAttribute( QStringLiteral( "targetLayerName" ), mTargetLayer.name );
+    element.setAttribute( QStringLiteral( "targetLayerSource" ), mTargetLayer.source );
+    element.setAttribute( QStringLiteral( "targetLayerProvider" ), mTargetLayer.provider );
+  }
 }
 
-void QgsLabelingEngineRuleMinimumDistanceLabelToFeature::readXml( const QDomElement &element, const QgsReadWriteContext &context )
+void QgsLabelingEngineRuleMinimumDistanceLabelToFeature::readXml( const QDomElement &element, const QgsReadWriteContext & )
 {
+  mDistance = element.attribute( QStringLiteral( "distance" ), QStringLiteral( "0" ) ).toDouble();
+  mDistanceUnit = QgsUnitTypes::decodeRenderUnit( element.attribute( QStringLiteral( "distanceUnit" ) ) );
+  mDistanceUnitScale =  QgsSymbolLayerUtils::decodeMapUnitScale( element.attribute( QStringLiteral( "distanceUnitScale" ) ) );
+  mCost = element.attribute( QStringLiteral( "cost" ), QStringLiteral( "0" ) ).toDouble();
 
+  {
+    const QString layerId = element.attribute( QStringLiteral( "labeledLayer" ) );
+    const QString layerName = element.attribute( QStringLiteral( "labeledLayerName" ) );
+    const QString layerSource = element.attribute( QStringLiteral( "labeledLayerSource" ) );
+    const QString layerProvider = element.attribute( QStringLiteral( "labeledLayerProvider" ) );
+    mLabeledLayer = QgsVectorLayerRef( layerId, layerName, layerSource, layerProvider );
+  }
+  {
+    const QString layerId = element.attribute( QStringLiteral( "targetLayer" ) );
+    const QString layerName = element.attribute( QStringLiteral( "targetLayerName" ) );
+    const QString layerSource = element.attribute( QStringLiteral( "targetLayerSource" ) );
+    const QString layerProvider = element.attribute( QStringLiteral( "targetLayerProvider" ) );
+    mTargetLayer = QgsVectorLayerRef( layerId, layerName, layerSource, layerProvider );
+  }
 }
 
 void QgsLabelingEngineRuleMinimumDistanceLabelToFeature::resolveReferences( const QgsProject *project )
@@ -99,14 +137,50 @@ bool QgsLabelingEngineRuleMinimumDistanceLabelToLabel::modifyProblem()
 
 }
 
-void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const
+void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::writeXml( QDomDocument &, QDomElement &element, const QgsReadWriteContext & ) const
 {
+  element.setAttribute( QStringLiteral( "distance" ), mDistance );
+  element.setAttribute( QStringLiteral( "distanceUnit" ), QgsUnitTypes::encodeUnit( mDistanceUnit ) );
+  element.setAttribute( QStringLiteral( "distanceUnitScale" ), QgsSymbolLayerUtils::encodeMapUnitScale( mDistanceUnitScale ) );
+  element.setAttribute( QStringLiteral( "cost" ), mCost );
 
+  if ( mLabeledLayer )
+  {
+    element.setAttribute( QStringLiteral( "labeledLayer" ), mLabeledLayer.layerId );
+    element.setAttribute( QStringLiteral( "labeledLayerName" ), mLabeledLayer.name );
+    element.setAttribute( QStringLiteral( "labeledLayerSource" ), mLabeledLayer.source );
+    element.setAttribute( QStringLiteral( "labeledLayerProvider" ), mLabeledLayer.provider );
+  }
+  if ( mTargetLayer )
+  {
+    element.setAttribute( QStringLiteral( "targetLayer" ), mTargetLayer.layerId );
+    element.setAttribute( QStringLiteral( "targetLayerName" ), mTargetLayer.name );
+    element.setAttribute( QStringLiteral( "targetLayerSource" ), mTargetLayer.source );
+    element.setAttribute( QStringLiteral( "targetLayerProvider" ), mTargetLayer.provider );
+  }
 }
 
-void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::readXml( const QDomElement &element, const QgsReadWriteContext &context )
+void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::readXml( const QDomElement &element, const QgsReadWriteContext & )
 {
+  mDistance = element.attribute( QStringLiteral( "distance" ), QStringLiteral( "0" ) ).toDouble();
+  mDistanceUnit = QgsUnitTypes::decodeRenderUnit( element.attribute( QStringLiteral( "distanceUnit" ) ) );
+  mDistanceUnitScale =  QgsSymbolLayerUtils::decodeMapUnitScale( element.attribute( QStringLiteral( "distanceUnitScale" ) ) );
+  mCost = element.attribute( QStringLiteral( "cost" ), QStringLiteral( "0" ) ).toDouble();
 
+  {
+    const QString layerId = element.attribute( QStringLiteral( "labeledLayer" ) );
+    const QString layerName = element.attribute( QStringLiteral( "labeledLayerName" ) );
+    const QString layerSource = element.attribute( QStringLiteral( "labeledLayerSource" ) );
+    const QString layerProvider = element.attribute( QStringLiteral( "labeledLayerProvider" ) );
+    mLabeledLayer = QgsVectorLayerRef( layerId, layerName, layerSource, layerProvider );
+  }
+  {
+    const QString layerId = element.attribute( QStringLiteral( "targetLayer" ) );
+    const QString layerName = element.attribute( QStringLiteral( "targetLayerName" ) );
+    const QString layerSource = element.attribute( QStringLiteral( "targetLayerSource" ) );
+    const QString layerProvider = element.attribute( QStringLiteral( "targetLayerProvider" ) );
+    mTargetLayer = QgsVectorLayerRef( layerId, layerName, layerSource, layerProvider );
+  }
 }
 
 void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::resolveReferences( const QgsProject *project )
@@ -159,14 +233,50 @@ bool QgsLabelingEngineRuleMaximumDistanceLabelToFeature::modifyProblem()
 
 }
 
-void QgsLabelingEngineRuleMaximumDistanceLabelToFeature::writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const
+void QgsLabelingEngineRuleMaximumDistanceLabelToFeature::writeXml( QDomDocument &, QDomElement &element, const QgsReadWriteContext & ) const
 {
+  element.setAttribute( QStringLiteral( "distance" ), mDistance );
+  element.setAttribute( QStringLiteral( "distanceUnit" ), QgsUnitTypes::encodeUnit( mDistanceUnit ) );
+  element.setAttribute( QStringLiteral( "distanceUnitScale" ), QgsSymbolLayerUtils::encodeMapUnitScale( mDistanceUnitScale ) );
+  element.setAttribute( QStringLiteral( "cost" ), mCost );
 
+  if ( mLabeledLayer )
+  {
+    element.setAttribute( QStringLiteral( "labeledLayer" ), mLabeledLayer.layerId );
+    element.setAttribute( QStringLiteral( "labeledLayerName" ), mLabeledLayer.name );
+    element.setAttribute( QStringLiteral( "labeledLayerSource" ), mLabeledLayer.source );
+    element.setAttribute( QStringLiteral( "labeledLayerProvider" ), mLabeledLayer.provider );
+  }
+  if ( mTargetLayer )
+  {
+    element.setAttribute( QStringLiteral( "targetLayer" ), mTargetLayer.layerId );
+    element.setAttribute( QStringLiteral( "targetLayerName" ), mTargetLayer.name );
+    element.setAttribute( QStringLiteral( "targetLayerSource" ), mTargetLayer.source );
+    element.setAttribute( QStringLiteral( "targetLayerProvider" ), mTargetLayer.provider );
+  }
 }
 
-void QgsLabelingEngineRuleMaximumDistanceLabelToFeature::readXml( const QDomElement &element, const QgsReadWriteContext &context )
+void QgsLabelingEngineRuleMaximumDistanceLabelToFeature::readXml( const QDomElement &element, const QgsReadWriteContext & )
 {
+  mDistance = element.attribute( QStringLiteral( "distance" ), QStringLiteral( "0" ) ).toDouble();
+  mDistanceUnit = QgsUnitTypes::decodeRenderUnit( element.attribute( QStringLiteral( "distanceUnit" ) ) );
+  mDistanceUnitScale =  QgsSymbolLayerUtils::decodeMapUnitScale( element.attribute( QStringLiteral( "distanceUnitScale" ) ) );
+  mCost = element.attribute( QStringLiteral( "cost" ), QStringLiteral( "0" ) ).toDouble();
 
+  {
+    const QString layerId = element.attribute( QStringLiteral( "labeledLayer" ) );
+    const QString layerName = element.attribute( QStringLiteral( "labeledLayerName" ) );
+    const QString layerSource = element.attribute( QStringLiteral( "labeledLayerSource" ) );
+    const QString layerProvider = element.attribute( QStringLiteral( "labeledLayerProvider" ) );
+    mLabeledLayer = QgsVectorLayerRef( layerId, layerName, layerSource, layerProvider );
+  }
+  {
+    const QString layerId = element.attribute( QStringLiteral( "targetLayer" ) );
+    const QString layerName = element.attribute( QStringLiteral( "targetLayerName" ) );
+    const QString layerSource = element.attribute( QStringLiteral( "targetLayerSource" ) );
+    const QString layerProvider = element.attribute( QStringLiteral( "targetLayerProvider" ) );
+    mTargetLayer = QgsVectorLayerRef( layerId, layerName, layerSource, layerProvider );
+  }
 }
 
 void QgsLabelingEngineRuleMaximumDistanceLabelToFeature::resolveReferences( const QgsProject *project )
@@ -219,14 +329,44 @@ bool QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::modifyProblem()
 
 }
 
-void QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const
+void QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::writeXml( QDomDocument &, QDomElement &element, const QgsReadWriteContext & ) const
 {
+  element.setAttribute( QStringLiteral( "cost" ), mCost );
 
+  if ( mLabeledLayer )
+  {
+    element.setAttribute( QStringLiteral( "labeledLayer" ), mLabeledLayer.layerId );
+    element.setAttribute( QStringLiteral( "labeledLayerName" ), mLabeledLayer.name );
+    element.setAttribute( QStringLiteral( "labeledLayerSource" ), mLabeledLayer.source );
+    element.setAttribute( QStringLiteral( "labeledLayerProvider" ), mLabeledLayer.provider );
+  }
+  if ( mTargetLayer )
+  {
+    element.setAttribute( QStringLiteral( "targetLayer" ), mTargetLayer.layerId );
+    element.setAttribute( QStringLiteral( "targetLayerName" ), mTargetLayer.name );
+    element.setAttribute( QStringLiteral( "targetLayerSource" ), mTargetLayer.source );
+    element.setAttribute( QStringLiteral( "targetLayerProvider" ), mTargetLayer.provider );
+  }
 }
 
-void QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::readXml( const QDomElement &element, const QgsReadWriteContext &context )
+void QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::readXml( const QDomElement &element, const QgsReadWriteContext & )
 {
+  mCost = element.attribute( QStringLiteral( "cost" ), QStringLiteral( "0" ) ).toDouble();
 
+  {
+    const QString layerId = element.attribute( QStringLiteral( "labeledLayer" ) );
+    const QString layerName = element.attribute( QStringLiteral( "labeledLayerName" ) );
+    const QString layerSource = element.attribute( QStringLiteral( "labeledLayerSource" ) );
+    const QString layerProvider = element.attribute( QStringLiteral( "labeledLayerProvider" ) );
+    mLabeledLayer = QgsVectorLayerRef( layerId, layerName, layerSource, layerProvider );
+  }
+  {
+    const QString layerId = element.attribute( QStringLiteral( "targetLayer" ) );
+    const QString layerName = element.attribute( QStringLiteral( "targetLayerName" ) );
+    const QString layerSource = element.attribute( QStringLiteral( "targetLayerSource" ) );
+    const QString layerProvider = element.attribute( QStringLiteral( "targetLayerProvider" ) );
+    mTargetLayer = QgsVectorLayerRef( layerId, layerName, layerSource, layerProvider );
+  }
 }
 
 void QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::resolveReferences( const QgsProject *project )

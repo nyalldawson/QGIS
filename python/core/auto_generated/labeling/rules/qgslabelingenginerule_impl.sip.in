@@ -261,6 +261,26 @@ from the :py:func:`~QgsLabelingEngineRuleMinimumDistanceLabelToLabel.targetLayer
 .. seealso:: :py:func:`setDistance`
 %End
 
+    double cost() const;
+%Docstring
+Returns the penalty cost incurred when the rule is violated.
+
+This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
+and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
+
+.. seealso:: :py:func:`setCost`
+%End
+
+    void setCost( double cost );
+%Docstring
+Sets the penalty ``cost`` incurred when the rule is violated.
+
+This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
+and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
+
+.. seealso:: :py:func:`cost`
+%End
+
 };
 
 
@@ -380,6 +400,26 @@ from the :py:func:`~QgsLabelingEngineRuleMaximumDistanceLabelToFeature.targetLay
 .. seealso:: :py:func:`setDistance`
 %End
 
+    double cost() const;
+%Docstring
+Returns the penalty cost incurred when the rule is violated.
+
+This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
+and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
+
+.. seealso:: :py:func:`setCost`
+%End
+
+    void setCost( double cost );
+%Docstring
+Sets the penalty ``cost`` incurred when the rule is violated.
+
+This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
+and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
+
+.. seealso:: :py:func:`cost`
+%End
+
 };
 
 
@@ -437,6 +477,26 @@ Returns the layer providing the features which labels must not overlap.
 Sets the ``layer`` providing the features which labels must not overlap.
 
 .. seealso:: :py:func:`targetLayer`
+%End
+
+    double cost() const;
+%Docstring
+Returns the penalty cost incurred when the rule is violated.
+
+This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
+and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
+
+.. seealso:: :py:func:`setCost`
+%End
+
+    void setCost( double cost );
+%Docstring
+Sets the penalty ``cost`` incurred when the rule is violated.
+
+This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
+and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
+
+.. seealso:: :py:func:`cost`
 %End
 
 };

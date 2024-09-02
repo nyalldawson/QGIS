@@ -252,12 +252,33 @@ class CORE_EXPORT QgsLabelingEngineRuleMinimumDistanceLabelToLabel : public QgsA
      */
     void setDistanceUnitScale( const QgsMapUnitScale &scale ) { mDistanceUnitScale = scale; }
 
+    /**
+     * Returns the penalty cost incurred when the rule is violated.
+     *
+     * This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
+     * and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
+     *
+     * \see setCost()
+     */
+    double cost() const { return mCost; }
+
+    /**
+     * Sets the penalty \a cost incurred when the rule is violated.
+     *
+     * This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
+     * and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
+     *
+     * \see cost()
+     */
+    void setCost( double cost ) { mCost = cost; }
+
   private:
     QgsVectorLayerRef mLabeledLayer;
     QgsVectorLayerRef mTargetLayer;
     double mDistance = 0;
     Qgis::RenderUnit mDistanceUnit = Qgis::RenderUnit::Millimeters;
     QgsMapUnitScale mDistanceUnitScale;
+    double mCost = 0;
 };
 
 
@@ -361,12 +382,33 @@ class CORE_EXPORT QgsLabelingEngineRuleMaximumDistanceLabelToFeature : public Qg
      */
     void setDistanceUnitScale( const QgsMapUnitScale &scale ) { mDistanceUnitScale = scale; }
 
+    /**
+     * Returns the penalty cost incurred when the rule is violated.
+     *
+     * This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
+     * and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
+     *
+     * \see setCost()
+     */
+    double cost() const { return mCost; }
+
+    /**
+     * Sets the penalty \a cost incurred when the rule is violated.
+     *
+     * This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
+     * and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
+     *
+     * \see cost()
+     */
+    void setCost( double cost ) { mCost = cost; }
+
   private:
     QgsVectorLayerRef mLabeledLayer;
     QgsVectorLayerRef mTargetLayer;
     double mDistance = 0;
     Qgis::RenderUnit mDistanceUnit = Qgis::RenderUnit::Millimeters;
     QgsMapUnitScale mDistanceUnitScale;
+    double mCost = 0;
 
 };
 
@@ -417,10 +459,30 @@ class CORE_EXPORT QgsLabelingEngineRuleAvoidLabelOverlapWithFeature : public Qgs
      */
     void setTargetLayer( QgsVectorLayer *layer );
 
+    /**
+     * Returns the penalty cost incurred when the rule is violated.
+     *
+     * This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
+     * and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
+     *
+     * \see setCost()
+     */
+    double cost() const { return mCost; }
+
+    /**
+     * Sets the penalty \a cost incurred when the rule is violated.
+     *
+     * This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
+     * and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
+     *
+     * \see cost()
+     */
+    void setCost( double cost ) { mCost = cost; }
+
   private:
     QgsVectorLayerRef mLabeledLayer;
     QgsVectorLayerRef mTargetLayer;
-
+    double mCost = 0;
 };
 
 

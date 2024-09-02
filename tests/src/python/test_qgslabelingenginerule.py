@@ -6,9 +6,20 @@ the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 """
 
+from qgis.PyQt.QtXml import QDomDocument
+
 from qgis.core import (
+    Qgis,
     QgsLabelingEngineRuleRegistry,
-    QgsAbstractLabelingEngineRule
+    QgsAbstractLabelingEngineRule,
+    QgsLabelingEngineRuleMinimumDistanceLabelToFeature,
+    QgsLabelingEngineRuleMinimumDistanceLabelToLabel,
+    QgsLabelingEngineRuleMaximumDistanceLabelToFeature,
+    QgsLabelingEngineRuleAvoidLabelOverlapWithFeature,
+    QgsProject,
+    QgsVectorLayer,
+    QgsMapUnitScale,
+    QgsReadWriteContext
 )
 import unittest
 from qgis.testing import start_app, QgisTestCase
@@ -54,7 +65,7 @@ class TestQgsLabelingEngineRule(QgisTestCase):
         self.assertTrue(registry.addRule(TestRule()))
 
         self.assertIn('test', registry.ruleIds())
-        self.assertTrue(isinstance(registry.create('test'), TestRule))
+        self.assertIsInstance(registry.create('test'), TestRule)
 
         # no duplicates
         self.assertFalse(registry.addRule(TestRule()))
@@ -65,6 +76,175 @@ class TestQgsLabelingEngineRule(QgisTestCase):
         self.assertIsNone(registry.create('test'))
 
         registry.removeRule('test')
+
+    def testMinimumDistanceLabelToFeature(self):
+        p = QgsProject()
+        vl = QgsVectorLayer('Point', 'layer 1', 'memory')
+        vl2 = QgsVectorLayer('Point', 'layer 2', 'memory')
+        p.addMapLayers([vl, vl2])
+
+        rule = QgsLabelingEngineRuleMinimumDistanceLabelToFeature()
+        rule.setLabeledLayer(vl)
+        rule.setTargetLayer(vl2)
+        rule.setDistance(14)
+        rule.setDistanceUnit(Qgis.RenderUnit.Inches)
+        rule.setDistanceUnitScale(QgsMapUnitScale(15, 25))
+        rule.setCost(6.6)
+
+        self.assertEqual(rule.labeledLayer(), vl)
+        self.assertEqual(rule.targetLayer(), vl2)
+        self.assertEqual(rule.distance(), 14)
+        self.assertEqual(rule.distanceUnit(), Qgis.RenderUnit.Inches)
+        self.assertEqual(rule.distanceUnitScale().minScale, 15)
+        self.assertEqual(rule.distanceUnitScale().maxScale, 25)
+        self.assertEqual(rule.cost(), 6.6)
+
+        rule2 = rule.clone()
+        self.assertEqual(rule2.labeledLayer(), vl)
+        self.assertEqual(rule2.targetLayer(), vl2)
+        self.assertEqual(rule2.distance(), 14)
+        self.assertEqual(rule2.distanceUnit(), Qgis.RenderUnit.Inches)
+        self.assertEqual(rule2.distanceUnitScale().minScale, 15)
+        self.assertEqual(rule2.distanceUnitScale().maxScale, 25)
+        self.assertEqual(rule2.cost(), 6.6)
+
+        doc = QDomDocument("testdoc")
+        elem = doc.createElement("test")
+        rule.writeXml(doc, elem, QgsReadWriteContext())
+
+        rule3 = QgsLabelingEngineRuleMinimumDistanceLabelToFeature()
+        rule3.readXml(elem, QgsReadWriteContext())
+        rule3.resolveReferences(p)
+        self.assertEqual(rule3.labeledLayer(), vl)
+        self.assertEqual(rule3.targetLayer(), vl2)
+        self.assertEqual(rule3.distance(), 14)
+        self.assertEqual(rule3.distanceUnit(), Qgis.RenderUnit.Inches)
+        self.assertEqual(rule3.distanceUnitScale().minScale, 15)
+        self.assertEqual(rule3.distanceUnitScale().maxScale, 25)
+        self.assertEqual(rule3.cost(), 6.6)
+
+    def testMinimumDistanceLabelToLabel(self):
+        p = QgsProject()
+        vl = QgsVectorLayer('Point', 'layer 1', 'memory')
+        vl2 = QgsVectorLayer('Point', 'layer 2', 'memory')
+        p.addMapLayers([vl, vl2])
+
+        rule = QgsLabelingEngineRuleMinimumDistanceLabelToLabel()
+        rule.setLabeledLayer(vl)
+        rule.setTargetLayer(vl2)
+        rule.setDistance(14)
+        rule.setDistanceUnit(Qgis.RenderUnit.Inches)
+        rule.setDistanceUnitScale(QgsMapUnitScale(15, 25))
+        rule.setCost(6.6)
+
+        self.assertEqual(rule.labeledLayer(), vl)
+        self.assertEqual(rule.targetLayer(), vl2)
+        self.assertEqual(rule.distance(), 14)
+        self.assertEqual(rule.distanceUnit(), Qgis.RenderUnit.Inches)
+        self.assertEqual(rule.distanceUnitScale().minScale, 15)
+        self.assertEqual(rule.distanceUnitScale().maxScale, 25)
+        self.assertEqual(rule.cost(), 6.6)
+
+        rule2 = rule.clone()
+        self.assertEqual(rule2.labeledLayer(), vl)
+        self.assertEqual(rule2.targetLayer(), vl2)
+        self.assertEqual(rule2.distance(), 14)
+        self.assertEqual(rule2.distanceUnit(), Qgis.RenderUnit.Inches)
+        self.assertEqual(rule2.distanceUnitScale().minScale, 15)
+        self.assertEqual(rule2.distanceUnitScale().maxScale, 25)
+        self.assertEqual(rule2.cost(), 6.6)
+
+        doc = QDomDocument("testdoc")
+        elem = doc.createElement("test")
+        rule.writeXml(doc, elem, QgsReadWriteContext())
+
+        rule3 = QgsLabelingEngineRuleMinimumDistanceLabelToLabel()
+        rule3.readXml(elem, QgsReadWriteContext())
+        rule3.resolveReferences(p)
+        self.assertEqual(rule3.labeledLayer(), vl)
+        self.assertEqual(rule3.targetLayer(), vl2)
+        self.assertEqual(rule3.distance(), 14)
+        self.assertEqual(rule3.distanceUnit(), Qgis.RenderUnit.Inches)
+        self.assertEqual(rule3.distanceUnitScale().minScale, 15)
+        self.assertEqual(rule3.distanceUnitScale().maxScale, 25)
+        self.assertEqual(rule3.cost(), 6.6)
+
+    def testMaximumDistanceLabelToFeature(self):
+        p = QgsProject()
+        vl = QgsVectorLayer('Point', 'layer 1', 'memory')
+        vl2 = QgsVectorLayer('Point', 'layer 2', 'memory')
+        p.addMapLayers([vl, vl2])
+
+        rule = QgsLabelingEngineRuleMaximumDistanceLabelToFeature()
+        rule.setLabeledLayer(vl)
+        rule.setTargetLayer(vl2)
+        rule.setDistance(14)
+        rule.setDistanceUnit(Qgis.RenderUnit.Inches)
+        rule.setDistanceUnitScale(QgsMapUnitScale(15, 25))
+        rule.setCost(6.6)
+
+        self.assertEqual(rule.labeledLayer(), vl)
+        self.assertEqual(rule.targetLayer(), vl2)
+        self.assertEqual(rule.distance(), 14)
+        self.assertEqual(rule.distanceUnit(), Qgis.RenderUnit.Inches)
+        self.assertEqual(rule.distanceUnitScale().minScale, 15)
+        self.assertEqual(rule.distanceUnitScale().maxScale, 25)
+        self.assertEqual(rule.cost(), 6.6)
+
+        rule2 = rule.clone()
+        self.assertEqual(rule2.labeledLayer(), vl)
+        self.assertEqual(rule2.targetLayer(), vl2)
+        self.assertEqual(rule2.distance(), 14)
+        self.assertEqual(rule2.distanceUnit(), Qgis.RenderUnit.Inches)
+        self.assertEqual(rule2.distanceUnitScale().minScale, 15)
+        self.assertEqual(rule2.distanceUnitScale().maxScale, 25)
+        self.assertEqual(rule2.cost(), 6.6)
+
+        doc = QDomDocument("testdoc")
+        elem = doc.createElement("test")
+        rule.writeXml(doc, elem, QgsReadWriteContext())
+
+        rule3 = QgsLabelingEngineRuleMaximumDistanceLabelToFeature()
+        rule3.readXml(elem, QgsReadWriteContext())
+        rule3.resolveReferences(p)
+        self.assertEqual(rule3.labeledLayer(), vl)
+        self.assertEqual(rule3.targetLayer(), vl2)
+        self.assertEqual(rule3.distance(), 14)
+        self.assertEqual(rule3.distanceUnit(), Qgis.RenderUnit.Inches)
+        self.assertEqual(rule3.distanceUnitScale().minScale, 15)
+        self.assertEqual(rule3.distanceUnitScale().maxScale, 25)
+        self.assertEqual(rule3.cost(), 6.6)
+
+    def testAvoidLabelOverlapWithFeature(self):
+        p = QgsProject()
+        vl = QgsVectorLayer('Point', 'layer 1', 'memory')
+        vl2 = QgsVectorLayer('Point', 'layer 2', 'memory')
+        p.addMapLayers([vl, vl2])
+
+        rule = QgsLabelingEngineRuleAvoidLabelOverlapWithFeature()
+        rule.setLabeledLayer(vl)
+        rule.setTargetLayer(vl2)
+        rule.setCost(6.6)
+
+        self.assertEqual(rule.labeledLayer(), vl)
+        self.assertEqual(rule.targetLayer(), vl2)
+        self.assertEqual(rule.cost(), 6.6)
+
+        rule2 = rule.clone()
+        self.assertEqual(rule2.labeledLayer(), vl)
+        self.assertEqual(rule2.targetLayer(), vl2)
+        self.assertEqual(rule2.cost(), 6.6)
+
+        doc = QDomDocument("testdoc")
+        elem = doc.createElement("test")
+        rule.writeXml(doc, elem, QgsReadWriteContext())
+
+        rule3 = QgsLabelingEngineRuleAvoidLabelOverlapWithFeature()
+        rule3.readXml(elem, QgsReadWriteContext())
+        rule3.resolveReferences(p)
+        self.assertEqual(rule3.labeledLayer(), vl)
+        self.assertEqual(rule3.targetLayer(), vl2)
+        self.assertEqual(rule3.cost(), 6.6)
 
 
 if __name__ == '__main__':
