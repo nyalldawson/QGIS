@@ -22,6 +22,28 @@ e.g. by preventing labels being placed which violate custom constraints.
 %TypeHeaderCode
 #include "qgslabelingenginerule.h"
 %End
+%ConvertToSubClassCode
+    if ( sipCpp->id() == "minimumDistanceLabelToFeature" )
+    {
+      sipType = sipType_QgsLabelingEngineRuleMinimumDistanceLabelToFeature;
+    }
+    else if ( sipCpp->type() == "minimumDistanceLabelToLabel" )
+    {
+      sipType = sipType_QgsLabelingEngineRuleMinimumDistanceLabelToLabel;
+    }
+    else if ( sipCpp->type() == "maximumDistanceLabelToFeature" )
+    {
+      sipType = sipType_QgsLabelingEngineRuleMaximumDistanceLabelToFeature;
+    }
+    else if ( sipCpp->type() == "avoidLabelOverlapWithFeature" )
+    {
+      sipType = sipType_QgsLabelingEngineRuleAvoidLabelOverlapWithFeature;
+    }
+    else
+    {
+      sipType = 0;
+    }
+%End
   public:
 
     virtual ~QgsAbstractLabelingEngineRule();

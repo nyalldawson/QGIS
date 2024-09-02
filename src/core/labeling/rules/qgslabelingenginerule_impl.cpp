@@ -26,7 +26,7 @@ QgsLabelingEngineRuleMinimumDistanceLabelToFeature *QgsLabelingEngineRuleMinimum
 
 QString QgsLabelingEngineRuleMinimumDistanceLabelToFeature::id() const
 {
-
+  return QStringLiteral( "minimumDistanceLabelToFeature" );
 }
 
 bool QgsLabelingEngineRuleMinimumDistanceLabelToFeature::prepare( QgsRenderContext &context )

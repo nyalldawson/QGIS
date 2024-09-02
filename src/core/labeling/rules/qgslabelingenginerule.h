@@ -35,6 +35,32 @@ class QgsReadWriteContext;
  */
 class CORE_EXPORT QgsAbstractLabelingEngineRule SIP_ABSTRACT
 {
+
+#ifdef SIP_RUN
+    SIP_CONVERT_TO_SUBCLASS_CODE
+    if ( sipCpp->id() == "minimumDistanceLabelToFeature" )
+    {
+      sipType = sipType_QgsLabelingEngineRuleMinimumDistanceLabelToFeature;
+    }
+    else if ( sipCpp->type() == "minimumDistanceLabelToLabel" )
+    {
+      sipType = sipType_QgsLabelingEngineRuleMinimumDistanceLabelToLabel;
+    }
+    else if ( sipCpp->type() == "maximumDistanceLabelToFeature" )
+    {
+      sipType = sipType_QgsLabelingEngineRuleMaximumDistanceLabelToFeature;
+    }
+    else if ( sipCpp->type() == "avoidLabelOverlapWithFeature" )
+    {
+      sipType = sipType_QgsLabelingEngineRuleAvoidLabelOverlapWithFeature;
+    }
+    else
+    {
+      sipType = 0;
+    }
+    SIP_END
+#endif
+
   public:
 
     virtual ~QgsAbstractLabelingEngineRule();
