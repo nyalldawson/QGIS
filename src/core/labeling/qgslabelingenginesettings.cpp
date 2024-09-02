@@ -18,6 +18,8 @@
 #include "qgsproject.h"
 #include "qgscolorutils.h"
 #include "qgslabelingenginerule.h"
+#include "qgsapplication.h"
+#include "qgslabelingengineruleregistry.h"
 
 QgsLabelingEngineSettings::QgsLabelingEngineSettings()
 {
@@ -111,6 +113,50 @@ void QgsLabelingEngineSettings::writeSettingsToProject( QgsProject *project )
   project->writeEntry( QStringLiteral( "PAL" ), QStringLiteral( "/UnplacedColor" ), QgsColorUtils::colorToString( mUnplacedLabelColor ) );
 
   project->writeEntry( QStringLiteral( "PAL" ), QStringLiteral( "/PlacementEngineVersion" ), static_cast< int >( mPlacementVersion ) );
+}
+
+void QgsLabelingEngineSettings::writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const
+{
+  if ( !mEngineRules.empty() )
+  {
+    QDomElement rulesElement = doc.createElement( QStringLiteral( "rules" ) );
+    for ( const auto &rule : mEngineRules )
+    {
+      QDomElement ruleElement = doc.createElement( QStringLiteral( "rule" ) );
+      ruleElement.setAttribute( QStringLiteral( "id" ), rule->id() );
+      rule->writeXml( doc, ruleElement, context );
+      rulesElement.appendChild( ruleElement );
+    }
+    element.appendChild( rulesElement );
+  }
+}
+
+void QgsLabelingEngineSettings::readXml( const QDomElement &element, const QgsReadWriteContext &context )
+{
+  mEngineRules.clear();
+  {
+    const QDomElement rulesElement = element.firstChildElement( QStringLiteral( "rules" ) );
+    const QDomNodeList rules = rulesElement.childNodes();
+    for ( int i = 0; i < rules.length(); i++ )
+    {
+      const QDomElement ruleElement = rules.at( i ).toElement();
+      const QString id = ruleElement.attribute( QStringLiteral( "id" ) );
+      std::unique_ptr< QgsAbstractLabelingEngineRule > rule( QgsApplication::labelingEngineRuleRegistry()->create( id ) );
+      if ( rule )
+      {
+        rule->readXml( ruleElement, context );
+        mEngineRules.emplace_back( std::move( rule ) );
+      }
+    }
+  }
+}
+
+void QgsLabelingEngineSettings::resolveReferences( const QgsProject *project )
+{
+  for ( const auto &rule : mEngineRules )
+  {
+    rule->resolveReferences( project );
+  }
 }
 
 QColor QgsLabelingEngineSettings::unplacedLabelColor() const

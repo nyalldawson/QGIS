@@ -22,7 +22,9 @@
 
 class QgsProject;
 class QgsAbstractLabelingEngineRule;
-
+class QDomDocument;
+class QDomElement;
+class QgsReadWriteContext;
 
 /**
  * \ingroup core
@@ -131,10 +133,56 @@ class CORE_EXPORT QgsLabelingEngineSettings
      */
     Q_DECL_DEPRECATED Search searchMethod() const SIP_DEPRECATED { return Chain; }
 
-    //! Read configuration of the labeling engine from a project
+    // TODO QGIS 4.0 -- remove these, and just use read/writeXml directly:
+
+    /**
+     * Read configuration of the labeling engine from a project
+     *
+     * \note Both this method and readXml() must be called to completely restore the object's state from a project.
+     */
     void readSettingsFromProject( QgsProject *project );
-    //! Write configuration of the labeling engine to a project
+
+    /**
+     * Write configuration of the labeling engine to a project.
+     *
+     * \note Both this method and writeXml() must be called to completely store the object's state in a project.
+     */
     void writeSettingsToProject( QgsProject *project );
+
+    /**
+     * Writes the label engine settings to an XML \a element.
+     *
+     * \note Both this method and writeSettingsToProject() must be called to completely store the object's state in a project.
+     *
+     * \see readXml()
+     * \see writeSettingsToProject()
+     *
+     * \since QGIS 3.40
+     */
+    void writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const;
+
+    /**
+     * Reads the label engine settings from an XML \a element.
+     *
+     * \note Both this method and readSettingsFromProject() must be called to completely restore the object's state from a project.
+     *
+     * \note resolveReferences() must be called following this method.
+     *
+     * \see writeXml()
+     * \see readSettingsFromProject()
+     *
+     * \since QGIS 3.40
+     */
+    void readXml( const QDomElement &element, const QgsReadWriteContext &context );
+
+    /**
+     * Resolves reference to layers from stored layer ID.
+     *
+     * Should be called following a call readXml().
+     *
+     * \since QGIS 3.40
+     */
+    void resolveReferences( const QgsProject *project );
 
     // TODO QGIS 4.0: In reality the text render format settings don't only apply to labels, but also
     // ANY text rendered using QgsTextRenderer (including some non-label text items in layouts).

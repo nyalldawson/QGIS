@@ -5,6 +5,8 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 """
+import os
+import tempfile
 
 from qgis.PyQt.QtXml import QDomDocument
 
@@ -19,7 +21,8 @@ from qgis.core import (
     QgsProject,
     QgsVectorLayer,
     QgsMapUnitScale,
-    QgsReadWriteContext
+    QgsReadWriteContext,
+    QgsLabelingEngineSettings
 )
 import unittest
 from qgis.testing import start_app, QgisTestCase
@@ -245,6 +248,65 @@ class TestQgsLabelingEngineRule(QgisTestCase):
         self.assertEqual(rule3.labeledLayer(), vl)
         self.assertEqual(rule3.targetLayer(), vl2)
         self.assertEqual(rule3.cost(), 6.6)
+
+    def test_settings(self):
+        """
+        Test attaching rules to QgsLabelingEngineSettings
+        """
+        p = QgsProject()
+        vl = QgsVectorLayer('Point', 'layer 1', 'memory')
+        vl2 = QgsVectorLayer('Point', 'layer 2', 'memory')
+        p.addMapLayers([vl, vl2])
+
+        self.assertFalse(p.labelingEngineSettings().rules())
+
+        rule = QgsLabelingEngineRuleMaximumDistanceLabelToFeature()
+        rule.setLabeledLayer(vl)
+        rule.setTargetLayer(vl2)
+        rule.setCost(6.6)
+
+        label_engine_settings = p.labelingEngineSettings()
+        label_engine_settings.addRule(rule)
+        self.assertEqual([r.id() for r in label_engine_settings.rules()], ['maximumDistanceLabelToFeature'])
+
+        rule2 = QgsLabelingEngineRuleAvoidLabelOverlapWithFeature()
+        rule2.setLabeledLayer(vl2)
+        rule2.setTargetLayer(vl)
+        rule2.setCost(4.6)
+        label_engine_settings.addRule(rule2)
+        self.assertEqual([r.id() for r in label_engine_settings.rules()], ['maximumDistanceLabelToFeature', 'avoidLabelOverlapWithFeature'])
+
+        p.setLabelingEngineSettings(label_engine_settings)
+
+        label_engine_settings = p.labelingEngineSettings()
+        self.assertEqual([r.id() for r in label_engine_settings.rules()],
+                         ['maximumDistanceLabelToFeature',
+                          'avoidLabelOverlapWithFeature'])
+
+        # save, restore project
+        with tempfile.TemporaryDirectory() as temp_dir:
+            self.assertTrue(p.write(os.path.join(temp_dir, 'p.qgs')))
+
+            p2 = QgsProject()
+            self.assertTrue(p2.read(os.path.join(temp_dir, 'p.qgs')))
+
+            label_engine_settings = p2.labelingEngineSettings()
+            self.assertEqual([r.id() for r in label_engine_settings.rules()],
+                             ['maximumDistanceLabelToFeature',
+                              'avoidLabelOverlapWithFeature'])
+
+            # check layers, settings
+            rule1 = label_engine_settings.rules()[0]
+            self.assertIsInstance(rule1, QgsLabelingEngineRuleMaximumDistanceLabelToFeature)
+            self.assertEqual(rule1.cost(), 6.6)
+            self.assertEqual(rule1.labeledLayer().name(), 'layer 1')
+            self.assertEqual(rule1.targetLayer().name(), 'layer 2')
+
+            rule2 = label_engine_settings.rules()[1]
+            self.assertIsInstance(rule2, QgsLabelingEngineRuleAvoidLabelOverlapWithFeature)
+            self.assertEqual(rule2.cost(), 4.6)
+            self.assertEqual(rule2.labeledLayer().name(), 'layer 2')
+            self.assertEqual(rule2.targetLayer().name(), 'layer 1')
 
 
 if __name__ == '__main__':
