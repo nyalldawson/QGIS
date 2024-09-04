@@ -329,9 +329,9 @@ std::unique_ptr<Problem> Pal::extractProblem( const QgsRectangle &extent, const 
 
   prob->mFeatureCount = features.size();
   prob->mTotalCandidates = 0;
-  prob->mFeatNbLp.resize( prob->mFeatureCount );
-  prob->mFeatStartId.resize( prob->mFeatureCount );
-  prob->mInactiveCost.resize( prob->mFeatureCount );
+  prob->mCandidateCountForFeature.resize( prob->mFeatureCount );
+  prob->mFirstCandidateIndexForFeature.resize( prob->mFeatureCount );
+  prob->mUnlabeledCostForFeature.resize( prob->mFeatureCount );
 
   if ( !features.empty() )
   {
@@ -397,17 +397,18 @@ std::unique_ptr<Problem> Pal::extractProblem( const QgsRectangle &extent, const 
       conflictProfile = std::make_unique< QgsScopedRuntimeProfile >( QObject::tr( "Calculating conflicts" ), QStringLiteral( "rendering" ) );
     }
 
-    int idlp = 0;
-    for ( std::size_t i = 0; i < prob->mFeatureCount; i++ ) /* for each feature into prob */
+    int currentLabelPositionIndex = 0;
+    // loop through all the features registered in the problem
+    for ( std::size_t featureIndex = 0; featureIndex < prob->mFeatureCount; featureIndex++ )
     {
       if ( feedback )
-        feedback->setProgress( i * step );
+        feedback->setProgress( featureIndex * step );
 
       std::unique_ptr< Feats > feat = std::move( features.front() );
       features.pop_front();
 
-      prob->mFeatStartId[i] = idlp;
-      prob->mInactiveCost[i] = std::pow( 2, 10 - 10 * feat->priority );
+      prob->mFirstCandidateIndexForFeature[featureIndex] = currentLabelPositionIndex;
+      prob->mUnlabeledCostForFeature[featureIndex] = std::pow( 2, 10 - 10 * feat->priority );
 
       std::size_t maxCandidates = 0;
       switch ( feat->feature->getGeosType() )
@@ -521,14 +522,14 @@ std::unique_ptr<Problem> Pal::extractProblem( const QgsRectangle &extent, const 
         return nullptr;
 
       // update problem's # candidate
-      prob->mFeatNbLp[i] = static_cast< int >( feat->candidates.size() );
+      prob->mCandidateCountForFeature[featureIndex] = static_cast< int >( feat->candidates.size() );
       prob->mTotalCandidates += static_cast< int >( feat->candidates.size() );
 
       // add all candidates into a rtree (to speed up conflicts searching)
       for ( std::unique_ptr< LabelPosition > &candidate : feat->candidates )
       {
         candidate->insertIntoIndex( prob->allCandidatesIndex() );
-        candidate->setProblemIds( static_cast< int >( i ), idlp++ );
+        candidate->setProblemIds( static_cast< int >( featureIndex ), currentLabelPositionIndex++ );
       }
       features.emplace_back( std::move( feat ) );
     }
@@ -731,8 +732,8 @@ bool Pal::candidatesAreConflicting( const LabelPosition *lp1, const LabelPositio
   // we cache the value -- this can be costly to calculate, and we check this multiple times
   // per candidate during the labeling problem solving
 
-    if ( lp1->getProblemFeatureId() == lp2->getProblemFeatureId() )
-        return false;
+  if ( lp1->getProblemFeatureId() == lp2->getProblemFeatureId() )
+    return false;
 
   // conflicts are commutative - so we always store them in the cache using the smaller id as the first element of the key pair
   auto key = qMakePair( std::min( lp1->globalId(), lp2->globalId() ), std::max( lp1->globalId(), lp2->globalId() ) );
