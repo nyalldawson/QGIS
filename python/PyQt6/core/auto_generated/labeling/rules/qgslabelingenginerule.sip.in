@@ -8,6 +8,83 @@
 
 
 
+class QgsLabelingEngineContext
+{
+%Docstring(signature="appended")
+Encapsulates the context for a labeling engine run.
+
+.. versionadded:: 3.40
+%End
+
+%TypeHeaderCode
+#include "qgslabelingenginerule.h"
+%End
+  public:
+
+    QgsLabelingEngineContext( QgsRenderContext &renderContext );
+%Docstring
+Constructor for QgsLabelingEngineContext.
+%End
+
+
+    QgsRenderContext &renderContext();
+%Docstring
+Returns a reference to the context's render context.
+%End
+
+
+    QgsRectangle extent() const;
+%Docstring
+Returns the map extent defining the limits for labeling.
+
+.. seealso:: :py:func:`mapBoundaryGeometry`
+
+.. seealso:: :py:func:`setExtent`
+%End
+
+    void setExtent( const QgsRectangle &extent );
+%Docstring
+Sets the map ``extent`` defining the limits for labeling.
+
+.. seealso:: :py:func:`setMapBoundaryGeometry`
+
+.. seealso:: :py:func:`extent`
+%End
+
+    QgsGeometry mapBoundaryGeometry() const;
+%Docstring
+Returns the map label boundary geometry, which defines the limits within which labels may be placed
+in the map.
+
+The map boundary geometry specifies the actual geometry of the map
+boundary, which will be used to detect whether a label is visible (or partially visible) in
+the rendered map. This may differ from :py:func:`~QgsLabelingEngineContext.extent` in the case of rotated or non-rectangular
+maps.
+
+.. seealso:: :py:func:`setMapBoundaryGeometry`
+
+.. seealso:: :py:func:`extent`
+%End
+
+    void setMapBoundaryGeometry( const QgsGeometry &geometry );
+%Docstring
+Sets the map label boundary ``geometry``, which defines the limits within which labels may be placed
+in the map.
+
+The map boundary geometry specifies the actual geometry of the map
+boundary, which will be used to detect whether a label is visible (or partially visible) in
+the rendered map. This may differ from :py:func:`~QgsLabelingEngineContext.extent` in the case of rotated or non-rectangular
+maps.
+
+.. seealso:: :py:func:`setExtent`
+
+.. seealso:: :py:func:`mapBoundaryGeometry`
+%End
+
+  private:
+    QgsLabelingEngineContext( const QgsLabelingEngineContext &other );
+};
+
 class QgsAbstractLabelingEngineRule
 {
 %Docstring(signature="appended")
@@ -68,7 +145,6 @@ This must be called on the main render thread, prior to commencing the render op
 logic (such as creation of feature sources) can be performed in this method.
 %End
 
-
     virtual void writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const = 0;
 %Docstring
 Writes the rule properties to an XML ``element``.
@@ -91,6 +167,8 @@ Resolves reference to layers from stored layer ID.
 
 Should be called following a call :py:func:`~QgsAbstractLabelingEngineRule.readXml`.
 %End
+
+
 };
 
 /************************************************************************

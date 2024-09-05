@@ -22,6 +22,8 @@
 #include "qgsvectorlayerref.h"
 #include "qgsmapunitscale.h"
 
+class QgsSpatialIndex;
+
 /**
  * A labeling engine rule which prevents labels being placed too close to features from a different layer.
  *
@@ -35,7 +37,6 @@ class CORE_EXPORT QgsLabelingEngineRuleMinimumDistanceLabelToFeature : public Qg
     QgsLabelingEngineRuleMinimumDistanceLabelToFeature *clone() const override SIP_FACTORY;
     QString id() const override;
     bool prepare( QgsRenderContext &context ) override;
-    bool modifyProblem() override;
     void writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const override;
     void readXml( const QDomElement &element, const QgsReadWriteContext &context ) override;
     void resolveReferences( const QgsProject *project ) override;
@@ -165,11 +166,10 @@ class CORE_EXPORT QgsLabelingEngineRuleMinimumDistanceLabelToLabel : public QgsA
     QgsLabelingEngineRuleMinimumDistanceLabelToLabel *clone() const override SIP_FACTORY;
     QString id() const override;
     bool prepare( QgsRenderContext &context ) override;
-    bool modifyProblem() override;
     void writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const override;
     void readXml( const QDomElement &element, const QgsReadWriteContext &context ) override;
     void resolveReferences( const QgsProject *project ) override;
-   bool candidatesAreConflicting( const pal::LabelPosition *lp1, const pal::LabelPosition *lp2 ) const final SIP_SKIP;
+    bool candidatesAreConflicting( const pal::LabelPosition *lp1, const pal::LabelPosition *lp2 ) const final SIP_SKIP;
 
     /**
      * Returns the layer providing the labels.
@@ -296,7 +296,6 @@ class CORE_EXPORT QgsLabelingEngineRuleMaximumDistanceLabelToFeature : public Qg
     QgsLabelingEngineRuleMaximumDistanceLabelToFeature *clone() const override SIP_FACTORY;
     QString id() const override;
     bool prepare( QgsRenderContext &context ) override;
-    bool modifyProblem() override;
     void writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const override;
     void readXml( const QDomElement &element, const QgsReadWriteContext &context ) override;
     void resolveReferences( const QgsProject *project ) override;
@@ -424,13 +423,15 @@ class CORE_EXPORT QgsLabelingEngineRuleAvoidLabelOverlapWithFeature : public Qgs
 {
   public:
 
+    QgsLabelingEngineRuleAvoidLabelOverlapWithFeature();
+    ~QgsLabelingEngineRuleAvoidLabelOverlapWithFeature() override;
     QgsLabelingEngineRuleAvoidLabelOverlapWithFeature *clone() const override SIP_FACTORY;
     QString id() const override;
     bool prepare( QgsRenderContext &context ) override;
-    bool modifyProblem() override;
     void writeXml( QDomDocument &doc, QDomElement &element, const QgsReadWriteContext &context ) const override;
     void readXml( const QDomElement &element, const QgsReadWriteContext &context ) override;
     void resolveReferences( const QgsProject *project ) override;
+    bool candidateIsIllegal( const pal::LabelPosition *candidate, QgsLabelingEngineContext &context ) const override SIP_SKIP;
 
     /**
      * Returns the layer providing the labels.
@@ -460,30 +461,18 @@ class CORE_EXPORT QgsLabelingEngineRuleAvoidLabelOverlapWithFeature : public Qgs
      */
     void setTargetLayer( QgsVectorLayer *layer );
 
-    /**
-     * Returns the penalty cost incurred when the rule is violated.
-     *
-     * This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
-     * and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
-     *
-     * \see setCost()
-     */
-    double cost() const { return mCost; }
-
-    /**
-     * Sets the penalty \a cost incurred when the rule is violated.
-     *
-     * This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
-     * and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
-     *
-     * \see cost()
-     */
-    void setCost( double cost ) { mCost = cost; }
-
   private:
+#ifdef SIP_RUN
+    QgsLabelingEngineRuleAvoidLabelOverlapWithFeature( const QgsLabelingEngineRuleAvoidLabelOverlapWithFeature & );
+#endif
+    void initialize( QgsLabelingEngineContext &context );
+
     QgsVectorLayerRef mLabeledLayer;
     QgsVectorLayerRef mTargetLayer;
-    double mCost = 0;
+
+    std::unique_ptr< QgsAbstractFeatureSource > mTargetLayerSource;
+    std::unique_ptr< QgsSpatialIndex > mIndex;
+    bool mInitialized = false;
 };
 
 

@@ -18,16 +18,104 @@
 #include "qgis_core.h"
 #include "qgis_sip.h"
 #include "qgis.h"
+#include "qgsgeometry.h"
 
 class QgsRenderContext;
 class QDomDocument;
 class QDomElement;
 class QgsReadWriteContext;
 class QgsProject;
+#ifndef SIP_RUN
 namespace pal
 {
   class LabelPosition;
 }
+#endif
+
+/**
+ * \ingroup core
+ * \brief Encapsulates the context for a labeling engine run.
+ * \since QGIS 3.40
+ */
+class CORE_EXPORT QgsLabelingEngineContext
+{
+  public:
+
+    /**
+     * Constructor for QgsLabelingEngineContext.
+     */
+    QgsLabelingEngineContext( QgsRenderContext &renderContext );
+
+#ifndef SIP_RUN
+    QgsLabelingEngineContext( const QgsLabelingEngineContext &other ) = delete;
+    QgsLabelingEngineContext &operator=( const QgsLabelingEngineContext &other ) = delete;
+#endif
+
+    /**
+     * Returns a reference to the context's render context.
+     */
+    QgsRenderContext &renderContext() { return mRenderContext; }
+
+    /**
+     * Returns a reference to the context's render context.
+     * \note Not available in Python bindings.
+     */
+    const QgsRenderContext &renderContext() const { return mRenderContext; } SIP_SKIP
+
+    /**
+     * Returns the map extent defining the limits for labeling.
+     *
+     * \see mapBoundaryGeometry()
+     * \see setExtent()
+     */
+    QgsRectangle extent() const;
+
+    /**
+     * Sets the map \a extent defining the limits for labeling.
+     *
+     * \see setMapBoundaryGeometry()
+     * \see extent()
+     */
+    void setExtent( const QgsRectangle &extent );
+
+    /**
+     * Returns the map label boundary geometry, which defines the limits within which labels may be placed
+     * in the map.
+     *
+     * The map boundary geometry specifies the actual geometry of the map
+     * boundary, which will be used to detect whether a label is visible (or partially visible) in
+     * the rendered map. This may differ from extent() in the case of rotated or non-rectangular
+     * maps.
+     *
+     * \see setMapBoundaryGeometry()
+     * \see extent()
+     */
+    QgsGeometry mapBoundaryGeometry() const;
+
+    /**
+     * Sets the map label boundary \a geometry, which defines the limits within which labels may be placed
+     * in the map.
+     *
+     * The map boundary geometry specifies the actual geometry of the map
+     * boundary, which will be used to detect whether a label is visible (or partially visible) in
+     * the rendered map. This may differ from extent() in the case of rotated or non-rectangular
+     * maps.
+     *
+     * \see setExtent()
+     * \see mapBoundaryGeometry()
+     */
+    void setMapBoundaryGeometry( const QgsGeometry &geometry );
+
+  private:
+
+#ifdef SIP_RUN
+    QgsLabelingEngineContext( const QgsLabelingEngineContext &other );
+#endif
+
+    QgsRenderContext &mRenderContext;
+    QgsRectangle mExtent;
+    QgsGeometry mMapBoundaryGeometry;
+};
 
 /**
  * Abstract base class for labeling engine rules.
@@ -91,11 +179,6 @@ class CORE_EXPORT QgsAbstractLabelingEngineRule
     virtual bool prepare( QgsRenderContext &context ) = 0;
 
     /**
-     *
-     */
-    virtual bool modifyProblem() SIP_SKIP;
-
-    /**
      * Writes the rule properties to an XML \a element.
      *
      * \see readXml()
@@ -118,11 +201,13 @@ class CORE_EXPORT QgsAbstractLabelingEngineRule
     virtual void resolveReferences( const QgsProject *project );
 
     /**
-     * Returns TRUE if a labelling candidate \a lp1 conflicts with \a lp2 after applying the rule.
+     * Returns TRUE if a labeling candidate \a lp1 conflicts with \a lp2 after applying the rule.
      *
      * The default implementation returns FALSE.
      */
     virtual bool candidatesAreConflicting( const pal::LabelPosition *lp1, const pal::LabelPosition *lp2 ) const SIP_SKIP;
+
+    virtual bool candidateIsIllegal( const pal::LabelPosition *candidate, QgsLabelingEngineContext &context ) const SIP_SKIP;
 };
 
 #endif // QGSLABELINGENGINESETTINGS_H

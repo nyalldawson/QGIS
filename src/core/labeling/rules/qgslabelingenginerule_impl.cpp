@@ -16,6 +16,12 @@
 #include "qgslabelingenginerule_impl.h"
 #include "qgsunittypes.h"
 #include "qgssymbollayerutils.h"
+#include "labelposition.h"
+#include "feature.h"
+#include "qgsvectorlayerfeatureiterator.h"
+#include "qgsthreadingutils.h"
+#include "qgsspatialindex.h"
+#include "qgsgeos.h"
 
 //
 // QgsLabelingEngineRuleMinimumDistanceLabelToFeature
@@ -34,11 +40,6 @@ QString QgsLabelingEngineRuleMinimumDistanceLabelToFeature::id() const
 bool QgsLabelingEngineRuleMinimumDistanceLabelToFeature::prepare( QgsRenderContext & )
 {
   return true;
-}
-
-bool QgsLabelingEngineRuleMinimumDistanceLabelToFeature::modifyProblem()
-{
-
 }
 
 void QgsLabelingEngineRuleMinimumDistanceLabelToFeature::writeXml( QDomDocument &, QDomElement &element, const QgsReadWriteContext & ) const
@@ -132,11 +133,6 @@ bool QgsLabelingEngineRuleMinimumDistanceLabelToLabel::prepare( QgsRenderContext
   return true;
 }
 
-bool QgsLabelingEngineRuleMinimumDistanceLabelToLabel::modifyProblem()
-{
-
-}
-
 void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::writeXml( QDomDocument &, QDomElement &element, const QgsReadWriteContext & ) const
 {
   element.setAttribute( QStringLiteral( "distance" ), mDistance );
@@ -189,9 +185,9 @@ void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::resolveReferences( const 
   mTargetLayer.resolve( project );
 }
 
-bool QgsLabelingEngineRuleMinimumDistanceLabelToLabel::candidatesAreConflicting(const pal::LabelPosition* lp1, const pal::LabelPosition* lp2) const
+bool QgsLabelingEngineRuleMinimumDistanceLabelToLabel::candidatesAreConflicting( const pal::LabelPosition *lp1, const pal::LabelPosition *lp2 ) const
 {
-    return true;
+  return false;
 }
 
 QgsVectorLayer *QgsLabelingEngineRuleMinimumDistanceLabelToLabel::labeledLayer()
@@ -231,11 +227,6 @@ QString QgsLabelingEngineRuleMaximumDistanceLabelToFeature::id() const
 bool QgsLabelingEngineRuleMaximumDistanceLabelToFeature::prepare( QgsRenderContext & )
 {
   return true;
-}
-
-bool QgsLabelingEngineRuleMaximumDistanceLabelToFeature::modifyProblem()
-{
-
 }
 
 void QgsLabelingEngineRuleMaximumDistanceLabelToFeature::writeXml( QDomDocument &, QDomElement &element, const QgsReadWriteContext & ) const
@@ -314,9 +305,15 @@ void QgsLabelingEngineRuleMaximumDistanceLabelToFeature::setTargetLayer( QgsVect
 // QgsLabelingEngineRuleAvoidLabelOverlapWithFeature
 //
 
+QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::QgsLabelingEngineRuleAvoidLabelOverlapWithFeature() = default;
+QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::~QgsLabelingEngineRuleAvoidLabelOverlapWithFeature() = default;
+
 QgsLabelingEngineRuleAvoidLabelOverlapWithFeature *QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::clone() const
 {
-  return new QgsLabelingEngineRuleAvoidLabelOverlapWithFeature( *this );
+  std::unique_ptr< QgsLabelingEngineRuleAvoidLabelOverlapWithFeature> res = std::make_unique< QgsLabelingEngineRuleAvoidLabelOverlapWithFeature >();
+  res->mLabeledLayer = mLabeledLayer;
+  res->mTargetLayer = mTargetLayer;
+  return res.release();
 }
 
 QString QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::id() const
@@ -326,18 +323,16 @@ QString QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::id() const
 
 bool QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::prepare( QgsRenderContext & )
 {
+  if ( !mTargetLayer )
+    return false;
+
+  QGIS_CHECK_OTHER_QOBJECT_THREAD_ACCESS( mTargetLayer );
+  mTargetLayerSource = std::make_unique< QgsVectorLayerFeatureSource >( mTargetLayer.get() );
   return true;
-}
-
-bool QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::modifyProblem()
-{
-
 }
 
 void QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::writeXml( QDomDocument &, QDomElement &element, const QgsReadWriteContext & ) const
 {
-  element.setAttribute( QStringLiteral( "cost" ), mCost );
-
   if ( mLabeledLayer )
   {
     element.setAttribute( QStringLiteral( "labeledLayer" ), mLabeledLayer.layerId );
@@ -356,8 +351,6 @@ void QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::writeXml( QDomDocument &
 
 void QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::readXml( const QDomElement &element, const QgsReadWriteContext & )
 {
-  mCost = element.attribute( QStringLiteral( "cost" ), QStringLiteral( "0" ) ).toDouble();
-
   {
     const QString layerId = element.attribute( QStringLiteral( "labeledLayer" ) );
     const QString layerName = element.attribute( QStringLiteral( "labeledLayerName" ) );
@@ -380,6 +373,46 @@ void QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::resolveReferences( const
   mTargetLayer.resolve( project );
 }
 
+bool QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::candidateIsIllegal( const pal::LabelPosition *candidate, QgsLabelingEngineContext &context ) const
+{
+  if ( candidate->getFeaturePart()->feature()->provider()->layerId() != mLabeledLayer.layerId )
+  {
+    return false;
+  }
+
+  if ( !mTargetLayerSource )
+    return false;
+
+  if ( !mInitialized )
+    const_cast< QgsLabelingEngineRuleAvoidLabelOverlapWithFeature * >( this )->initialize( context );
+
+  const QList<QgsFeatureId> overlapCandidates = mIndex->intersects( candidate->boundingBox() );
+  if ( overlapCandidates.empty() )
+    return false;
+
+  GEOSContextHandle_t geosctxt = QgsGeosContext::get();
+
+  const GEOSPreparedGeometry *candidateGeos = candidate->preparedMultiPartGeom();
+  for ( const QgsFeatureId overlapCandidateId : overlapCandidates )
+  {
+    if ( context.renderContext().feedback() && context.renderContext().feedback()->isCanceled() )
+      break;
+
+    try
+    {
+      geos::unique_ptr featureCandidate = QgsGeos::asGeos( mIndex->geometry( overlapCandidateId ).constGet() );
+      if ( GEOSPreparedIntersects_r( geosctxt, candidateGeos, featureCandidate.get() ) == 1 )
+        return true;
+    }
+    catch ( GEOSException &e )
+    {
+      QgsDebugError( QStringLiteral( "GEOS exception: %1" ).arg( e.what() ) );
+    }
+  }
+
+  return false;
+}
+
 QgsVectorLayer *QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::labeledLayer()
 {
   return mLabeledLayer.get();
@@ -398,4 +431,18 @@ QgsVectorLayer *QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::targetLayer()
 void QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::setTargetLayer( QgsVectorLayer *layer )
 {
   mTargetLayer = layer;
+}
+
+void QgsLabelingEngineRuleAvoidLabelOverlapWithFeature::initialize( QgsLabelingEngineContext &context )
+{
+  QgsFeatureRequest req;
+  req.setDestinationCrs( context.renderContext().coordinateTransform().destinationCrs(), context.renderContext().transformContext() );
+  req.setFilterRect( context.extent() );
+  req.setNoAttributes();
+
+  QgsFeatureIterator it = mTargetLayerSource->getFeatures( req );
+
+  mIndex = std::make_unique< QgsSpatialIndex >( it, context.renderContext().feedback(), QgsSpatialIndex::Flag::FlagStoreFeatureGeometries );
+
+  mInitialized = true;
 }

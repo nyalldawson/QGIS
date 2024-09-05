@@ -16,19 +16,53 @@
 #include "qgslabelingenginerule.h"
 
 
-QgsAbstractLabelingEngineRule::~QgsAbstractLabelingEngineRule() = default;
+//
+// QgsLabelingEngineContext
+//
 
-bool QgsAbstractLabelingEngineRule::modifyProblem()
+QgsLabelingEngineContext::QgsLabelingEngineContext( QgsRenderContext &renderContext )
+  : mRenderContext( renderContext )
 {
 
 }
+
+QgsGeometry QgsLabelingEngineContext::mapBoundaryGeometry() const
+{
+  return mMapBoundaryGeometry;
+}
+
+void QgsLabelingEngineContext::setMapBoundaryGeometry( const QgsGeometry &geometry )
+{
+  mMapBoundaryGeometry = geometry;
+}
+
+QgsRectangle QgsLabelingEngineContext::extent() const
+{
+  return mExtent;
+}
+
+void QgsLabelingEngineContext::setExtent( const QgsRectangle &extent )
+{
+  mExtent = extent;
+}
+
+//
+// QgsAbstractLabelingEngineRule
+//
+
+QgsAbstractLabelingEngineRule::~QgsAbstractLabelingEngineRule() = default;
 
 void QgsAbstractLabelingEngineRule::resolveReferences( const QgsProject * )
 {
 
 }
 
-bool QgsAbstractLabelingEngineRule::candidatesAreConflicting(const pal::LabelPosition* , const pal::LabelPosition* ) const
+bool QgsAbstractLabelingEngineRule::candidatesAreConflicting( const pal::LabelPosition *, const pal::LabelPosition * ) const
 {
-    return false;
+  return false;
+}
+
+bool QgsAbstractLabelingEngineRule::candidateIsIllegal( const pal::LabelPosition *, QgsLabelingEngineContext & ) const
+{
+  return false;
 }

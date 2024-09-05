@@ -103,6 +103,9 @@ Layer *Pal::addLayer( QgsAbstractLabelProvider *provider, const QString &layerNa
 std::unique_ptr<Problem> Pal::extractProblem( const QgsRectangle &extent, const QgsGeometry &mapBoundary, QgsRenderContext &context )
 {
   QgsLabelingEngineFeedback *feedback = qobject_cast< QgsLabelingEngineFeedback * >( context.feedback() );
+  QgsLabelingEngineContext labelContext( context );
+  labelContext.setExtent( extent );
+  labelContext.setMapBoundaryGeometry( mapBoundary );
 
   std::unique_ptr< QgsScopedRuntimeProfile > extractionProfile;
   if ( context.flags() & Qgis::RenderContextFlag::RecordProfile )
@@ -227,13 +230,30 @@ std::unique_ptr<Problem> Pal::extractProblem( const QgsRectangle &extent, const 
       if ( isCanceled() )
         break;
 
-      // purge candidates that are outside the bbox
-      candidates.erase( std::remove_if( candidates.begin(), candidates.end(), [&mapBoundaryPrepared, this]( std::unique_ptr< LabelPosition > &candidate )
+      // purge candidates that violate known constraints, eg
+      // - they are outside the bbox
+      // - they violate a labeling rule
+      candidates.erase( std::remove_if( candidates.begin(), candidates.end(), [&mapBoundaryPrepared, &labelContext, this]( std::unique_ptr< LabelPosition > &candidate )
       {
         if ( showPartialLabels() )
-          return !candidate->intersects( mapBoundaryPrepared.get() );
+        {
+          if ( !candidate->intersects( mapBoundaryPrepared.get() ) )
+            return true;
+        }
         else
-          return !candidate->within( mapBoundaryPrepared.get() );
+        {
+          if ( !candidate->within( mapBoundaryPrepared.get() ) )
+            return true;
+        }
+
+        for ( QgsAbstractLabelingEngineRule *rule : std::as_const( mRules ) )
+        {
+          if ( rule->candidateIsIllegal( candidate.get(), labelContext ) )
+          {
+            return true;
+          }
+        }
+        return false;
       } ), candidates.end() );
 
       if ( isCanceled() )
@@ -373,7 +393,6 @@ std::unique_ptr<Problem> Pal::extractProblem( const QgsRectangle &extent, const 
         }
 
         CostCalculator::addObstacleCostPenalty( const_cast< LabelPosition * >( candidatePosition ), obstaclePart, this );
-
         return true;
       } );
     }
@@ -742,13 +761,13 @@ bool Pal::candidatesAreConflicting( const LabelPosition *lp1, const LabelPositio
     return *it;
 
   bool res = false;
-  for ( QgsAbstractLabelingEngineRule* rule : mRules )
+  for ( QgsAbstractLabelingEngineRule *rule : mRules )
   {
-      if ( rule->candidatesAreConflicting( lp1, lp2 ))
-      {
-          res = true;
-          break;
-      }
+    if ( rule->candidatesAreConflicting( lp1, lp2 ) )
+    {
+      res = true;
+      break;
+    }
   }
 
   res |= lp1->isInConflict( lp2 );
