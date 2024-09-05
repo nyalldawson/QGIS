@@ -265,9 +265,18 @@ namespace pal
        * Ownership of the rules are not transferred to the engine, and it is the caller's responsibility
        * to ensure that the lifetime of the rules exceeds that of the pal job.
        *
+       * \see rules()
        * \since QGIS 3.40
        */
       void setRules( const QList< QgsAbstractLabelingEngineRule * > &rules );
+
+      /**
+       * Returns the rules which the labeling solution must satisify.
+       *
+       * \see setRules()
+       * \since QGIS 3.40
+       */
+      QList< QgsAbstractLabelingEngineRule * > rules() const { return mRules; }
 
     private:
 

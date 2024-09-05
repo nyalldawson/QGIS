@@ -572,9 +572,6 @@ std::unique_ptr<Problem> Pal::extractProblem( const QgsRectangle &extent, const 
 
     int nbOverlaps = 0;
 
-    double amin[2];
-    double amax[2];
-
     if ( feedback )
       feedback->emit finalizingCandidatesAboutToBegin();
 
@@ -610,8 +607,8 @@ std::unique_ptr<Problem> Pal::extractProblem( const QgsRectangle &extent, const 
         //prob->feat[idlp] = j;
 
         // lookup for overlapping candidate
-        lp->getBoundingBox( amin, amax );
-        prob->allCandidatesIndex().intersects( QgsRectangle( amin[0], amin[1], amax[0], amax[1] ), [&lp, this]( const LabelPosition * lp2 )->bool
+        const QgsRectangle searchBounds = lp->boundingBoxForCandidateConflicts( this );
+        prob->allCandidatesIndex().intersects( searchBounds, [&lp, this]( const LabelPosition * lp2 )->bool
         {
           if ( candidatesAreConflicting( lp.get(), lp2 ) )
           {

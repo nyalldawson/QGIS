@@ -211,6 +211,15 @@ class CORE_EXPORT QgsAbstractLabelingEngineRule
     virtual bool candidatesAreConflicting( const pal::LabelPosition *lp1, const pal::LabelPosition *lp2 ) const SIP_SKIP;
 
     /**
+     * Returns a (possibly expanded) bounding box to use when searching for conflicts for a candidate.
+     *
+     * The return value is permitted to grow the bounding box, but may NOT shrink it.
+     *
+     * The default implementation returns the same bounds.
+     */
+    virtual QgsRectangle modifyCandidateConflictSearchBoundingBox( const QgsRectangle &candidateBounds ) const SIP_SKIP;
+
+    /**
      * Returns TRUE if a labeling \a candidate violates the rule and should be eliminated.
      *
      * The default implementation returns FALSE.

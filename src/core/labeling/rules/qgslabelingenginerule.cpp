@@ -62,6 +62,11 @@ bool QgsAbstractLabelingEngineRule::candidatesAreConflicting( const pal::LabelPo
   return false;
 }
 
+QgsRectangle QgsAbstractLabelingEngineRule::modifyCandidateConflictSearchBoundingBox( const QgsRectangle &candidateBounds ) const
+{
+  return candidateBounds;
+}
+
 bool QgsAbstractLabelingEngineRule::candidateIsIllegal( const pal::LabelPosition *, QgsLabelingEngineContext & ) const
 {
   return false;

@@ -180,7 +180,6 @@ class CORE_EXPORT QgsAbstractLabelingEngineRuleDistanceFromFeature : public QgsA
     double mCost = 0;
 
     // cached variables
-    double mDistancePainterUnits = 0;
     double mDistanceMapUnits = 0;
     std::unique_ptr< QgsAbstractFeatureSource > mTargetLayerSource;
     std::unique_ptr< QgsSpatialIndex > mIndex;
@@ -249,6 +248,8 @@ class CORE_EXPORT QgsLabelingEngineRuleMinimumDistanceLabelToLabel : public QgsA
     void readXml( const QDomElement &element, const QgsReadWriteContext &context ) override;
     void resolveReferences( const QgsProject *project ) override;
     bool prepare( QgsRenderContext &context ) override;
+    QgsRectangle modifyCandidateConflictSearchBoundingBox( const QgsRectangle &candidateBounds ) const override SIP_SKIP;
+    bool candidatesAreConflicting( const pal::LabelPosition *lp1, const pal::LabelPosition *lp2 ) const override SIP_SKIP;
 
     /**
      * Returns the layer providing the labels.
@@ -332,26 +333,6 @@ class CORE_EXPORT QgsLabelingEngineRuleMinimumDistanceLabelToLabel : public QgsA
      */
     void setDistanceUnitScale( const QgsMapUnitScale &scale ) { mDistanceUnitScale = scale; }
 
-    /**
-     * Returns the penalty cost incurred when the rule is violated.
-     *
-     * This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
-     * and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
-     *
-     * \see setCost()
-     */
-    double cost() const { return mCost; }
-
-    /**
-     * Sets the penalty \a cost incurred when the rule is violated.
-     *
-     * This is a value between 0 and 10, where 10 indicates that the rule must never be violated,
-     * and 1-9 = nice to have if possible, where higher numbers will try harder to avoid violating the rule.
-     *
-     * \see cost()
-     */
-    void setCost( double cost ) { mCost = cost; }
-
   private:
 #ifdef SIP_RUN
     QgsLabelingEngineRuleMinimumDistanceLabelToLabel( const QgsLabelingEngineRuleMinimumDistanceLabelToLabel & );
@@ -362,7 +343,9 @@ class CORE_EXPORT QgsLabelingEngineRuleMinimumDistanceLabelToLabel : public QgsA
     double mDistance = 0;
     Qgis::RenderUnit mDistanceUnit = Qgis::RenderUnit::Millimeters;
     QgsMapUnitScale mDistanceUnitScale;
-    double mCost = 0;
+
+    // cached variables
+    double mDistanceMapUnits = 0;
 };
 
 

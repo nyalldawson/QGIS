@@ -38,7 +38,6 @@ bool QgsAbstractLabelingEngineRuleDistanceFromFeature::prepare( QgsRenderContext
   QGIS_CHECK_OTHER_QOBJECT_THREAD_ACCESS( mTargetLayer );
   mTargetLayerSource = std::make_unique< QgsVectorLayerFeatureSource >( mTargetLayer.get() );
 
-  mDistancePainterUnits = context.convertToPainterUnits( mDistance, mDistanceUnit, mDistanceUnitScale );
   mDistanceMapUnits = context.convertToMapUnits( mDistance, mDistanceUnit, mDistanceUnitScale );
   return true;
 }
@@ -279,7 +278,6 @@ QgsLabelingEngineRuleMinimumDistanceLabelToLabel *QgsLabelingEngineRuleMinimumDi
   res->mDistance = mDistance;
   res->mDistanceUnit = mDistanceUnit;
   res->mDistanceUnitScale = mDistanceUnitScale;
-  res->mCost = mCost;
   return res.release();
 }
 
@@ -293,7 +291,6 @@ void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::writeXml( QDomDocument &,
   element.setAttribute( QStringLiteral( "distance" ), mDistance );
   element.setAttribute( QStringLiteral( "distanceUnit" ), QgsUnitTypes::encodeUnit( mDistanceUnit ) );
   element.setAttribute( QStringLiteral( "distanceUnitScale" ), QgsSymbolLayerUtils::encodeMapUnitScale( mDistanceUnitScale ) );
-  element.setAttribute( QStringLiteral( "cost" ), mCost );
 
   if ( mLabeledLayer )
   {
@@ -316,7 +313,6 @@ void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::readXml( const QDomElemen
   mDistance = element.attribute( QStringLiteral( "distance" ), QStringLiteral( "0" ) ).toDouble();
   mDistanceUnit = QgsUnitTypes::decodeRenderUnit( element.attribute( QStringLiteral( "distanceUnit" ) ) );
   mDistanceUnitScale =  QgsSymbolLayerUtils::decodeMapUnitScale( element.attribute( QStringLiteral( "distanceUnitScale" ) ) );
-  mCost = element.attribute( QStringLiteral( "cost" ), QStringLiteral( "0" ) ).toDouble();
 
   {
     const QString layerId = element.attribute( QStringLiteral( "labeledLayer" ) );
@@ -340,9 +336,48 @@ void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::resolveReferences( const 
   mTargetLayer.resolve( project );
 }
 
-bool QgsLabelingEngineRuleMinimumDistanceLabelToLabel::prepare( QgsRenderContext & )
+bool QgsLabelingEngineRuleMinimumDistanceLabelToLabel::prepare( QgsRenderContext &context )
 {
+  mDistanceMapUnits = context.convertToMapUnits( mDistance, mDistanceUnit, mDistanceUnitScale );
   return true;
+}
+
+QgsRectangle QgsLabelingEngineRuleMinimumDistanceLabelToLabel::modifyCandidateConflictSearchBoundingBox( const QgsRectangle &candidateBounds ) const
+{
+  return candidateBounds.buffered( mDistanceMapUnits );
+}
+
+bool QgsLabelingEngineRuleMinimumDistanceLabelToLabel::candidatesAreConflicting( const pal::LabelPosition *lp1, const pal::LabelPosition *lp2 ) const
+{
+  // conflicts are commutative -- we need to check both layers
+  if (
+    ( lp1->getFeaturePart()->feature()->provider()->layerId() == mLabeledLayer.layerId
+      && lp2->getFeaturePart()->feature()->provider()->layerId() == mTargetLayer.layerId )
+    ||
+    ( lp2->getFeaturePart()->feature()->provider()->layerId() == mLabeledLayer.layerId
+      && lp1->getFeaturePart()->feature()->provider()->layerId() == mTargetLayer.layerId )
+  )
+  {
+    GEOSContextHandle_t geosctxt = QgsGeosContext::get();
+    try
+    {
+#if GEOS_VERSION_MAJOR>3 || ( GEOS_VERSION_MAJOR == 3 && GEOS_VERSION_MINOR>=10 )
+      if ( GEOSPreparedDistanceWithin_r( geosctxt, lp1->preparedMultiPartGeom(), lp2->multiPartGeom(), mDistanceMapUnits ) )
+      {
+        return true;
+      }
+#else
+      QgsDebugError( QStringLiteral( "This rule requires GEOS 3.10+" ) );
+      return false;
+#endif
+    }
+    catch ( GEOSException &e )
+    {
+      QgsDebugError( QStringLiteral( "GEOS exception: %1" ).arg( e.what() ) );
+    }
+  }
+
+  return false;
 }
 
 QgsVectorLayer *QgsLabelingEngineRuleMinimumDistanceLabelToLabel::labeledLayer()
