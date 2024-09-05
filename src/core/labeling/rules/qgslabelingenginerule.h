@@ -123,6 +123,9 @@ class CORE_EXPORT QgsLabelingEngineContext
  * Labeling engine rules implement custom logic to modify the labeling solution for a map render,
  * e.g. by preventing labels being placed which violate custom constraints.
  *
+ * \note QgsAbstractLabelingEngineRule cannot be subclassed in Python. Use one of the existing
+ * implementations of this class instead.
+ *
  * \ingroup core
  * \since QGIS 3.40
  */
@@ -207,6 +210,11 @@ class CORE_EXPORT QgsAbstractLabelingEngineRule
      */
     virtual bool candidatesAreConflicting( const pal::LabelPosition *lp1, const pal::LabelPosition *lp2 ) const SIP_SKIP;
 
+    /**
+     * Returns TRUE if a labeling \a candidate violates the rule and should be eliminated.
+     *
+     * The default implementation returns FALSE.
+     */
     virtual bool candidateIsIllegal( const pal::LabelPosition *candidate, QgsLabelingEngineContext &context ) const SIP_SKIP;
 };
 

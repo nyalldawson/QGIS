@@ -93,6 +93,11 @@ Abstract base class for labeling engine rules.
 Labeling engine rules implement custom logic to modify the labeling solution for a map render,
 e.g. by preventing labels being placed which violate custom constraints.
 
+.. note::
+
+   :py:class:`QgsAbstractLabelingEngineRule` cannot be subclassed in Python. Use one of the existing
+   implementations of this class instead.
+
 .. versionadded:: 3.40
 %End
 
