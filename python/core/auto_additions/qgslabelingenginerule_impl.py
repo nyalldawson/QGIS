@@ -8,11 +8,11 @@ try:
 except NameError:
     pass
 try:
-    QgsLabelingEngineRuleMinimumDistanceLabelToLabel.__group__ = ['labeling', 'rules']
+    QgsLabelingEngineRuleMaximumDistanceLabelToFeature.__group__ = ['labeling', 'rules']
 except NameError:
     pass
 try:
-    QgsLabelingEngineRuleMaximumDistanceLabelToFeature.__group__ = ['labeling', 'rules']
+    QgsLabelingEngineRuleMinimumDistanceLabelToLabel.__group__ = ['labeling', 'rules']
 except NameError:
     pass
 try:

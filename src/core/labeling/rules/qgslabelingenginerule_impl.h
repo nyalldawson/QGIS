@@ -200,7 +200,6 @@ class CORE_EXPORT QgsLabelingEngineRuleMinimumDistanceLabelToFeature : public Qg
 
     QgsLabelingEngineRuleMinimumDistanceLabelToFeature();
     ~QgsLabelingEngineRuleMinimumDistanceLabelToFeature() override;
-
     QgsLabelingEngineRuleMinimumDistanceLabelToFeature *clone() const override SIP_FACTORY;
     QString id() const override;
 
@@ -208,6 +207,28 @@ class CORE_EXPORT QgsLabelingEngineRuleMinimumDistanceLabelToFeature : public Qg
 #ifdef SIP_RUN
     QgsLabelingEngineRuleMinimumDistanceLabelToFeature( const QgsLabelingEngineRuleMinimumDistanceLabelToFeature & );
 #endif
+};
+
+
+/**
+ * A labeling engine rule which prevents labels being placed too far from features from a different layer.
+ *
+ * \ingroup core
+ * \since QGIS 3.40
+ */
+class CORE_EXPORT QgsLabelingEngineRuleMaximumDistanceLabelToFeature : public QgsAbstractLabelingEngineRuleDistanceFromFeature
+{
+  public:
+    QgsLabelingEngineRuleMaximumDistanceLabelToFeature();
+    ~QgsLabelingEngineRuleMaximumDistanceLabelToFeature() override;
+    QgsLabelingEngineRuleMaximumDistanceLabelToFeature *clone() const override SIP_FACTORY;
+    QString id() const override;
+
+  private:
+#ifdef SIP_RUN
+    QgsLabelingEngineRuleMaximumDistanceLabelToFeature( const QgsLabelingEngineRuleMaximumDistanceLabelToFeature & );
+#endif
+
 };
 
 /**
@@ -342,28 +363,6 @@ class CORE_EXPORT QgsLabelingEngineRuleMinimumDistanceLabelToLabel : public QgsA
     Qgis::RenderUnit mDistanceUnit = Qgis::RenderUnit::Millimeters;
     QgsMapUnitScale mDistanceUnitScale;
     double mCost = 0;
-};
-
-
-/**
- * A labeling engine rule which prevents labels being placed too far from features from a different layer.
- *
- * \ingroup core
- * \since QGIS 3.40
- */
-class CORE_EXPORT QgsLabelingEngineRuleMaximumDistanceLabelToFeature : public QgsAbstractLabelingEngineRuleDistanceFromFeature
-{
-  public:
-    QgsLabelingEngineRuleMaximumDistanceLabelToFeature();
-    ~QgsLabelingEngineRuleMaximumDistanceLabelToFeature() override;
-    QgsLabelingEngineRuleMaximumDistanceLabelToFeature *clone() const override SIP_FACTORY;
-    QString id() const override;
-
-  private:
-#ifdef SIP_RUN
-    QgsLabelingEngineRuleMaximumDistanceLabelToFeature( const QgsLabelingEngineRuleMaximumDistanceLabelToFeature & );
-#endif
-
 };
 
 

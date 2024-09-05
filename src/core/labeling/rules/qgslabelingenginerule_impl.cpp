@@ -239,6 +239,31 @@ QString QgsLabelingEngineRuleMinimumDistanceLabelToFeature::id() const
   return QStringLiteral( "minimumDistanceLabelToFeature" );
 }
 
+
+//
+// QgsLabelingEngineRuleMaximumDistanceLabelToFeature
+//
+
+QgsLabelingEngineRuleMaximumDistanceLabelToFeature::QgsLabelingEngineRuleMaximumDistanceLabelToFeature()
+{
+  mMustBeDistant = false;
+}
+
+QgsLabelingEngineRuleMaximumDistanceLabelToFeature::~QgsLabelingEngineRuleMaximumDistanceLabelToFeature() = default;
+
+QgsLabelingEngineRuleMaximumDistanceLabelToFeature *QgsLabelingEngineRuleMaximumDistanceLabelToFeature::clone() const
+{
+  std::unique_ptr< QgsLabelingEngineRuleMaximumDistanceLabelToFeature > res = std::make_unique< QgsLabelingEngineRuleMaximumDistanceLabelToFeature >();
+  copyCommonProperties( res.get() );
+  return res.release();
+}
+
+QString QgsLabelingEngineRuleMaximumDistanceLabelToFeature::id() const
+{
+  return QStringLiteral( "maximumDistanceLabelToFeature" );
+}
+
+
 //
 // QgsLabelingEngineRuleMinimumDistanceLabelToLabel
 //
@@ -340,29 +365,6 @@ void QgsLabelingEngineRuleMinimumDistanceLabelToLabel::setTargetLayer( QgsVector
   mTargetLayer = layer;
 }
 
-
-//
-// QgsLabelingEngineRuleMaximumDistanceLabelToFeature
-//
-
-QgsLabelingEngineRuleMaximumDistanceLabelToFeature::QgsLabelingEngineRuleMaximumDistanceLabelToFeature()
-{
-  mMustBeDistant = false;
-}
-
-QgsLabelingEngineRuleMaximumDistanceLabelToFeature::~QgsLabelingEngineRuleMaximumDistanceLabelToFeature() = default;
-
-QgsLabelingEngineRuleMaximumDistanceLabelToFeature *QgsLabelingEngineRuleMaximumDistanceLabelToFeature::clone() const
-{
-  std::unique_ptr< QgsLabelingEngineRuleMaximumDistanceLabelToFeature > res = std::make_unique< QgsLabelingEngineRuleMaximumDistanceLabelToFeature >();
-  copyCommonProperties( res.get() );
-  return res.release();
-}
-
-QString QgsLabelingEngineRuleMaximumDistanceLabelToFeature::id() const
-{
-  return QStringLiteral( "maximumDistanceLabelToFeature" );
-}
 
 //
 // QgsLabelingEngineRuleAvoidLabelOverlapWithFeature

@@ -169,7 +169,6 @@ A labeling engine rule which prevents labels being placed too close to features 
 
     QgsLabelingEngineRuleMinimumDistanceLabelToFeature();
     ~QgsLabelingEngineRuleMinimumDistanceLabelToFeature();
-
     virtual QgsLabelingEngineRuleMinimumDistanceLabelToFeature *clone() const /Factory/;
 
     virtual QString id() const;
@@ -177,6 +176,30 @@ A labeling engine rule which prevents labels being placed too close to features 
 
   private:
     QgsLabelingEngineRuleMinimumDistanceLabelToFeature( const QgsLabelingEngineRuleMinimumDistanceLabelToFeature & );
+};
+
+
+class QgsLabelingEngineRuleMaximumDistanceLabelToFeature : QgsAbstractLabelingEngineRuleDistanceFromFeature
+{
+%Docstring(signature="appended")
+A labeling engine rule which prevents labels being placed too far from features from a different layer.
+
+.. versionadded:: 3.40
+%End
+
+%TypeHeaderCode
+#include "qgslabelingenginerule_impl.h"
+%End
+  public:
+    QgsLabelingEngineRuleMaximumDistanceLabelToFeature();
+    ~QgsLabelingEngineRuleMaximumDistanceLabelToFeature();
+    virtual QgsLabelingEngineRuleMaximumDistanceLabelToFeature *clone() const /Factory/;
+
+    virtual QString id() const;
+
+
+  private:
+    QgsLabelingEngineRuleMaximumDistanceLabelToFeature( const QgsLabelingEngineRuleMaximumDistanceLabelToFeature & );
 };
 
 class QgsLabelingEngineRuleMinimumDistanceLabelToLabel : QgsAbstractLabelingEngineRule
@@ -317,30 +340,6 @@ and 1-9 = nice to have if possible, where higher numbers will try harder to avoi
 
   private:
     QgsLabelingEngineRuleMinimumDistanceLabelToLabel( const QgsLabelingEngineRuleMinimumDistanceLabelToLabel & );
-};
-
-
-class QgsLabelingEngineRuleMaximumDistanceLabelToFeature : QgsAbstractLabelingEngineRuleDistanceFromFeature
-{
-%Docstring(signature="appended")
-A labeling engine rule which prevents labels being placed too far from features from a different layer.
-
-.. versionadded:: 3.40
-%End
-
-%TypeHeaderCode
-#include "qgslabelingenginerule_impl.h"
-%End
-  public:
-    QgsLabelingEngineRuleMaximumDistanceLabelToFeature();
-    ~QgsLabelingEngineRuleMaximumDistanceLabelToFeature();
-    virtual QgsLabelingEngineRuleMaximumDistanceLabelToFeature *clone() const /Factory/;
-
-    virtual QString id() const;
-
-
-  private:
-    QgsLabelingEngineRuleMaximumDistanceLabelToFeature( const QgsLabelingEngineRuleMaximumDistanceLabelToFeature & );
 };
 
 
