@@ -66,3 +66,8 @@ bool QgsAbstractLabelingEngineRule::candidateIsIllegal( const pal::LabelPosition
 {
   return false;
 }
+
+void QgsAbstractLabelingEngineRule::alterCandidateCost( pal::LabelPosition *, QgsLabelingEngineContext & ) const
+{
+
+}

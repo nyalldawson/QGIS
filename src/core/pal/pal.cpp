@@ -364,6 +364,18 @@ std::unique_ptr<Problem> Pal::extractProblem( const QgsRectangle &extent, const 
       costingProfile = std::make_unique< QgsScopedRuntimeProfile >( QObject::tr( "Assigning label costs" ), QStringLiteral( "rendering" ) );
     }
 
+    // allow rules to alter candidate costs
+    for ( const auto &feature : features )
+    {
+      for ( auto &candidate : feature->candidates )
+      {
+        for ( QgsAbstractLabelingEngineRule *rule : std::as_const( mRules ) )
+        {
+          rule->alterCandidateCost( candidate.get(), labelContext );
+        }
+      }
+    }
+
     // Filtering label positions against obstacles
     index = -1;
     step = !allObstacleParts.empty() ? 100.0 / allObstacleParts.size() : 1;
@@ -645,11 +657,6 @@ QList<LabelPosition *> Pal::solveProblem( Problem *prob, QgsRenderContext &conte
 
   if ( !prob )
     return QList<LabelPosition *>();
-
-  for ( QgsAbstractLabelingEngineRule *rule : mRules )
-  {
-    QgsDebugError( rule->id() );
-  }
 
   std::unique_ptr< QgsScopedRuntimeProfile > calculatingProfile;
   if ( context.flags() & Qgis::RenderContextFlag::RecordProfile )

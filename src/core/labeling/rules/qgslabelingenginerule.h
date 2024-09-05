@@ -216,6 +216,14 @@ class CORE_EXPORT QgsAbstractLabelingEngineRule
      * The default implementation returns FALSE.
      */
     virtual bool candidateIsIllegal( const pal::LabelPosition *candidate, QgsLabelingEngineContext &context ) const SIP_SKIP;
+
+    /**
+     * Provides an opportunity for the rule to alter the cost for a \a candidate.
+     *
+     * The default implementation does nothing.
+     */
+    virtual void alterCandidateCost( pal::LabelPosition *candidate, QgsLabelingEngineContext &context ) const SIP_SKIP;
+
 };
 
 #endif // QGSLABELINGENGINESETTINGS_H

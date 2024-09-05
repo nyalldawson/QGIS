@@ -247,6 +247,7 @@ class CORE_EXPORT QgsLabelingEngineSettings
      * while placing labels.
      *
      * \see addRule()
+     * \see setRules()
      * \since QGIS 3.40
      */
     QList< QgsAbstractLabelingEngineRule * > rules();
@@ -256,6 +257,7 @@ class CORE_EXPORT QgsLabelingEngineSettings
      * while placing labels.
      *
      * \see addRule()
+     * \see setRules()
      * \since QGIS 3.40
      */
     QList< const QgsAbstractLabelingEngineRule * > rules() const SIP_SKIP;
@@ -267,9 +269,22 @@ class CORE_EXPORT QgsLabelingEngineSettings
      * Ownership of the rule is transferred to the settings.
      *
      * \see rules()
+     * \see setRules()
      * \since QGIS 3.40
      */
     void addRule( QgsAbstractLabelingEngineRule *rule SIP_TRANSFER );
+
+    /**
+     * Sets the labeling engine \a rules which must be satifisfied
+     * while placing labels.
+     *
+     * Ownership of the rules are transferred to the settings.
+     *
+     * \see addRule()
+     * \see rules()
+     * \since QGIS 3.40
+     */
+    void setRules( const QList< QgsAbstractLabelingEngineRule * > &rules SIP_TRANSFER );
 
   private:
     //! Flags

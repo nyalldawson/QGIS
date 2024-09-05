@@ -252,6 +252,8 @@ while placing labels.
 
 .. seealso:: :py:func:`addRule`
 
+.. seealso:: :py:func:`setRules`
+
 .. versionadded:: 3.40
 %End
 
@@ -262,6 +264,22 @@ Adds a labeling engine ``rule`` which must be satifisfied
 while placing labels.
 
 Ownership of the rule is transferred to the settings.
+
+.. seealso:: :py:func:`rules`
+
+.. seealso:: :py:func:`setRules`
+
+.. versionadded:: 3.40
+%End
+
+    void setRules( const QList< QgsAbstractLabelingEngineRule * > &rules /Transfer/ );
+%Docstring
+Sets the labeling engine ``rules`` which must be satifisfied
+while placing labels.
+
+Ownership of the rules are transferred to the settings.
+
+.. seealso:: :py:func:`addRule`
 
 .. seealso:: :py:func:`rules`
 

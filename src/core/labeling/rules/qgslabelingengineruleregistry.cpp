@@ -15,12 +15,16 @@
 #include "qgslabelingengineruleregistry.h"
 #include "qgslabelingenginerule.h"
 #include "qgslabelingenginerule_impl.h"
+#include <geos_c.h>
 
 QgsLabelingEngineRuleRegistry::QgsLabelingEngineRuleRegistry()
 {
+#if GEOS_VERSION_MAJOR>3 || ( GEOS_VERSION_MAJOR == 3 && GEOS_VERSION_MINOR>=10 )
   addRule( new QgsLabelingEngineRuleMinimumDistanceLabelToFeature() );
-  addRule( new QgsLabelingEngineRuleMinimumDistanceLabelToLabel() );
   addRule( new QgsLabelingEngineRuleMaximumDistanceLabelToFeature() );
+#endif
+
+  addRule( new QgsLabelingEngineRuleMinimumDistanceLabelToLabel() );
   addRule( new QgsLabelingEngineRuleAvoidLabelOverlapWithFeature() );
 }
 

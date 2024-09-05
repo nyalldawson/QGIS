@@ -204,4 +204,13 @@ void QgsLabelingEngineSettings::addRule( QgsAbstractLabelingEngineRule *rule )
   mEngineRules.emplace_back( rule );
 }
 
+void QgsLabelingEngineSettings::setRules( const QList<QgsAbstractLabelingEngineRule *> &rules )
+{
+  mEngineRules.clear();
+  for ( QgsAbstractLabelingEngineRule *rule : rules )
+  {
+    mEngineRules.emplace_back( rule );
+  }
+}
+
 
