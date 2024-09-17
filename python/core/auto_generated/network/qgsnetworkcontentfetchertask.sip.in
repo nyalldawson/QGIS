@@ -21,7 +21,7 @@ Url redirects are automatically handled.
 
 After constructing a :py:class:`QgsNetworkContentFetcherTask`, callers should
 connect to the :py:class:`QgsNetworkContentFetcherTask`.fetched signal. They can
-then safely access the network :py:func:`~reply` from the connected slot
+then safely access the network :py:func:`~QgsNetworkContentFetcherTask.reply` from the connected slot
 without danger of the task being first removed by the :py:class:`QgsTaskManager`.
 
 .. seealso:: :py:class:`QgsNetworkContentFetcher`

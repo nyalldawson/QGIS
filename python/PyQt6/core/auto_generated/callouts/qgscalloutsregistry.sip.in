@@ -17,7 +17,7 @@ Stores metadata about one callout renderer class.
 
 .. note::
 
-   It's necessary to implement :py:func:`~createCallout` function.
+   It's necessary to implement :py:func:`~QgsCalloutAbstractMetadata.createCallout` function.
    In C++ you can use :py:class:`QgsCalloutMetadata` convenience class.
 
 .. versionadded:: 3.10

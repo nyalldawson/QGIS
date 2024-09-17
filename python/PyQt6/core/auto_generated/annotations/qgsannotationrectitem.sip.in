@@ -14,7 +14,7 @@ class QgsAnnotationRectItem : QgsAnnotationItem
 %Docstring(signature="appended")
 Abstract base class for annotation items which render annotations in a rectangular shape.
 
-Subclasses should implement the pure virtual :py:func:`~render` method which takes a painter bounds argument.
+Subclasses should implement the pure virtual :py:func:`~QgsAnnotationRectItem.render` method which takes a painter bounds argument.
 
 .. versionadded:: 3.40
 %End

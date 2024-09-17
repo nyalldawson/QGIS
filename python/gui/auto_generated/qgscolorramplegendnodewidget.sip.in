@@ -16,10 +16,10 @@ class QgsColorRampLegendNodeWidget: QgsPanelWidget
 %Docstring(signature="appended")
 A widget for properties relating to a :py:class:`QgsColorRampLegendNode` (:py:class:`QgsColorRampLegendNodeSettings`).
 
-The current settings are set by a call to :py:func:`~setSettings`, and the settings defined by the
-widget are retrieved by calling :py:func:`~settings`.
+The current settings are set by a call to :py:func:`~QgsColorRampLegendNodeWidget.setSettings`, and the settings defined by the
+widget are retrieved by calling :py:func:`~QgsColorRampLegendNodeWidget.settings`.
 
-When changes are made the to settings by a user the :py:func:`~widgetChanged` signal is emitted.
+When changes are made the to settings by a user the :py:func:`~QgsColorRampLegendNodeWidget.widgetChanged` signal is emitted.
 
 .. versionadded:: 3.18
 %End

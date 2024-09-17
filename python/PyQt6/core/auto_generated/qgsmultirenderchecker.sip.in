@@ -19,8 +19,8 @@ Its main purpose is for the unit testing framework.
 
 It will either:
 
-- take an externally rendered image (:py:func:`~setRenderedImage`)
-- render the image based on provided mapSettings (:py:func:`~setMapSettings`)
+- take an externally rendered image (:py:func:`~QgsMultiRenderChecker.setRenderedImage`)
+- render the image based on provided mapSettings (:py:func:`~QgsMultiRenderChecker.setMapSettings`)
 
 This image will then be compared against one or several images in a folder inside
 the control directory (tests/testdata/control_images/{controlName}).

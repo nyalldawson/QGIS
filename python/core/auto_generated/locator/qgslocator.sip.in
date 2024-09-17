@@ -20,18 +20,18 @@ Handles the management of :py:class:`QgsLocatorFilter` objects and async collect
 :py:class:`QgsLocator` acts as both a registry for :py:class:`QgsLocatorFilter` objects and a means of firing up
 asynchronous queries against these filter objects.
 
-Filters are first registered to the locator by calling :py:func:`~registerFilter`. Registering filters
+Filters are first registered to the locator by calling :py:func:`~QgsLocator.registerFilter`. Registering filters
 transfers their ownership to the locator object. Plugins which register filters to the locator
-must take care to correctly call :py:func:`~deregisterFilter` and deregister their filter upon plugin
+must take care to correctly call :py:func:`~QgsLocator.deregisterFilter` and deregister their filter upon plugin
 unload to avoid crashes.
 
-In order to trigger a search across registered filters, the :py:func:`~fetchResults` method is called.
+In order to trigger a search across registered filters, the :py:func:`~QgsLocator.fetchResults` method is called.
 This triggers threaded calls to :py:func:`QgsLocatorFilter.fetchResults()` for all registered filters.
-As individual filters find matching results, the :py:func:`~foundResult` signal will be triggered
+As individual filters find matching results, the :py:func:`~QgsLocator.foundResult` signal will be triggered
 for each result. Callers should connect this signal to an appropriate slot designed
-to collect and handle these results. Since :py:func:`~foundResult` is triggered whenever a filter
+to collect and handle these results. Since :py:func:`~QgsLocator.foundResult` is triggered whenever a filter
 encounters an individual result, it will usually be triggered many times for a single
-call to :py:func:`~fetchResults`.
+call to :py:func:`~QgsLocator.fetchResults`.
 %End
 
 %TypeHeaderCode

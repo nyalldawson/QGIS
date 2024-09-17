@@ -26,7 +26,7 @@ parameter for the model itself.
 
 Individual modeler parameter widgets are not usually created directly, instead they are
 constructed through the central registry, via calls to
-:py:func:`QgsGui.processingGuiRegistry()`->:py:func:`~createModelerParameterWidget`.
+:py:func:`QgsGui.processingGuiRegistry()`->:py:func:`~QgsProcessingModelerParameterWidget.createModelerParameterWidget`.
 
 .. versionadded:: 3.4
 %End

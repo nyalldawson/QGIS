@@ -136,8 +136,8 @@ vectors (e.g. vector dataset doubles x,y values)
 data are implicitly shared, so the class can be quickly copied
 std.numeric_limits<double>.quiet_NaN() represents NODATA value
 
-Data can be accessed all at once with :py:func:`~values` (faster) or
-value by value (slower) with :py:func:`~active` or :py:func:`~value`
+Data can be accessed all at once with :py:func:`~QgsMeshDataBlock.values` (faster) or
+value by value (slower) with :py:func:`~QgsMeshDataBlock.active` or :py:func:`~QgsMeshDataBlock.value`
 
 .. versionadded:: 3.6
 %End

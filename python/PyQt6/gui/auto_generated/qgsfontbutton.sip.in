@@ -19,7 +19,7 @@ The button will open a detailed text format settings dialog when clicked. An att
 menu allows for copying and pasting text styles, picking colors for the text, and for dropping
 colors from other color widgets.
 
-The button can be used in two different :py:func:`~modes`. The default behavior is to include
+The button can be used in two different :py:func:`~QgsFontButton.modes`. The default behavior is to include
 all settings used for configuring :py:class:`QgsTextFormat`/:py:class:`QgsTextRenderer` classes. A cut down
 mode (without settings for color) is also available when the resultant font is
 used only in a QFont object.

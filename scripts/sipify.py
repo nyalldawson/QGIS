@@ -67,6 +67,10 @@ except IOError as e:
           file=sys.stderr)
     sys.exit(1)
 
+# https://regex101.com/r/KMQdF5/1 (older versions: https://regex101.com/r/6FWntP/16)
+CLASS_PATTERN = re.compile(
+    r"""^(\s*(class))\s+([A-Z0-9_]+_EXPORT\s+)?(Q_DECL_DEPRECATED\s+)?(?P<classname>\w+)(?P<domain>\s*:\s*(public|protected|private)\s+\w+(< *(\w|::)+ *(, *(\w|::)+ *)*>)?(::\w+(<(\w|::)+(, *(\w|::)+)*>)?)*(,\s*(public|protected|private)\s+\w+(< *(\w|::)+ *(, *(\w|::)+)*>)?(::\w+(<\w+(, *(\w|::)+)?>)?)*)*)?(?P<annot>\s*/?/?\s*SIP_\w+)?\s*?(//.*|(?!;))$"""
+)
 
 # Initialize contexts
 
@@ -133,6 +137,16 @@ class Context:
 
     def current_fully_qualified_struct_name(self) -> str:
         return '.'.join(self.class_and_struct)
+
+    def scan_ahead_for_class_name(self) -> Optional[str]:
+        next_line = self.line_idx
+        while next_line < len(self.input_lines):
+            scan_line = CONTEXT.input_lines[next_line]
+
+            class_pattern_match = CLASS_PATTERN.match(scan_line)
+            if class_pattern_match:
+                return class_pattern_match.group('classname')
+            next_line += 1
 
 
 CONTEXT = Context()
@@ -681,8 +695,13 @@ def create_class_links(line):
         line = re.sub(r'(?<!\.)\b([a-z]\w+)\(\)(?!\w)',
                       rf':py:func:`~{CONTEXT.actual_class}.\1`', line)
     else:
-        line = re.sub(r'(?<!\.)\b([a-z]\w+)\(\)(?!\w)', r':py:func:`~\1`',
-                      line)
+        scan_ahead_class = CONTEXT.scan_ahead_for_class_name()
+        if scan_ahead_class:
+            line = re.sub(r'(?<!\.)\b([a-z]\w+)\(\)(?!\w)',
+                          rf':py:func:`~{scan_ahead_class}.\1`', line)
+        else:
+            line = re.sub(r'(?<!\.)\b([a-z]\w+)\(\)(?!\w)', r':py:func:`\1`',
+                          line)
 
     # Replace Qgs classes (but not the current class) with :py:class: links
     class_link_match = re.search(r'\b(?<![`~])(Qgs[A-Z]\w+|Qgis)\b(?!\()', line)
@@ -1680,11 +1699,7 @@ while CONTEXT.line_idx < CONTEXT.line_count:
         CONTEXT.bracket_nesting_idx.append(0)
 
     # class declaration started
-    # https://regex101.com/r/KMQdF5/1 (older versions: https://regex101.com/r/6FWntP/16)
-    class_pattern = re.compile(
-        r"""^(\s*(class))\s+([A-Z0-9_]+_EXPORT\s+)?(Q_DECL_DEPRECATED\s+)?(?P<classname>\w+)(?P<domain>\s*:\s*(public|protected|private)\s+\w+(< *(\w|::)+ *(, *(\w|::)+ *)*>)?(::\w+(<(\w|::)+(, *(\w|::)+)*>)?)*(,\s*(public|protected|private)\s+\w+(< *(\w|::)+ *(, *(\w|::)+)*>)?(::\w+(<\w+(, *(\w|::)+)?>)?)*)*)?(?P<annot>\s*/?/?\s*SIP_\w+)?\s*?(//.*|(?!;))$"""
-    )
-    class_pattern_match = class_pattern.match(CONTEXT.current_line)
+    class_pattern_match = CLASS_PATTERN.match(CONTEXT.current_line)
 
     if class_pattern_match:
         dbg_info("class definition started")

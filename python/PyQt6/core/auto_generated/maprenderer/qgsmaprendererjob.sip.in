@@ -26,11 +26,11 @@ Common use case:
 
 1. Prepare :py:class:`QgsMapSettings` with rendering configuration (extent, layer, map size, ...)
 2. Create :py:class:`QgsMapRendererJob` subclass with :py:class:`QgsMapSettings` instance
-3. Connect to job's :py:func:`~finished` signal
-4. Call :py:func:`~start`. Map rendering will start in background, the function immediately returns
-5. At some point, slot connected to :py:func:`~finished` signal is called, map rendering is done
+3. Connect to job's :py:func:`~QgsMapRendererJob.finished` signal
+4. Call :py:func:`~QgsMapRendererJob.start`. Map rendering will start in background, the function immediately returns
+5. At some point, slot connected to :py:func:`~QgsMapRendererJob.finished` signal is called, map rendering is done
 
-It is possible to cancel the rendering job while it is active by calling :py:func:`~cancel` function.
+It is possible to cancel the rendering job while it is active by calling :py:func:`~QgsMapRendererJob.cancel` function.
 
 The following subclasses are available:
 

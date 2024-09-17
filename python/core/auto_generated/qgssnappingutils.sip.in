@@ -19,10 +19,10 @@ Internally, it keeps a cache of :py:class:`QgsPointLocator` instances for multip
 
 Currently it supports the following queries:
 
-- :py:func:`~snapToMap` - has multiple modes of operation
-- :py:func:`~snapToCurrentLayer`
+- :py:func:`~QgsSnappingUtils.snapToMap` - has multiple modes of operation
+- :py:func:`~QgsSnappingUtils.snapToCurrentLayer`
 
-For more complex queries it is possible to use :py:func:`~locatorForLayer` method that returns
+For more complex queries it is possible to use :py:func:`~QgsSnappingUtils.locatorForLayer` method that returns
 point locator instance with layer's indexed data.
 
 Indexing strategy determines how fast the queries will be and how much memory will be used.

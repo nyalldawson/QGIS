@@ -27,12 +27,12 @@ Writing the check
 A new subclass of :py:class:`QgsGeometryCheck` needs to be written and at least the following
 abstract methods need to be implemented:
 
-- :py:func:`~compatibleGeometryTypes`: A list of geometry types to which this check applies
-- :py:func:`~availableResolutionMethods`: A list of resolution methods that can be used to fix errors of this type
-- :py:func:`~description`: A description for the geometry check.
-- :py:func:`~id`: A unique id for this check.
-- :py:func:`~checkType`: One of :py:class:`QgsGeometryCheck`.LayerCheck, :py:class:`QgsGeometryCheck`.FeatureCheck, :py:class:`QgsGeometryCheck`.FeatureNodeCheck
-- :py:func:`~collectErrors`: This method will be called to validate geometries. All geometries which should be validated are passed
+- :py:func:`~QgsGeometryCheck.compatibleGeometryTypes`: A list of geometry types to which this check applies
+- :py:func:`~QgsGeometryCheck.availableResolutionMethods`: A list of resolution methods that can be used to fix errors of this type
+- :py:func:`~QgsGeometryCheck.description`: A description for the geometry check.
+- :py:func:`~QgsGeometryCheck.id`: A unique id for this check.
+- :py:func:`~QgsGeometryCheck.checkType`: One of :py:class:`QgsGeometryCheck`.LayerCheck, :py:class:`QgsGeometryCheck`.FeatureCheck, :py:class:`QgsGeometryCheck`.FeatureNodeCheck
+- :py:func:`~QgsGeometryCheck.collectErrors`: This method will be called to validate geometries. All geometries which should be validated are passed
   into this method with the parameter ids and should be retrieved from the available featurePools to make
   use of caching. New errors should be appended to the error list and other message strings to messages.
   The method needs to return a tuple (errors, messages).

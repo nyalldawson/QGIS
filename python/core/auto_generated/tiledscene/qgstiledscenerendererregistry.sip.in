@@ -16,7 +16,7 @@ Stores metadata about one tiled scene renderer class.
 
 .. note::
 
-   It's necessary to implement :py:func:`~createRenderer` function.
+   It's necessary to implement :py:func:`~QgsTiledSceneRendererAbstractMetadata.createRenderer` function.
    In C++ you can use :py:class:`QgsTiledSceneRendererMetadata` convenience class.
 
 .. versionadded:: 3.34

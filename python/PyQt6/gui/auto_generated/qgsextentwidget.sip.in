@@ -20,7 +20,7 @@ A widget for configuration of a map extent.
 Besides allowing the user to enter the extent manually, it comes with options to use
 original extent or extent defined by the current view in map canvas.
 
-When using the widget, make sure to call :py:func:`~setOriginalExtent`, :py:func:`~setCurrentExtent` and :py:func:`~setOutputCrs` during initialization.
+When using the widget, make sure to call :py:func:`~QgsExtentWidget.setOriginalExtent`, :py:func:`~QgsExtentWidget.setCurrentExtent` and :py:func:`~QgsExtentWidget.setOutputCrs` during initialization.
 
 .. seealso:: :py:class:`QgsExtentGroupBox`
 

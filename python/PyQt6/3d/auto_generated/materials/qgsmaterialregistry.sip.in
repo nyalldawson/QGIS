@@ -18,7 +18,7 @@ Stores metadata about one 3D material settings class.
 
 .. note::
 
-   It's necessary to implement :py:func:`~createMaterialSettings` function.
+   It's necessary to implement :py:func:`~QgsMaterialSettingsAbstractMetadata.createMaterialSettings` function.
    In C++ you can use :py:class:`QgsMaterialSettingsMetadata` convenience class.
 
 .. versionadded:: 3.16

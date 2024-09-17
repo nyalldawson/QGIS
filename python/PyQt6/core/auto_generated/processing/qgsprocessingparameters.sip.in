@@ -804,7 +804,7 @@ A collection of utilities for working with parameters when running a processing 
 Parameters are stored in a QVariantMap and referenced by a unique string key.
 The QVariants in parameters are not usually accessed
 directly, and instead the high level API provided through :py:class:`QgsProcessingParameters`
-:py:func:`~parameterAsString`, :py:func:`~parameterAsDouble` are used instead.
+:py:func:`~QgsProcessingParameters.parameterAsString`, :py:func:`~QgsProcessingParameters.parameterAsDouble` are used instead.
 
 Parameters are evaluated using a provided :py:class:`QgsProcessingContext`, allowing
 the evaluation to understand available map layers and expression contexts
@@ -2207,7 +2207,7 @@ class QgsProcessingParameterNumber : QgsProcessingParameterDefinition
 %Docstring(signature="appended")
 A numeric parameter for processing algorithms.
 
-For numeric parameters with a :py:func:`~dataType` of Double, the number of decimals places
+For numeric parameters with a :py:func:`~QgsProcessingParameterNumber.dataType` of Double, the number of decimals places
 shown in the parameter's widget can be specified by setting the parameter's metadata. For example:
 
 .. code-block:: python

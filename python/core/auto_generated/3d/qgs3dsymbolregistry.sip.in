@@ -17,7 +17,7 @@ Stores metadata about one 3D symbol class.
 
 .. note::
 
-   It's necessary to implement :py:func:`~createSymbol` function.
+   It's necessary to implement :py:func:`~Qgs3DSymbolAbstractMetadata.createSymbol` function.
    In C++ you can use Qgs3DSymbolMetadata convenience class.
 
 .. versionadded:: 3.16

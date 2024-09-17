@@ -27,7 +27,7 @@ item is a map (QVariantMap) in this form:
 Also it can accept lists (either string lists or :py:class:`QgsMapLayer` list)
 as well as individual layer object or string representing layer source.
 
-Static functions :py:func:`~parametersAsItems`, :py:func:`~variantMapAsItem`, :py:func:`~itemAsVariantMap`
+Static functions :py:func:`~QgsProcessingParameterAlignRasterLayers.parametersAsItems`, :py:func:`~QgsProcessingParameterAlignRasterLayers.variantMapAsItem`, :py:func:`~QgsProcessingParameterAlignRasterLayers.itemAsVariantMap`
 provide conversion between :py:class:`QgsAlignRaster`.Item representation and QVariant
 representation.
 

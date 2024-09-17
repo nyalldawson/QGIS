@@ -39,8 +39,8 @@ Internally QGIS uses proj library for all the math behind coordinate transformat
 of any troubles with projections it is best to examine the PROJ representation within the object,
 as that is the representation that will be ultimately used.
 
-Methods that allow inspection of CRS instances include :py:func:`~isValid`, :py:func:`~authid`, :py:func:`~description`,
-:py:func:`~toWkt`, :py:func:`~toProj`, :py:func:`~mapUnits` and others.
+Methods that allow inspection of CRS instances include :py:func:`~QgsCoordinateReferenceSystem.isValid`, :py:func:`~QgsCoordinateReferenceSystem.authid`, :py:func:`~QgsCoordinateReferenceSystem.description`,
+:py:func:`~QgsCoordinateReferenceSystem.toWkt`, :py:func:`~QgsCoordinateReferenceSystem.toProj`, :py:func:`~QgsCoordinateReferenceSystem.mapUnits` and others.
 Creation of CRS instances is further described in \ref crs_construct_and_copy section below.
 Transformations between coordinate reference systems are done using :py:class:`QgsCoordinateTransform` class.
 
@@ -126,7 +126,7 @@ be added to the local database (in user's home directory, see :py:func:`QgsAppli
 QGIS also features a GUI for management of local custom CRS definitions.
 
 There are therefore two databases: one for shipped CRS definitions and one for custom CRS definitions.
-Custom CRS have internal IDs (accessible with :py:func:`~srsid`) greater or equal to \ref USER_CRS_START_ID.
+Custom CRS have internal IDs (accessible with :py:func:`~QgsCoordinateReferenceSystem.srsid`) greater or equal to \ref USER_CRS_START_ID.
 The local CRS databases should never be accessed directly with SQLite functions, instead
 you should use :py:class:`QgsCoordinateReferenceSystem` API for CRS lookups and for managements of custom CRS.
 
@@ -134,9 +134,9 @@ Validation
 ----------
 
 In some cases (most prominently when loading a map layer), QGIS will try to ensure
-that the given map layer CRS is valid using :py:func:`~validate` call. If not, a custom
+that the given map layer CRS is valid using :py:func:`~QgsCoordinateReferenceSystem.validate` call. If not, a custom
 validation function will be called - such function may for example show a GUI
-for manual CRS selection. The validation function is configured using :py:func:`~setCustomCrsValidation`.
+for manual CRS selection. The validation function is configured using :py:func:`~QgsCoordinateReferenceSystem.setCustomCrsValidation`.
 If validation fails or no validation function is set, the default CRS is assigned
 (WGS84). QGIS application registers its validation function that will act according
 to user's settings (either show CRS selector dialog or use project/custom CRS).
@@ -150,7 +150,7 @@ constructor that automatically recognizes definition format from the given strin
 Creation of CRS object involves some queries in a local SQLite database, which may
 be potentially expensive. Consequently, CRS creation methods use an internal cache to avoid
 unnecessary database lookups. If the CRS database is modified, then it is necessary to call
-:py:func:`~invalidateCache` to ensure that outdated records are not being returned from the cache.
+:py:func:`~QgsCoordinateReferenceSystem.invalidateCache` to ensure that outdated records are not being returned from the cache.
 
 Since QGIS 2.16 :py:class:`QgsCoordinateReferenceSystem` objects are implicitly shared.
 

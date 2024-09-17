@@ -66,7 +66,7 @@ Implicit sharing
 This class is implicitly shared, copying has a very low overhead.
 It is normally preferable to call `QgsExpression( otherExpression )` instead of
 `QgsExpression( otherExpression.expression() )`. A deep copy will only be made
-when :py:func:`~prepare` is called. For usage this means mainly, that you should
+when :py:func:`~QgsExpression.prepare` is called. For usage this means mainly, that you should
 normally keep an unprepared master copy of a :py:class:`QgsExpression` and whenever using it
 with a particular :py:class:`QgsFeatureIterator` copy it just before and prepare it using the
 same context as the iterator.

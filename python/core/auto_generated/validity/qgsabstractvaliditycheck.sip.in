@@ -53,7 +53,7 @@ Checks can be used for many different use cases, e.g. validating a layout's cont
 an export to occur, or validating the contents of a Processing model (and warning if required plugin based
 providers are not available or if compulsory algorithm parameters have not been populated).
 
-Subclasses must indicate the type of check they represent via the :py:func:`~checkType` method. When checks are performed,
+Subclasses must indicate the type of check they represent via the :py:func:`~QgsAbstractValidityCheck.checkType` method. When checks are performed,
 all the registered checks with a matching check type are performed sequentially. The check type also
 dictates the subclass of the :py:class:`QgsValidityCheckContext` which is given to the subclass' runCheck method.
 

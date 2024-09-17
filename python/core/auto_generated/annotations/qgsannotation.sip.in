@@ -19,13 +19,13 @@ class QgsAnnotation : QObject
 Abstract base class for annotation items which are drawn over a map.
 
 :py:class:`QgsAnnotation` is an abstract base class for map annotation items. These annotations can be
-drawn within a map, and have either a fixed map position (retrieved using :py:func:`~mapPosition`)
-or are placed relative to the map's frame (retrieved using :py:func:`~relativePosition`).
+drawn within a map, and have either a fixed map position (retrieved using :py:func:`~QgsAnnotation.mapPosition`)
+or are placed relative to the map's frame (retrieved using :py:func:`~QgsAnnotation.relativePosition`).
 Annotations with a fixed map position also have a corresponding
-:py:class:`QgsCoordinateReferenceSystem`, which can be determined by calling :py:func:`~mapPositionCrs`.
+:py:class:`QgsCoordinateReferenceSystem`, which can be determined by calling :py:func:`~QgsAnnotation.mapPositionCrs`.
 
 Derived classes should implement their custom painting routines within
-a :py:func:`~renderAnnotation` override.
+a :py:func:`~QgsAnnotation.renderAnnotation` override.
 %End
 
 %TypeHeaderCode

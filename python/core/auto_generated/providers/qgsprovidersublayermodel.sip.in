@@ -25,7 +25,7 @@ available for a URI, including any vector, raster or mesh sublayers present.
 Additionally, :py:class:`QgsProviderSublayerModel` can include some non-sublayer items,
 e.g. in order to represent other content available for a URI, such as
 embedded project items. The non-sublayer items can be added by calling
-:py:func:`~addNonLayerItem`.
+:py:func:`~QgsProviderSublayerModel.addNonLayerItem`.
 
 .. versionadded:: 3.22
 %End

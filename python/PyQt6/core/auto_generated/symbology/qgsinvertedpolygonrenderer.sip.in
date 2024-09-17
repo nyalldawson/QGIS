@@ -19,7 +19,7 @@ It is designed on top of another feature renderer, which is called "embedded"
 Most of the methods are then only proxies to the embedded renderer.
 
 Features are collected to form one "inverted" polygon
-during :py:func:`~renderFeature` and rendered on :py:func:`~stopRender`.
+during :py:func:`~QgsInvertedPolygonRenderer.renderFeature` and rendered on :py:func:`~QgsInvertedPolygonRenderer.stopRender`.
 %End
 
 %TypeHeaderCode

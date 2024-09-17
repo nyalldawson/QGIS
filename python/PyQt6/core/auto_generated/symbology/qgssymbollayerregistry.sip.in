@@ -17,7 +17,7 @@ Stores metadata about one symbol layer class.
 
 .. note::
 
-   It's necessary to implement :py:func:`~createSymbolLayer` function.
+   It's necessary to implement :py:func:`~QgsSymbolLayerAbstractMetadata.createSymbolLayer` function.
    In C++ you can use :py:class:`QgsSymbolLayerMetadata` convenience class.
 %End
 

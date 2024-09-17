@@ -22,8 +22,8 @@ between geometries and operations such as buffers or clipping.
 :py:class:`QgsGeometryEngine` objects are not created directly, but are instead created by calling :py:func:`QgsGeometry.createGeometryEngine()`.
 
 Many methods available in the :py:class:`QgsGeometryEngine` class can benefit from pre-preparing geometries. For instance, whenever
-a large number of spatial relationships will be tested (such as calling :py:func:`~intersects`, :py:func:`~within`, etc) then the
-geometry should first be prepared by calling :py:func:`~prepareGeometry` before performing the tests.
+a large number of spatial relationships will be tested (such as calling :py:func:`~QgsGeometryEngine.intersects`, :py:func:`~QgsGeometryEngine.within`, etc) then the
+geometry should first be prepared by calling :py:func:`~QgsGeometryEngine.prepareGeometry` before performing the tests.
 
 Example
 -------------------------------------

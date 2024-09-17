@@ -29,7 +29,7 @@ message to be shown. If no messages are available to show then the message bar
 automatically hides.
 
 The class also supports pushing custom widgets to the notification stack via
-the :py:func:`~pushWidget` method.
+the :py:func:`~QgsMessageBar.pushWidget` method.
 %End
 
 %TypeHeaderCode

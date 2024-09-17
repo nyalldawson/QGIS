@@ -16,12 +16,12 @@ class QgsGeocoderResult
 Represents a matching result from a geocoder search.
 
 :py:class:`QgsGeocoderResult` objects may represent valid matches, or an invalid
-error result. This can be checked by testing :py:func:`~isValid`. An invalid
+error result. This can be checked by testing :py:func:`~QgsGeocoderResult.isValid`. An invalid
 result represents that an error was encountered while geocoding, in which case the
-error message can be retrieved by calling :py:func:`~error`.
+error message can be retrieved by calling :py:func:`~QgsGeocoderResult.error`.
 
-Valid geocoding results will have a :py:func:`~geometry` and :py:func:`~crs`, along with a set
-of optional :py:func:`~additionalAttributes` which may contain information such as the
+Valid geocoding results will have a :py:func:`~QgsGeocoderResult.geometry` and :py:func:`~QgsGeocoderResult.crs`, along with a set
+of optional :py:func:`~QgsGeocoderResult.additionalAttributes` which may contain information such as the
 accuracy of the geocoding result.
 
 .. versionadded:: 3.18

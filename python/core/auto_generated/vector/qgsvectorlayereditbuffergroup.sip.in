@@ -16,7 +16,7 @@ class QgsVectorLayerEditBufferGroup : QObject
 The edit buffer group manages a group of edit buffers.
 
 Commands like commit and rollback are
-managed by the group invokes individual :py:func:`~addFeature`, :py:func:`~deleteFeature`, ... in the correct order
+managed by the group invokes individual :py:func:`~QgsVectorLayerEditBufferGroup.addFeature`, :py:func:`~QgsVectorLayerEditBufferGroup.deleteFeature`, ... in the correct order
 across all contained edit buffers.
 
 .. versionadded:: 3.26

@@ -17,7 +17,7 @@ Stores metadata about one renderer class.
 
 .. note::
 
-   It's necessary to implement :py:func:`~createRenderer` function.
+   It's necessary to implement :py:func:`~QgsRendererAbstractMetadata.createRenderer` function.
    In C++ you can use :py:class:`QgsRendererMetadata` convenience class.
 %End
 

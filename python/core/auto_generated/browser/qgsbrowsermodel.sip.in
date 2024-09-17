@@ -21,7 +21,7 @@ items for the different data providers and folders accessible to users.
 
 :py:class:`QgsBrowserModel` models are not initially populated and use a deferred initialization
 approach. After constructing a :py:class:`QgsBrowserModel`, a call must be made
-to :py:func:`~initialize` in order to populate the model.
+to :py:func:`~QgsBrowserModel.initialize` in order to populate the model.
 
 .. note::
 

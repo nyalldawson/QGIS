@@ -26,7 +26,7 @@ Abstract base class for all geometries
 
    :py:class:`QgsAbstractGeometry` objects are inherently Cartesian/planar geometries. They have no concept of geodesy, and none
    of the methods or properties exposed from the :py:class:`QgsAbstractGeometry` API (or :py:class:`QgsGeometry` API) utilize
-   geodesic calculations. Accordingly, properties like :py:func:`~length` and :py:func:`~area` and spatial operations like :py:func:`~centroid`
+   geodesic calculations. Accordingly, properties like :py:func:`~QgsAbstractGeometry.length` and :py:func:`~QgsAbstractGeometry.area` and spatial operations like :py:func:`~QgsAbstractGeometry.centroid`
    are always calculated using strictly Cartesian mathematics. In contrast, the :py:class:`QgsDistanceArea` class exposes
    methods for working with geodesic calculations and spatial operations on geometries,
    and should be used whenever calculations which account for the curvature of the Earth (or any other celestial body)

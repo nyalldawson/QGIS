@@ -17,7 +17,7 @@ This class is responsible for keeping cache of rendered images resulting from
 a map rendering job.
 
 Once a job has a rendered image stored in the cache (using setCacheImage(...)),
-the cache listens to :py:func:`~repaintRequested` signals from dependent layers.
+the cache listens to :py:func:`~QgsMapRendererCache.repaintRequested` signals from dependent layers.
 If triggered, the cache removes the rendered image (and disconnects from the
 layers).
 

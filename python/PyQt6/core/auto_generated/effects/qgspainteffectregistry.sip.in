@@ -17,7 +17,7 @@ Stores metadata about a paint effect class.
 
 .. note::
 
-   It's necessary to implement the :py:func:`~createPaintEffect` function.
+   It's necessary to implement the :py:func:`~QgsPaintEffectAbstractMetadata.createPaintEffect` function.
    In C++ you can use the :py:class:`QgsPaintEffectMetadata` convenience class to
    simplify creation of the metadata.
 %End

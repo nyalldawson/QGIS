@@ -16,7 +16,7 @@ Stores metadata about one point cloud renderer class.
 
 .. note::
 
-   It's necessary to implement :py:func:`~createRenderer` function.
+   It's necessary to implement :py:func:`~QgsPointCloudRendererAbstractMetadata.createRenderer` function.
    In C++ you can use :py:class:`QgsPointCloudRendererMetadata` convenience class.
 
 .. versionadded:: 3.18

@@ -14,7 +14,7 @@ class QgsRasterFileWriter
 The raster file writer which allows you to save a raster to a new file.
 
 The writer defaults to creating GeoTIFF outputs using GDAL. Alternative formats and
-data providers can be used by calling :py:func:`~setOutputFormat` and :py:func:`~setOutputProviderKey`.
+data providers can be used by calling :py:func:`~QgsRasterFileWriter.setOutputFormat` and :py:func:`~QgsRasterFileWriter.setOutputProviderKey`.
 %End
 
 %TypeHeaderCode

@@ -21,10 +21,10 @@ Abstract base class for long running background tasks.
 Tasks can be controlled directly, or added to a :py:class:`QgsTaskManager` for automatic management.
 
 Derived classes should implement the process they want to execute in the background
-within the :py:func:`~run` method. This method will be called when the
-task commences (ie via calling :py:func:`~run` ).
+within the :py:func:`~QgsTask.run` method. This method will be called when the
+task commences (ie via calling :py:func:`~QgsTask.run` ).
 
-Long running tasks should periodically check the :py:func:`~isCanceled` flag to detect if the task
+Long running tasks should periodically check the :py:func:`~QgsTask.isCanceled` flag to detect if the task
 has been canceled via some external event. If this flag is ``True`` then the task should
 clean up and terminate at the earliest possible convenience.
 %End

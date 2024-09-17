@@ -21,8 +21,8 @@ This class has two roles:
 2. Rendering the results
 
 Step 1, involving the generation of the elevation profiles only needs to occur once. This is done via
-a call to :py:func:`~startGeneration`, which commences generation of the profiles from each source in a separate
-background thread. When the generation is completed for all sources the :py:func:`~generationFinished` signal is
+a call to :py:func:`~QgsProfilePlotRenderer.startGeneration`, which commences generation of the profiles from each source in a separate
+background thread. When the generation is completed for all sources the :py:func:`~QgsProfilePlotRenderer.generationFinished` signal is
 emitted.
 
 After the profile is generated, it can be rendered. The rendering step may be undertaken multiple times

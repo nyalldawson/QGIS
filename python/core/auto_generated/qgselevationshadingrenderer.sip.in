@@ -19,7 +19,7 @@ An instance of this class supports the following settings:
 - activate/deactivate a particular shading method
 - parameters of each shading method
 
-To render shading on image the caller call :py:func:`~renderShading` with the image and
+To render shading on image the caller call :py:func:`~QgsElevationShadingRenderer.renderShading` with the image and
 an elevation map (see QgsElevationMap()) as parameters. The shading is applied on the image in place.
 Elevation map and image must have same sizes.
 

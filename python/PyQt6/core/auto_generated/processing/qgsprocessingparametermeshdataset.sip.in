@@ -14,7 +14,7 @@ class QgsProcessingParameterMeshDatasetGroups : QgsProcessingParameterDefinition
 A parameter for processing algorithms that need a list of mesh dataset groups.
 
 A valid value for this parameter is a list (QVariantList) of dataset groups index in the mesh layer scope
-Dataset group index can be evaluated with the method :py:func:`~valueAsDatasetGroup`
+Dataset group index can be evaluated with the method :py:func:`~QgsProcessingParameterMeshDatasetGroups.valueAsDatasetGroup`
 
 .. note::
 

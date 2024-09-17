@@ -16,7 +16,7 @@ The :py:class:`QgsServerOgcApiHandler` abstract class represents a OGC API handl
 in :py:class:`QgsServerOgcApi` class.
 
 Subclasses must override operational and informative methods and define
-the core functionality in :py:func:`~handleRequest` method.
+the core functionality in :py:func:`~QgsServerOgcApiHandler.handleRequest` method.
 
 The following methods MUST be implemented:
 

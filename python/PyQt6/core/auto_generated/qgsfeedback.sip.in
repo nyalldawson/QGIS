@@ -17,16 +17,16 @@ Base class for feedback objects to be used for cancellation of something running
 The class may be used as is or it may be subclassed for extended functionality
 for a particular operation (e.g. report progress or pass some data for preview).
 
-When :py:func:`~cancel` is called, the internal code has two options to check for cancellation state:
+When :py:func:`~QgsFeedback.cancel` is called, the internal code has two options to check for cancellation state:
 
-- if the worker thread uses an event loop (e.g. for network communication), the code can make a queued connection to :py:func:`~canceled` signal and handle the cancellation in its slot.
-- if the worker thread does not use an event loop, it can poll :py:func:`~isCanceled` method regularly to see if the operation should be canceled.
+- if the worker thread uses an event loop (e.g. for network communication), the code can make a queued connection to :py:func:`~QgsFeedback.canceled` signal and handle the cancellation in its slot.
+- if the worker thread does not use an event loop, it can poll :py:func:`~QgsFeedback.isCanceled` method regularly to see if the operation should be canceled.
 
 The class is meant to be created and destroyed in the main thread.
 
 For map rendering, the object may be created in constructor of a :py:class:`QgsMapLayerRenderer`
 subclass and available with :py:func:`QgsMapLayerRenderer.feedback()` method. When a map rendering job
-gets canceled, the :py:func:`~cancel` method is called on the feedback object of all layers.
+gets canceled, the :py:func:`~QgsFeedback.cancel` method is called on the feedback object of all layers.
 %End
 
 %TypeHeaderCode

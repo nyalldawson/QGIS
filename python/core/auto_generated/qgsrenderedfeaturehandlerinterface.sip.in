@@ -18,7 +18,7 @@ as part of a map render job.
 
 :py:class:`QgsRenderedFeatureHandlerInterface` objects are registered in the :py:class:`QgsMapSettings`
 objects used to construct map render jobs. During the rendering operation,
-the :py:func:`~handleRenderedFeature` method will be called once for every rendered feature,
+the :py:func:`~QgsRenderedFeatureHandlerInterface.handleRenderedFeature` method will be called once for every rendered feature,
 allowing the handler to perform some custom task based on the provided information.
 
 They can be used for custom tasks which operate on a set of rendered features,

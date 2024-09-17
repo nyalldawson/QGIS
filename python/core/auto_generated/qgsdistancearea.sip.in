@@ -17,17 +17,17 @@ A general purpose distance and area calculator, capable of performing ellipsoid 
 Measurements can either be performed on existing :py:class:`QgsGeometry` objects, or using
 lists of points.
 
-If a valid :py:func:`~ellipsoid` has been set for the :py:class:`QgsDistanceArea`, all calculations will be
+If a valid :py:func:`~QgsDistanceArea.ellipsoid` has been set for the :py:class:`QgsDistanceArea`, all calculations will be
 performed using ellipsoidal algorithms (e.g. using Vincenty's formulas). If no
 ellipsoid has been set, all calculations will be performed using Cartesian
-formulas only. The behavior can be determined by calling :py:func:`~willUseEllipsoid`.
+formulas only. The behavior can be determined by calling :py:func:`~QgsDistanceArea.willUseEllipsoid`.
 
 In order to perform accurate calculations, the source coordinate reference system
-of all measured geometries must first be specified using :py:func:`~setSourceCrs`.
+of all measured geometries must first be specified using :py:func:`~QgsDistanceArea.setSourceCrs`.
 
 Usually, the measurements returned by :py:class:`QgsDistanceArea` are in meters. If no valid
 ellipsoid is set, then the units may not be meters. The units can be retrieved
-by calling :py:func:`~lengthUnits` and :py:func:`~areaUnits`.
+by calling :py:func:`~QgsDistanceArea.lengthUnits` and :py:func:`~QgsDistanceArea.areaUnits`.
 
 Internally, the GeographicLib library is used to calculate all ellipsoid based measurements.
 %End

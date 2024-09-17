@@ -15,7 +15,7 @@ class QgsAbstractContentCacheEntry
 %Docstring(signature="appended")
 Base class for entries in a :py:class:`QgsAbstractContentCache`.
 
-Subclasses must take care to correctly implement the :py:func:`~isEqual` method, applying their
+Subclasses must take care to correctly implement the :py:func:`~QgsAbstractContentCacheEntry.isEqual` method, applying their
 own logic for testing extra cache properties (e.g. image size for an image-based cache).
 
 .. versionadded:: 3.6
