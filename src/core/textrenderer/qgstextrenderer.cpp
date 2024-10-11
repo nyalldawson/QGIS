@@ -1652,9 +1652,9 @@ void QgsTextRenderer::applyExtraSpacingForLineJustification( QFont &font, double
 void QgsTextRenderer::renderBlockHorizontal( const QgsTextBlock &block, int blockIndex,
     const QgsTextDocumentMetrics &metrics, QgsRenderContext &context,
     const QgsTextFormat &format,
-    QPainter *painter, bool usePaths,
+    QPainter *painter, bool forceRenderAsPaths,
     double fontScale, double extraWordSpace, double extraLetterSpace,
-    Qgis::TextLayoutMode mode )
+    Qgis::TextLayoutMode mode, QVector<DeferredRenderPart> *storeDeferredParts )
 {
   if ( !metrics.isNullFontSize() )
   {
@@ -1675,7 +1675,18 @@ void QgsTextRenderer::renderBlockHorizontal( const QgsTextBlock &block, int bloc
         QColor textColor = fragment.characterFormat().textColor().isValid() ? fragment.characterFormat().textColor() : format.color();
         textColor.setAlphaF( fragment.characterFormat().textColor().isValid() ? textColor.alphaF() * format.opacity() : format.opacity() );
 
-        if ( usePaths )
+        if ( storeDeferredParts )
+        {
+          DeferredRenderPart renderPart;
+          renderPart.color = textColor;
+          renderPart.path.setFillRule( Qt::WindingFill );
+          renderPart.path.addText( xOffset, yOffset, fragmentFont, fragment.text() );
+          renderPart.font = fragmentFont;
+          renderPart.point = QPointF( xOffset, yOffset );
+          renderPart.text = fragment.text();
+          storeDeferredParts->append( renderPart );
+        }
+        else if ( forceRenderAsPaths )
         {
           painter->setBrush( textColor );
           QPainterPath path;
@@ -1799,6 +1810,17 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
 
   // should we use text or paths for this render?
   const bool usePathsForText = usePathsToRender( context, format, document );
+  // TODO true if image present?
+  const bool needsPicture = false;
+
+
+  // TODO -- avoid nested vector -- check if painter rotation & translation can be
+  // done ONCE only, upfront
+  // TODO -- this should be optional -- if we are ONLY rendering text, then we can
+  // just draw immediately and not require deferreing
+  QVector< QVector< DeferredRenderPart > > deferredParts;
+  // TODO -- should be total count of fragments, not blocks!
+  deferredParts.reserve( document.size() );
 
   int blockIndex = 0;
   for ( const QgsTextBlock &block : document )
@@ -1916,13 +1938,18 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
     {
       QgsTextRenderer::drawBuffer( context, subComponent, format, metrics, mode );
     }
-    if ( ( components & Qgis::TextComponent::Text ) || ( components & Qgis::TextComponent::Shadow ) )
+    if ( ( false && components & Qgis::TextComponent::Buffer ) || ( components & Qgis::TextComponent::Text ) || ( components & Qgis::TextComponent::Shadow ) )
     {
       // store text's drawing in QPicture for drop shadow call
 
       const bool drawShadowOnText = format.shadow().enabled() && format.shadow().shadowPlacement() == QgsTextShadowSettings::ShadowText;
       // do we need to store text temporarily in a QPicture? Avoid if we can...
       const bool requiresPicture = drawShadowOnText;
+
+      // if we are drawing both text + buffer, use a path (unless force text mode)
+
+
+
 
       std::optional< QgsScopedRenderContextReferenceScaleOverride > referenceScaleOverride;
       if ( mode == Qgis::TextLayoutMode::Labeling )
@@ -1944,7 +1971,7 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
         picturePainter.setBrush( Qt::NoBrush );
         picturePainter.scale( 1 / fontScale, 1 / fontScale );
         renderBlockHorizontal( block, blockIndex, metrics, context, format, &picturePainter, usePathsForText,
-                               fontScale, extraWordSpace, extraLetterSpace, mode );
+                               fontScale, extraWordSpace, extraLetterSpace, mode, nullptr );
         picturePainter.end();
       }
 
@@ -1977,7 +2004,7 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
         context.painter()->setPen( Qt::NoPen );
         context.painter()->setBrush( Qt::NoBrush );
         renderBlockHorizontal( block, blockIndex, metrics, context, format, context.painter(), usePathsForText,
-                               fontScale, extraWordSpace, extraLetterSpace, mode );
+                               fontScale, extraWordSpace, extraLetterSpace, mode, nullptr );
       }
     }
     if ( maskPainter )
