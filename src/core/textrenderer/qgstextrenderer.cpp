@@ -1821,6 +1821,8 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
   QVector< QVector< DeferredRenderPart > > deferredParts;
   // TODO -- should be total count of fragments, not blocks!
   deferredParts.reserve( document.size() );
+  const bool needsDeferredRendering = components & Qgis::TextComponent::Buffer
+                                      && format.buffer().enabled();
 
   int blockIndex = 0;
   for ( const QgsTextBlock &block : document )
@@ -1836,6 +1838,10 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
                                         || document.at( blockIndex + 1 ).toPlainText().trimmed().isEmpty();
 
     const double blockHeight = metrics.blockHeight( blockIndex );
+
+    QVector< DeferredRenderPart > deferredPart;
+    if ( needsDeferredRendering )
+      deferredPart.reserve( block.size() );
 
     QgsScopedQPainterState painterState( context.painter() );
     context.setPainterFlagsUsingContext();
@@ -1934,11 +1940,11 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
       QgsTextRenderer::drawMask( context, subComponent, format, metrics, mode );
     }
 
-    if ( components & Qgis::TextComponent::Buffer )
-    {
-      QgsTextRenderer::drawBuffer( context, subComponent, format, metrics, mode );
-    }
-    if ( ( false && components & Qgis::TextComponent::Buffer ) || ( components & Qgis::TextComponent::Text ) || ( components & Qgis::TextComponent::Shadow ) )
+    //  if ( components & Qgis::TextComponent::Buffer )
+    //{
+    // QgsTextRenderer::drawBuffer( context, subComponent, format, metrics, mode );
+    //}
+    if ( ( components & Qgis::TextComponent::Buffer ) || ( components & Qgis::TextComponent::Text ) || ( components & Qgis::TextComponent::Shadow ) )
     {
       // store text's drawing in QPicture for drop shadow call
 
@@ -2004,13 +2010,81 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
         context.painter()->setPen( Qt::NoPen );
         context.painter()->setBrush( Qt::NoBrush );
         renderBlockHorizontal( block, blockIndex, metrics, context, format, context.painter(), usePathsForText,
-                               fontScale, extraWordSpace, extraLetterSpace, mode, nullptr );
+                               fontScale, extraWordSpace, extraLetterSpace, mode, needsDeferredRendering ? &deferredPart : nullptr );
       }
     }
     if ( maskPainter )
       maskPainter->restore();
 
+    if ( !deferredPart.empty() )
+      deferredParts.append( deferredPart );
     blockIndex++;
+  }
+
+  if ( needsDeferredRendering )
+  {
+    if ( components & Qgis::TextComponent::Buffer )
+    {
+      // draw the buffer
+      QColor bufferColor = format.buffer().color();
+      bufferColor.setAlphaF( format.buffer().opacity() );
+      QPen pen( bufferColor );
+      const QgsTextBufferSettings &buffer = format.buffer();
+      const double penSize =  buffer.sizeUnit() == Qgis::RenderUnit::Percentage
+                              ? context.convertToPainterUnits( format.size(), format.sizeUnit(), format.sizeMapUnitScale() ) * buffer.size() / 100
+                              : context.convertToPainterUnits( buffer.size(), buffer.sizeUnit(), buffer.sizeMapUnitScale() );
+      const double scaleFactor = 1;
+      pen.setWidthF( penSize * scaleFactor );
+      pen.setJoinStyle( buffer.joinStyle() );
+      QColor tmpColor( bufferColor );
+      // honor pref for whether to fill buffer interior
+      if ( !buffer.fillBufferInterior() )
+      {
+        tmpColor.setAlpha( 0 );
+      }
+      context.painter()->setBrush( tmpColor );
+      context.painter()->setPen( pen );
+      for ( const QVector< DeferredRenderPart > &parts : deferredParts )
+      {
+        for ( const DeferredRenderPart &part : parts )
+        {
+          // if ( scaleFactor != 1.0 )
+          //    buffp.scale( 1 / scaleFactor, 1 / scaleFactor );
+          context.painter()->drawPath( part.path );
+
+
+
+        }
+      }
+    }
+    if ( components & Qgis::TextComponent::Text )
+    {
+      if ( !usePathsForText )
+      {
+        context.painter()->scale( 1 / fontScale, 1 / fontScale );
+      }
+      context.painter()->setPen( Qt::NoPen );
+      context.painter()->setBrush( Qt::NoBrush );
+
+      // draw the text
+      for ( const QVector< DeferredRenderPart > &parts : deferredParts )
+      {
+        for ( const DeferredRenderPart &part : parts )
+        {
+          if ( usePathsForText )
+          {
+            context.painter()->setBrush( part.color );
+            context.painter()->drawPath( part.path );
+          }
+          else
+          {
+            context.painter()->setPen( part.color );
+            context.painter()->setFont( part.font );
+            context.painter()->drawText( part.point, part.text );
+          }
+        }
+      }
+    }
   }
 }
 
