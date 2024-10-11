@@ -396,7 +396,7 @@ class CORE_EXPORT QgsTextRenderer
     static double textHeight( const QgsRenderContext &context, const QgsTextFormat &format, const QgsTextDocument &document, Qgis::TextLayoutMode mode = Qgis::TextLayoutMode::Point );
 
     /**
-     * Draws a single component of rendered text using the specified settings.
+     * Draws components of rendered text using the specified settings.
      * \param rect destination rectangle for text
      * \param rotation text rotation
      * \param alignment horizontal alignment
@@ -405,19 +405,19 @@ class CORE_EXPORT QgsTextRenderer
      * \param metrics document metrics
      * \param context render context
      * \param format text format
-     * \param part component of text to draw. Note that Shadow parts cannot be drawn
+     * \param parts components of text to draw. Note that Shadow parts cannot be drawn
      * individually and instead are drawn with their associated part (e.g., drawn together
      * with the text or background parts)
      * \param mode layout mode
      * \note Not available in Python bindings
      * \since QGIS 3.14
      */
-    static void drawPart( const QRectF &rect, double rotation, Qgis::TextHorizontalAlignment alignment, Qgis::TextVerticalAlignment vAlignment, const QgsTextDocument &document, const QgsTextDocumentMetrics &metrics,
-                          QgsRenderContext &context, const QgsTextFormat &format,
-                          Qgis::TextComponent part, Qgis::TextLayoutMode mode );
+    static void drawParts( const QRectF &rect, double rotation, Qgis::TextHorizontalAlignment alignment, Qgis::TextVerticalAlignment vAlignment, const QgsTextDocument &document, const QgsTextDocumentMetrics &metrics,
+                           QgsRenderContext &context, const QgsTextFormat &format,
+                           Qgis::TextComponents parts, Qgis::TextLayoutMode mode );
 
     /**
-     * Draws a single component of rendered text using the specified settings.
+     * Draws components of rendered text using the specified settings.
      * \param origin origin for start of text. Y coordinate will be used as baseline.
      * \param rotation text rotation
      * \param alignment horizontal alignment
@@ -425,18 +425,18 @@ class CORE_EXPORT QgsTextRenderer
      * \param metrics precalculated document metrics
      * \param context render context
      * \param format text format
-     * \param part component of text to draw. Note that Shadow parts cannot be drawn
+     * \param parts components of text to draw. Note that Shadow parts cannot be drawn
      * individually and instead are drawn with their associated part (e.g., drawn together
      * with the text or background parts)
      * \param mode layout mode
      * \note Not available in Python bindings
      * \since QGIS 3.14
      */
-    static void drawPart( QPointF origin, double rotation, Qgis::TextHorizontalAlignment alignment, const QgsTextDocument &document,
-                          const QgsTextDocumentMetrics &metrics,
-                          QgsRenderContext &context, const QgsTextFormat &format,
-                          Qgis::TextComponent part,
-                          Qgis::TextLayoutMode mode );
+    static void drawParts( QPointF origin, double rotation, Qgis::TextHorizontalAlignment alignment, const QgsTextDocument &document,
+                           const QgsTextDocumentMetrics &metrics,
+                           QgsRenderContext &context, const QgsTextFormat &format,
+                           Qgis::TextComponents parts,
+                           Qgis::TextLayoutMode mode );
 
     static double drawBuffer( QgsRenderContext &context,
                               const Component &component,
@@ -464,7 +464,7 @@ class CORE_EXPORT QgsTextRenderer
                           const Component &component,
                           const QgsTextFormat &format );
 
-    static void drawTextInternal( Qgis::TextComponent drawType,
+    static void drawTextInternal( Qgis::TextComponents components,
                                   QgsRenderContext &context,
                                   const QgsTextFormat &format,
                                   const Component &component,
@@ -481,7 +481,7 @@ class CORE_EXPORT QgsTextRenderer
 
     static void drawTextInternalHorizontal( QgsRenderContext &context,
                                             const QgsTextFormat &format,
-                                            Qgis::TextComponent drawType,
+                                            Qgis::TextComponents components,
                                             Qgis::TextLayoutMode mode,
                                             const Component &component,
                                             const QgsTextDocument &document,
@@ -493,7 +493,7 @@ class CORE_EXPORT QgsTextRenderer
 
     static void drawTextInternalVertical( QgsRenderContext &context,
                                           const QgsTextFormat &format,
-                                          Qgis::TextComponent drawType,
+                                          Qgis::TextComponents components,
                                           Qgis::TextLayoutMode mode,
                                           const Component &component,
                                           const QgsTextDocument &document,
