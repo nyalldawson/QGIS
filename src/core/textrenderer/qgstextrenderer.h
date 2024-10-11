@@ -23,6 +23,7 @@
 #include "qgis.h"
 
 #include <QPicture>
+#include <QPainterPath>
 
 class QgsTextDocument;
 class QgsTextDocumentMetrics;
@@ -503,12 +504,25 @@ class CORE_EXPORT QgsTextRenderer
                                           Qgis::TextVerticalAlignment vAlignment,
                                           double rotation );
 
+    struct DeferredRenderPart
+    {
+      // mandatory
+      QColor color;
+      QPointF point;
+      // optional
+      QPainterPath path;
+      // optional
+      QFont font;
+      QString text;
+    };
+
     static void renderBlockHorizontal( const QgsTextBlock &block, int blockIndex,
                                        const QgsTextDocumentMetrics &metrics, QgsRenderContext &context,
                                        const QgsTextFormat &format,
-                                       QPainter *painter, bool usePaths,
+                                       QPainter *painter, bool forceRenderAsPaths,
                                        double fontScale, double extraWordSpace, double extraLetterSpace,
-                                       Qgis::TextLayoutMode mode );
+                                       Qgis::TextLayoutMode mode,
+                                       QVector< DeferredRenderPart > *storeDeferredParts );
 
     friend class QgsVectorLayerLabelProvider;
     friend class QgsLabelPreview;
