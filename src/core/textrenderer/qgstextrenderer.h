@@ -519,6 +519,7 @@ class CORE_EXPORT QgsTextRenderer
     struct DeferredRenderBlock
     {
       QPointF origin;
+      Component component;
       QVector< DeferredRenderFragment > fragments;
     };
 

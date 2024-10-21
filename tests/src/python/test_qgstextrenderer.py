@@ -2935,7 +2935,7 @@ class PyQgsTextRenderer(QgisTestCase):
         format.shadow().setBlurRadius(0)
         format.shadow().setOffsetDistance(5)
         format.shadow().setOffsetUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
-        self.assertTrue(self.checkRender(format, 'shadow_enabled', QgsTextRenderer.TextPart.Text, text=['test']))
+        self.assertTrue(self.checkRender(format, 'shadow_enabled', None, text=['test']))
 
     def testDrawShadowOffsetAngle(self):
         format = QgsTextFormat()
@@ -2950,7 +2950,7 @@ class PyQgsTextRenderer(QgisTestCase):
         format.shadow().setOffsetDistance(5)
         format.shadow().setOffsetAngle(0)
         format.shadow().setOffsetUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
-        self.assertTrue(self.checkRender(format, 'shadow_offset_angle', QgsTextRenderer.TextPart.Text, text=['test']))
+        self.assertTrue(self.checkRender(format, 'shadow_offset_angle', None, text=['test']))
 
     def testDrawShadowOffsetMapUnits(self):
         format = QgsTextFormat()
@@ -2964,7 +2964,7 @@ class PyQgsTextRenderer(QgisTestCase):
         format.shadow().setBlurRadius(0)
         format.shadow().setOffsetDistance(10)
         format.shadow().setOffsetUnit(QgsUnitTypes.RenderUnit.RenderMapUnits)
-        self.assertTrue(self.checkRender(format, 'shadow_offset_mapunits', QgsTextRenderer.TextPart.Text, text=['test']))
+        self.assertTrue(self.checkRender(format, 'shadow_offset_mapunits', None, text=['test']))
 
     def testDrawShadowOffsetPixels(self):
         format = QgsTextFormat()
@@ -2978,7 +2978,7 @@ class PyQgsTextRenderer(QgisTestCase):
         format.shadow().setBlurRadius(0)
         format.shadow().setOffsetDistance(10)
         format.shadow().setOffsetUnit(QgsUnitTypes.RenderUnit.RenderPixels)
-        self.assertTrue(self.checkRender(format, 'shadow_offset_pixels', QgsTextRenderer.TextPart.Text, text=['test']))
+        self.assertTrue(self.checkRender(format, 'shadow_offset_pixels', None, text=['test']))
 
     def testDrawShadowOffsetPercentage(self):
         format = QgsTextFormat()
@@ -2992,7 +2992,7 @@ class PyQgsTextRenderer(QgisTestCase):
         format.shadow().setBlurRadius(0)
         format.shadow().setOffsetDistance(10)
         format.shadow().setOffsetUnit(QgsUnitTypes.RenderUnit.RenderPercentage)
-        self.assertTrue(self.checkRender(format, 'shadow_offset_percentage', QgsTextRenderer.TextPart.Text, text=['test']))
+        self.assertTrue(self.checkRender(format, 'shadow_offset_percentage', None, text=['test']))
 
     def testDrawShadowBlurRadiusMM(self):
         format = QgsTextFormat()
@@ -3007,7 +3007,7 @@ class PyQgsTextRenderer(QgisTestCase):
         format.shadow().setOffsetUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
         format.shadow().setBlurRadius(1)
         format.shadow().setBlurRadiusUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
-        self.assertTrue(self.checkRender(format, 'shadow_radius_mm', QgsTextRenderer.TextPart.Text, text=['test']))
+        self.assertTrue(self.checkRender(format, 'shadow_radius_mm', None, text=['test']))
 
     def testDrawShadowBlurRadiusMapUnits(self):
         format = QgsTextFormat()
@@ -3022,7 +3022,7 @@ class PyQgsTextRenderer(QgisTestCase):
         format.shadow().setOffsetUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
         format.shadow().setBlurRadius(3)
         format.shadow().setBlurRadiusUnit(QgsUnitTypes.RenderUnit.RenderMapUnits)
-        self.assertTrue(self.checkRender(format, 'shadow_radius_mapunits', QgsTextRenderer.TextPart.Text, text=['test']))
+        self.assertTrue(self.checkRender(format, 'shadow_radius_mapunits', None, text=['test']))
 
     def testDrawShadowBlurRadiusPixels(self):
         format = QgsTextFormat()
@@ -3037,7 +3037,7 @@ class PyQgsTextRenderer(QgisTestCase):
         format.shadow().setOffsetUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
         format.shadow().setBlurRadius(3)
         format.shadow().setBlurRadiusUnit(QgsUnitTypes.RenderUnit.RenderPixels)
-        self.assertTrue(self.checkRender(format, 'shadow_radius_pixels', QgsTextRenderer.TextPart.Text, text=['test']))
+        self.assertTrue(self.checkRender(format, 'shadow_radius_pixels', None, text=['test']))
 
     def testDrawShadowBlurRadiusPercentage(self):
         format = QgsTextFormat()
@@ -3052,7 +3052,7 @@ class PyQgsTextRenderer(QgisTestCase):
         format.shadow().setOffsetUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
         format.shadow().setBlurRadius(5)
         format.shadow().setBlurRadiusUnit(QgsUnitTypes.RenderUnit.RenderPercentage)
-        self.assertTrue(self.checkRender(format, 'shadow_radius_percentage', QgsTextRenderer.TextPart.Text, text=['test']))
+        self.assertTrue(self.checkRender(format, 'shadow_radius_percentage', None, text=['test']))
 
     def testDrawShadowOpacity(self):
         format = QgsTextFormat()
@@ -3066,7 +3066,7 @@ class PyQgsTextRenderer(QgisTestCase):
         format.shadow().setBlurRadius(0)
         format.shadow().setOffsetDistance(5)
         format.shadow().setOffsetUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
-        self.assertTrue(self.checkRender(format, 'shadow_opacity', QgsTextRenderer.TextPart.Text, text=['test']))
+        self.assertTrue(self.checkRender(format, 'shadow_opacity', None, text=['test']))
 
     def testDrawShadowColor(self):
         format = QgsTextFormat()
@@ -3080,7 +3080,7 @@ class PyQgsTextRenderer(QgisTestCase):
         format.shadow().setBlurRadius(0)
         format.shadow().setOffsetDistance(5)
         format.shadow().setOffsetUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
-        self.assertTrue(self.checkRender(format, 'shadow_color', QgsTextRenderer.TextPart.Text, text=['test']))
+        self.assertTrue(self.checkRender(format, 'shadow_color', None, text=['test']))
 
     def testDrawShadowWithJustifyAlign(self):
         format = QgsTextFormat()
@@ -3109,7 +3109,7 @@ class PyQgsTextRenderer(QgisTestCase):
         format.shadow().setBlurRadius(0)
         format.shadow().setOffsetDistance(5)
         format.shadow().setOffsetUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
-        self.assertTrue(self.checkRender(format, 'shadow_scale_50', QgsTextRenderer.TextPart.Text, text=['test']))
+        self.assertTrue(self.checkRender(format, 'shadow_scale_50', None, text=['test']))
 
     def testDrawShadowScaleUp(self):
         format = QgsTextFormat()
@@ -3123,7 +3123,7 @@ class PyQgsTextRenderer(QgisTestCase):
         format.shadow().setBlurRadius(0)
         format.shadow().setOffsetDistance(5)
         format.shadow().setOffsetUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
-        self.assertTrue(self.checkRender(format, 'shadow_scale_150', QgsTextRenderer.TextPart.Text, text=['test']))
+        self.assertTrue(self.checkRender(format, 'shadow_scale_150', None, text=['test']))
 
     def testDrawShadowBackgroundPlacement(self):
         format = QgsTextFormat()
@@ -3141,7 +3141,7 @@ class PyQgsTextRenderer(QgisTestCase):
         format.background().setSize(QSizeF(20, 10))
         format.background().setSizeType(QgsTextBackgroundSettings.SizeType.SizeFixed)
         format.background().setSizeUnit(QgsUnitTypes.RenderUnit.RenderMapUnits)
-        self.assertTrue(self.checkRender(format, 'shadow_placement_background', QgsTextRenderer.TextPart.Background, text=['test']))
+        self.assertTrue(self.checkRender(format, 'shadow_placement_background', None, text=['test']))
 
     def testDrawShadowBufferPlacement(self):
         format = QgsTextFormat()
@@ -3157,7 +3157,7 @@ class PyQgsTextRenderer(QgisTestCase):
         format.buffer().setEnabled(True)
         format.buffer().setSize(4)
         format.buffer().setSizeUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
-        self.assertTrue(self.checkRender(format, 'shadow_placement_buffer', QgsTextRenderer.TextPart.Buffer, text=['test']))
+        self.assertTrue(self.checkRender(format, 'shadow_placement_buffer', None, text=['test']))
 
     def testDrawTextWithBuffer(self):
         format = QgsTextFormat()

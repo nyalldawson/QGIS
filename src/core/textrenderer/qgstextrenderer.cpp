@@ -96,17 +96,23 @@ void QgsTextRenderer::drawDocument( const QRectF &rect, const QgsTextFormat &for
 {
   const QgsTextFormat tmpFormat = updateShadowPosition( format );
 
+  Qgis::TextComponents components = Qgis::TextComponent::Text;
   if ( tmpFormat.background().enabled() )
   {
-    drawParts( rect, rotation, horizontalAlignment, verticalAlignment, document, metrics, context, tmpFormat, Qgis::TextComponent::Background, mode );
+    components |= Qgis::TextComponent::Background;
+  }
+
+  if ( tmpFormat.shadow().enabled() )
+  {
+    components |= Qgis::TextComponent::Shadow;
   }
 
   if ( tmpFormat.buffer().enabled() )
   {
-    drawParts( rect, rotation, horizontalAlignment, verticalAlignment, document, metrics, context, tmpFormat, Qgis::TextComponent::Buffer, mode );
+    components |= Qgis::TextComponent::Buffer;
   }
 
-  drawParts( rect, rotation, horizontalAlignment, verticalAlignment, document, metrics, context, tmpFormat, Qgis::TextComponent::Text, mode );
+  drawParts( rect, rotation, horizontalAlignment, verticalAlignment, document, metrics, context, tmpFormat, components, mode );
 }
 
 void QgsTextRenderer::drawText( QPointF point, double rotation, Qgis::TextHorizontalAlignment alignment, const QStringList &textLines, QgsRenderContext &context, const QgsTextFormat &_format, bool )
@@ -130,6 +136,11 @@ void QgsTextRenderer::drawDocument( QPointF point, const QgsTextFormat &format, 
   if ( format.background().enabled() )
   {
     components |= Qgis::TextComponent::Background;
+  }
+
+  if ( format.shadow().enabled() )
+  {
+    components |= Qgis::TextComponent::Shadow;
   }
 
   if ( format.buffer().enabled() )
@@ -1806,14 +1817,16 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
 
   // should we use text or paths for this render?
   const bool usePathsForText = usePathsToRender( context, format, document );
-  const bool needsPicture = usePictureToRender( context, format, document );
+
+  // do we need to use a picture to render this document?
+  bool needsPicture = usePictureToRender( context, format, document );
 
   // TODO -- maybe we can avoid the nested vector? Need to confirm whether painter rotation & translation can be
   // done ONCE only, upfront
   std::unique_ptr< std::vector< DeferredRenderBlock > > deferredBlocks;
 
-  const bool needsDeferredRendering = components & Qgis::TextComponent::Buffer
-                                      && format.buffer().enabled();
+  const bool needsDeferredRendering = ( components & Qgis::TextComponent::Buffer && format.buffer().enabled() )
+                                      || ( components & Qgis::TextComponent::Shadow && format.shadow().enabled() && ( format.shadow().shadowPlacement() == QgsTextShadowSettings::ShadowText || format.shadow().shadowPlacement() == QgsTextShadowSettings::ShadowBuffer ) );
   if ( needsDeferredRendering )
   {
     deferredBlocks = std::make_unique< std::vector< DeferredRenderBlock > >();
@@ -1935,6 +1948,8 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
     subComponent.rotationOffset = 0.0;
     subComponent.extraWordSpacing = extraWordSpace * fontScale;
     subComponent.extraLetterSpacing = extraLetterSpace * fontScale;
+    if ( deferredBlock )
+      deferredBlock->component = subComponent;
 
     // draw the mask below the text (for preview)
     if ( format.mask().enabled() )
@@ -1944,12 +1959,6 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
 
     if ( ( components & Qgis::TextComponent::Buffer ) || ( components & Qgis::TextComponent::Text ) || ( components & Qgis::TextComponent::Shadow ) )
     {
-      // store text's drawing in QPicture for drop shadow call
-
-      const bool drawShadowOnText = format.shadow().enabled() && format.shadow().shadowPlacement() == QgsTextShadowSettings::ShadowText;
-      // do we need to store text temporarily in a QPicture? Avoid if we can...
-      const bool requiresPicture = drawShadowOnText;
-
       // if we are drawing both text + buffer, we'll need a path, as we HAVE to render buffers using paths
       const bool needsPaths = usePathsForText || ( ( components & Qgis::TextComponent::Buffer ) && format.buffer().enabled() );
 
@@ -1963,29 +1972,6 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
 
       referenceScaleOverride.reset();
 
-      std::unique_ptr< QPicture > textPicture;
-      if ( requiresPicture )
-      {
-        // render to picture
-        textPicture = std::make_unique< QPicture >();
-        QPainter picturePainter( textPicture.get() );
-        picturePainter.setPen( Qt::NoPen );
-        picturePainter.setBrush( Qt::NoBrush );
-        picturePainter.scale( 1 / fontScale, 1 / fontScale );
-        renderBlockHorizontal( block, blockIndex, metrics, context, format, &picturePainter, needsPaths,
-                               fontScale, extraWordSpace, extraLetterSpace, mode, deferredBlock );
-        picturePainter.end();
-      }
-
-      if ( drawShadowOnText )
-      {
-        subComponent.picture = *textPicture;
-        subComponent.pictureBuffer = 0.0; // no pen width to deal with
-        subComponent.origin = QPointF( 0.0, 0.0 );
-
-        QgsTextRenderer::drawShadow( context, subComponent, format );
-      }
-
       // now render the actual text
       if ( context.useAdvancedEffects() )
       {
@@ -1995,19 +1981,11 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
       // scale for any print output or image saving @ specific dpi
       context.painter()->scale( subComponent.dpiRatio, subComponent.dpiRatio );
 
-      if ( textPicture )
-      {
-        QgsPainting::applyScaleFixForQPictureDpi( context.painter() );
-        context.painter()->drawPicture( 0, 0, *textPicture );
-      }
-      else
-      {
-        context.painter()->scale( 1 / fontScale, 1 / fontScale );
-        context.painter()->setPen( Qt::NoPen );
-        context.painter()->setBrush( Qt::NoBrush );
-        renderBlockHorizontal( block, blockIndex, metrics, context, format, context.painter(), needsPaths,
-                               fontScale, extraWordSpace, extraLetterSpace, mode, deferredBlock );
-      }
+      context.painter()->scale( 1 / fontScale, 1 / fontScale );
+      context.painter()->setPen( Qt::NoPen );
+      context.painter()->setBrush( Qt::NoBrush );
+      renderBlockHorizontal( block, blockIndex, metrics, context, format, context.painter(), needsPaths,
+                             fontScale, extraWordSpace, extraLetterSpace, mode, deferredBlock );
     }
     if ( maskPainter )
       maskPainter->restore();
@@ -2017,11 +1995,25 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
 
   if ( deferredBlocks )
   {
+    // TODO shadow buffer!
+
     if ( components & Qgis::TextComponent::Buffer )
     {
       // draw the buffer
       QgsScopedQPainterState painterState( context.painter() );
       context.setPainterFlagsUsingContext();
+
+      const bool needsShadowOnBuffer = ( ( components & Qgis::TextComponent::Shadow ) && format.shadow().enabled() && format.shadow().shadowPlacement() == QgsTextShadowSettings::ShadowBuffer );
+      std::unique_ptr< QPicture > bufferPicture;
+      std::unique_ptr< QPainter > bufferPainter;
+      QPainter *prevPainter = context.painter();
+      if ( needsShadowOnBuffer )
+      {
+        bufferPicture = std::make_unique< QPicture >();
+        bufferPainter = std::make_unique< QPainter >( bufferPicture.get() );
+        context.setPainter( bufferPainter.get() );
+      }
+
       std::unique_ptr< QgsPaintEffect > tmpEffect;
       if ( format.buffer().paintEffect() && format.buffer().paintEffect()->enabled() )
       {
@@ -2071,6 +2063,83 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
       if ( tmpEffect )
       {
         tmpEffect->end( context );
+      }
+
+      if ( needsShadowOnBuffer && bufferPicture )
+      {
+        bufferPainter->end();
+        bufferPainter.reset();
+        context.setPainter( prevPainter );
+
+        QgsTextRenderer::Component bufferComponent = component;
+        bufferComponent.origin = QPointF( 0.0, 0.0 );
+        bufferComponent.picture = *bufferPicture;
+        bufferComponent.pictureBuffer = penSize / 2.0;
+        bufferComponent.size.setHeight( bufferPicture->boundingRect().height() + 1000 );
+        bufferComponent.size.setWidth( bufferPicture->boundingRect().width() + 100 );
+
+        bufferComponent.offset.rx() -=  component.origin.x() + deferredBlocks->at( 0 ).origin.x();
+        bufferComponent.offset.ry() -= component.origin.y() + deferredBlocks->at( 0 ).origin.y();
+
+//          context.painter()->translate( block.origin );
+        drawShadow( context, bufferComponent, format );
+        //        context.painter()->translate( block.origin );
+        // also draw buffer
+
+        if ( context.useAdvancedEffects() )
+        {
+          context.painter()->setCompositionMode( buffer.blendMode() );
+        }
+
+        // scale for any print output or image saving @ specific dpi
+        context.painter()->scale( component.dpiRatio, component.dpiRatio );
+        QgsPainting::applyScaleFixForQPictureDpi( context.painter() );
+        context.painter()->drawPicture( 0, 0, *bufferPicture );
+      }
+    }
+
+    if ( ( components & Qgis::TextComponent::Shadow ) && format.shadow().enabled() && format.shadow().shadowPlacement() == QgsTextShadowSettings::ShadowText )
+    {
+      QgsScopedQPainterState painterState( context.painter() );
+      context.setPainterFlagsUsingContext();
+      context.painter()->translate( component.origin );
+      if ( !qgsDoubleNear( rotation, 0.0 ) )
+        context.painter()->rotate( rotation );
+
+      context.painter()->setPen( Qt::NoPen );
+      context.painter()->setBrush( Qt::NoBrush );
+
+      for ( const DeferredRenderBlock &block : *deferredBlocks )
+      {
+        Component subComponent = block.component;
+
+        QPainter painter( &subComponent.picture );
+        painter.setPen( Qt::NoPen );
+        painter.setBrush( Qt::NoBrush );
+        painter.scale( 1 / fontScale, 1 / fontScale );
+
+        for ( const DeferredRenderFragment &fragment : std::as_const( block.fragments ) )
+        {
+          if ( !fragment.path.isEmpty() )
+          {
+            painter.setBrush( fragment.color );
+            painter.drawPath( fragment.path );
+          }
+          else
+          {
+            painter.setPen( fragment.color );
+            painter.setFont( fragment.font );
+            painter.drawText( fragment.point, fragment.text );
+          }
+        }
+        painter.end();
+
+        subComponent.pictureBuffer = 0.0; // no pen width to deal with
+        subComponent.origin = QPointF( 0.0, 0.0 );
+
+        context.painter()->translate( block.origin );
+        QgsTextRenderer::drawShadow( context, subComponent, format );
+        context.painter()->translate( -block.origin );
       }
     }
 
