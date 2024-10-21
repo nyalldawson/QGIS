@@ -1654,7 +1654,7 @@ void QgsTextRenderer::renderBlockHorizontal( const QgsTextBlock &block, int bloc
     const QgsTextFormat &format,
     QPainter *painter, bool forceRenderAsPaths,
     double fontScale, double extraWordSpace, double extraLetterSpace,
-    Qgis::TextLayoutMode mode, QVector<DeferredRenderPart> *storeDeferredParts )
+    Qgis::TextLayoutMode mode, DeferredRenderBlock *deferredRenderBlock )
 {
   if ( !metrics.isNullFontSize() )
   {
@@ -1675,16 +1675,19 @@ void QgsTextRenderer::renderBlockHorizontal( const QgsTextBlock &block, int bloc
         QColor textColor = fragment.characterFormat().textColor().isValid() ? fragment.characterFormat().textColor() : format.color();
         textColor.setAlphaF( fragment.characterFormat().textColor().isValid() ? textColor.alphaF() * format.opacity() : format.opacity() );
 
-        if ( storeDeferredParts )
+        if ( deferredRenderBlock )
         {
-          DeferredRenderPart renderPart;
-          renderPart.color = textColor;
-          renderPart.path.setFillRule( Qt::WindingFill );
-          renderPart.path.addText( xOffset, yOffset, fragmentFont, fragment.text() );
-          renderPart.font = fragmentFont;
-          renderPart.point = QPointF( xOffset, yOffset );
-          renderPart.text = fragment.text();
-          storeDeferredParts->append( renderPart );
+          DeferredRenderFragment renderFragment;
+          renderFragment.color = textColor;
+          if ( forceRenderAsPaths )
+          {
+            renderFragment.path.setFillRule( Qt::WindingFill );
+            renderFragment.path.addText( xOffset, yOffset, fragmentFont, fragment.text() );
+          }
+          renderFragment.font = fragmentFont;
+          renderFragment.point = QPointF( xOffset, yOffset );
+          renderFragment.text = fragment.text();
+          deferredRenderBlock->fragments.append( renderFragment );
         }
         else if ( forceRenderAsPaths )
         {
@@ -1765,6 +1768,18 @@ bool QgsTextRenderer::usePathsToRender( const QgsRenderContext &context, const Q
   }
   BUILTIN_UNREACHABLE
 }
+
+bool QgsTextRenderer::usePictureToRender( const QgsRenderContext &, const QgsTextFormat &, const QgsTextDocument &document )
+{
+  return std::any_of( document.begin(), document.end(), []( const QgsTextBlock & block )
+  {
+    return std::any_of( block.begin(), block.end(), []( const QgsTextFragment & fragment )
+    {
+      return fragment.isImage();
+    } );
+  } );
+}
+
 void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, const QgsTextFormat &format, Qgis::TextComponents components, Qgis::TextLayoutMode mode, const Component &component, const QgsTextDocument &document, const QgsTextDocumentMetrics &metrics, double fontScale, const Qgis::TextHorizontalAlignment hAlignment,
     Qgis::TextVerticalAlignment vAlignment, double rotation )
 {
@@ -1810,19 +1825,19 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
 
   // should we use text or paths for this render?
   const bool usePathsForText = usePathsToRender( context, format, document );
-  // TODO true if image present?
-  const bool needsPicture = false;
+  const bool needsPicture = usePictureToRender( context, format, document );
 
-
-  // TODO -- avoid nested vector -- check if painter rotation & translation can be
+  // TODO -- maybe we can avoid the nested vector? Need to confirm whether painter rotation & translation can be
   // done ONCE only, upfront
-  // TODO -- this should be optional -- if we are ONLY rendering text, then we can
-  // just draw immediately and not require deferreing
-  QVector< QVector< DeferredRenderPart > > deferredParts;
-  // TODO -- should be total count of fragments, not blocks!
-  deferredParts.reserve( document.size() );
+  std::unique_ptr< std::vector< DeferredRenderBlock > > deferredBlocks;
+
   const bool needsDeferredRendering = components & Qgis::TextComponent::Buffer
                                       && format.buffer().enabled();
+  if ( needsDeferredRendering )
+  {
+    deferredBlocks = std::make_unique< std::vector< DeferredRenderBlock > >();
+    deferredBlocks->reserve( document.size() );
+  }
 
   int blockIndex = 0;
   for ( const QgsTextBlock &block : document )
@@ -1839,9 +1854,13 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
 
     const double blockHeight = metrics.blockHeight( blockIndex );
 
-    QVector< DeferredRenderPart > deferredPart;
-    if ( needsDeferredRendering )
-      deferredPart.reserve( block.size() );
+    DeferredRenderBlock *deferredBlock = nullptr;
+    if ( deferredBlocks )
+    {
+      deferredBlocks->emplace_back( DeferredRenderBlock() );
+      deferredBlock = &deferredBlocks->back();
+      deferredBlock->fragments.reserve( block.size() );
+    }
 
     QgsScopedQPainterState painterState( context.painter() );
     context.setPainterFlagsUsingContext();
@@ -1921,6 +1940,8 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
     const double baseLineOffset = metrics.baselineOffset( blockIndex, mode );
 
     context.painter()->translate( QPointF( xMultiLineOffset, baseLineOffset + verticalAlignOffset ) );
+    if ( deferredBlock )
+      deferredBlock->origin = QPointF( xMultiLineOffset, baseLineOffset + verticalAlignOffset );
     if ( maskPainter )
       maskPainter->translate( QPointF( xMultiLineOffset, baseLineOffset + verticalAlignOffset ) );
 
@@ -1940,10 +1961,6 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
       QgsTextRenderer::drawMask( context, subComponent, format, metrics, mode );
     }
 
-    //  if ( components & Qgis::TextComponent::Buffer )
-    //{
-    // QgsTextRenderer::drawBuffer( context, subComponent, format, metrics, mode );
-    //}
     if ( ( components & Qgis::TextComponent::Buffer ) || ( components & Qgis::TextComponent::Text ) || ( components & Qgis::TextComponent::Shadow ) )
     {
       // store text's drawing in QPicture for drop shadow call
@@ -1952,10 +1969,8 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
       // do we need to store text temporarily in a QPicture? Avoid if we can...
       const bool requiresPicture = drawShadowOnText;
 
-      // if we are drawing both text + buffer, use a path (unless force text mode)
-
-
-
+      // if we are drawing both text + buffer, we'll need a path, as we HAVE to render buffers using paths
+      const bool needsPaths = usePathsForText || ( ( components & Qgis::TextComponent::Buffer ) && format.buffer().enabled() );
 
       std::optional< QgsScopedRenderContextReferenceScaleOverride > referenceScaleOverride;
       if ( mode == Qgis::TextLayoutMode::Labeling )
@@ -1976,8 +1991,8 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
         picturePainter.setPen( Qt::NoPen );
         picturePainter.setBrush( Qt::NoBrush );
         picturePainter.scale( 1 / fontScale, 1 / fontScale );
-        renderBlockHorizontal( block, blockIndex, metrics, context, format, &picturePainter, usePathsForText,
-                               fontScale, extraWordSpace, extraLetterSpace, mode, nullptr );
+        renderBlockHorizontal( block, blockIndex, metrics, context, format, &picturePainter, needsPaths,
+                               fontScale, extraWordSpace, extraLetterSpace, mode, deferredBlock );
         picturePainter.end();
       }
 
@@ -2009,23 +2024,24 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
         context.painter()->scale( 1 / fontScale, 1 / fontScale );
         context.painter()->setPen( Qt::NoPen );
         context.painter()->setBrush( Qt::NoBrush );
-        renderBlockHorizontal( block, blockIndex, metrics, context, format, context.painter(), usePathsForText,
-                               fontScale, extraWordSpace, extraLetterSpace, mode, needsDeferredRendering ? &deferredPart : nullptr );
+        renderBlockHorizontal( block, blockIndex, metrics, context, format, context.painter(), needsPaths,
+                               fontScale, extraWordSpace, extraLetterSpace, mode, deferredBlock );
       }
     }
     if ( maskPainter )
       maskPainter->restore();
 
-    if ( !deferredPart.empty() )
-      deferredParts.append( deferredPart );
     blockIndex++;
   }
 
-  if ( needsDeferredRendering )
+  if ( deferredBlocks )
   {
     if ( components & Qgis::TextComponent::Buffer )
     {
       // draw the buffer
+      QgsScopedQPainterState painterState( context.painter() );
+      context.setPainterFlagsUsingContext();
+
       QColor bufferColor = format.buffer().color();
       bufferColor.setAlphaF( format.buffer().opacity() );
       QPen pen( bufferColor );
@@ -2033,56 +2049,75 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
       const double penSize =  buffer.sizeUnit() == Qgis::RenderUnit::Percentage
                               ? context.convertToPainterUnits( format.size(), format.sizeUnit(), format.sizeMapUnitScale() ) * buffer.size() / 100
                               : context.convertToPainterUnits( buffer.size(), buffer.sizeUnit(), buffer.sizeMapUnitScale() );
-      const double scaleFactor = 1;
-      pen.setWidthF( penSize * scaleFactor );
+      pen.setWidthF( penSize * fontScale );
       pen.setJoinStyle( buffer.joinStyle() );
-      QColor tmpColor( bufferColor );
+      context.painter()->setPen( pen );
+
       // honor pref for whether to fill buffer interior
       if ( !buffer.fillBufferInterior() )
       {
-        tmpColor.setAlpha( 0 );
+        bufferColor.setAlpha( 0 );
       }
-      context.painter()->setBrush( tmpColor );
-      context.painter()->setPen( pen );
-      for ( const QVector< DeferredRenderPart > &parts : deferredParts )
+      context.painter()->setBrush( bufferColor );
+
+      // TODO - buffer effect
+
+      context.painter()->translate( component.origin );
+      if ( !qgsDoubleNear( rotation, 0.0 ) )
+        context.painter()->rotate( rotation );
+
+      if ( context.useAdvancedEffects() )
       {
-        for ( const DeferredRenderPart &part : parts )
+        context.painter()->setCompositionMode( format.buffer().blendMode() );
+      }
+
+      for ( const DeferredRenderBlock &block : *deferredBlocks )
+      {
+        context.painter()->translate( block.origin );
+        context.painter()->scale( 1 / fontScale, 1 / fontScale );
+        for ( const DeferredRenderFragment &fragment : std::as_const( block.fragments ) )
         {
-          // if ( scaleFactor != 1.0 )
-          //    buffp.scale( 1 / scaleFactor, 1 / scaleFactor );
-          context.painter()->drawPath( part.path );
-
-
-
+          context.painter()->drawPath( fragment.path );
         }
+        context.painter()->scale( fontScale, fontScale );
+        context.painter()->translate( -block.origin );
       }
     }
+
     if ( components & Qgis::TextComponent::Text )
     {
-      if ( !usePathsForText )
-      {
-        context.painter()->scale( 1 / fontScale, 1 / fontScale );
-      }
+      QgsScopedQPainterState painterState( context.painter() );
+      context.setPainterFlagsUsingContext();
+      context.painter()->translate( component.origin );
+      if ( !qgsDoubleNear( rotation, 0.0 ) )
+        context.painter()->rotate( rotation );
+
       context.painter()->setPen( Qt::NoPen );
       context.painter()->setBrush( Qt::NoBrush );
 
       // draw the text
-      for ( const QVector< DeferredRenderPart > &parts : deferredParts )
+      for ( const DeferredRenderBlock &block : *deferredBlocks )
       {
-        for ( const DeferredRenderPart &part : parts )
+        context.painter()->translate( block.origin );
+        context.painter()->scale( 1 / fontScale, 1 / fontScale );
+
+        for ( const DeferredRenderFragment &fragment : std::as_const( block.fragments ) )
         {
           if ( usePathsForText )
           {
-            context.painter()->setBrush( part.color );
-            context.painter()->drawPath( part.path );
+            context.painter()->setBrush( fragment.color );
+            context.painter()->drawPath( fragment.path );
           }
           else
           {
-            context.painter()->setPen( part.color );
-            context.painter()->setFont( part.font );
-            context.painter()->drawText( part.point, part.text );
+            context.painter()->setPen( fragment.color );
+            context.painter()->setFont( fragment.font );
+            context.painter()->drawText( fragment.point, fragment.text );
           }
         }
+
+        context.painter()->scale( fontScale, fontScale );
+        context.painter()->translate( -block.origin );
       }
     }
   }

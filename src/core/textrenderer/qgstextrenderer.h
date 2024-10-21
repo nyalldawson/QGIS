@@ -504,7 +504,7 @@ class CORE_EXPORT QgsTextRenderer
                                           Qgis::TextVerticalAlignment vAlignment,
                                           double rotation );
 
-    struct DeferredRenderPart
+    struct DeferredRenderFragment
     {
       // mandatory
       QColor color;
@@ -516,13 +516,19 @@ class CORE_EXPORT QgsTextRenderer
       QString text;
     };
 
+    struct DeferredRenderBlock
+    {
+      QPointF origin;
+      QVector< DeferredRenderFragment > fragments;
+    };
+
     static void renderBlockHorizontal( const QgsTextBlock &block, int blockIndex,
                                        const QgsTextDocumentMetrics &metrics, QgsRenderContext &context,
                                        const QgsTextFormat &format,
                                        QPainter *painter, bool forceRenderAsPaths,
                                        double fontScale, double extraWordSpace, double extraLetterSpace,
                                        Qgis::TextLayoutMode mode,
-                                       QVector< DeferredRenderPart > *storeDeferredParts );
+                                       DeferredRenderBlock *deferredRenderBlock );
 
     friend class QgsVectorLayerLabelProvider;
     friend class QgsLabelPreview;
@@ -533,6 +539,12 @@ class CORE_EXPORT QgsTextRenderer
      * Returns TRUE if paths should be used to render a document
      */
     static bool usePathsToRender( const QgsRenderContext &context, const QgsTextFormat &format, const QgsTextDocument &document );
+
+    /**
+     * Returns TRUE if a picture should be used to render a document
+     */
+    static bool usePictureToRender( const QgsRenderContext &context, const QgsTextFormat &format, const QgsTextDocument &document );
+
 };
 
 #endif // QGSTEXTRENDERER_H
