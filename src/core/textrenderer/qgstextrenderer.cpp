@@ -562,26 +562,7 @@ double QgsTextRenderer::drawBuffer( QgsRenderContext &context, const QgsTextRend
   {
     case Qgis::TextOrientation::Horizontal:
     {
-      double xOffset = 0;
-      int fragmentIndex = 0;
-      for ( const QgsTextFragment &fragment : component.block )
-      {
-        QFont fragmentFont = metrics.fragmentFont( component.blockIndex, fragmentIndex );
-
-        if ( !fragment.isWhitespace() && !fragment.isImage() )
-        {
-          if ( component.extraWordSpacing || component.extraLetterSpacing )
-            applyExtraSpacingForLineJustification( fragmentFont, component.extraWordSpacing, component.extraLetterSpacing );
-
-          const double yOffset = metrics.fragmentVerticalOffset( component.blockIndex, fragmentIndex, mode );
-          path.addText( xOffset, yOffset, fragmentFont, fragment.text() );
-        }
-
-        xOffset += metrics.fragmentHorizontalAdvance( component.blockIndex, fragmentIndex, mode ) * scaleFactor;
-
-        fragmentIndex++;
-      }
-      advance = xOffset;
+      // NOT SUPPORTED BY THIS METHOD ANYMORE -- buffer drawing is handled in drawTextInternalHorizontal now
       break;
     }
 
@@ -2041,6 +2022,12 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
       // draw the buffer
       QgsScopedQPainterState painterState( context.painter() );
       context.setPainterFlagsUsingContext();
+      std::unique_ptr< QgsPaintEffect > tmpEffect;
+      if ( format.buffer().paintEffect() && format.buffer().paintEffect()->enabled() )
+      {
+        tmpEffect.reset( format.buffer().paintEffect()->clone() );
+        tmpEffect->begin( context );
+      }
 
       QColor bufferColor = format.buffer().color();
       bufferColor.setAlphaF( format.buffer().opacity() );
@@ -2059,8 +2046,6 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
         bufferColor.setAlpha( 0 );
       }
       context.painter()->setBrush( bufferColor );
-
-      // TODO - buffer effect
 
       context.painter()->translate( component.origin );
       if ( !qgsDoubleNear( rotation, 0.0 ) )
@@ -2081,6 +2066,11 @@ void QgsTextRenderer::drawTextInternalHorizontal( QgsRenderContext &context, con
         }
         context.painter()->scale( fontScale, fontScale );
         context.painter()->translate( -block.origin );
+      }
+
+      if ( tmpEffect )
+      {
+        tmpEffect->end( context );
       }
     }
 
