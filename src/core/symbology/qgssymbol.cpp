@@ -2303,6 +2303,8 @@ void QgsSymbol::copyCommonProperties( const QgsSymbol *other )
   else
     mBufferSettings.reset();
 
+  mVariables = other->mVariables;
+
   Q_NOWARN_DEPRECATED_PUSH
   mLayer = other->mLayer;
   Q_NOWARN_DEPRECATED_POP

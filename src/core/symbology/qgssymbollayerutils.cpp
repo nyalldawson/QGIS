@@ -1325,7 +1325,17 @@ QgsSymbol *QgsSymbolLayerUtils::loadSymbol( const QDomElement &element, const Qg
   Qgis::SymbolFlags flags;
   if ( element.attribute( QStringLiteral( "renderer_should_use_levels" ), QStringLiteral( "0" ) ).toInt() )
     flags |= Qgis::SymbolFlag::RendererShouldUseSymbolLevels;
+  if ( element.attribute( QStringLiteral( "smart_symbol" ), QStringLiteral( "0" ) ).toInt() )
+    flags |= Qgis::SymbolFlag::SmartSymbol;
   symbol->setFlags( flags );
+
+  const QDomElement variablesElement = element.firstChildElement( QStringLiteral( "variables" ) );
+  QVariantMap variables;
+  if ( variablesElement.isNull() )
+  {
+    variables = QgsXmlUtils::readVariant( variablesElement.firstChildElement( ) ).toMap();
+  }
+  symbol->setVariables( variables );
 
   symbol->animationSettings().setIsAnimated( element.attribute( QStringLiteral( "is_animated" ), QStringLiteral( "0" ) ).toInt() );
   symbol->animationSettings().setFrameRate( element.attribute( QStringLiteral( "frame_rate" ), QStringLiteral( "10" ) ).toDouble() );
@@ -1441,12 +1451,21 @@ QDomElement QgsSymbolLayerUtils::saveSymbol( const QString &name, const QgsSymbo
   symEl.setAttribute( QStringLiteral( "force_rhr" ), symbol->forceRHR() ? QStringLiteral( "1" ) : QStringLiteral( "0" ) );
   if ( symbol->flags() & Qgis::SymbolFlag::RendererShouldUseSymbolLevels )
     symEl.setAttribute( QStringLiteral( "renderer_should_use_levels" ), QStringLiteral( "1" ) );
+  if ( symbol->flags() & Qgis::SymbolFlag::SmartSymbol )
+    symEl.setAttribute( QStringLiteral( "smart_symbol" ), QStringLiteral( "1" ) );
 
   symEl.setAttribute( QStringLiteral( "is_animated" ), symbol->animationSettings().isAnimated() ? QStringLiteral( "1" ) : QStringLiteral( "0" ) );
   symEl.setAttribute( QStringLiteral( "frame_rate" ), qgsDoubleToString( symbol->animationSettings().frameRate() ) );
 
   if ( const QgsSymbolBufferSettings *bufferSettings = symbol->bufferSettings() )
     bufferSettings->writeXml( symEl, context );
+
+  if ( !symbol->variables().empty() )
+  {
+    QDomElement variablesElement = doc.createElement( QStringLiteral( "variables" ) );
+    variablesElement.appendChild( QgsXmlUtils::writeVariant( symbol->variables(), doc ) );
+    symEl.appendChild( variablesElement );
+  }
 
   //QgsDebugMsgLevel( "num layers " + QString::number( symbol->symbolLayerCount() ), 2 );
 

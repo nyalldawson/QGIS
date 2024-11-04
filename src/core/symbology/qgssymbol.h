@@ -869,6 +869,22 @@ class CORE_EXPORT QgsSymbol
      */
     void stopFeatureRender( const QgsFeature &feature, QgsRenderContext &context, int layer = -1 );
 
+    /**
+     * Sets expression variables for use with the symbol.
+     *
+     * \see variable()
+     * \since QGIS 3.42
+     */
+    void setVariables( const QVariantMap &variables ) { mVariables = variables; }
+
+    /**
+     * Returns expression variables used for the symbol.
+     *
+     * \see setVariables()
+     * \since QGIS 3.42
+     */
+    QVariantMap variables() const { return mVariables; }
+
   protected:
 
     /**
@@ -974,6 +990,8 @@ class CORE_EXPORT QgsSymbol
 
     std::unique_ptr< QgsSymbolBufferSettings > mBufferSettings;
     QgsSymbolAnimationSettings mAnimationSettings;
+
+    QVariantMap mVariables;
 
     Q_DECL_DEPRECATED const QgsVectorLayer *mLayer = nullptr; //current vectorlayer
 

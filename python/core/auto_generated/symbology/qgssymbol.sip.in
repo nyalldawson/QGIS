@@ -867,6 +867,24 @@ Internally, this notifies all symbol layers which were used via a call to
 .. versionadded:: 3.20
 %End
 
+    void setVariables( const QVariantMap &variables );
+%Docstring
+Sets expression variables for use with the symbol.
+
+.. seealso:: :py:func:`variable`
+
+.. versionadded:: 3.42
+%End
+
+    QVariantMap variables() const;
+%Docstring
+Returns expression variables used for the symbol.
+
+.. seealso:: :py:func:`setVariables`
+
+.. versionadded:: 3.42
+%End
+
   protected:
 
     QgsSymbol( Qgis::SymbolType type, const QgsSymbolLayerList &layers /Transfer/ ); // can't be instantiated
@@ -928,6 +946,7 @@ geometry type, points and rings in which are being rendered by the parent symbol
 %Docstring
 Render editing vertex marker at specified point
 %End
+
 
 
 
