@@ -1444,6 +1444,7 @@ FeatureRendererFlags = Qgis  # dirty hack since SIP seems to introduce the flags
 # monkey patching scoped based enum
 Qgis.SymbolFlag.RendererShouldUseSymbolLevels.__doc__ = "If present, indicates that a QgsFeatureRenderer using the symbol should use symbol levels for best results"
 Qgis.SymbolFlag.AffectsLabeling.__doc__ = "If present, indicates that the symbol will participate in the map labeling problem \n.. versionadded:: 3.40"
+Qgis.SymbolFlag.SmartSymbol.__doc__ = "Symbol should be exposed as a \"smart symbol\", where end-users control expression variables only and not the internal symbol details (such as the symbol layers). \n.. versionadded:: 3.42"
 Qgis.SymbolFlag.__doc__ = """Flags controlling behavior of symbols
 
 .. versionadded:: 3.20
@@ -1452,6 +1453,10 @@ Qgis.SymbolFlag.__doc__ = """Flags controlling behavior of symbols
 * ``AffectsLabeling``: If present, indicates that the symbol will participate in the map labeling problem
 
   .. versionadded:: 3.40
+
+* ``SmartSymbol``: Symbol should be exposed as a \"smart symbol\", where end-users control expression variables only and not the internal symbol details (such as the symbol layers).
+
+  .. versionadded:: 3.42
 
 
 """

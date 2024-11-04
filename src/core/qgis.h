@@ -781,6 +781,7 @@ class CORE_EXPORT Qgis
     {
       RendererShouldUseSymbolLevels = 1 << 0, //!< If present, indicates that a QgsFeatureRenderer using the symbol should use symbol levels for best results
       AffectsLabeling = 1 << 1, //!< If present, indicates that the symbol will participate in the map labeling problem \since QGIS 3.40
+      SmartSymbol = 1 << 2, //!< Symbol should be exposed as a "smart symbol", where end-users control expression variables only and not the internal symbol details (such as the symbol layers). \since QGIS 3.42
     };
     Q_ENUM( SymbolFlag )
     //! Symbol flags

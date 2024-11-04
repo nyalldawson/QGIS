@@ -292,6 +292,8 @@ class CORE_EXPORT QgsSymbol
      */
     Qgis::SymbolType type() const { return mType; }
 
+
+
     // symbol layers handling
 
     /**

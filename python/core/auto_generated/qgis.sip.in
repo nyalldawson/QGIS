@@ -495,6 +495,7 @@ The development version
     {
       RendererShouldUseSymbolLevels,
       AffectsLabeling,
+      SmartSymbol,
     };
     typedef QFlags<Qgis::SymbolFlag> SymbolFlags;
 
