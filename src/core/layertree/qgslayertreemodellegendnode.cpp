@@ -696,12 +696,13 @@ QSizeF QgsSymbolLegendNode::drawSymbol( const QgsLegendSettings &settings, ItemC
 
   if ( QgsMarkerSymbol *markerSymbol = dynamic_cast<QgsMarkerSymbol *>( s ) )
   {
-    const double size = markerSymbol->size( *context ) / context->scaleFactor();
-    if ( size > 0 )
-    {
-      height = size;
-      width = size;
-    }
+    const QRectF bounds = markerSymbol->bounds( QPointF( 0, 0 ), *context );
+    const QSizeF size = bounds.size() / context->scaleFactor();
+    // TODO -- we may want to account for non-centered markers here, eg by adjusting widthOffset/heightOffset here?
+    if ( size.height() > 0 )
+      height = size.height();
+    if ( size.width() > 0 )
+      width = size.width();
   }
 
   bool restrictedSizeSymbolOK;
