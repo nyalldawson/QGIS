@@ -20,6 +20,8 @@ uniform float shadowMaxY;
 uniform vec3 lightPosition;
 uniform vec3 lightDirection;
 
+uniform vec3 cameraPosition;
+
 // view camera uniforms
 uniform mat4 invertedCameraView;
 uniform mat4 invertedCameraProj;
@@ -34,6 +36,12 @@ uniform float edlStrength;
 uniform int edlDistance;
 
 uniform int ssaoEnabled;
+
+uniform bool fogEnabled;
+uniform vec3 fogColor;
+uniform float fogStartHeight;
+uniform float fogFalloff;
+uniform float fogDensity;
 
 in vec2 texCoord;
 
@@ -113,6 +121,25 @@ float edlFactor(vec2 coords)
   return factor / 4.0f;
 }
 
+vec3 applyHeightFog(vec3 color, vec3 worldPos, float depth) {
+    if (depth >= 1.0) {
+        // For background, just use fog color
+        return fogColor;
+    }
+
+    // Regular fog calculation for scene objects
+    vec3 viewVector = worldPos - cameraPosition;
+    float viewDistance = length(viewVector);
+
+    float heightDiff = worldPos.z - fogStartHeight;
+    float heightFactor = exp(-heightDiff * fogFalloff);
+
+    float fogAmount = (1.0 - exp(-viewDistance * fogDensity * heightFactor));
+    fogAmount = clamp(fogAmount, 0.0, 1.0);
+
+    return mix(color, fogColor, fogAmount);
+}
+
 void main()
 {
   float depth = texture(depthTexture, texCoord).r;
@@ -129,6 +156,7 @@ void main()
     float visibilityFactor = CalcShadowFactor(positionInLightSpace);
     fragColor = vec4(visibilityFactor * color, 1.0f);
   }
+
   if (edlEnabled != 0)
   {
     float shade = exp(-edlFactor(texCoord) * edlStrength);
@@ -137,5 +165,10 @@ void main()
   if ( ssaoEnabled != 0 )
   {
     fragColor = vec4( fragColor.rgb * texture( ssaoTexture, texCoord ).r, fragColor.a );
+  }
+
+  if (fogEnabled)
+  {
+      fragColor.rgb = applyHeightFog(fragColor.rgb, worldPosition, depth);
   }
 }

@@ -58,6 +58,31 @@ class QgsPostprocessingEntity : public QgsRenderPassQuad
      */
     void setAmbientOcclusionEnabled( bool enabled );
 
+    //! Sets whether vignette effect is enabled
+    void setVignetteEnabled( bool enabled );
+    //! Sets the intensity of the vignette effect (0-1)
+    void setVignetteIntensity( float intensity );
+    //! Sets the radius of the vignette effect (0-1)
+    void setVignetteRadius( float radius );
+
+    //! Sets whether tilt-shift effect is enabled
+    void setTiltShiftEnabled( bool enabled );
+    //! Sets the center line position of the tilt-shift effect (0-1)
+    void setTiltShiftCenter( float center );
+    //! Sets the width of the in-focus band (0-1)
+    void setTiltShiftWidth( float width );
+    //! Sets how quickly the blur increases outside the focus area (0-1)
+    void setTiltShiftFalloff( float falloff );
+    //! Sets the rotation angle of the tilt-shift plane in degrees
+    void setTiltShiftRotation( float degrees );
+
+    //! Sets whether film grain effect is enabled
+    void setFilmGrainEnabled( bool enabled );
+    //! Sets the intensity of film grain (0-1)
+    void setFilmGrainAmount( float amount );
+    //! Updates the time parameter for animated grain
+    void updateTime( float time );
+
   private:
     Qt3DRender::QCamera *mMainCamera = nullptr;
 
@@ -89,6 +114,14 @@ class QgsPostprocessingEntity : public QgsRenderPassQuad
     Qt3DRender::QParameter *mEyeDomeLightingDistanceParameter = nullptr;
 
     Qt3DRender::QParameter *mAmbientOcclusionEnabledParameter = nullptr;
+
+    Qt3DRender::QParameter *mFogEnabledParameter = nullptr;
+    Qt3DRender::QParameter *mFogColorParameter = nullptr;
+    Qt3DRender::QParameter *mFogStartHeightParameter = nullptr;
+    Qt3DRender::QParameter *mFogFalloffParameter = nullptr;
+    Qt3DRender::QParameter *mFogDensityParameter = nullptr;
+    Qt3DRender::QParameter *mCameraPositionParameter = nullptr;
+
 };
 
 #endif // QGSPOSTPROCESSINGENTITY_H

@@ -56,8 +56,23 @@ QgsPostprocessingEntity::QgsPostprocessingEntity( QgsFrameGraph *frameGraph, Qt3
   mMaterial->addParameter( mShadowMapParameter );
   mMaterial->addParameter( mAmbientOcclusionTextureParameter );
 
+  mFogEnabledParameter = new Qt3DRender::QParameter( QStringLiteral( "fogEnabled" ), true );
+  mFogColorParameter = new Qt3DRender::QParameter( QStringLiteral( "fogColor" ), QVector3D( 0.8f, 0.8f, 0.85f ) );
+  mFogStartHeightParameter = new Qt3DRender::QParameter( QStringLiteral( "fogStartHeight" ), 0.0f );
+  mFogFalloffParameter = new Qt3DRender::QParameter( QStringLiteral( "fogFalloff" ), 0.1f );
+  mFogDensityParameter = new Qt3DRender::QParameter( QStringLiteral( "fogDensity" ), 0.02f );
+
+  mMaterial->addParameter( mFogEnabledParameter );
+  mMaterial->addParameter( mFogColorParameter );
+  mMaterial->addParameter( mFogStartHeightParameter );
+  mMaterial->addParameter( mFogFalloffParameter );
+  mMaterial->addParameter( mFogDensityParameter );
+
   mMainCamera = frameGraph->mainCamera();
   mLightCamera = frameGraph->lightCamera();
+
+  mCameraPositionParameter = new Qt3DRender::QParameter( QStringLiteral( "cameraPosition" ), mMainCamera->position() );
+  mMaterial->addParameter( mCameraPositionParameter );
 
   mFarPlaneParameter = new Qt3DRender::QParameter( QStringLiteral( "farPlane" ), mMainCamera->farPlane() );
   mMaterial->addParameter( mFarPlaneParameter );
@@ -96,6 +111,11 @@ QgsPostprocessingEntity::QgsPostprocessingEntity( QgsFrameGraph *frameGraph, Qt3
   connect( mMainCamera, &Qt3DRender::QCamera::viewMatrixChanged, mMainCameraInvViewMatrixParameter, [&]()
   {
     mMainCameraInvViewMatrixParameter->setValue( mMainCamera->viewMatrix().inverted() );
+  } );
+
+  connect( mMainCamera, &Qt3DRender::QCamera::positionChanged, this, [this]()
+  {
+    mCameraPositionParameter->setValue( QVariant::fromValue( mMainCamera->position() ) );
   } );
 
   mShadowMinX = new Qt3DRender::QParameter( QStringLiteral( "shadowMinX" ), QVariant::fromValue( 0.0f ) );
@@ -178,3 +198,4 @@ void QgsPostprocessingEntity::setAmbientOcclusionEnabled( bool enabled )
 {
   mAmbientOcclusionEnabledParameter->setValue( enabled );
 }
+
