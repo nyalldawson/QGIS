@@ -830,6 +830,9 @@ QColor QgsCompoundColorWidget::sampleColor( QPoint point ) const
   const int x = point.x() - screen->geometry().left();
   const int y = point.y() - screen->geometry().top();
   const QPixmap snappedPixmap = screen->grabWindow( 0, x - sampleRadius, y - sampleRadius, 1 + sampleRadius * 2, 1 + sampleRadius * 2 );
+  if ( snappedPixmap.isNull() )
+    return QColor();
+
   const QImage snappedImage = snappedPixmap.toImage();
   //scan all pixels and take average color
   return averageColor( snappedImage );

@@ -285,6 +285,9 @@ QColor QgsGui::sampleColor( QPoint point )
   const int x = point.x() - screen->geometry().left();
   const int y = point.y() - screen->geometry().top();
   const QPixmap snappedPixmap = screen->grabWindow( 0, x, y, 1, 1 );
+  if ( snappedPixmap.isNull() )
+    return QColor();
+
   const QImage snappedImage = snappedPixmap.toImage();
   return snappedImage.pixel( 0, 0 );
 }
