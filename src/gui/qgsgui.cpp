@@ -305,6 +305,11 @@ QScreen *QgsGui::findScreenAt( QPoint point )
   return nullptr;
 }
 
+QPixmap QgsGui::grabScreenshot( QScreen *screen, QRect region )
+{
+  return QgsGui::nativePlatformInterface()->grabScreenshot( screen, region );
+}
+
 QgsGui::QgsGui()
 {
 #ifdef Q_OS_MAC

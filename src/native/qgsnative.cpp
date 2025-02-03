@@ -21,6 +21,8 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QFileInfo>
+#include <QPixmap>
+#include <QScreen>
 
 void QgsNative::cleanup()
 {}
@@ -73,6 +75,21 @@ bool QgsNative::hasDarkTheme()
 bool QgsNative::openTerminalAtPath( const QString & )
 {
   return false;
+}
+
+QPixmap QgsNative::grabScreenshot( QScreen *screen, QRect region )
+{
+  if ( !screen )
+  {
+    return QPixmap();
+  }
+
+  QRect rect = region;
+  if ( region.isNull() )
+  {
+    rect = screen->geometry();
+  }
+  return screen->grabWindow( 0, rect.left(), rect.top(), rect.width(), rect.height() );
 }
 
 QgsNative::NotificationResult QgsNative::showDesktopNotification( const QString &, const QString &, const NotificationSettings & )

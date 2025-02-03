@@ -20,6 +20,8 @@
 
 #include "qgsnative.h"
 
+#include <QEventLoop>
+
 /**
  * Native implementation for linux platforms.
  *
@@ -30,23 +32,31 @@
  *
  * Typically, this means implementing methods using DBUS calls to freedesktop standards.
  */
-class NATIVE_EXPORT QgsLinuxNative : public QgsNative
+class NATIVE_EXPORT QgsLinuxNative final : public QgsNative
 {
     Q_OBJECT
 
   public:
-    QgsNative::Capabilities capabilities() const override;
-    void initializeMainWindow( QWindow *window, const QString &applicationName, const QString &organizationName, const QString &version ) override;
-    void openFileExplorerAndSelectFile( const QString &path ) override;
-    void showFileProperties( const QString &path ) override;
-    void showUndefinedApplicationProgress() override;
-    void setApplicationProgress( double progress ) override;
-    void hideApplicationProgress() override;
-    void setApplicationBadgeCount( int count ) override;
-    bool openTerminalAtPath( const QString &path ) override;
-    NotificationResult showDesktopNotification( const QString &summary, const QString &body, const NotificationSettings &settings = NotificationSettings() ) override;
+    QgsNative::Capabilities capabilities() const final;
+    void initializeMainWindow( QWindow *window, const QString &applicationName, const QString &organizationName, const QString &version ) final;
+    void openFileExplorerAndSelectFile( const QString &path ) final;
+    void showFileProperties( const QString &path ) final;
+    void showUndefinedApplicationProgress() final;
+    void setApplicationProgress( double progress ) final;
+    void hideApplicationProgress() final;
+    void setApplicationBadgeCount( int count ) final;
+    bool openTerminalAtPath( const QString &path ) final;
+    NotificationResult showDesktopNotification( const QString &summary, const QString &body, const NotificationSettings &settings = NotificationSettings() ) final;
+    QPixmap grabScreenshot( QScreen *screen, QRect region = QRect() ) final;
+
+  private slots:
+
+    void DbusScreenshotArrived( uint response, const QVariantMap &results );
 
   private:
+    QString mScreenshotPath;
+    bool mScreenshotFinished = false;
+    QEventLoop mScreenshotReplyLoop;
     QString mDesktopFile;
 };
 

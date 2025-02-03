@@ -248,6 +248,17 @@ Returns the screen at the given global ``point`` (pixel).
 .. versionadded:: 3.10
 %End
 
+    static QPixmap grabScreenshot( QScreen *screen, QRect region = QRect() );
+%Docstring
+Grabs a screenshot of a ``screen``, optionally restricted to the specified ``region``.
+
+.. warning::
+
+   On some platforms this may involve an event loop, so use with caution.
+
+.. versionadded:: 3.42
+%End
+
 
 
     static bool hasWebEngine();

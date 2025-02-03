@@ -26,6 +26,7 @@
 
 class QString;
 class QWindow;
+class QScreen;
 
 /**
  * \class QgsNative
@@ -44,6 +45,7 @@ class NATIVE_EXPORT QgsNative : public QObject
       NativeDesktopNotifications = 1 << 1, //!< Native desktop notifications are supported. See showDesktopNotification().
       NativeFilePropertiesDialog = 1 << 2, //!< Platform can show a native "file" (or folder) properties dialog.
       NativeOpenTerminalAtPath = 1 << 3,   //!< Platform can open a terminal (command line) at a specific path
+      NativeColorPicker = 1 << 4, //!< Platform requires use of native color picker \since QGIS 3.42
     };
     Q_DECLARE_FLAGS( Capabilities, Capability )
 
@@ -240,6 +242,15 @@ class NATIVE_EXPORT QgsNative : public QObject
      * \since QGIS 3.4
      */
     virtual void onRecentProjectsChanged( const std::vector<RecentProjectProperties> &recentProjects );
+
+    /**
+     * Grabs a screenshot of a \a screen, optionally restricted to the specified \a region.
+     *
+     * \warning On some platforms this may involve an event loop, so use with caution.
+     *
+     * \since QGIS 3.42
+     */
+    virtual QPixmap grabScreenshot( QScreen *screen, QRect region = QRect() );
 
   signals:
 

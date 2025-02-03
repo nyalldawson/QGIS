@@ -21,14 +21,29 @@
 #include <QCoreApplication>
 #include <QUrl>
 #include <QString>
-#include <QtDBus/QtDBus>
 #include <QtDebug>
 #include <QImage>
 #include <QProcess>
+#include <QGuiApplication>
+#include <QDBusInterface>
+#include <QDBusArgument>
+#include <QDBusMetaType>
+#include <QDBusPendingReply>
+#include <QPixmap>
+#include <QFile>
+#include <QTimer>
+#include <QScreen>
 
 QgsNative::Capabilities QgsLinuxNative::capabilities() const
 {
-  return NativeDesktopNotifications | NativeFilePropertiesDialog | NativeOpenTerminalAtPath;
+  QgsNative::Capabilities res = NativeDesktopNotifications | NativeFilePropertiesDialog | NativeOpenTerminalAtPath;
+
+  if ( QGuiApplication::platformName() == QLatin1String( "wayland" ) )
+  {
+    res |= NativeColorPicker;
+  }
+
+  return res;
 }
 
 void QgsLinuxNative::initializeMainWindow( QWindow *, const QString &, const QString &, const QString & )
@@ -146,6 +161,71 @@ bool QgsLinuxNative::openTerminalAtPath( const QString &path )
             << path;
   return QProcess::startDetached( term, QStringList(), path );
 }
+
+QPixmap QgsLinuxNative::grabScreenshot( QScreen *screen, QRect region )
+{
+  if ( QGuiApplication::platformName() == QLatin1String( "wayland" ) )
+  {
+    QDBusInterface iface( QStringLiteral( "org.freedesktop.portal.Desktop" ), QStringLiteral( "/org/freedesktop/portal/desktop" ), QStringLiteral( "org.freedesktop.portal.Screenshot" ), QDBusConnection::sessionBus() );
+
+    // TODO do we need to set this? Qt itself doesn't...
+    QString parentWindowId;
+    const QDBusMessage reply = iface.call( QDBus::Block, QStringLiteral( "Screenshot" ), parentWindowId, QVariantMap {
+                                                                                                           { "modal", true },
+                                                                                                           { "interactive", false },
+                                                                                                           { "handle_token", "1" },
+                                                                                                         } );
+    if ( reply.type() == QDBusMessage::ErrorMessage )
+    {
+      qDebug() << "D-Bus Error:" << reply.errorMessage();
+      return QPixmap();
+    }
+
+    const QString screenshotUri = reply.arguments().at( 0 ).value<QDBusObjectPath>().path();
+
+    mScreenshotFinished = false;
+    mScreenshotPath.clear();
+    QDBusConnection::sessionBus().connect( QString(), screenshotUri, "org.freedesktop.portal.Request", "Response", this, SLOT( DbusScreenshotArrived( uint, QVariantMap ) ) );
+    if ( mScreenshotPath.isEmpty() )
+    {
+      QTimer t;
+      t.setSingleShot( true );
+      QObject::connect( &t, &QTimer::timeout, &mScreenshotReplyLoop, &QEventLoop::quit );
+      // wait at most 10 seconds for a reply
+      t.start( 600 );
+      mScreenshotReplyLoop.exec( QEventLoop::ExcludeUserInputEvents );
+    }
+
+    if ( !mScreenshotPath.isEmpty() )
+    {
+      const QPixmap res = QPixmap( mScreenshotPath );
+      QFile::remove( mScreenshotPath );
+
+      const QPixmap screenClip = res.copy( screen->geometry() );
+      if ( !region.isNull() )
+        return screenClip.copy( region );
+      return screenClip;
+    }
+
+    qDebug() << "No uri in screenshot D-Bus reply";
+    return QPixmap();
+  }
+  else
+  {
+    return QgsNative::grabScreenshot( screen, region );
+  }
+}
+
+void QgsLinuxNative::DbusScreenshotArrived( uint response, const QVariantMap &results )
+{
+  if ( !response && results.contains( QLatin1String( "uri" ) ) )
+  {
+    const QString uri = results.value( QLatin1String( "uri" ) ).toString();
+    mScreenshotPath = QUrl( uri ).toLocalFile();
+  }
+  mScreenshotReplyLoop.quit();
+}
+
 
 /**
  * Automatic marshaling of a QImage for org.freedesktop.Notifications.Notify

@@ -294,6 +294,15 @@ class GUI_EXPORT QgsGui : public QObject
     static QScreen *findScreenAt( QPoint point );
 
     /**
+     * Grabs a screenshot of a \a screen, optionally restricted to the specified \a region.
+     *
+     * \warning On some platforms this may involve an event loop, so use with caution.
+     *
+     * \since QGIS 3.42
+     */
+    static QPixmap grabScreenshot( QScreen *screen, QRect region = QRect() );
+
+    /**
      * Returns TRUE if python embedded in a project is currently allowed to be loaded.
      * If the global option is to ask user, a modal dialog will be shown for macros
      * or a button to enable Python expressions will be shown in a message bar.
