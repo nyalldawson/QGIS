@@ -234,6 +234,8 @@ Returns the platform's HIG flags.
 
     ~QgsGui();
 
+    static void prepareSampleColor();
+
     static QColor sampleColor( QPoint point );
 %Docstring
 Samples the color on screen at the specified global ``point`` (pixel).

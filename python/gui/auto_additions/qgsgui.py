@@ -31,6 +31,7 @@ try:
     QgsGui.setWindowManager = staticmethod(QgsGui.setWindowManager)
     QgsGui.inputControllerManager = staticmethod(QgsGui.inputControllerManager)
     QgsGui.higFlags = staticmethod(QgsGui.higFlags)
+    QgsGui.prepareSampleColor = staticmethod(QgsGui.prepareSampleColor)
     QgsGui.sampleColor = staticmethod(QgsGui.sampleColor)
     QgsGui.findScreenAt = staticmethod(QgsGui.findScreenAt)
     QgsGui.grabScreenshot = staticmethod(QgsGui.grabScreenshot)

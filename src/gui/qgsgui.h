@@ -279,6 +279,8 @@ class GUI_EXPORT QgsGui : public QObject
 
     ~QgsGui();
 
+    static void prepareSampleColor();
+
     /**
      * Samples the color on screen at the specified global \a point (pixel).
      *
@@ -382,6 +384,8 @@ class GUI_EXPORT QgsGui : public QObject
     QgsSettingsEditorWidgetRegistry *mSettingsEditorRegistry = nullptr;
     QgsInputControllerManager *mInputControllerManager = nullptr;
     std::unique_ptr<QgsWindowManagerInterface> mWindowManager;
+
+    QHash< QScreen *, QPixmap > mScreenshots;
 
 #ifdef SIP_RUN
     QgsGui( const QgsGui &other );

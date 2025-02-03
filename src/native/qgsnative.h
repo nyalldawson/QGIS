@@ -45,7 +45,7 @@ class NATIVE_EXPORT QgsNative : public QObject
       NativeDesktopNotifications = 1 << 1, //!< Native desktop notifications are supported. See showDesktopNotification().
       NativeFilePropertiesDialog = 1 << 2, //!< Platform can show a native "file" (or folder) properties dialog.
       NativeOpenTerminalAtPath = 1 << 3,   //!< Platform can open a terminal (command line) at a specific path
-      NativeColorPicker = 1 << 4, //!< Platform requires use of native color picker \since QGIS 3.42
+      NativeColorPicker = 1 << 4,          //!< Platform requires use of native color picker \since QGIS 3.42
     };
     Q_DECLARE_FLAGS( Capabilities, Capability )
 

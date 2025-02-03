@@ -761,6 +761,7 @@ void QgsColorButton::activatePicker()
   // Store current color
   mCurrentColor = mColor;
   QApplication::setOverrideCursor( QgsApplication::getThemeCursor( QgsApplication::Cursor::Sampler ) );
+  QgsGui::prepareSampleColor();
   grabMouse();
   grabKeyboard();
   mPickingColor = true;

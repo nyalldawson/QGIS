@@ -75,6 +75,7 @@
 
 #include <QPushButton>
 #include <QToolButton>
+#include <QWindow>
 
 QgsGui *QgsGui::instance()
 {
@@ -274,6 +275,21 @@ QgsGui::~QgsGui()
   delete mSettingsEditorRegistry;
 }
 
+void QgsGui::prepareSampleColor()
+{
+  // grab screenshots for all screens
+  QgsGui::instance()->mScreenshots.clear();
+  if ( false && QgsGui::nativePlatformInterface()->capabilities() & QgsNative::Capability::NativeColorPicker )
+  {
+    // need to take screenshots of all screens upfront for these platforms
+    const QList<QScreen *> screens = QGuiApplication::screens();
+    for ( QScreen *screen : screens )
+    {
+      QgsGui::instance()->mScreenshots[screen] = QgsGui::grabScreenshot( screen );
+    }
+  }
+}
+
 QColor QgsGui::sampleColor( QPoint point )
 {
   QScreen *screen = findScreenAt( point );
@@ -284,12 +300,47 @@ QColor QgsGui::sampleColor( QPoint point )
 
   const int x = point.x() - screen->geometry().left();
   const int y = point.y() - screen->geometry().top();
-  const QPixmap snappedPixmap = screen->grabWindow( 0, x, y, 1, 1 );
-  if ( snappedPixmap.isNull() )
+
+  if ( QgsGui::nativePlatformInterface()->capabilities() & QgsNative::Capability::NativeColorPicker )
+  {
+    auto windows = QApplication::topLevelWidgets();
+
+    for ( QWidget *window : windows )
+    {
+      // todo z order?
+      if ( window->frameGeometry().contains( point ) )
+      {
+        const QPixmap snappedPixmap = window->grab( QRect( point.x() - window->frameGeometry().left(), point.y() - window->frameGeometry().top(), 1, 1 ) );
+        if ( snappedPixmap.isNull() )
+          return QColor();
+
+        const QImage snappedImage = snappedPixmap.toImage();
+        return snappedImage.pixel( 0, 0 );
+      }
+    }
+    QgsDebugError( "nothing had point" );
     return QColor();
 
-  const QImage snappedImage = snappedPixmap.toImage();
-  return snappedImage.pixel( 0, 0 );
+#if 0
+    const QPixmap& capture = QgsGui::instance()->mScreenshots[screen];
+    if ( capture.isNull() )
+      return QColor();
+
+    const QPixmap pixelPixmap = capture.copy( x, y, 1, 1 );
+    const QImage snappedImage = pixelPixmap.toImage();
+    return snappedImage.pixel( 0, 0 );
+#endif
+  }
+
+  else
+  {
+    const QPixmap snappedPixmap = screen->grabWindow( 0, x, y, 1, 1 );
+    if ( snappedPixmap.isNull() )
+      return QColor();
+
+    const QImage snappedImage = snappedPixmap.toImage();
+    return snappedImage.pixel( 0, 0 );
+  }
 }
 
 QScreen *QgsGui::findScreenAt( QPoint point )
