@@ -276,17 +276,45 @@ QgsGui::~QgsGui()
 
 QColor QgsGui::sampleColor( QPoint point )
 {
-  QScreen *screen = findScreenAt( point );
-  if ( !screen )
+  if ( QgsGui::nativePlatformInterface()->capabilities() & QgsNative::Capability::LimitColorPickerToQgisWindows )
   {
+    const QWidgetList windows = QApplication::topLevelWidgets();
+    for ( QWidget *window : windows )
+    {
+      if ( window->isHidden() )
+        continue;
+
+      // TODO how to handle z order for overlapping windows (eg layout designer over main window)?
+      if ( window->frameGeometry().contains( point ) )
+      {
+        const QPixmap snappedPixmap = window->grab( QRect( window->mapFromGlobal( point ), QSize( 1, 1 ) ) );
+        if ( snappedPixmap.isNull() )
+          return QColor();
+
+        const QImage snappedImage = snappedPixmap.toImage();
+        return snappedImage.pixel( 0, 0 );
+      }
+    }
     return QColor();
   }
+  else
+  {
+    QScreen *screen = findScreenAt( point );
+    if ( !screen )
+    {
+      return QColor();
+    }
 
-  const int x = point.x() - screen->geometry().left();
-  const int y = point.y() - screen->geometry().top();
-  const QPixmap snappedPixmap = screen->grabWindow( 0, x, y, 1, 1 );
-  const QImage snappedImage = snappedPixmap.toImage();
-  return snappedImage.pixel( 0, 0 );
+    const int x = point.x() - screen->geometry().left();
+    const int y = point.y() - screen->geometry().top();
+
+    const QPixmap snappedPixmap = screen->grabWindow( 0, x, y, 1, 1 );
+    if ( snappedPixmap.isNull() )
+      return QColor();
+
+    const QImage snappedImage = snappedPixmap.toImage();
+    return snappedImage.pixel( 0, 0 );
+  }
 }
 
 QScreen *QgsGui::findScreenAt( QPoint point )

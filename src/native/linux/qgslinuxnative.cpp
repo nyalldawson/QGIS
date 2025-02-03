@@ -25,10 +25,18 @@
 #include <QtDebug>
 #include <QImage>
 #include <QProcess>
+#include <QGuiApplication>
 
 QgsNative::Capabilities QgsLinuxNative::capabilities() const
 {
-  return NativeDesktopNotifications | NativeFilePropertiesDialog | NativeOpenTerminalAtPath;
+  QgsNative::Capabilities res = NativeDesktopNotifications | NativeFilePropertiesDialog | NativeOpenTerminalAtPath;
+
+  if ( QGuiApplication::platformName() == QLatin1String( "wayland" ) )
+  {
+    res |= LimitColorPickerToQgisWindows;
+  }
+
+  return res;
 }
 
 void QgsLinuxNative::initializeMainWindow( QWindow *, const QString &, const QString &, const QString & )

@@ -41,9 +41,10 @@ class NATIVE_EXPORT QgsNative : public QObject
     //! Native interface capabilities
     enum Capability
     {
-      NativeDesktopNotifications = 1 << 1, //!< Native desktop notifications are supported. See showDesktopNotification().
-      NativeFilePropertiesDialog = 1 << 2, //!< Platform can show a native "file" (or folder) properties dialog.
-      NativeOpenTerminalAtPath = 1 << 3,   //!< Platform can open a terminal (command line) at a specific path
+      NativeDesktopNotifications = 1 << 1,    //!< Native desktop notifications are supported. See showDesktopNotification().
+      NativeFilePropertiesDialog = 1 << 2,    //!< Platform can show a native "file" (or folder) properties dialog.
+      NativeOpenTerminalAtPath = 1 << 3,      //!< Platform can open a terminal (command line) at a specific path
+      LimitColorPickerToQgisWindows = 1 << 4, //!< Platform can only pick colors from within QGIS windows \since QGIS 3.42
     };
     Q_DECLARE_FLAGS( Capabilities, Capability )
 
