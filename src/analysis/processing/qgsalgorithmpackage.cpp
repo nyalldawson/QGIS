@@ -61,6 +61,12 @@ void QgsPackageAlgorithm::initAlgorithm( const QVariantMap & )
   addParameter( new QgsProcessingParameterBoolean( QStringLiteral( "SAVE_METADATA" ), QObject::tr( "Save layer metadata into GeoPackage" ), true ) );
   addParameter( new QgsProcessingParameterBoolean( QStringLiteral( "SELECTED_FEATURES_ONLY" ), QObject::tr( "Save only selected features" ), false ) );
   addParameter( new QgsProcessingParameterBoolean( QStringLiteral( "EXPORT_RELATED_LAYERS" ), QObject::tr( "Export related layers following relations defined in the project" ), false ) );
+
+  auto crsParam = std::make_unique< QgsProcessingParameterCrs >( QStringLiteral( "CRS" ), QObject::tr( "Destination CRS" ), QVariant(), true );
+  crsParam->setFlags( crsParam->flags() | Qgis::ProcessingParameterFlag::Advanced );
+  crsParam->setHelp( QObject::tr( "If set, all layers will be transformed to the destination CRS during packaging." ) );
+  addParameter( std::move( crsParam ) );
+
   addOutput( new QgsProcessingOutputMultipleLayers( QStringLiteral( "OUTPUT_LAYERS" ), QObject::tr( "Layers within new package" ) ) );
 }
 
@@ -89,6 +95,8 @@ bool QgsPackageAlgorithm::prepareAlgorithm( const QVariantMap &parameters, QgsPr
   {
     feedback->reportError( QObject::tr( "No layers selected, geopackage will be empty" ), false );
   }
+
+  mDestinationCrs = parameterAsCrs( parameters, QStringLiteral( "CRS" ), context );
 
   return true;
 }
@@ -416,6 +424,11 @@ bool QgsPackageAlgorithm::packageVectorLayer( QgsVectorLayer *layer, const QStri
   {
     options.layerMetadata = layer->metadata();
     options.saveMetadata = true;
+  }
+
+  if ( mDestinationCrs.isValid() )
+  {
+    options.ct = QgsCoordinateTransform( layer->crs(), mDestinationCrs, context.transformContext() );
   }
 
   // Check FID compatibility with GPKG and remove any existing FID field if not compatible,
