@@ -20,6 +20,14 @@ jobs:
         - ${{ github.workspace }}:/w
     if: github.repository == 'nyalldawson/QGIS'
     steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          large-packages: false
+          docker-images: false
+          swap-storage: true
+          
       - uses: actions/checkout@v2
 
       - name: Install Dependencies
