@@ -267,11 +267,13 @@ class ProjectorData
     double mDestColsPerMatrixCol;
 
     //! Grid of source control points
-    QList< QList<QgsPointXY> > mCPMatrix;
+    //QList< QList<QgsPointXY> > mCPMatrix;
+    std::vector< QgsPointXY > mCPMatrix;
 
     //! Grid of source control points transformation possible indicator
     /* Same size as mCPMatrix */
-    QList< QList<bool> > mCPLegalMatrix;
+    // QList< QList<bool> > mCPLegalMatrix;
+    std::vector< bool > mCPLegalMatrix;
 
     //! Array of source points for each destination column on top of current CPMatrix grid row
     /* Warning: using QList is slow on access */
