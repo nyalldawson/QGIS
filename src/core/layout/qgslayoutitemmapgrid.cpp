@@ -495,6 +495,10 @@ void QgsLayoutItemMapGrid::drawGridCrsTransform( QgsRenderContext &context, doub
       QList< GridLine >::const_iterator gridIt = mGridLines.constBegin();
       for ( ; gridIt != mGridLines.constEnd(); ++gridIt )
       {
+
+        context.expressionContext().lastScope()->addVariable( QgsExpressionContextScope::StaticVariable( QStringLiteral( "grid_number" ), gridIt->coordinate, true ) );
+//        context.expressionContext().lastScope()->addVariable( QgsExpressionContextScope::StaticVariable( QStringLiteral( "grid_axis" ), coord == QgsLayoutItemMapGrid::Longitude ? "x" : "y", true ) );
+
         drawGridLine( scalePolygon( gridIt->line, dotsPerMM ), context );
       }
     }
@@ -715,6 +719,9 @@ void QgsLayoutItemMapGrid::drawGridNoTransform( QgsRenderContext &context, doubl
       if ( vIt->coordinateType != AnnotationCoordinate::Longitude )
         continue;
       line = QLineF( vIt->line.first() * dotsPerMM, vIt->line.last() * dotsPerMM );
+
+
+      context.expressionContext().lastScope()->addVariable( QgsExpressionContextScope::StaticVariable( QStringLiteral( "grid_number" ), vIt->coordinate, true ) );
       drawGridLine( line, context );
     }
 
@@ -723,6 +730,7 @@ void QgsLayoutItemMapGrid::drawGridNoTransform( QgsRenderContext &context, doubl
       if ( hIt->coordinateType != AnnotationCoordinate::Latitude )
         continue;
       line = QLineF( hIt->line.first() * dotsPerMM, hIt->line.last() * dotsPerMM );
+      context.expressionContext().lastScope()->addVariable( QgsExpressionContextScope::StaticVariable( QStringLiteral( "grid_number" ), hIt->coordinate, true ) );
       drawGridLine( line, context );
     }
   }
