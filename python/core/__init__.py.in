@@ -348,6 +348,24 @@ QgsPalLayerSettings.BelowLine = QgsPalLayerSettings.LinePlacementFlags.BelowLine
 QgsPalLayerSettings.MapOrientation = QgsPalLayerSettings.LinePlacementFlags.MapOrientation
 
 
+import functools
+import sys
+def wrapper(old_func, self, g):
+    __tracebackhide__ = True
+    if not QgsSipUtils.isPyOwned(g):
+        raise SystemError('you dont have ownership')
+    return old_func(self, g)
+QgsGeometry.set = functools.update_wrapper(lambda self, g, old_func=QgsGeometry.set: wrapper(old_func, self, g), QgsGeometry.set)
+
+
+def initwrapper(old_func, self, g):
+    __tracebackhide__ = True
+    if not QgsSipUtils.isPyOwned(g):
+        raise SystemError('you dont have ownership')
+    return old_func(self, g)
+QgsGeometry.__init__ = functools.update_wrapper(lambda self, g, old_func=QgsGeometry.__init__: wrapper(old_func, self, g), QgsGeometry.__init__)
+
+
 def _get_placement_flags(self):
     return int(self.lineSettings().placementFlags())
 
