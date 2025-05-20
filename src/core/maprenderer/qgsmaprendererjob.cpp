@@ -782,8 +782,8 @@ std::vector< LayerRenderJob > QgsMapRendererJob::prepareSecondPassJobs( std::vec
   // and the list of source layers that have a mask
   QHash<QString, QPair<QSet<QString>, QList<MaskSource>>> maskedSymbolLayers;
 
-  const bool forceVector = mapSettings().testFlag( Qgis::MapSettingsFlag::ForceVectorOutput )
-                           && !mapSettings().testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
+  const bool forceVector = mSettings.testFlag( Qgis::MapSettingsFlag::IgnoreSettingsWhichRequireRasterisation );
+  bool useVectorPaths = forceVector || !mSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
 
   // First up, create a mapping of layer id to jobs. We need this to filter out any masking
   // which refers to layers which we aren't rendering as part of this map render
@@ -885,7 +885,7 @@ std::vector< LayerRenderJob > QgsMapRendererJob::prepareSecondPassJobs( std::vec
   {
     QPaintDevice *maskPaintDevice = nullptr;
     QPainter *maskPainter = nullptr;
-    if ( forceVector && !labelHasEffects[ maskId ] )
+    if ( useVectorPaths && !labelHasEffects[ maskId ] )
     {
       // set a painter to get all masking instruction in order to later clip masked symbol layer
       auto geomPaintDevice = std::make_unique< QgsGeometryPaintDevice >( true );
@@ -922,7 +922,7 @@ std::vector< LayerRenderJob > QgsMapRendererJob::prepareSecondPassJobs( std::vec
   // Allocate an image or picture for labels, as suitable.
   // If we have some non-default label composition modes, we CAN'T render to an image as that
   // "flattens" composition modes and prevents them interacting with underlying layers.
-  const bool canUseImage = !forceVector && !hasNonDefaultComposition;
+  const bool canUseImage = !useVectorPaths && !hasNonDefaultComposition;
   if ( !labelJob.img && canUseImage )
   {
     labelJob.img = allocateImage( QStringLiteral( "labels" ) );
@@ -948,7 +948,7 @@ std::vector< LayerRenderJob > QgsMapRendererJob::prepareSecondPassJobs( std::vec
     }
 
     // update first pass job painter and device if needed
-    const bool isRasterRendering = !forceVector || job.maskRequiresLayerRasterization || ( job.renderer && job.renderer->forceRasterRender() );
+    const bool isRasterRendering = !useVectorPaths || job.maskRequiresLayerRasterization || ( job.renderer && job.renderer->forceRasterRender() );
     if ( isRasterRendering && !job.img )
     {
       job.context()->setPainter( allocateImageAndPainter( job.layerId, job.img, job.context() ) );
@@ -1459,12 +1459,12 @@ QgsElevationMap QgsMapRendererJob::layerElevationToBeComposed( const QgsMapSetti
   }
 }
 
-void QgsMapRendererJob::composeSecondPass( std::vector<LayerRenderJob> &secondPassJobs, LabelRenderJob &labelJob, bool forceVector )
+void QgsMapRendererJob::composeSecondPass( std::vector<LayerRenderJob> &secondPassJobs, LabelRenderJob &labelJob, bool useVectorPaths )
 {
   // compose the second pass with the mask
   for ( LayerRenderJob &job : secondPassJobs )
   {
-    const bool isRasterRendering = !forceVector || job.maskRequiresLayerRasterization;
+    const bool isRasterRendering = !useVectorPaths || job.maskRequiresLayerRasterization;
 
     // Merge all mask images into the first one if we have more than one mask image
     if ( isRasterRendering && job.maskJobs.size() > 1 )

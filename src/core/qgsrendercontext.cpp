@@ -253,7 +253,18 @@ QgsRenderContext QgsRenderContext::fromMapSettings( const QgsMapSettings &mapSet
   ctx.setMapExtent( mapSettings.visibleExtent() );
   ctx.setFlag( Qgis::RenderContextFlag::DrawEditingInfo, mapSettings.testFlag( Qgis::MapSettingsFlag::DrawEditingInfo ) );
   ctx.setFlag( Qgis::RenderContextFlag::PreferVectorOutput, mapSettings.testFlag( Qgis::MapSettingsFlag::PreferVectorOutput ) );
-  ctx.setFlag( Qgis::RenderContextFlag::UseAdvancedEffects, mapSettings.testFlag( Qgis::MapSettingsFlag::UseAdvancedEffects ) );
+  if ( mapSettings.testFlag( Qgis::MapSettingsFlag::UseAdvancedEffects ) )
+  {
+    ctx.setFlag( Qgis::RenderContextFlag::UseAdvancedEffects, true );
+    ctx.setFlag( Qgis::RenderContextFlag::IgnoreSettingsWhichRequireRasterisation, false );
+  }
+  // newer flag overwrites older
+  if ( mapSettings.testFlag( Qgis::MapSettingsFlag::IgnoreSettingsWhichRequireRasterisation ) )
+  {
+    ctx.setFlag( Qgis::RenderContextFlag::UseAdvancedEffects, false );
+    ctx.setFlag( Qgis::RenderContextFlag::IgnoreSettingsWhichRequireRasterisation, true );
+  }
+  ctx.setFlag( Qgis::RenderContextFlag::IgnoreSettingsWhichRequireRasterisation, mapSettings.testFlag( Qgis::MapSettingsFlag::IgnoreSettingsWhichRequireRasterisation ) );
   ctx.setFlag( Qgis::RenderContextFlag::UseRenderingOptimization, mapSettings.testFlag( Qgis::MapSettingsFlag::UseRenderingOptimization ) );
   ctx.setCoordinateTransform( QgsCoordinateTransform() );
   ctx.setSelectionColor( mapSettings.selectionColor() );

@@ -450,10 +450,11 @@ void QgsMapRendererCustomPainterJob::doRender()
       }
     }
 
-    bool forceVector = mSettings.testFlag( Qgis::MapSettingsFlag::ForceVectorOutput ) && !mSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
-    composeSecondPass( mSecondPassLayerJobs, mLabelJob, forceVector );
+    const bool forceVector = mSettings.testFlag( Qgis::MapSettingsFlag::IgnoreSettingsWhichRequireRasterisation );
+    bool useVectorPaths = forceVector || !mSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
+    composeSecondPass( mSecondPassLayerJobs, mLabelJob, useVectorPaths );
 
-    if ( !forceVector )
+    if ( !useVectorPaths )
     {
       const QImage finalImage = composeImage( mSettings, mLayerJobs, mLabelJob );
 

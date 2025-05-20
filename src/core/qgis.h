@@ -2652,7 +2652,7 @@ class CORE_EXPORT Qgis
       Antialiasing             = 0x01,  //!< Enable anti-aliasing for map rendering
       DrawEditingInfo          = 0x02,  //!< Enable drawing of vertex markers for layers in editing mode
       PreferVectorOutput       = 0x04,  //!< Vector graphics should not be cached and drawn as raster images. This flag indicates that vectors should only be preferred when the rendering will appear (near) identical to raster renderings. It should NOT be used to force vector rendering when the result will appear notably different from a raster based render, e.g. in the case of a layer-wide opacity which requires rasterised flattening of the layer render.
-      UseAdvancedEffects       = 0x08,  //!< Enable layer opacity and blending effects
+      UseAdvancedEffects       = 0x08,  //!< Enable layer opacity and blending effects, which require rasterisation of the render. If not set then these effects should be skipped whenever they will force rasterisation. \deprecated QGIS 3.44. Use IgnoreSettingsWhichRequireRasterisation instead.
       DrawLabeling             = 0x10,  //!< Enable drawing of labels on top of the map
       UseRenderingOptimization = 0x20,  //!< Enable vector simplification and other rendering optimizations
       DrawSelection            = 0x40,  //!< Whether vector selections should be shown in the rendered map
@@ -2668,6 +2668,7 @@ class CORE_EXPORT Qgis
       ForceRasterMasks         = 0x10000,  //!< Force symbol masking to be applied using a raster method. This is considerably faster when compared to the vector method, but results in a inferior quality output. \since QGIS 3.26.1
       RecordProfile            = 0x20000, //!< Enable run-time profiling while rendering \since QGIS 3.34
       AlwaysUseGlobalMasks     = 0x40000, //!< When applying clipping paths for selective masking, always use global ("entire map") paths, instead of calculating local clipping paths per rendered feature. This results in considerably more complex vector exports in all current Qt versions. This flag only applies to vector map exports. \since QGIS 3.38
+      IgnoreSettingsWhichRequireRasterisation = 0x80000, //!< Any settings which require rasterisation of the render should be skipped in order to preserve full vector outputs, even if this results in a visually different render. \since QGIS 3.44
     };
     //! Map settings flags
     Q_DECLARE_FLAGS( MapSettingsFlags, MapSettingsFlag ) SIP_MONKEYPATCH_FLAGS_UNNEST( QgsMapSettings, Flags )
@@ -2683,7 +2684,7 @@ class CORE_EXPORT Qgis
     {
       DrawEditingInfo          = 0x01,  //!< Enable drawing of vertex markers for layers in editing mode
       PreferVectorOutput       = 0x02,  //!< Vector graphics should not be cached and drawn as raster images. This flag indicates that vectors should only be preferred when the rendering will appear (near) identical to raster renderings. It should NOT be used to force vector rendering when the result will appear notably different from a raster based render, e.g. in the case of a layer-wide opacity which requires rasterised flattening of the layer render.
-      UseAdvancedEffects       = 0x04,  //!< Enable layer opacity and blending effects
+      UseAdvancedEffects       = 0x04,  //!< Enable layer opacity and blending effects. \deprecated QGIS 3.44. Use IgnoreSettingsWhichRequireRasterisation instead.
       UseRenderingOptimization = 0x08,  //!< Enable vector simplification and other rendering optimizations
       DrawSelection            = 0x10,  //!< Whether vector selections should be shown in the rendered map
       DrawSymbolBounds         = 0x20,  //!< Draw bounds of symbols (for debugging/testing)
@@ -2703,6 +2704,7 @@ class CORE_EXPORT Qgis
       RecordProfile            = 0x80000, //!< Enable run-time profiling while rendering \since QGIS 3.34
       AlwaysUseGlobalMasks     = 0x100000, //!< When applying clipping paths for selective masking, always use global ("entire map") paths, instead of calculating local clipping paths per rendered feature. This results in considerably more complex vector exports in all current Qt versions. This flag only applies to vector map exports. \since QGIS 3.38
       DisableSymbolClippingToExtent = 0x200000, //!< Force symbol clipping to map extent to be disabled in all situations. This will result in slower rendering, and should only be used in situations where the feature clipping is always undesirable. \since QGIS 3.40
+      IgnoreSettingsWhichRequireRasterisation = 0x40000, //!< Any settings which require rasterisation of the render should be skipped in order to preserve full vector outputs, even if this results in a visually different render. \since QGIS 3.44
     };
     //! Render context flags
     Q_DECLARE_FLAGS( RenderContextFlags, RenderContextFlag ) SIP_MONKEYPATCH_FLAGS_UNNEST( QgsRenderContext, Flags )

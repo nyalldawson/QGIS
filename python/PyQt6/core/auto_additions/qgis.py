@@ -4860,7 +4860,7 @@ QgsMapSettings.PreferVectorOutput.is_monkey_patched = True
 QgsMapSettings.PreferVectorOutput.__doc__ = "Vector graphics should not be cached and drawn as raster images. This flag indicates that vectors should only be preferred when the rendering will appear (near) identical to raster renderings. It should NOT be used to force vector rendering when the result will appear notably different from a raster based render, e.g. in the case of a layer-wide opacity which requires rasterised flattening of the layer render."
 QgsMapSettings.UseAdvancedEffects = Qgis.MapSettingsFlag.UseAdvancedEffects
 QgsMapSettings.UseAdvancedEffects.is_monkey_patched = True
-QgsMapSettings.UseAdvancedEffects.__doc__ = "Enable layer opacity and blending effects"
+QgsMapSettings.UseAdvancedEffects.__doc__ = "Enable layer opacity and blending effects, which require rasterisation of the render. If not set then these effects should be skipped whenever they will force rasterisation. \n.. deprecated:: 3.44. Use IgnoreSettingsWhichRequireRasterisation instead."
 QgsMapSettings.DrawLabeling = Qgis.MapSettingsFlag.DrawLabeling
 QgsMapSettings.DrawLabeling.is_monkey_patched = True
 QgsMapSettings.DrawLabeling.__doc__ = "Enable drawing of labels on top of the map"
@@ -4906,6 +4906,9 @@ QgsMapSettings.RecordProfile.__doc__ = "Enable run-time profiling while renderin
 QgsMapSettings.AlwaysUseGlobalMasks = Qgis.MapSettingsFlag.AlwaysUseGlobalMasks
 QgsMapSettings.AlwaysUseGlobalMasks.is_monkey_patched = True
 QgsMapSettings.AlwaysUseGlobalMasks.__doc__ = "When applying clipping paths for selective masking, always use global (\"entire map\") paths, instead of calculating local clipping paths per rendered feature. This results in considerably more complex vector exports in all current Qt versions. This flag only applies to vector map exports. \n.. versionadded:: 3.38"
+QgsMapSettings.IgnoreSettingsWhichRequireRasterisation = Qgis.MapSettingsFlag.IgnoreSettingsWhichRequireRasterisation
+QgsMapSettings.IgnoreSettingsWhichRequireRasterisation.is_monkey_patched = True
+QgsMapSettings.IgnoreSettingsWhichRequireRasterisation.__doc__ = "Any settings which require rasterisation of the render should be skipped in order to preserve full vector outputs, even if this results in a visually different render. \n.. versionadded:: 3.44"
 Qgis.MapSettingsFlag.__doc__ = """Flags which adjust the way maps are rendered.
 
 .. versionadded:: 3.22
@@ -4913,7 +4916,10 @@ Qgis.MapSettingsFlag.__doc__ = """Flags which adjust the way maps are rendered.
 * ``Antialiasing``: Enable anti-aliasing for map rendering
 * ``DrawEditingInfo``: Enable drawing of vertex markers for layers in editing mode
 * ``PreferVectorOutput``: Vector graphics should not be cached and drawn as raster images. This flag indicates that vectors should only be preferred when the rendering will appear (near) identical to raster renderings. It should NOT be used to force vector rendering when the result will appear notably different from a raster based render, e.g. in the case of a layer-wide opacity which requires rasterised flattening of the layer render.
-* ``UseAdvancedEffects``: Enable layer opacity and blending effects
+* ``UseAdvancedEffects``: Enable layer opacity and blending effects, which require rasterisation of the render. If not set then these effects should be skipped whenever they will force rasterisation.
+
+  .. deprecated:: 3.44. Use IgnoreSettingsWhichRequireRasterisation instead.
+
 * ``DrawLabeling``: Enable drawing of labels on top of the map
 * ``UseRenderingOptimization``: Enable vector simplification and other rendering optimizations
 * ``DrawSelection``: Whether vector selections should be shown in the rendered map
@@ -4944,6 +4950,10 @@ Qgis.MapSettingsFlag.__doc__ = """Flags which adjust the way maps are rendered.
 
   .. versionadded:: 3.38
 
+* ``IgnoreSettingsWhichRequireRasterisation``: Any settings which require rasterisation of the render should be skipped in order to preserve full vector outputs, even if this results in a visually different render.
+
+  .. versionadded:: 3.44
+
 
 """
 # --
@@ -4962,7 +4972,7 @@ QgsRenderContext.PreferVectorOutput.is_monkey_patched = True
 QgsRenderContext.PreferVectorOutput.__doc__ = "Vector graphics should not be cached and drawn as raster images. This flag indicates that vectors should only be preferred when the rendering will appear (near) identical to raster renderings. It should NOT be used to force vector rendering when the result will appear notably different from a raster based render, e.g. in the case of a layer-wide opacity which requires rasterised flattening of the layer render."
 QgsRenderContext.UseAdvancedEffects = Qgis.RenderContextFlag.UseAdvancedEffects
 QgsRenderContext.UseAdvancedEffects.is_monkey_patched = True
-QgsRenderContext.UseAdvancedEffects.__doc__ = "Enable layer opacity and blending effects"
+QgsRenderContext.UseAdvancedEffects.__doc__ = "Enable layer opacity and blending effects. \n.. deprecated:: 3.44. Use IgnoreSettingsWhichRequireRasterisation instead."
 QgsRenderContext.UseRenderingOptimization = Qgis.RenderContextFlag.UseRenderingOptimization
 QgsRenderContext.UseRenderingOptimization.is_monkey_patched = True
 QgsRenderContext.UseRenderingOptimization.__doc__ = "Enable vector simplification and other rendering optimizations"
@@ -5020,13 +5030,19 @@ QgsRenderContext.AlwaysUseGlobalMasks.__doc__ = "When applying clipping paths fo
 QgsRenderContext.DisableSymbolClippingToExtent = Qgis.RenderContextFlag.DisableSymbolClippingToExtent
 QgsRenderContext.DisableSymbolClippingToExtent.is_monkey_patched = True
 QgsRenderContext.DisableSymbolClippingToExtent.__doc__ = "Force symbol clipping to map extent to be disabled in all situations. This will result in slower rendering, and should only be used in situations where the feature clipping is always undesirable. \n.. versionadded:: 3.40"
+QgsRenderContext.IgnoreSettingsWhichRequireRasterisation = Qgis.RenderContextFlag.IgnoreSettingsWhichRequireRasterisation
+QgsRenderContext.IgnoreSettingsWhichRequireRasterisation.is_monkey_patched = True
+QgsRenderContext.IgnoreSettingsWhichRequireRasterisation.__doc__ = "Any settings which require rasterisation of the render should be skipped in order to preserve full vector outputs, even if this results in a visually different render. \n.. versionadded:: 3.44"
 Qgis.RenderContextFlag.__doc__ = """Flags which affect rendering operations.
 
 .. versionadded:: 3.22
 
 * ``DrawEditingInfo``: Enable drawing of vertex markers for layers in editing mode
 * ``PreferVectorOutput``: Vector graphics should not be cached and drawn as raster images. This flag indicates that vectors should only be preferred when the rendering will appear (near) identical to raster renderings. It should NOT be used to force vector rendering when the result will appear notably different from a raster based render, e.g. in the case of a layer-wide opacity which requires rasterised flattening of the layer render.
-* ``UseAdvancedEffects``: Enable layer opacity and blending effects
+* ``UseAdvancedEffects``: Enable layer opacity and blending effects.
+
+  .. deprecated:: 3.44. Use IgnoreSettingsWhichRequireRasterisation instead.
+
 * ``UseRenderingOptimization``: Enable vector simplification and other rendering optimizations
 * ``DrawSelection``: Whether vector selections should be shown in the rendered map
 * ``DrawSymbolBounds``: Draw bounds of symbols (for debugging/testing)
@@ -5063,6 +5079,10 @@ Qgis.RenderContextFlag.__doc__ = """Flags which affect rendering operations.
 * ``DisableSymbolClippingToExtent``: Force symbol clipping to map extent to be disabled in all situations. This will result in slower rendering, and should only be used in situations where the feature clipping is always undesirable.
 
   .. versionadded:: 3.40
+
+* ``IgnoreSettingsWhichRequireRasterisation``: Any settings which require rasterisation of the render should be skipped in order to preserve full vector outputs, even if this results in a visually different render.
+
+  .. versionadded:: 3.44
 
 
 """

@@ -36,7 +36,7 @@ QgsMapSettings::QgsMapSettings()
   , mSize( QSize( 0, 0 ) )
   , mBackgroundColor( Qt::white )
   , mSelectionColor( Qt::yellow )
-  , mFlags( Qgis::MapSettingsFlag::Antialiasing | Qgis::MapSettingsFlag::UseAdvancedEffects | Qgis::MapSettingsFlag::DrawLabeling | Qgis::MapSettingsFlag::DrawSelection )
+  , mFlags( Qgis::MapSettingsFlag::Antialiasing | Qgis::MapSettingsFlag::DrawLabeling | Qgis::MapSettingsFlag::DrawSelection )
   , mSegmentationTolerance( M_PI_2 / 90 )
 {
   mScaleCalculator.setMapUnits( Qgis::DistanceUnit::Unknown );
