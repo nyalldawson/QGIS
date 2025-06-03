@@ -638,7 +638,7 @@ class CORE_EXPORT QgsMapRendererJob : public QObject SIP_ABSTRACT
      * \note not available in Python bindings
      * \since QGIS 3.12
      */
-    static void composeSecondPass( std::vector< LayerRenderJob > &secondPassJobs, LabelRenderJob &labelJob, const QgsMapSettings &mapSettings ) SIP_SKIP;
+    static void composeSecondPass( std::vector< LayerRenderJob > &secondPassJobs, LabelRenderJob &labelJob, Qgis::RenderFormat renderFormat ) SIP_SKIP;
 
     //! \note not available in Python bindings
     void logRenderingTime( const std::vector< LayerRenderJob > &jobs, const std::vector< LayerRenderJob > &secondPassJobs, const LabelRenderJob &labelJob ) SIP_SKIP;

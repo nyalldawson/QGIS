@@ -1550,27 +1550,13 @@ QgsElevationMap QgsMapRendererJob::layerElevationToBeComposed( const QgsMapSetti
   }
 }
 
-void QgsMapRendererJob::composeSecondPass( std::vector<LayerRenderJob> &secondPassJobs, LabelRenderJob &labelJob, const QgsMapSettings &mapSettings )
+void QgsMapRendererJob::composeSecondPass( std::vector<LayerRenderJob> &secondPassJobs, LabelRenderJob &labelJob, Qgis::RenderFormat renderFormat )
 {
   // compose the second pass with the mask
   for ( LayerRenderJob &job : secondPassJobs )
   {
-    bool isRasterRendering = true;
-    switch ( mapSettings.rasterizedRenderingPolicy() )
-    {
-      case Qgis::RasterizedRenderingPolicy::Default:
-        isRasterRendering = true;
-        break;
-      case Qgis::RasterizedRenderingPolicy::PreferVector:
-        isRasterRendering = job.maskRequiresLayerRasterization || mapSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
-        break;
-      case Qgis::RasterizedRenderingPolicy::ForceVector:
-        isRasterRendering = mapSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
-        break;
-    }
-
     // Merge all mask images into the first one if we have more than one mask image
-    if ( isRasterRendering && job.maskJobs.size() > 1 )
+    if ( renderFormat == Qgis::RenderFormat::Raster && job.maskJobs.size() > 1 )
     {
       QPainter *maskPainter = nullptr;
       for ( QPair<LayerRenderJob *, int> p : job.maskJobs )
@@ -1591,50 +1577,55 @@ void QgsMapRendererJob::composeSecondPass( std::vector<LayerRenderJob> &secondPa
     {
       // All have been merged into the first
       QPair<LayerRenderJob *, int> p = *job.maskJobs.begin();
-      if ( isRasterRendering )
+      switch ( renderFormat )
       {
-        QImage *maskImage = static_cast<QImage *>( p.first ? p.first->maskPaintDevice.get() : labelJob.maskPaintDevices[p.second].get() );
-
-        // Only retain parts of the second rendering that are "inside" the mask image
-        QPainter *painter = job.context()->painter();
-
-        painter->setCompositionMode( QPainter::CompositionMode_DestinationIn );
-
-        //Create an "alpha binarized" image of the maskImage to :
-        //* Eliminate antialiasing artifact
-        //* Avoid applying mask opacity to elements under the mask but not masked
-        QImage maskBinAlpha = maskImage->createMaskFromColor( 0 );
-        QVector<QRgb> mswTable;
-        mswTable.push_back( qRgba( 0, 0, 0, 255 ) );
-        mswTable.push_back( qRgba( 0, 0, 0, 0 ) );
-        maskBinAlpha.setColorTable( mswTable );
-        painter->drawImage( 0, 0, maskBinAlpha );
-
-        // Modify the first pass' image ...
+        case Qgis::RenderFormat::Raster:
         {
-          QPainter tempPainter;
+          QImage *maskImage = static_cast<QImage *>( p.first ? p.first->maskPaintDevice.get() : labelJob.maskPaintDevices[p.second].get() );
 
-          // reuse the first pass painter, if available
-          QPainter *painter1 = job.firstPassJob->context()->painter();
-          if ( ! painter1 )
+          // Only retain parts of the second rendering that are "inside" the mask image
+          QPainter *painter = job.context()->painter();
+
+          painter->setCompositionMode( QPainter::CompositionMode_DestinationIn );
+
+          //Create an "alpha binarized" image of the maskImage to :
+          //* Eliminate antialiasing artifact
+          //* Avoid applying mask opacity to elements under the mask but not masked
+          QImage maskBinAlpha = maskImage->createMaskFromColor( 0 );
+          QVector<QRgb> mswTable;
+          mswTable.push_back( qRgba( 0, 0, 0, 255 ) );
+          mswTable.push_back( qRgba( 0, 0, 0, 0 ) );
+          maskBinAlpha.setColorTable( mswTable );
+          painter->drawImage( 0, 0, maskBinAlpha );
+
+          // Modify the first pass' image ...
           {
-            tempPainter.begin( job.firstPassJob->img );
-            painter1 = &tempPainter;
+            QPainter tempPainter;
+
+            // reuse the first pass painter, if available
+            QPainter *painter1 = job.firstPassJob->context()->painter();
+            if ( ! painter1 )
+            {
+              tempPainter.begin( job.firstPassJob->img );
+              painter1 = &tempPainter;
+            }
+
+            // ... first retain parts that are "outside" the mask image
+            painter1->setCompositionMode( QPainter::CompositionMode_DestinationOut );
+            painter1->drawImage( 0, 0, *maskImage );
+
+            // ... and overpaint the second pass' image on it
+            painter1->setCompositionMode( QPainter::CompositionMode_DestinationOver );
+            painter1->drawImage( 0, 0, *job.img );
           }
-
-          // ... first retain parts that are "outside" the mask image
-          painter1->setCompositionMode( QPainter::CompositionMode_DestinationOut );
-          painter1->drawImage( 0, 0, *maskImage );
-
-          // ... and overpaint the second pass' image on it
-          painter1->setCompositionMode( QPainter::CompositionMode_DestinationOver );
-          painter1->drawImage( 0, 0, *job.img );
+          break;
         }
-      }
-      else
-      {
-        job.firstPassJob->picture = std::move( job.picture );
-        job.picture = nullptr;
+        case Qgis::RenderFormat::Vector:
+        {
+          job.firstPassJob->picture = std::move( job.picture );
+          job.picture = nullptr;
+          break;
+        }
       }
     }
   }

@@ -452,57 +452,69 @@ void QgsMapRendererCustomPainterJob::doRender()
       }
     }
 
-    composeSecondPass( mSecondPassLayerJobs, mLabelJob, mSettings );
-
     const bool anyMaskJobsRequireRasterization = std::any_of( mSecondPassLayerJobs.begin(), mSecondPassLayerJobs.end(), []( const LayerRenderJob & job )
     {
       return job.maskRequiresLayerRasterization;
     } );
 
-    bool useVectorComposition = false;
+    Qgis::RenderFormat renderFormat = Qgis::RenderFormat::Raster;
     switch ( mSettings.rasterizedRenderingPolicy() )
     {
       case Qgis::RasterizedRenderingPolicy::Default:
-        useVectorComposition = false;
+        renderFormat = Qgis::RenderFormat::Raster;
         break;
       case Qgis::RasterizedRenderingPolicy::PreferVector:
         // prefer vectors, but only if we don't need rasters for mask job rendering accuracy or we are forcing raster masks
-        useVectorComposition = !anyMaskJobsRequireRasterization && !mSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
+        if ( anyMaskJobsRequireRasterization || mSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks ) )
+          renderFormat = Qgis::RenderFormat::Raster;
+        else
+          renderFormat = Qgis::RenderFormat::Vector;
         break;
       case Qgis::RasterizedRenderingPolicy::ForceVector:
-        useVectorComposition = !mSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
+        if ( mSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks ) )
+          renderFormat = Qgis::RenderFormat::Raster;
+        else
+          renderFormat = Qgis::RenderFormat::Vector;
         break;
     }
 
-    if ( !useVectorComposition )
-    {
-      const QImage finalImage = composeImage( mSettings, mLayerJobs, mLabelJob );
+    composeSecondPass( mSecondPassLayerJobs, mLabelJob, renderFormat );
 
-      mPainter->setCompositionMode( QPainter::CompositionMode_SourceOver );
-      mPainter->setOpacity( 1.0 );
-      mPainter->drawImage( 0, 0, finalImage );
-    }
-    else
+    switch ( renderFormat )
     {
-      //Vector composition is simply draw the saved picture on the painter
-      for ( LayerRenderJob &job : mLayerJobs )
+      case Qgis::RenderFormat::Raster:
       {
-        // if there is vector rendering we use it, else we use the raster rendering
-        if ( job.picture )
-        {
-          QgsPainting::drawPicture( mPainter, QPointF( 0, 0 ), *job.picture );
-        }
-        else
-        {
-          mPainter->setOpacity( job.opacity );
-          mPainter->drawImage( 0, 0, *job.img );
-          mPainter->setOpacity( 1.0 );
-        }
+        const QImage finalImage = composeImage( mSettings, mLayerJobs, mLabelJob );
+
+        mPainter->setCompositionMode( QPainter::CompositionMode_SourceOver );
+        mPainter->setOpacity( 1.0 );
+        mPainter->drawImage( 0, 0, finalImage );
+        break;
       }
 
-      if ( mLabelJob.picture )
+      case Qgis::RenderFormat::Vector:
       {
-        QgsPainting::drawPicture( mPainter, QPointF( 0, 0 ), *mLabelJob.picture );
+        //Vector composition is simply draw the saved picture on the painter
+        for ( LayerRenderJob &job : mLayerJobs )
+        {
+          // if there is vector rendering we use it, else we use the raster rendering
+          if ( job.picture )
+          {
+            QgsPainting::drawPicture( mPainter, QPointF( 0, 0 ), *job.picture );
+          }
+          else
+          {
+            mPainter->setOpacity( job.opacity );
+            mPainter->drawImage( 0, 0, *job.img );
+            mPainter->setOpacity( 1.0 );
+          }
+        }
+
+        if ( mLabelJob.picture )
+        {
+          QgsPainting::drawPicture( mPainter, QPointF( 0, 0 ), *mLabelJob.picture );
+        }
+        break;
       }
     }
   }
