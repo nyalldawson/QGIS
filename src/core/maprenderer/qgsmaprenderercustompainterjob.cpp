@@ -452,10 +452,29 @@ void QgsMapRendererCustomPainterJob::doRender()
       }
     }
 
-    bool forceVector = mSettings.testFlag( Qgis::MapSettingsFlag::ForceVectorOutput ) && !mSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
-    composeSecondPass( mSecondPassLayerJobs, mLabelJob, forceVector );
+    composeSecondPass( mSecondPassLayerJobs, mLabelJob, mSettings );
 
-    if ( !forceVector )
+    const bool anyMaskJobsRequireRasterization = std::any_of( mSecondPassLayerJobs.begin(), mSecondPassLayerJobs.end(), []( const LayerRenderJob & job )
+    {
+      return job.maskRequiresLayerRasterization;
+    } );
+
+    bool useVectorComposition = false;
+    switch ( mSettings.rasterizedRenderingPolicy() )
+    {
+      case Qgis::RasterizedRenderingPolicy::Default:
+        useVectorComposition = false;
+        break;
+      case Qgis::RasterizedRenderingPolicy::PreferVector:
+        // prefer vectors, but only if we don't need rasters for mask job rendering accuracy or we are forcing raster masks
+        useVectorComposition = !anyMaskJobsRequireRasterization && !mSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
+        break;
+      case Qgis::RasterizedRenderingPolicy::ForceVector:
+        useVectorComposition = !mSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
+        break;
+    }
+
+    if ( !useVectorComposition )
     {
       const QImage finalImage = composeImage( mSettings, mLayerJobs, mLabelJob );
 
