@@ -783,8 +783,11 @@ std::vector< LayerRenderJob > QgsMapRendererJob::prepareSecondPassJobs( std::vec
   // and the list of source layers that have a mask
   QHash<QString, QPair<QSet<QString>, QList<MaskSource>>> maskedSymbolLayers;
 
-  const bool forceVector = mapSettings().testFlag( Qgis::MapSettingsFlag::ForceVectorOutput )
-                           && !mapSettings().testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
+  Qgis::RasterizedRenderingPolicy rasterizedRenderingPolicy = mapSettings().rasterizedRenderingPolicy();
+  if ( mapSettings().testFlag( Qgis::MapSettingsFlag::ForceRasterMasks ) )
+  {
+    rasterizedRenderingPolicy = Qgis::RasterizedRenderingPolicy::Default;
+  }
 
   // First up, create a mapping of layer id to jobs. We need this to filter out any masking
   // which refers to layers which we aren't rendering as part of this map render
@@ -886,7 +889,22 @@ std::vector< LayerRenderJob > QgsMapRendererJob::prepareSecondPassJobs( std::vec
   {
     QPaintDevice *maskPaintDevice = nullptr;
     QPainter *maskPainter = nullptr;
-    if ( forceVector && !labelHasEffects[ maskId ] )
+
+    bool useVector = false;
+    switch ( rasterizedRenderingPolicy )
+    {
+      case Qgis::RasterizedRenderingPolicy::Default:
+        useVector = false;
+        break;
+      case Qgis::RasterizedRenderingPolicy::PreferVector:
+        useVector = !labelHasEffects[ maskId ];
+        break;
+      case Qgis::RasterizedRenderingPolicy::ForceVector:
+        useVector = true;
+        break;
+    }
+
+    if ( useVector )
     {
       // set a painter to get all masking instruction in order to later clip masked symbol layer
       auto geomPaintDevice = std::make_unique< QgsGeometryPaintDevice >( true );
@@ -923,12 +941,22 @@ std::vector< LayerRenderJob > QgsMapRendererJob::prepareSecondPassJobs( std::vec
   // Allocate an image or picture for labels, as suitable.
   // If we have some non-default label composition modes, we CAN'T render to an image as that
   // "flattens" composition modes and prevents them interacting with underlying layers.
-  const bool canUseImage = !forceVector && !hasNonDefaultComposition;
-  if ( !labelJob.img && canUseImage )
+  bool canUseImageForLabels = true;
+  switch ( rasterizedRenderingPolicy )
+  {
+    case Qgis::RasterizedRenderingPolicy::Default:
+      canUseImageForLabels = !hasNonDefaultComposition;
+      break;
+    case Qgis::RasterizedRenderingPolicy::PreferVector:
+    case Qgis::RasterizedRenderingPolicy::ForceVector:
+      canUseImageForLabels = false;
+      break;
+  }
+  if ( !labelJob.img && canUseImageForLabels )
   {
     labelJob.img = allocateImage( QStringLiteral( "labels" ) );
   }
-  else if ( !labelJob.picture && !canUseImage )
+  else if ( !labelJob.picture && !canUseImageForLabels )
   {
     labelJob.picture.reset( new QPicture() );
   }
@@ -949,12 +977,25 @@ std::vector< LayerRenderJob > QgsMapRendererJob::prepareSecondPassJobs( std::vec
     }
 
     // update first pass job painter and device if needed
-    const bool isRasterRendering = !forceVector || job.maskRequiresLayerRasterization || ( job.renderer && job.renderer->forceRasterRender() );
-    if ( isRasterRendering && !job.img )
+    bool useRasterRendering = true;
+    switch ( rasterizedRenderingPolicy )
+    {
+      case Qgis::RasterizedRenderingPolicy::Default:
+        useRasterRendering = true;
+        break;
+      case Qgis::RasterizedRenderingPolicy::PreferVector:
+        useRasterRendering = job.maskRequiresLayerRasterization || ( job.renderer && job.renderer->forceRasterRender() );
+        break;
+      case Qgis::RasterizedRenderingPolicy::ForceVector:
+        useRasterRendering = false;
+        break;
+    }
+
+    if ( useRasterRendering && !job.img )
     {
       job.context()->setPainter( allocateImageAndPainter( job.layerId, job.img, job.context() ) );
     }
-    else if ( !isRasterRendering && !job.picture )
+    else if ( !useRasterRendering && !job.picture )
     {
       PictureAndPainter pictureAndPainter = allocatePictureAndPainter( job.context() );
       job.picture = std::move( pictureAndPainter.first );
@@ -975,7 +1016,22 @@ std::vector< LayerRenderJob > QgsMapRendererJob::prepareSecondPassJobs( std::vec
     {
       QPaintDevice *maskPaintDevice = nullptr;
       QPainter *maskPainter = nullptr;
-      if ( forceVector && !maskLayerHasEffects[ job.layerId ] )
+
+      bool useImage = true;
+      switch ( rasterizedRenderingPolicy )
+      {
+        case Qgis::RasterizedRenderingPolicy::Default:
+          useImage = true;
+          break;
+        case Qgis::RasterizedRenderingPolicy::PreferVector:
+          useImage = maskLayerHasEffects[ job.layerId ];
+          break;
+        case Qgis::RasterizedRenderingPolicy::ForceVector:
+          useImage = false;
+          break;
+      }
+
+      if ( !useImage )
       {
         // set a painter to get all masking instruction in order to later clip masked symbol layer
         auto geomPaintDevice = std::make_unique< QgsGeometryPaintDevice >( );
@@ -1034,7 +1090,21 @@ std::vector< LayerRenderJob > QgsMapRendererJob::prepareSecondPassJobs( std::vec
     // associate first pass job with second pass job
     job2.firstPassJob = &job;
 
-    if ( !forceVector || job2.maskRequiresLayerRasterization )
+    bool useImage = true;
+    switch ( rasterizedRenderingPolicy )
+    {
+      case Qgis::RasterizedRenderingPolicy::Default:
+        useImage = true;
+        break;
+      case Qgis::RasterizedRenderingPolicy::PreferVector:
+        useImage = job2.maskRequiresLayerRasterization; //|| ( job.renderer && job.renderer->forceRasterRender() );
+        break;
+      case Qgis::RasterizedRenderingPolicy::ForceVector:
+        useImage = false;
+        break;
+    }
+
+    if ( useImage )
     {
       job2.context()->setPainter( allocateImageAndPainter( job.layerId, job2.img, job2.context() ) );
     }
@@ -1089,7 +1159,27 @@ QList<QPointer<QgsMapLayer> > QgsMapRendererJob::participatingLabelLayers( QgsLa
 
 void QgsMapRendererJob::initSecondPassJobs( std::vector< LayerRenderJob > &secondPassJobs, LabelRenderJob &labelJob ) const
 {
-  if ( !mapSettings().testFlag( Qgis::MapSettingsFlag::ForceVectorOutput ) || mapSettings().testFlag( Qgis::MapSettingsFlag::ForceRasterMasks ) )
+  const bool anyMaskJobsRequireRasterization = std::any_of( secondPassJobs.begin(), secondPassJobs.end(), []( const LayerRenderJob & job )
+  {
+    return job.maskRequiresLayerRasterization;
+  } );
+
+  bool useVectorComposition = false;
+  switch ( mSettings.rasterizedRenderingPolicy() )
+  {
+    case Qgis::RasterizedRenderingPolicy::Default:
+      useVectorComposition = false;
+      break;
+    case Qgis::RasterizedRenderingPolicy::PreferVector:
+      // prefer vectors, but only if we don't need rasters for mask job rendering accuracy or we are forcing raster masks
+      useVectorComposition = !anyMaskJobsRequireRasterization && !mSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
+      break;
+    case Qgis::RasterizedRenderingPolicy::ForceVector:
+      useVectorComposition = !mSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
+      break;
+  }
+
+  if ( !useVectorComposition )
     return;
 
   for ( LayerRenderJob &job : secondPassJobs )
@@ -1460,12 +1550,24 @@ QgsElevationMap QgsMapRendererJob::layerElevationToBeComposed( const QgsMapSetti
   }
 }
 
-void QgsMapRendererJob::composeSecondPass( std::vector<LayerRenderJob> &secondPassJobs, LabelRenderJob &labelJob, bool forceVector )
+void QgsMapRendererJob::composeSecondPass( std::vector<LayerRenderJob> &secondPassJobs, LabelRenderJob &labelJob, const QgsMapSettings &mapSettings )
 {
   // compose the second pass with the mask
   for ( LayerRenderJob &job : secondPassJobs )
   {
-    const bool isRasterRendering = !forceVector || job.maskRequiresLayerRasterization;
+    bool isRasterRendering = true;
+    switch ( mapSettings.rasterizedRenderingPolicy() )
+    {
+      case Qgis::RasterizedRenderingPolicy::Default:
+        isRasterRendering = true;
+        break;
+      case Qgis::RasterizedRenderingPolicy::PreferVector:
+        isRasterRendering = job.maskRequiresLayerRasterization || mapSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
+        break;
+      case Qgis::RasterizedRenderingPolicy::ForceVector:
+        isRasterRendering = mapSettings.testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
+        break;
+    }
 
     // Merge all mask images into the first one if we have more than one mask image
     if ( isRasterRendering && job.maskJobs.size() > 1 )
