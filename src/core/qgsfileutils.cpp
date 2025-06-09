@@ -280,7 +280,31 @@ QStringList QgsFileUtils::findFile( const QString &file, const QString &basePath
 
 QString QgsFileUtils::driveDisplayName( const QString &path )
 {
+#ifdef _MSC_VER
+  const int defaultBufferSize = MAX_PATH + 1;
+  const UINT oldmode = ::SetErrorMode( SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX );
+
+  const QString nativePath = QDir::toNativeSeparators( path );
+  wchar_t nameBuffer[defaultBufferSize];
+  const bool result = ::GetVolumeInformation( reinterpret_cast<const wchar_t *>( nativePath.utf16() ),
+                      nameBuffer,
+                      defaultBufferSize,
+                      nullptr,
+                      nullptr,
+                      nullptr,
+                      nullptr,
+                      nullptr );
+  QString name;
+  if ( result )
+  {
+    name = QString::fromWCharArray( nameBuffer );
+  }
+
+  ::SetErrorMode( oldmode );
+  return name;
+#else
   return QStorageInfo( path ).displayName();
+#endif
 }
 
 #ifdef _MSC_VER

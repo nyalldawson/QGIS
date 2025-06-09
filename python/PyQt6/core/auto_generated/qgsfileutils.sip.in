@@ -145,6 +145,8 @@ Returns the display (volume) name for the given drive path.
 This method implements optimised logic for faster display name retrieval
 for slow devices on some platforms vs QStorageInfo.
 
+Returns an empty string if the display name could not be retrieved.
+
 .. versionadded:: 3.44
 %End
 

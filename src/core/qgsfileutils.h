@@ -133,6 +133,8 @@ class CORE_EXPORT QgsFileUtils
      *
      * This method implements optimised logic for faster display name retrieval for slow devices on some platforms vs QStorageInfo.
      *
+     * Returns an empty string if the display name could not be retrieved.
+     *
      * \since QGIS 3.44
      */
     static QString driveDisplayName( const QString &path );
