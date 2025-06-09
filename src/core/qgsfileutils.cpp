@@ -25,6 +25,7 @@
 #include <QDir>
 #include <QSet>
 #include <QDirIterator>
+#include <QStorageInfo>
 
 #ifdef Q_OS_UNIX
 // For getrlimit()
@@ -275,6 +276,11 @@ QStringList QgsFileUtils::findFile( const QString &file, const QString &basePath
     QDir::setCurrent( backupDirectory );
 
   return foundFiles;
+}
+
+QString QgsFileUtils::driveDisplayName( const QString &path )
+{
+  return QStorageInfo( path ).displayName();
 }
 
 #ifdef _MSC_VER

@@ -10,6 +10,7 @@ try:
     QgsFileUtils.findClosestExistingPath = staticmethod(QgsFileUtils.findClosestExistingPath)
     QgsFileUtils.findFile = staticmethod(QgsFileUtils.findFile)
     QgsFileUtils.driveType = staticmethod(QgsFileUtils.driveType)
+    QgsFileUtils.driveDisplayName = staticmethod(QgsFileUtils.driveDisplayName)
     QgsFileUtils.pathIsSlowDevice = staticmethod(QgsFileUtils.pathIsSlowDevice)
     QgsFileUtils.sidecarFilesForPath = staticmethod(QgsFileUtils.sidecarFilesForPath)
     QgsFileUtils.renameDataset = staticmethod(QgsFileUtils.renameDataset)

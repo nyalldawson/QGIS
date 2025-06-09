@@ -35,6 +35,7 @@
 #include "qgslayeritem.h"
 #include "qgsfavoritesitem.h"
 #include "qgslayermetadata.h"
+#include "qgsfileutils.h"
 
 #define PROJECT_HOME_PREFIX "project:"
 #define HOME_PREFIX "home:"
@@ -138,7 +139,7 @@ void QgsBrowserModel::addRootItems()
     if ( QgsDirectoryItem::hiddenPath( path ) )
       continue;
 
-    const QString driveName = QStorageInfo( path ).displayName();
+    const QString driveName = QgsFileUtils::driveDisplayName( path );
     const QString name = driveName.isEmpty() || driveName == path ? path : QStringLiteral( "%1 (%2)" ).arg( path, driveName );
 
     QgsDirectoryItem *item = new QgsDirectoryItem( nullptr, name, path, path, QStringLiteral( "special:Drives" ) );
@@ -534,7 +535,7 @@ void QgsBrowserModel::refreshDrives()
     // does an item for this drive already exist?
     if ( !mDriveItems.contains( path ) )
     {
-      const QString driveName = QStorageInfo( path ).displayName();
+      const QString driveName = QgsFileUtils::driveDisplayName( path );
       const QString name = driveName.isEmpty() || driveName == path ? path : QStringLiteral( "%1 (%2)" ).arg( path, driveName );
 
       QgsDirectoryItem *item = new QgsDirectoryItem( nullptr, name, path, path, QStringLiteral( "special:Drives" ) );

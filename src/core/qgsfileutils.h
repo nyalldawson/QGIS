@@ -129,6 +129,15 @@ class CORE_EXPORT QgsFileUtils
     static Qgis::DriveType driveType( const QString &path ) SIP_THROW( QgsNotSupportedException );
 
     /**
+     * Returns the display (volume) name for the given drive path.
+     *
+     * This method implements optimised logic for faster display name retrieval for slow devices on some platforms vs QStorageInfo.
+     *
+     * \since QGIS 3.44
+     */
+    static QString driveDisplayName( const QString &path );
+
+    /**
      * Returns TRUE if the specified \a path is assumed to reside on a slow device, e.g. a remote
      * network drive or other non-fixed device.
      *

@@ -138,6 +138,16 @@ Returns the drive type for the given ``path``.
 .. versionadded:: 3.20
 %End
 
+    static QString driveDisplayName( const QString &path );
+%Docstring
+Returns the display (volume) name for the given drive path.
+
+This method implements optimised logic for faster display name retrieval
+for slow devices on some platforms vs QStorageInfo.
+
+.. versionadded:: 3.44
+%End
+
     static bool pathIsSlowDevice( const QString &path );
 %Docstring
 Returns ``True`` if the specified ``path`` is assumed to reside on a
