@@ -70,11 +70,11 @@ Sets heading (yaw) angle in degrees
 
 
 
-    QDomElement writeXml( QDomDocument &doc ) const;
+    QDomElement writeXml( QDomDocument &doc, const QgsVector3D &origin = QgsVector3D( 0, 0, 0 ) ) const;
 %Docstring
 Writes configuration to a new DOM element and returns it
 %End
-    void readXml( const QDomElement &elem );
+    void readXml( const QDomElement &elem, const QgsVector3D &origin = QgsVector3D( 0, 0, 0 ) );
 %Docstring
 Reads configuration from a DOM element previously written using
 :py:func:`~QgsCameraPose.writeXml`

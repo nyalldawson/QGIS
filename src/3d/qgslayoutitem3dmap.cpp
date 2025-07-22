@@ -223,7 +223,7 @@ bool QgsLayoutItem3DMap::writePropertiesToElement( QDomElement &element, QDomDoc
     element.appendChild( elemSettings );
   }
 
-  QDomElement elemCameraPose = mCameraPose.writeXml( document );
+  QDomElement elemCameraPose = mCameraPose.writeXml( document, mSettings ? mSettings->origin() : QgsVector3D( 0, 0, 0 ) );
   element.appendChild( elemCameraPose );
 
   //temporal settings
@@ -259,7 +259,7 @@ bool QgsLayoutItem3DMap::readPropertiesFromElement( const QDomElement &element, 
 
   QDomElement elemCameraPose = element.firstChildElement( QStringLiteral( "camera-pose" ) );
   if ( !elemCameraPose.isNull() )
-    mCameraPose.readXml( elemCameraPose );
+    mCameraPose.readXml( elemCameraPose, mSettings ? mSettings->origin() : QgsVector3D( 0, 0, 0 ) );
 
   //temporal settings
   QDomElement elemTemporal = element.firstChildElement( QStringLiteral( "temporal-settings" ) );

@@ -92,9 +92,10 @@ void QgsLayout3DMapWidget::setMasterLayout( QgsMasterLayoutInterface *masterLayo
 void QgsLayout3DMapWidget::updateCameraPoseWidgetsFromItem()
 {
   QgsCameraPose pose = mMap3D->cameraPose();
-  whileBlocking( mCenterXSpinBox )->setValue( pose.centerPoint().x() );
-  whileBlocking( mCenterYSpinBox )->setValue( pose.centerPoint().y() );
-  whileBlocking( mCenterZSpinBox )->setValue( pose.centerPoint().z() );
+  const QgsVector3D centerPoint = pose.centerPoint() + ( mMap3D->mapSettings() ? mMap3D->mapSettings()->origin() : QgsVector3D() );
+  whileBlocking( mCenterXSpinBox )->setValue( centerPoint.x() );
+  whileBlocking( mCenterYSpinBox )->setValue( centerPoint.y() );
+  whileBlocking( mCenterZSpinBox )->setValue( centerPoint.z() );
   whileBlocking( mDistanceToCenterSpinBox )->setValue( pose.distanceFromCenterPoint() );
   whileBlocking( mPitchAngleSpinBox )->setValue( _normalizedAngle( pose.pitchAngle() ) );
   whileBlocking( mHeadingAngleSpinBox )->setValue( _normalizedAngle( pose.headingAngle() ) );
@@ -132,7 +133,8 @@ void QgsLayout3DMapWidget::copyCameraPose( Qgs3DMapCanvasWidget *widget )
 void QgsLayout3DMapWidget::updateCameraPose()
 {
   QgsCameraPose pose;
-  pose.setCenterPoint( QgsVector3D( mCenterXSpinBox->value(), mCenterYSpinBox->value(), mCenterZSpinBox->value() ) );
+  const QgsVector3D centerPoint = QgsVector3D( mCenterXSpinBox->value(), mCenterYSpinBox->value(), mCenterZSpinBox->value() ) - ( mMap3D->mapSettings() ? mMap3D->mapSettings()->origin() : QgsVector3D() );
+  pose.setCenterPoint( centerPoint );
   pose.setDistanceFromCenterPoint( mDistanceToCenterSpinBox->value() );
   pose.setPitchAngle( mPitchAngleSpinBox->value() );
   pose.setHeadingAngle( mHeadingAngleSpinBox->value() );

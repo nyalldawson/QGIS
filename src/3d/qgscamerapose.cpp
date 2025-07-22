@@ -21,24 +21,41 @@
 
 #include <QDomDocument>
 
-QDomElement QgsCameraPose::writeXml( QDomDocument &doc ) const
+QDomElement QgsCameraPose::writeXml( QDomDocument &doc, const QgsVector3D &origin ) const
 {
   QDomElement elemCamera = doc.createElement( QStringLiteral( "camera-pose" ) );
-  elemCamera.setAttribute( QStringLiteral( "x" ), mCenterPoint.x() );
-  elemCamera.setAttribute( QStringLiteral( "y" ), mCenterPoint.y() );
-  elemCamera.setAttribute( QStringLiteral( "z" ), mCenterPoint.z() );
+  const QgsVector3D centerPoint = mCenterPoint + origin;
+
+  // Save center point in map coordinates, since our world origin won't be
+  // the same on loading
+  elemCamera.setAttribute( QStringLiteral( "xMap" ), centerPoint.x() );
+  elemCamera.setAttribute( QStringLiteral( "yMap" ), centerPoint.y() );
+  elemCamera.setAttribute( QStringLiteral( "zMap" ), centerPoint.z() );
+
   elemCamera.setAttribute( QStringLiteral( "dist" ), mDistanceFromCenterPoint );
   elemCamera.setAttribute( QStringLiteral( "pitch" ), mPitchAngle );
   elemCamera.setAttribute( QStringLiteral( "heading" ), mHeadingAngle );
   return elemCamera;
 }
 
-void QgsCameraPose::readXml( const QDomElement &elem )
+void QgsCameraPose::readXml( const QDomElement &elem, const QgsVector3D &origin )
 {
-  const double x = elem.attribute( QStringLiteral( "x" ) ).toDouble();
-  const double y = elem.attribute( QStringLiteral( "y" ) ).toDouble();
-  const double z = elem.attribute( QStringLiteral( "z" ) ).toDouble();
-  mCenterPoint = QgsVector3D( x, y, z );
+  if ( elem.hasAttribute( "xMap" ) )
+  {
+    // Prefer newer point saved in map coordinates ...
+    const double x = elem.attribute( QStringLiteral( "xMap" ) ).toDouble();
+    const double y = elem.attribute( QStringLiteral( "yMap" ) ).toDouble();
+    const double z = elem.attribute( QStringLiteral( "zMap" ) ).toDouble();
+    mCenterPoint = QgsVector3D( x, y, z ) - origin;
+  }
+  else
+  {
+    // ... but allow use of older origin-relative coordinates.
+    const double x = elem.attribute( QStringLiteral( "x" ) ).toDouble();
+    const double y = elem.attribute( QStringLiteral( "y" ) ).toDouble();
+    const double z = elem.attribute( QStringLiteral( "z" ) ).toDouble();
+    mCenterPoint = QgsVector3D( x, y, z );
+  }
 
   mDistanceFromCenterPoint = elem.attribute( QStringLiteral( "dist" ) ).toFloat();
   mPitchAngle = elem.attribute( QStringLiteral( "pitch" ) ).toFloat();

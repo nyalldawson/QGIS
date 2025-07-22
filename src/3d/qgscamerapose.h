@@ -76,9 +76,9 @@ class _3D_EXPORT QgsCameraPose
     void updateCameraGlobe( Qt3DRender::QCamera *camera, double lat, double lon ) SIP_SKIP;
 
     //! Writes configuration to a new DOM element and returns it
-    QDomElement writeXml( QDomDocument &doc ) const;
+    QDomElement writeXml( QDomDocument &doc, const QgsVector3D &origin = QgsVector3D( 0, 0, 0 ) ) const;
     //! Reads configuration from a DOM element previously written using writeXml()
-    void readXml( const QDomElement &elem );
+    void readXml( const QDomElement &elem, const QgsVector3D &origin = QgsVector3D( 0, 0, 0 ) );
 
     // TODO c++20 - replace with = default
     bool operator==( const QgsCameraPose &other ) const
