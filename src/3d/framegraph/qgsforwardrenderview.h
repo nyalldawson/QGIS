@@ -31,6 +31,7 @@ namespace Qt3DRender
   class QLayerFilter;
   class QRenderTargetSelector;
   class QRenderTarget;
+  class QRenderTargetOutput;
   class QClearBuffers;
   class QFrustumCulling;
   class QMultiSampleAntiAliasing;
@@ -93,6 +94,9 @@ class QgsForwardRenderView : public QgsAbstractRenderView
     //! Returns forward color texture
     Qt3DRender::QTexture2D *colorTexture() const;
 
+    Qt3DRender::QTexture2D *accumulationTexture() const;
+    Qt3DRender::QTexture2D *revealageTexture() const;
+
     /**
      * Setups \a nrClipPlanes clip planes in the forward pass to enable OpenGL clipping.
      * If \a nrClipPlanes is equal to 0, the clipping is disabled.
@@ -129,6 +133,13 @@ class QgsForwardRenderView : public QgsAbstractRenderView
     // Forward rendering pass texture related objects:
     Qt3DRender::QTexture2D *mColorTexture = nullptr;
     Qt3DRender::QTexture2D *mDepthTexture = nullptr;
+
+    Qt3DRender::QRenderTargetOutput *mAccumulationOutput = nullptr;
+    Qt3DRender::QRenderTargetOutput *mRevealageOutput = nullptr;
+
+    Qt3DRender::QTexture2D *mAccumulationTexture = nullptr;
+    Qt3DRender::QTexture2D *mRevealageTexture = nullptr;
+
     // QDebugOverlay added in the forward pass
     Qt3DRender::QDebugOverlay *mDebugOverlay = nullptr;
     // MSAA
@@ -151,6 +162,7 @@ class QgsForwardRenderView : public QgsAbstractRenderView
 
     //! Builds the multisampled color and depth textures and render target
     Qt3DRender::QRenderTarget *buildMsaaTarget();
+    Qt3DRender::QRenderTarget *buildWboitTextures();
 };
 
 #endif // QGSFORWARDRENDERVIEW_H

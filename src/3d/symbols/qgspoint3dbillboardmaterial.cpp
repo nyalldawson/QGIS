@@ -47,14 +47,6 @@ QgsPoint3DBillboardMaterial::QgsPoint3DBillboardMaterial( Mode mode )
   mTexture2D = new Qt3DRender::QParameter( "tex0", QVariant(), this );
   addParameter( mTexture2D );
 
-  // Blending for handling transparency
-  Qt3DRender::QBlendEquationArguments *blendState = new Qt3DRender::QBlendEquationArguments;
-  blendState->setSourceRgb( Qt3DRender::QBlendEquationArguments::SourceAlpha );
-  blendState->setDestinationRgb( Qt3DRender::QBlendEquationArguments::OneMinusSourceAlpha );
-
-  Qt3DRender::QBlendEquation *blendEquation = new Qt3DRender::QBlendEquation;
-  blendEquation->setBlendFunction( Qt3DRender::QBlendEquation::Add );
-
   // Shader program
   Qt3DRender::QShaderProgram *shaderProgram = new Qt3DRender::QShaderProgram( this );
 
@@ -97,8 +89,6 @@ QgsPoint3DBillboardMaterial::QgsPoint3DBillboardMaterial( Mode mode )
   // Render Pass
   Qt3DRender::QRenderPass *renderPass = new Qt3DRender::QRenderPass( this );
   renderPass->setShaderProgram( shaderProgram );
-  renderPass->addRenderState( blendState );
-  renderPass->addRenderState( blendEquation );
 
   // without this filter the default forward renderer would not render this
   Qt3DRender::QFilterKey *filterKey = new Qt3DRender::QFilterKey;
@@ -112,7 +102,7 @@ QgsPoint3DBillboardMaterial::QgsPoint3DBillboardMaterial( Mode mode )
   technique->graphicsApiFilter()->setApi( Qt3DRender::QGraphicsApiFilter::OpenGL );
   technique->graphicsApiFilter()->setProfile( Qt3DRender::QGraphicsApiFilter::CoreProfile );
   technique->graphicsApiFilter()->setMajorVersion( 3 );
-  technique->graphicsApiFilter()->setMinorVersion( 1 );
+  technique->graphicsApiFilter()->setMinorVersion( 3 );
 
   // Effect
   Qt3DRender::QEffect *effect = new Qt3DRender::QEffect( this );

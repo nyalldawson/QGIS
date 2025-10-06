@@ -72,6 +72,11 @@ class QgsPostprocessingEntity : public QgsRenderPassQuad
      * \since QGIS 3.28
      */
     void setAmbientOcclusionEnabled( bool enabled );
+    /**
+     * Sets whether Weighted Blended OIT composition is enabled
+     * \since QGIS 4.0
+     */
+    void setWboitEnabled( bool enabled );
 
   private:
     Qt3DRender::QCamera *mMainCamera = nullptr;
@@ -80,6 +85,8 @@ class QgsPostprocessingEntity : public QgsRenderPassQuad
     Qt3DRender::QParameter *mDepthTextureParameter = nullptr;
     Qt3DRender::QParameter *mShadowMapParameter = nullptr;
     Qt3DRender::QParameter *mAmbientOcclusionTextureParameter = nullptr;
+    Qt3DRender::QParameter *mAccumulationTextureParameter = nullptr;
+    Qt3DRender::QParameter *mRevealageTextureParameter = nullptr;
     Qt3DRender::QParameter *mFarPlaneParameter = nullptr;
     Qt3DRender::QParameter *mNearPlaneParameter = nullptr;
     Qt3DRender::QParameter *mMainCameraInvViewMatrixParameter = nullptr;
@@ -104,6 +111,8 @@ class QgsPostprocessingEntity : public QgsRenderPassQuad
     Qt3DRender::QParameter *mEyeDomeLightingDistanceParameter = nullptr;
 
     Qt3DRender::QParameter *mAmbientOcclusionEnabledParameter = nullptr;
+
+    Qt3DRender::QParameter *mWboitEnabledParameter = nullptr;
 };
 
 #endif // QGSPOSTPROCESSINGENTITY_H

@@ -49,10 +49,14 @@ QgsPostprocessingEntity::QgsPostprocessingEntity( QgsFrameGraph *frameGraph, Qt3
   mDepthTextureParameter = new Qt3DRender::QParameter( u"depthTexture"_s, forwardRenderView.depthTexture() );
   mShadowMapParameter = new Qt3DRender::QParameter( u"shadowTexture"_s, shadowRenderView.mapTexture() );
   mAmbientOcclusionTextureParameter = new Qt3DRender::QParameter( u"ssaoTexture"_s, aoRenderView.blurredFactorMapTexture() );
+  mAccumulationTextureParameter = new Qt3DRender::QParameter( u"accumulationTexture"_s, forwardRenderView.accumulationTexture() );
+  mRevealageTextureParameter = new Qt3DRender::QParameter( u"revealageTexture"_s, forwardRenderView.revealageTexture() );
   mMaterial->addParameter( mColorTextureParameter );
   mMaterial->addParameter( mDepthTextureParameter );
   mMaterial->addParameter( mShadowMapParameter );
   mMaterial->addParameter( mAmbientOcclusionTextureParameter );
+  mMaterial->addParameter( mAccumulationTextureParameter );
+  mMaterial->addParameter( mRevealageTextureParameter );
 
   mMainCamera = frameGraph->mainCamera();
   mLightCamera = shadowRenderView.lightCamera();
@@ -104,6 +108,9 @@ QgsPostprocessingEntity::QgsPostprocessingEntity( QgsFrameGraph *frameGraph, Qt3
 
   mAmbientOcclusionEnabledParameter = new Qt3DRender::QParameter( u"ssaoEnabled"_s, QVariant::fromValue( 0 ) );
   mMaterial->addParameter( mAmbientOcclusionEnabledParameter );
+
+  mWboitEnabledParameter = new Qt3DRender::QParameter( u"wboitEnabled"_s, true );
+  mMaterial->addParameter( mWboitEnabledParameter );
 
   mLightPosition = new Qt3DRender::QParameter( u"lightPosition"_s, QVariant::fromValue( QVector3D() ) );
   mLightDirection = new Qt3DRender::QParameter( u"lightDirection"_s, QVariant::fromValue( QVector3D() ) );
@@ -188,4 +195,9 @@ void QgsPostprocessingEntity::setEyeDomeLightingDistance( int distance )
 void QgsPostprocessingEntity::setAmbientOcclusionEnabled( bool enabled )
 {
   mAmbientOcclusionEnabledParameter->setValue( enabled );
+}
+
+void QgsPostprocessingEntity::setWboitEnabled( bool enabled )
+{
+  mWboitEnabledParameter->setValue( enabled );
 }

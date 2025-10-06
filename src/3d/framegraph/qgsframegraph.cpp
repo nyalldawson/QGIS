@@ -87,6 +87,7 @@ Qt3DRender::QFrameGraphNode *QgsFrameGraph::constructSubPostPassForProcessing()
   mPostprocessingEntity = new QgsPostprocessingEntity( this, postProcessingLayer, mRootEntity );
   layerFilter->addLayer( postProcessingLayer );
   mPostprocessingEntity->setObjectName( "PostProcessingPassEntity" );
+  mPostprocessingEntity->setWboitEnabled( true );
 
   return cameraSelector;
 }

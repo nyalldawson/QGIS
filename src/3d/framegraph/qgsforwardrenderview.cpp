@@ -122,6 +122,46 @@ Qt3DRender::QRenderTarget *QgsForwardRenderView::buildMsaaTarget()
   return renderTarget;
 }
 
+
+Qt3DRender::QRenderTarget *QgsForwardRenderView::buildWboitTextures()
+{
+  mAccumulationTexture = new Qt3DRender::QTexture2D;
+  mAccumulationTexture->setFormat( Qt3DRender::QAbstractTexture::RGBA16F );
+  mAccumulationTexture->setGenerateMipMaps( false );
+  mAccumulationTexture->setMagnificationFilter( Qt3DRender::QTexture2D::Linear );
+  mAccumulationTexture->setMinificationFilter( Qt3DRender::QTexture2D::Linear );
+  mAccumulationTexture->wrapMode()->setX( Qt3DRender::QTextureWrapMode::ClampToEdge );
+  mAccumulationTexture->wrapMode()->setY( Qt3DRender::QTextureWrapMode::ClampToEdge );
+
+  mRevealageTexture = new Qt3DRender::QTexture2D;
+  mRevealageTexture->setFormat( Qt3DRender::QAbstractTexture::R8_UNorm );
+  mRevealageTexture->setGenerateMipMaps( false );
+  mRevealageTexture->setMagnificationFilter( Qt3DRender::QTexture2D::Linear );
+  mRevealageTexture->setMinificationFilter( Qt3DRender::QTexture2D::Linear );
+  mRevealageTexture->wrapMode()->setX( Qt3DRender::QTextureWrapMode::ClampToEdge );
+  mRevealageTexture->wrapMode()->setY( Qt3DRender::QTextureWrapMode::ClampToEdge );
+
+  Qt3DRender::QRenderTarget *wboitRenderTarget = new Qt3DRender::QRenderTarget;
+
+  mAccumulationOutput = new Qt3DRender::QRenderTargetOutput;
+  mAccumulationOutput->setAttachmentPoint( Qt3DRender::QRenderTargetOutput::Color0 );
+  mAccumulationOutput->setTexture( mAccumulationTexture );
+  wboitRenderTarget->addOutput( mAccumulationOutput );
+
+  mRevealageOutput = new Qt3DRender::QRenderTargetOutput;
+  mRevealageOutput->setAttachmentPoint( Qt3DRender::QRenderTargetOutput::Color1 );
+  mRevealageOutput->setTexture( mRevealageTexture );
+  wboitRenderTarget->addOutput( mRevealageOutput );
+
+  // re-use the main depth texture from the opaque pass
+  Qt3DRender::QRenderTargetOutput *depthOutput = new Qt3DRender::QRenderTargetOutput;
+  depthOutput->setAttachmentPoint( Qt3DRender::QRenderTargetOutput::Depth );
+  depthOutput->setTexture( mDepthTexture );
+  wboitRenderTarget->addOutput( depthOutput );
+
+  return wboitRenderTarget;
+}
+
 /*
  * We define four forward passes: one for solid objects, one for background (gradient/skybox),
  * followed by two for transparent objects (one to write colors but no depths, one to write depths) :
@@ -218,10 +258,56 @@ void QgsForwardRenderView::buildRenderPasses()
   Qt3DRender::QLayerFilter *backgroundLayerFilter = new Qt3DRender::QLayerFilter( mRenderTargetSelector );
   backgroundLayerFilter->addLayer( mBackgroundLayer );
 
-  // third branch: transparent layer filter - color
-  Qt3DRender::QLayerFilter *transparentObjectsLayerFilter = new Qt3DRender::QLayerFilter( mRenderTargetSelector );
+  // WBOIT Pass
+  Qt3DRender::QRenderTarget *wboitRenderTarget = buildWboitTextures();
+  Qt3DRender::QRenderTargetSelector *wboitRenderTargetSelector = new Qt3DRender::QRenderTargetSelector( mClipRenderStateSet );
+  wboitRenderTargetSelector->setTarget( wboitRenderTarget );
+
+  Qt3DRender::QClearBuffers *wboitAccumulationClearBuffers = new Qt3DRender::QClearBuffers( wboitRenderTargetSelector );
+  wboitAccumulationClearBuffers->setBuffers( Qt3DRender::QClearBuffers::ColorBuffer );
+  wboitAccumulationClearBuffers->setColorBuffer( mAccumulationOutput );
+  wboitAccumulationClearBuffers->setClearColor( QColor::fromRgbF( 0.0, 0.0, 0.0, 0.0 ) );
+
+  Qt3DRender::QClearBuffers *wboitReveleageClearBuffers = new Qt3DRender::QClearBuffers( wboitRenderTargetSelector );
+  wboitReveleageClearBuffers->setBuffers( Qt3DRender::QClearBuffers::ColorBuffer );
+  wboitReveleageClearBuffers->setColorBuffer( mRevealageOutput );
+  wboitReveleageClearBuffers->setClearColor( QColor::fromRgbF( 1.0, 1.0, 1.0, 1.0 ) );
+
+  Qt3DRender::QLayerFilter *transparentObjectsLayerFilter = new Qt3DRender::QLayerFilter( mClipRenderStateSet );
   transparentObjectsLayerFilter->addLayer( mTransparentObjectsLayer );
   transparentObjectsLayerFilter->setFilterMode( Qt3DRender::QLayerFilter::AcceptAnyMatchingLayers );
+
+  Qt3DRender::QRenderStateSet *wboitRenderStateSet = new Qt3DRender::QRenderStateSet( transparentObjectsLayerFilter );
+
+  Qt3DRender::QBlendEquation *blendEquation = new Qt3DRender::QBlendEquation;
+  blendEquation->setBlendFunction( Qt3DRender::QBlendEquation::Add );
+  wboitRenderStateSet->addRenderState( blendEquation );
+
+  Qt3DRender::QBlendEquationArguments *accumulationBlendArgs = new Qt3DRender::QBlendEquationArguments;
+  accumulationBlendArgs->setSourceRgb( Qt3DRender::QBlendEquationArguments::One );
+  accumulationBlendArgs->setDestinationRgb( Qt3DRender::QBlendEquationArguments::One );
+  accumulationBlendArgs->setBufferIndex( 0 );
+
+  Qt3DRender::QBlendEquationArguments *revealageBlendArgs = new Qt3DRender::QBlendEquationArguments;
+  revealageBlendArgs->setSourceRgb( Qt3DRender::QBlendEquationArguments::Zero );
+  revealageBlendArgs->setDestinationRgb( Qt3DRender::QBlendEquationArguments::OneMinusSourceColor );
+  revealageBlendArgs->setBufferIndex( 1 );
+
+  wboitRenderStateSet->addRenderState( accumulationBlendArgs );
+  wboitRenderStateSet->addRenderState( revealageBlendArgs );
+
+  Qt3DRender::QDepthTest *wboitDepthTest = new Qt3DRender::QDepthTest;
+  wboitDepthTest->setDepthFunction( Qt3DRender::QDepthTest::Less );
+  wboitRenderStateSet->addRenderState( wboitDepthTest );
+
+  Qt3DRender::QNoDepthMask *noDepthMask = new Qt3DRender::QNoDepthMask;
+  wboitRenderStateSet->addRenderState( noDepthMask );
+
+  Qt3DRender::QCullFace *noCullFace = new Qt3DRender::QCullFace;
+  noCullFace->setMode( Qt3DRender::QCullFace::CullingMode::NoCulling );
+  wboitRenderStateSet->addRenderState( noCullFace );
+#if 0
+  // second branch: transparent layer filter - color
 
   Qt3DRender::QSortPolicy *sortPolicy = new Qt3DRender::QSortPolicy( transparentObjectsLayerFilter );
   QVector<Qt3DRender::QSortPolicy::SortType> sortTypes;
@@ -269,6 +355,7 @@ void QgsForwardRenderView::buildRenderPasses()
     cullFace->setMode( Qt3DRender::QCullFace::CullingMode::NoCulling );
     transparentObjectsRenderStateSetDepth->addRenderState( cullFace );
   }
+#endif
 }
 
 void QgsForwardRenderView::updateWindowResize( int width, int height )
@@ -277,6 +364,12 @@ void QgsForwardRenderView::updateWindowResize( int width, int height )
   mCurrentHeight = height;
   mColorTexture->setSize( width, height );
   mDepthTexture->setSize( width, height );
+  if ( mAccumulationTexture )
+    mAccumulationTexture->setSize( width, height );
+
+  if ( mRevealageTexture )
+    mRevealageTexture->setSize( width, height );
+
   if ( mColorTextureMS )
   {
     mColorTextureMS->setWidth( width );
@@ -330,6 +423,15 @@ Qt3DRender::QTexture2D *QgsForwardRenderView::depthTexture() const
 Qt3DRender::QTexture2D *QgsForwardRenderView::colorTexture() const
 {
   return mColorTexture;
+}
+
+Qt3DRender::QTexture2D *QgsForwardRenderView::accumulationTexture() const
+{
+  return mAccumulationTexture;
+}
+Qt3DRender::QTexture2D *QgsForwardRenderView::revealageTexture() const
+{
+  return mRevealageTexture;
 }
 
 void QgsForwardRenderView::removeClipPlanes()
