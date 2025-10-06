@@ -29,6 +29,7 @@ namespace Qt3DRender
   class QLayerFilter;
   class QRenderTargetSelector;
   class QRenderTarget;
+  class QRenderTargetOutput;
   class QClearBuffers;
   class QFrustumCulling;
   class QRenderStateSet;
@@ -78,6 +79,9 @@ class QgsForwardRenderView : public QgsAbstractRenderView
     //! Returns forward color texture
     Qt3DRender::QTexture2D *colorTexture() const;
 
+    Qt3DRender::QTexture2D *accumulationTexture() const;
+    Qt3DRender::QTexture2D *revealageTexture() const;
+
     /**
      * Setups \a nrClipPlanes clip planes in the forward pass to enable OpenGL clipping.
      * If \a nrClipPlanes is equal to 0, the clipping is disabled.
@@ -113,6 +117,13 @@ class QgsForwardRenderView : public QgsAbstractRenderView
     // Forward rendering pass texture related objects:
     Qt3DRender::QTexture2D *mColorTexture = nullptr;
     Qt3DRender::QTexture2D *mDepthTexture = nullptr;
+
+    Qt3DRender::QRenderTargetOutput *mAccumulationOutput = nullptr;
+    Qt3DRender::QRenderTargetOutput *mRevealageOutput = nullptr;
+
+    Qt3DRender::QTexture2D *mAccumulationTexture = nullptr;
+    Qt3DRender::QTexture2D *mRevealageTexture = nullptr;
+
     // QDebugOverlay added in the forward pass
 #if QT_VERSION >= QT_VERSION_CHECK( 5, 15, 0 )
     Qt3DRender::QDebugOverlay *mDebugOverlay = nullptr;
@@ -127,6 +138,7 @@ class QgsForwardRenderView : public QgsAbstractRenderView
      * Build color and depth textures and add then to a new rendertarget
      */
     Qt3DRender::QRenderTarget *buildTextures();
+    Qt3DRender::QRenderTarget *buildWboitTextures();
 };
 
 #endif // QGSFORWARDRENDERVIEW_H

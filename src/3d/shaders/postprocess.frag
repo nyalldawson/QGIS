@@ -35,6 +35,11 @@ uniform int edlDistance;
 
 uniform int ssaoEnabled;
 
+uniform int wboitEnabled;
+uniform sampler2D accumulationTexture;
+uniform sampler2D revealageTexture;
+const float EPSILON = 0.00001;
+
 in vec2 texCoord;
 
 out vec4 fragColor;
@@ -119,23 +124,43 @@ void main()
   vec3 worldPosition = WorldPosFromDepth( depth );
   vec4 positionInLightSpace = projectionMatrix * viewMatrix * vec4(worldPosition, 1.0f);
   positionInLightSpace /= positionInLightSpace.w;
-  vec3 color = texture(colorTexture, texCoord).rgb;
+  vec3 opaqueColor = texture(colorTexture, texCoord).rgb;
+
+vec3 litOpaqueColor = opaqueColor;
   // if shadow rendering is disabled or the pixel is outside the shadow rendering distance don't render shadows
   if (renderShadows == 0 || depth >= 1 || worldPosition.x > shadowMaxX || worldPosition.x < shadowMinX || worldPosition.y > shadowMaxY || worldPosition.y < shadowMinY)
   {
-    fragColor = vec4(color, 1.0f);
+    // no shadow
   } else
   {
     float visibilityFactor = CalcShadowFactor(positionInLightSpace);
-    fragColor = vec4(visibilityFactor * color, 1.0f);
+    litOpaqueColor *= visibilityFactor;
   }
+  if ( ssaoEnabled != 0 )
+  {
+    litOpaqueColor *= texture( ssaoTexture, texCoord ).r;
+  }
+
+  vec3 compositeColor = litOpaqueColor;
+   if (wboitEnabled != 0)
+   {
+     vec4 accum = texture(accumulationTexture, texCoord);
+        float reveal = texture(revealageTexture, texCoord).r;
+
+        // accum.a now contains sum(weight). If it's > 0, we have transparent pixels.
+        if (accum.a > EPSILON)
+        {
+            // Correctly find the weighted average color by dividing by sum(weight).
+            vec3 transparentColor = accum.rgb / accum.a;
+            // Blend using the opacity from the revealage buffer.
+            compositeColor = mix(litOpaqueColor, transparentColor, clamp(reveal, 0.0, 1.0));
+        }
+   }
+   fragColor = vec4(compositeColor, 1.0);
+
   if (edlEnabled != 0)
   {
     float shade = exp(-edlFactor(texCoord) * edlStrength);
     fragColor = vec4(fragColor.rgb * shade, fragColor.a);
-  }
-  if ( ssaoEnabled != 0 )
-  {
-    fragColor = vec4( fragColor.rgb * texture( ssaoTexture, texCoord ).r, fragColor.a );
   }
 }
