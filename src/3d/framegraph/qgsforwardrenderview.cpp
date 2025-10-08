@@ -221,12 +221,12 @@ void QgsForwardRenderView::buildRenderPasses()
   wboitAccumulationClearBuffers->setColorBuffer( mAccumulationOutput );
   wboitAccumulationClearBuffers->setClearColor( QColor::fromRgbF( 0.0, 0.0, 0.0, 0.0 ) );
 
-  Qt3DRender::QClearBuffers *wboitReveleageClearBuffers = new Qt3DRender::QClearBuffers( wboitRenderTargetSelector );
+  Qt3DRender::QClearBuffers *wboitReveleageClearBuffers = new Qt3DRender::QClearBuffers( wboitAccumulationClearBuffers );
   wboitReveleageClearBuffers->setBuffers( Qt3DRender::QClearBuffers::ColorBuffer );
   wboitReveleageClearBuffers->setColorBuffer( mRevealageOutput );
   wboitReveleageClearBuffers->setClearColor( QColor::fromRgbF( 1.0, 0.0, 0.0, 0.0 ) );
 
-  Qt3DRender::QLayerFilter *transparentObjectsLayerFilter = new Qt3DRender::QLayerFilter( wboitRenderTargetSelector );
+  Qt3DRender::QLayerFilter *transparentObjectsLayerFilter = new Qt3DRender::QLayerFilter( wboitReveleageClearBuffers );
   transparentObjectsLayerFilter->addLayer( mTransparentObjectsLayer );
   transparentObjectsLayerFilter->setFilterMode( Qt3DRender::QLayerFilter::AcceptAnyMatchingLayers );
 
