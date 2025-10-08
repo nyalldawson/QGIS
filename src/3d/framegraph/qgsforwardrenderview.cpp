@@ -227,7 +227,7 @@ void QgsForwardRenderView::buildRenderPasses()
   Qt3DRender::QClearBuffers *wboitReveleageClearBuffers = new Qt3DRender::QClearBuffers( wboitRenderTargetSelector );
   wboitReveleageClearBuffers->setBuffers( Qt3DRender::QClearBuffers::ColorBuffer );
   wboitReveleageClearBuffers->setColorBuffer( mRevealageOutput );
-  wboitReveleageClearBuffers->setClearColor( QColor::fromRgbF( 1.0, 1.0, 1.0, 1.0 ) );
+  wboitReveleageClearBuffers->setClearColor( QColor::fromRgbF( 1.0, 0.0, 0.0, 0.0 ) );
 
   Qt3DRender::QLayerFilter *transparentObjectsLayerFilter = new Qt3DRender::QLayerFilter( wboitRenderTargetSelector );
   transparentObjectsLayerFilter->addLayer( mTransparentObjectsLayer );
@@ -242,6 +242,8 @@ void QgsForwardRenderView::buildRenderPasses()
   Qt3DRender::QBlendEquationArguments *accumulationBlendArgs = new Qt3DRender::QBlendEquationArguments;
   accumulationBlendArgs->setSourceRgb( Qt3DRender::QBlendEquationArguments::One );
   accumulationBlendArgs->setDestinationRgb( Qt3DRender::QBlendEquationArguments::One );
+  accumulationBlendArgs->setSourceAlpha( Qt3DRender::QBlendEquationArguments::One );
+  accumulationBlendArgs->setDestinationAlpha( Qt3DRender::QBlendEquationArguments::One );
   accumulationBlendArgs->setBufferIndex( 0 );
 
   Qt3DRender::QBlendEquationArguments *revealageBlendArgs = new Qt3DRender::QBlendEquationArguments;

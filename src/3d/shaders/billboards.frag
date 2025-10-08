@@ -14,6 +14,12 @@ float getWeight(float z, vec4 color) {
     // the color-based factor
     // avoids color pollution from the edges of wispy clouds. the z-based
     // factor gives precedence to nearer surfaces
+
+    // from https://casual-effects.blogspot.com/2015/03/implemented-weighted-blended-order.html
+    return clamp(pow(min(1.0, color.a * 10.0) + 0.01, 3.0) * 1e8 *
+                                 pow(1.0 - z * 0.9, 3.0), 1e-2, 3e3);
+
+
     return max(min(1.0, max(max(color.r, color.g), color.b) * color.a), color.a) * clamp(0.03 / (1e-5 + pow(z / 200, 4.0)), 1e-2, 3e3);
    //return max(0.01, (0.01 + color.a) * (25.0 * pow(1.0 - z, 4.0)));
 }
