@@ -15,18 +15,18 @@ float getWeight(float z, vec4 color) {
     // avoids color pollution from the edges of wispy clouds. the z-based
     // factor gives precedence to nearer surfaces
     return max(min(1.0, max(max(color.r, color.g), color.b) * color.a), color.a) * clamp(0.03 / (1e-5 + pow(z / 200, 4.0)), 1e-2, 3e3);
-   //return max(0.01, (0.01 + alpha) * (25.0 * pow(1.0 - z, 4.0)));
+   //return max(0.01, (0.01 + color.a) * (25.0 * pow(1.0 - z, 4.0)));
 }
 
 void main(void) {
     vec4 color = texture(tex0, vec2(UV.x, 1.0f - UV.y));
-    if (color.a < 0.01)
-        discard;
+    //if (color.a < 0.01)
+    //    discard;
 
-    vec4 unmultipliedColor = color / color.a;
+    vec4 unmultipliedColor = vec4(color.rgb / color.a, color.a);
 
     float weight = getWeight(gl_FragCoord.z, unmultipliedColor);
     // switch to pre-multiplied alpha and weight
-    accum = vec4(color.rgb * color.a, color.a) * weight;
+    accum = vec4(color.rgb, color.a) * weight;
     reveal = color.a;
 }
