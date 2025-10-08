@@ -38,7 +38,7 @@ uniform int ssaoEnabled;
 uniform int wboitEnabled;
 uniform sampler2D accumulationTexture;
 uniform sampler2D revealageTexture;
-const float EPSILON = 0.00001;
+const float EPSILON = 0.00001f;
 
 in vec2 texCoord;
 
@@ -163,18 +163,23 @@ void main()
 
    if (wboitEnabled != 0)
    {
-     vec4 accum = texture(accumulationTexture, texCoord);
-        float reveal = texture(revealageTexture, texCoord).r;
+     float reveal = texture(revealageTexture, texCoord).r;
+  if ( reveal < 1.0f - EPSILON )
+     {
 
-        // accum.a now contains sum(weight). If it's > 0, we have transparent pixels.
-        if (accum.a > EPSILON)
-        {
-            // Correctly find the weighted average color by dividing by sum(weight).
-            vec3 transparentColor = accum.rgb / accum.a;
+     vec4 accumulation = texture(accumulationTexture, texCoord);
+     if (!( isinf(accumulation.r) || isinf(accumulation.g) || isinf(accumulation.b)) )
+      {
+      // premultiplied
+      vec3 average_color = accumulation.rgb / max(accumulation.a, EPSILON);
+
+
+
             // Blend using the opacity from the revealage buffer.
-            finalColor = mix(litOpaqueColor, transparentColor, clamp(reveal, 0.0, 1.0));
+            finalColor = mix(litOpaqueColor, average_color, 1.0 - clamp(reveal, 0.0, 1.0));
         }
    }
+}
 
   // Apply exposure correction -- currently a no-op, because exposure is hardcoded to 0
   // finalColor *= exp2(exposure);
