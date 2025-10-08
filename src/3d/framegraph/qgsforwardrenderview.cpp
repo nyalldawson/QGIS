@@ -211,9 +211,6 @@ void QgsForwardRenderView::buildRenderPasses()
   mClearBuffers->setBuffers( Qt3DRender::QClearBuffers::ColorDepthBuffer );
   mClearBuffers->setClearDepthValue( 1.0f );
 
-  // Qt3DRender::QRenderTargetSelector * renderTargetSelector = new Qt3DRender::QRenderTargetSelector( mClipRenderStateSet );
-  // renderTargetSelector->setTarget( renderTarget );
-
   // WBOIT Pass
   Qt3DRender::QRenderTarget *wboitRenderTarget = buildWboitTextures();
   Qt3DRender::QRenderTargetSelector *wboitRenderTargetSelector = new Qt3DRender::QRenderTargetSelector( mClipRenderStateSet );
@@ -264,56 +261,6 @@ void QgsForwardRenderView::buildRenderPasses()
   Qt3DRender::QCullFace *noCullFace = new Qt3DRender::QCullFace;
   noCullFace->setMode( Qt3DRender::QCullFace::CullingMode::NoCulling );
   wboitRenderStateSet->addRenderState( noCullFace );
-#if 0
-  // second branch: transparent layer filter - color
-
-  Qt3DRender::QSortPolicy *sortPolicy = new Qt3DRender::QSortPolicy( transparentObjectsLayerFilter );
-  QVector<Qt3DRender::QSortPolicy::SortType> sortTypes;
-  sortTypes.push_back( Qt3DRender::QSortPolicy::BackToFront );
-  sortPolicy->setSortTypes( sortTypes );
-
-  Qt3DRender::QRenderStateSet *transparentObjectsRenderStateSetColor = new Qt3DRender::QRenderStateSet( sortPolicy );
-  {
-    Qt3DRender::QDepthTest *depthTest = new Qt3DRender::QDepthTest;
-    depthTest->setDepthFunction( Qt3DRender::QDepthTest::Less );
-    transparentObjectsRenderStateSetColor->addRenderState( depthTest );
-
-    Qt3DRender::QNoDepthMask *noDepthMask = new Qt3DRender::QNoDepthMask;
-    transparentObjectsRenderStateSetColor->addRenderState( noDepthMask );
-
-    Qt3DRender::QCullFace *cullFace = new Qt3DRender::QCullFace;
-    cullFace->setMode( Qt3DRender::QCullFace::CullingMode::NoCulling );
-    transparentObjectsRenderStateSetColor->addRenderState( cullFace );
-
-    Qt3DRender::QBlendEquation *blendEquation = new Qt3DRender::QBlendEquation;
-    blendEquation->setBlendFunction( Qt3DRender::QBlendEquation::Add );
-    transparentObjectsRenderStateSetColor->addRenderState( blendEquation );
-
-    Qt3DRender::QBlendEquationArguments *blendEquationArgs = new Qt3DRender::QBlendEquationArguments;
-    blendEquationArgs->setSourceRgb( Qt3DRender::QBlendEquationArguments::Blending::SourceAlpha );
-    blendEquationArgs->setDestinationRgb( Qt3DRender::QBlendEquationArguments::Blending::OneMinusSourceAlpha );
-    transparentObjectsRenderStateSetColor->addRenderState( blendEquationArgs );
-  }
-
-  // third branch: transparent layer filter - depth
-  Qt3DRender::QRenderStateSet *transparentObjectsRenderStateSetDepth = new Qt3DRender::QRenderStateSet( sortPolicy );
-  {
-    Qt3DRender::QDepthTest *depthTest = new Qt3DRender::QDepthTest;
-    depthTest->setDepthFunction( Qt3DRender::QDepthTest::Less );
-    transparentObjectsRenderStateSetDepth->addRenderState( depthTest );
-
-    Qt3DRender::QColorMask *noColorMask = new Qt3DRender::QColorMask;
-    noColorMask->setAlphaMasked( false );
-    noColorMask->setRedMasked( false );
-    noColorMask->setGreenMasked( false );
-    noColorMask->setBlueMasked( false );
-    transparentObjectsRenderStateSetDepth->addRenderState( noColorMask );
-
-    Qt3DRender::QCullFace *cullFace = new Qt3DRender::QCullFace;
-    cullFace->setMode( Qt3DRender::QCullFace::CullingMode::NoCulling );
-    transparentObjectsRenderStateSetDepth->addRenderState( cullFace );
-  }
-#endif
 
   mDebugOverlay = new Qt3DRender::QDebugOverlay( mClearBuffers );
   mDebugOverlay->setEnabled( false );
