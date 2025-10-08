@@ -20,8 +20,8 @@ float getWeight(float z, vec4 color) {
 
 void main(void) {
     vec4 color = texture(tex0, vec2(UV.x, 1.0f - UV.y));
-    //if (color.a < 0.01)
-    //    discard;
+    if (color.a < 0.01)
+        discard;
 
     vec4 unmultipliedColor = vec4(color.rgb / color.a, color.a);
 
