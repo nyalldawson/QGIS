@@ -42,11 +42,14 @@ QgsPoint3DBillboardMaterial::QgsPoint3DBillboardMaterial( Mode mode )
   mTexture2D = new Qt3DRender::QParameter( "tex0", QVariant(), this );
   addParameter( mTexture2D );
 
+  Qt3DRender::QEffect *effect = new Qt3DRender::QEffect( this );
+
   // Shader program
   Qt3DRender::QShaderProgram *shaderProgram = new Qt3DRender::QShaderProgram( this );
 
   const QUrl urlVert( QStringLiteral( "qrc:/shaders/billboards.vert" ) );
   const QUrl urlGeom( QStringLiteral( "qrc:/shaders/billboards.geom" ) );
+  const QUrl urlFragment( QStringLiteral( "qrc:/shaders/billboards.frag" ) );
 
   switch ( mode )
   {
@@ -88,23 +91,83 @@ QgsPoint3DBillboardMaterial::QgsPoint3DBillboardMaterial( Mode mode )
   Qt3DRender::QNoDepthMask *noDepthMask = new Qt3DRender::QNoDepthMask( renderPass );
   renderPass->addRenderState( noDepthMask );
 
-  // without this filter the default forward renderer would not render this
-  Qt3DRender::QFilterKey *filterKey = new Qt3DRender::QFilterKey;
-  filterKey->setName( QStringLiteral( "renderingStyle" ) );
-  filterKey->setValue( "forward" );
+   // without this filter the default forward renderer would not render this
+    Qt3DRender::QFilterKey *filterKey = new Qt3DRender::QFilterKey;
+    filterKey->setName( QStringLiteral( "renderingStyle" ) );
+    filterKey->setValue( "forward" );
 
-  // Technique
-  Qt3DRender::QTechnique *technique = new Qt3DRender::QTechnique;
-  technique->addRenderPass( renderPass );
-  technique->addFilterKey( filterKey );
-  technique->graphicsApiFilter()->setApi( Qt3DRender::QGraphicsApiFilter::OpenGL );
-  technique->graphicsApiFilter()->setProfile( Qt3DRender::QGraphicsApiFilter::CoreProfile );
-  technique->graphicsApiFilter()->setMajorVersion( 3 );
-  technique->graphicsApiFilter()->setMinorVersion( 3 );
+    Qt3DRender::QFilterKey *filterKey2 = new Qt3DRender::QFilterKey;
+    filterKey2->setName( QStringLiteral( "pass" ) );
+    filterKey2->setValue( "billboard_opaque" );
 
-  // Effect
-  Qt3DRender::QEffect *effect = new Qt3DRender::QEffect( this );
-  effect->addTechnique( technique );
+    // Technique
+    Qt3DRender::QTechnique *technique = new Qt3DRender::QTechnique;
+    technique->addRenderPass( renderPass );
+    technique->addFilterKey( filterKey );
+    technique->addFilterKey( filterKey2 );
+    technique->graphicsApiFilter()->setApi( Qt3DRender::QGraphicsApiFilter::OpenGL );
+    technique->graphicsApiFilter()->setProfile( Qt3DRender::QGraphicsApiFilter::CoreProfile );
+    technique->graphicsApiFilter()->setMajorVersion( 3 );
+    technique->graphicsApiFilter()->setMinorVersion( 3 );
+
+    // Effect
+
+    effect->addTechnique( technique );
+
+
+
+  // --- Technique 2: Transparent fragments (for WBOIT) ---
+  {
+    switch ( mode )
+    {
+      case Mode::SingleTexture:
+      {
+        shaderProgram->setVertexShaderCode( Qt3DRender::QShaderProgram::loadSource( urlVert ) );
+        shaderProgram->setGeometryShaderCode( Qt3DRender::QShaderProgram::loadSource( urlGeom ) );
+        break;
+      }
+      case Mode::AtlasTexture:
+      {
+        const QByteArray vertexShaderCode = Qt3DRender::QShaderProgram::loadSource( urlVert );
+        const QByteArray finalVertexShaderCode = Qgs3DUtils::addDefinesToShaderCode( vertexShaderCode, QStringList( { "TEXTURE_ATLAS" } ) );
+        shaderProgram->setVertexShaderCode( finalVertexShaderCode );
+        const QByteArray geomShaderCode = Qt3DRender::QShaderProgram::loadSource( urlGeom );
+        const QByteArray finalGeomShaderCode = Qgs3DUtils::addDefinesToShaderCode( geomShaderCode, QStringList( { "TEXTURE_ATLAS" } ) );
+        shaderProgram->setGeometryShaderCode( finalGeomShaderCode );
+        break;
+      }
+    }
+
+    const QByteArray fragmentShaderCode = Qt3DRender::QShaderProgram::loadSource( urlFragment );
+    const QByteArray finalFragmentShaderCode = Qgs3DUtils::addDefinesToShaderCode( fragmentShaderCode, QStringList( { "WBOIT" } ) );
+    shaderProgram->setFragmentShaderCode( finalFragmentShaderCode );
+
+    // Render Pass
+    Qt3DRender::QRenderPass *renderPass = new Qt3DRender::QRenderPass( this );
+    renderPass->setShaderProgram( shaderProgram );
+
+    Qt3DRender::QNoDepthMask *noDepthMask = new Qt3DRender::QNoDepthMask( renderPass );
+    renderPass->addRenderState( noDepthMask );
+
+    // without this filter the default forward renderer would not render this
+    Qt3DRender::QFilterKey *filterKey = new Qt3DRender::QFilterKey;
+    filterKey->setName( QStringLiteral( "renderingStyle" ) );
+    filterKey->setValue( "forward" );
+
+    // Technique
+    Qt3DRender::QTechnique *technique = new Qt3DRender::QTechnique;
+    technique->addRenderPass( renderPass );
+    technique->addFilterKey( filterKey );
+    technique->graphicsApiFilter()->setApi( Qt3DRender::QGraphicsApiFilter::OpenGL );
+    technique->graphicsApiFilter()->setProfile( Qt3DRender::QGraphicsApiFilter::CoreProfile );
+    technique->graphicsApiFilter()->setMajorVersion( 3 );
+    technique->graphicsApiFilter()->setMinorVersion( 3 );
+
+    // Effect
+
+    effect->addTechnique( technique );
+  }
+
 
   setEffect( effect );
 }

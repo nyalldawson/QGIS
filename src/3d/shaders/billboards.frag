@@ -4,10 +4,14 @@ uniform sampler2D tex0;
 
 in vec2 UV;
 
+#ifdef WBOIT
 // accumulates pre-multiplied color values
 layout(location = 0) out vec4 accum;
 // stores pixel revealage
 layout(location = 1) out float reveal;
+#else
+out vec4 fragColor;
+#endif
 
 float getWeight(float z, vec4 color) {
     // from https://learnopengl.com/Guest-Articles/2020/OIT/Weighted-Blended
@@ -26,7 +30,8 @@ float getWeight(float z, vec4 color) {
 
 void main(void) {
     vec4 color = texture(tex0, vec2(UV.x, 1.0f - UV.y));
-    if (color.a < 0.01)
+#ifdef WBOIT
+    if (color.a < 0.01 || color.a > 0.99)
         discard;
 
     vec4 unmultipliedColor = vec4(color.rgb / color.a, color.a);
@@ -35,4 +40,9 @@ void main(void) {
     // switch to pre-multiplied alpha and weight
     accum = vec4(color.rgb, color.a) * weight;
     reveal = color.a;
+#else
+    if (color.a < 0.99)
+            discard;
+    fragColor = color;
+#endif
 }
