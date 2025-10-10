@@ -103,7 +103,7 @@ QgsPoint3DBillboardMaterial::QgsPoint3DBillboardMaterial( Mode mode )
     // Technique
     Qt3DRender::QTechnique *technique = new Qt3DRender::QTechnique;
     technique->addRenderPass( renderPass );
-    technique->addFilterKey( filterKey );
+    // technique->addFilterKey( filterKey );
     technique->addFilterKey( filterKey2 );
     technique->graphicsApiFilter()->setApi( Qt3DRender::QGraphicsApiFilter::OpenGL );
     technique->graphicsApiFilter()->setProfile( Qt3DRender::QGraphicsApiFilter::CoreProfile );
@@ -113,11 +113,12 @@ QgsPoint3DBillboardMaterial::QgsPoint3DBillboardMaterial( Mode mode )
     // Effect
 
     effect->addTechnique( technique );
-
-
+  }
 
   // --- Technique 2: Transparent fragments (for WBOIT) ---
   {
+    Qt3DRender::QShaderProgram *shaderProgram = new Qt3DRender::QShaderProgram( this );
+
     switch ( mode )
     {
       case Mode::SingleTexture:
@@ -151,8 +152,8 @@ QgsPoint3DBillboardMaterial::QgsPoint3DBillboardMaterial( Mode mode )
 
     // without this filter the default forward renderer would not render this
     Qt3DRender::QFilterKey *filterKey = new Qt3DRender::QFilterKey;
-    filterKey->setName( QStringLiteral( "renderingStyle" ) );
-    filterKey->setValue( "forward" );
+    filterKey->setName( QStringLiteral( "pass" ) );
+    filterKey->setValue( "billboard_wboit" );
 
     // Technique
     Qt3DRender::QTechnique *technique = new Qt3DRender::QTechnique;

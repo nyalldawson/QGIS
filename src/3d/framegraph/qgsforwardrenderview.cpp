@@ -206,10 +206,18 @@ void QgsForwardRenderView::buildRenderPasses()
   cullFace->setMode( Qt3DRender::QCullFace::CullingMode::Back );
   renderStateSet->addRenderState( cullFace );
 
+
+  mFrustumCulling = new Qt3DRender::QFrustumCulling( renderStateSet );
+
+  mClearBuffers = new Qt3DRender::QClearBuffers( mFrustumCulling );
+  mClearBuffers->setClearColor( QColor::fromRgbF( 0.0, 0.0, 1.0, 1.0 ) );
+  mClearBuffers->setBuffers( Qt3DRender::QClearBuffers::ColorDepthBuffer );
+  mClearBuffers->setClearDepthValue( 1.0f );
+
   // Opaque fragments of billboards pass
-  if ( true )
+  if ( false )
   {
-    Qt3DRender::QLayerFilter *billboardOpaqueFilter = new Qt3DRender::QLayerFilter( renderStateSet );
+    Qt3DRender::QLayerFilter *billboardOpaqueFilter = new Qt3DRender::QLayerFilter( mRenderTargetSelector );
     billboardOpaqueFilter->addLayer( mTransparentObjectsLayer );
     billboardOpaqueFilter->setFilterMode( Qt3DRender::QLayerFilter::AcceptAnyMatchingLayers );
     Qt3DRender::QTechniqueFilter *techniqueFilter = new Qt3DRender::QTechniqueFilter( billboardOpaqueFilter );
@@ -224,19 +232,11 @@ void QgsForwardRenderView::buildRenderPasses()
     Qt3DRender::QCullFace *cullFace = new Qt3DRender::QCullFace;
     cullFace->setMode( Qt3DRender::QCullFace::CullingMode::Back );
     billboardStateSet->addRenderState( cullFace );
-    // Frustum culling is parented to the main opaque pass's state set, so this new pass
-    // needs to be parented to it to benefit from culling as well.
-    billboardOpaqueFilter->setParent( renderStateSet );
   }
 
-  mFrustumCulling = new Qt3DRender::QFrustumCulling( renderStateSet );
-
-  mClearBuffers = new Qt3DRender::QClearBuffers( mFrustumCulling );
-  mClearBuffers->setClearColor( QColor::fromRgbF( 0.0, 0.0, 1.0, 1.0 ) );
-  mClearBuffers->setBuffers( Qt3DRender::QClearBuffers::ColorDepthBuffer );
-  mClearBuffers->setClearDepthValue( 1.0f );
 
   // second branch: weighted blended order independent (WBOIT) rendering Pass
+  if ( true )
   {
     Qt3DRender::QRenderTarget *wboitRenderTarget = buildWboitTextures();
     Qt3DRender::QRenderTargetSelector *wboitRenderTargetSelector = new Qt3DRender::QRenderTargetSelector( mClipRenderStateSet );
@@ -256,7 +256,13 @@ void QgsForwardRenderView::buildRenderPasses()
     transparentObjectsLayerFilter->addLayer( mTransparentObjectsLayer );
     transparentObjectsLayerFilter->setFilterMode( Qt3DRender::QLayerFilter::AcceptAnyMatchingLayers );
 
-    Qt3DRender::QRenderStateSet *wboitRenderStateSet = new Qt3DRender::QRenderStateSet( transparentObjectsLayerFilter );
+    Qt3DRender::QTechniqueFilter *billboardTechniqueFilter = new Qt3DRender::QTechniqueFilter( transparentObjectsLayerFilter );
+    Qt3DRender::QFilterKey *billboardFilterKey = new Qt3DRender::QFilterKey( billboardTechniqueFilter );
+    billboardFilterKey->setName( QStringLiteral( "pass" ) );
+    billboardFilterKey->setValue( "billboard_wboit" );
+    billboardTechniqueFilter->addMatch( billboardFilterKey );
+
+    Qt3DRender::QRenderStateSet *wboitRenderStateSet = new Qt3DRender::QRenderStateSet( billboardTechniqueFilter );
 
     Qt3DRender::QBlendEquation *blendEquation = new Qt3DRender::QBlendEquation;
     blendEquation->setBlendFunction( Qt3DRender::QBlendEquation::Add );
