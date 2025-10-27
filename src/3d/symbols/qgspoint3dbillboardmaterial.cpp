@@ -51,47 +51,48 @@ QgsPoint3DBillboardMaterial::QgsPoint3DBillboardMaterial( Mode mode )
   const QUrl urlGeom( QStringLiteral( "qrc:/shaders/billboards.geom" ) );
   const QUrl urlFragment( QStringLiteral( "qrc:/shaders/billboards.frag" ) );
 
-  switch ( mode )
   {
-    case Mode::SingleTexture:
+    switch ( mode )
     {
-      shaderProgram->setVertexShaderCode( Qt3DRender::QShaderProgram::loadSource( urlVert ) );
-      shaderProgram->setGeometryShaderCode( Qt3DRender::QShaderProgram::loadSource( urlGeom ) );
-      break;
+      case Mode::SingleTexture:
+      {
+        shaderProgram->setVertexShaderCode( Qt3DRender::QShaderProgram::loadSource( urlVert ) );
+        shaderProgram->setGeometryShaderCode( Qt3DRender::QShaderProgram::loadSource( urlGeom ) );
+        break;
+      }
+      case Mode::AtlasTexture:
+      {
+        const QByteArray vertexShaderCode = Qt3DRender::QShaderProgram::loadSource( urlVert );
+        const QByteArray finalVertexShaderCode = Qgs3DUtils::addDefinesToShaderCode( vertexShaderCode, QStringList( { "TEXTURE_ATLAS" } ) );
+        shaderProgram->setVertexShaderCode( finalVertexShaderCode );
+
+        const QByteArray geomShaderCode = Qt3DRender::QShaderProgram::loadSource( urlGeom );
+        const QByteArray finalGeomShaderCode = Qgs3DUtils::addDefinesToShaderCode( geomShaderCode, QStringList( { "TEXTURE_ATLAS" } ) );
+        shaderProgram->setGeometryShaderCode( finalGeomShaderCode );
+        break;
+      }
+      case Mode::AtlasTextureWithPixelOffsets:
+      {
+        const QByteArray vertexShaderCode = Qt3DRender::QShaderProgram::loadSource( urlVert );
+        const QByteArray finalVertexShaderCode = Qgs3DUtils::addDefinesToShaderCode( vertexShaderCode, QStringList( { "TEXTURE_ATLAS", "TEXTURE_ATLAS_PIXEL_OFFSETS" } ) );
+        shaderProgram->setVertexShaderCode( finalVertexShaderCode );
+
+        const QByteArray geomShaderCode = Qt3DRender::QShaderProgram::loadSource( urlGeom );
+        const QByteArray finalGeomShaderCode = Qgs3DUtils::addDefinesToShaderCode( geomShaderCode, QStringList( { "TEXTURE_ATLAS", "TEXTURE_ATLAS_PIXEL_OFFSETS" } ) );
+        shaderProgram->setGeometryShaderCode( finalGeomShaderCode );
+        break;
+      }
     }
-    case Mode::AtlasTexture:
-    {
-      const QByteArray vertexShaderCode = Qt3DRender::QShaderProgram::loadSource( urlVert );
-      const QByteArray finalVertexShaderCode = Qgs3DUtils::addDefinesToShaderCode( vertexShaderCode, QStringList( { "TEXTURE_ATLAS" } ) );
-      shaderProgram->setVertexShaderCode( finalVertexShaderCode );
+    shaderProgram->setFragmentShaderCode( Qt3DRender::QShaderProgram::loadSource( QUrl( QStringLiteral( "qrc:/shaders/billboards.frag" ) ) ) );
 
-      const QByteArray geomShaderCode = Qt3DRender::QShaderProgram::loadSource( urlGeom );
-      const QByteArray finalGeomShaderCode = Qgs3DUtils::addDefinesToShaderCode( geomShaderCode, QStringList( { "TEXTURE_ATLAS" } ) );
-      shaderProgram->setGeometryShaderCode( finalGeomShaderCode );
-      break;
-    }
-    case Mode::AtlasTextureWithPixelOffsets:
-    {
-      const QByteArray vertexShaderCode = Qt3DRender::QShaderProgram::loadSource( urlVert );
-      const QByteArray finalVertexShaderCode = Qgs3DUtils::addDefinesToShaderCode( vertexShaderCode, QStringList( { "TEXTURE_ATLAS", "TEXTURE_ATLAS_PIXEL_OFFSETS" } ) );
-      shaderProgram->setVertexShaderCode( finalVertexShaderCode );
+    // Render Pass
+    Qt3DRender::QRenderPass *renderPass = new Qt3DRender::QRenderPass( this );
+    renderPass->setShaderProgram( shaderProgram );
 
-      const QByteArray geomShaderCode = Qt3DRender::QShaderProgram::loadSource( urlGeom );
-      const QByteArray finalGeomShaderCode = Qgs3DUtils::addDefinesToShaderCode( geomShaderCode, QStringList( { "TEXTURE_ATLAS", "TEXTURE_ATLAS_PIXEL_OFFSETS" } ) );
-      shaderProgram->setGeometryShaderCode( finalGeomShaderCode );
-      break;
-    }
-  }
-  shaderProgram->setFragmentShaderCode( Qt3DRender::QShaderProgram::loadSource( QUrl( QStringLiteral( "qrc:/shaders/billboards.frag" ) ) ) );
+    Qt3DRender::QNoDepthMask *noDepthMask = new Qt3DRender::QNoDepthMask( renderPass );
+    renderPass->addRenderState( noDepthMask );
 
-  // Render Pass
-  Qt3DRender::QRenderPass *renderPass = new Qt3DRender::QRenderPass( this );
-  renderPass->setShaderProgram( shaderProgram );
-
-  Qt3DRender::QNoDepthMask *noDepthMask = new Qt3DRender::QNoDepthMask( renderPass );
-  renderPass->addRenderState( noDepthMask );
-
-   // without this filter the default forward renderer would not render this
+    // without this filter the default forward renderer would not render this
     Qt3DRender::QFilterKey *filterKey = new Qt3DRender::QFilterKey;
     filterKey->setName( QStringLiteral( "renderingStyle" ) );
     filterKey->setValue( "forward" );
