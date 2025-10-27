@@ -215,7 +215,7 @@ void QgsForwardRenderView::buildRenderPasses()
   mClearBuffers->setClearDepthValue( 1.0f );
 
   // Opaque fragments of billboards pass
-  if ( false )
+  if ( true )
   {
     Qt3DRender::QLayerFilter *billboardOpaqueFilter = new Qt3DRender::QLayerFilter( mRenderTargetSelector );
     billboardOpaqueFilter->addLayer( mTransparentObjectsLayer );
@@ -236,7 +236,7 @@ void QgsForwardRenderView::buildRenderPasses()
 
 
   // second branch: weighted blended order independent (WBOIT) rendering Pass
-  if ( true )
+  if ( false )
   {
     Qt3DRender::QRenderTarget *wboitRenderTarget = buildWboitTextures();
     Qt3DRender::QRenderTargetSelector *wboitRenderTargetSelector = new Qt3DRender::QRenderTargetSelector( mClipRenderStateSet );
