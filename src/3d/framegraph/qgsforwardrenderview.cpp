@@ -215,115 +215,71 @@ void QgsForwardRenderView::buildRenderPasses()
   mClearBuffers->setClearDepthValue( 1.0f );
 
   // Opaque fragments of billboards pass
-  if ( true )
+
+  Qt3DRender::QLayerFilter *billboardOpaqueFilter = new Qt3DRender::QLayerFilter( mRenderTargetSelector );
+  billboardOpaqueFilter->addLayer( mTransparentObjectsLayer );
+  billboardOpaqueFilter->setFilterMode( Qt3DRender::QLayerFilter::AcceptAnyMatchingLayers );
+  Qt3DRender::QTechniqueFilter *techniqueFilter = new Qt3DRender::QTechniqueFilter( billboardOpaqueFilter );
+  Qt3DRender::QFilterKey *filterKey = new Qt3DRender::QFilterKey( techniqueFilter );
+  filterKey->setName( QStringLiteral( "pass" ) );
+  filterKey->setValue( "billboard_opaque" );
+  techniqueFilter->addMatch( filterKey );
+  Qt3DRender::QRenderStateSet *billboardStateSet = new Qt3DRender::QRenderStateSet( techniqueFilter );
+  Qt3DRender::QDepthTest *billboardDepthTest = new Qt3DRender::QDepthTest;
+  billboardDepthTest->setDepthFunction( Qt3DRender::QDepthTest::Less );
+  billboardStateSet->addRenderState( billboardDepthTest );
+  Qt3DRender::QCullFace *billboardCullFace = new Qt3DRender::QCullFace;
+  billboardCullFace->setMode( Qt3DRender::QCullFace::CullingMode::Back );
+  billboardStateSet->addRenderState( billboardCullFace );
+
+
+  Qt3DRender::QRenderTarget *wboitRenderTarget = buildWboitTextures();
+  Qt3DRender::QRenderTargetSelector *wboitRenderTargetSelector = new Qt3DRender::QRenderTargetSelector( mClipRenderStateSet );
+  wboitRenderTargetSelector->setTarget( wboitRenderTarget );
+
+  Qt3DRender::QClearBuffers *wboitAccumulationClearBuffers = new Qt3DRender::QClearBuffers( wboitRenderTargetSelector );
+  wboitAccumulationClearBuffers->setBuffers( Qt3DRender::QClearBuffers::ColorBuffer );
+  wboitAccumulationClearBuffers->setColorBuffer( mAccumulationOutput );
+  wboitAccumulationClearBuffers->setClearColor( QColor::fromRgbF( 0.0, 0.0, 0.0, 0.0 ) );
+
+  Qt3DRender::QClearBuffers *wboitReveleageClearBuffers = new Qt3DRender::QClearBuffers( wboitAccumulationClearBuffers );
+  wboitReveleageClearBuffers->setBuffers( Qt3DRender::QClearBuffers::ColorBuffer );
+  wboitReveleageClearBuffers->setColorBuffer( mRevealageOutput );
+  wboitReveleageClearBuffers->setClearColor( QColor::fromRgbF( 1.0, 0.0, 0.0, 0.0 ) );
+
+
+  Qt3DRender::QLayerFilter *transparentWboitFilter = new Qt3DRender::QLayerFilter( wboitRenderTarget );
+  transparentWboitFilter->addLayer( mTransparentObjectsLayer );
+  transparentWboitFilter->setFilterMode( Qt3DRender::QLayerFilter::AcceptAnyMatchingLayers );
+
+  Qt3DRender::QTechniqueFilter *wboitTechniqueFilter = new Qt3DRender::QTechniqueFilter( transparentWboitFilter );
+  Qt3DRender::QFilterKey *wboitFilterKey = new Qt3DRender::QFilterKey( wboitTechniqueFilter );
+  wboitFilterKey->setName( QStringLiteral( "pass" ) );
+  wboitFilterKey->setValue( "billboard_wboit" ); // Filter for the transparent pass
+  wboitTechniqueFilter->addMatch( wboitFilterKey );
+
+  Qt3DRender::QSortPolicy *sortPolicy = new Qt3DRender::QSortPolicy( wboitTechniqueFilter ); // Parent to the technique filter
+  QVector<Qt3DRender::QSortPolicy::SortType> sortTypes;
+  sortTypes.push_back( Qt3DRender::QSortPolicy::BackToFront );
+  sortPolicy->setSortTypes( sortTypes );
+  Qt3DRender::QRenderStateSet *billboardWboitStateSet = new Qt3DRender::QRenderStateSet( sortPolicy );
+
   {
-    Qt3DRender::QLayerFilter *billboardOpaqueFilter = new Qt3DRender::QLayerFilter( mRenderTargetSelector );
-    billboardOpaqueFilter->addLayer( mTransparentObjectsLayer );
-    billboardOpaqueFilter->setFilterMode( Qt3DRender::QLayerFilter::AcceptAnyMatchingLayers );
-    Qt3DRender::QTechniqueFilter *techniqueFilter = new Qt3DRender::QTechniqueFilter( billboardOpaqueFilter );
-    Qt3DRender::QFilterKey *filterKey = new Qt3DRender::QFilterKey( techniqueFilter );
-    filterKey->setName( QStringLiteral( "pass" ) );
-    filterKey->setValue( "billboard_opaque" );
-    techniqueFilter->addMatch( filterKey );
-    Qt3DRender::QRenderStateSet *billboardStateSet = new Qt3DRender::QRenderStateSet( techniqueFilter );
-    Qt3DRender::QDepthTest *depthTest = new Qt3DRender::QDepthTest;
-    depthTest->setDepthFunction( Qt3DRender::QDepthTest::Less );
-    billboardStateSet->addRenderState( depthTest );
-    Qt3DRender::QCullFace *cullFace = new Qt3DRender::QCullFace;
-    cullFace->setMode( Qt3DRender::QCullFace::CullingMode::Back );
-    billboardStateSet->addRenderState( cullFace );
-  }
-
-
-  // second branch: weighted blended order independent (WBOIT) rendering Pass
-  if ( false )
-  {
-    Qt3DRender::QRenderTarget *wboitRenderTarget = buildWboitTextures();
-    Qt3DRender::QRenderTargetSelector *wboitRenderTargetSelector = new Qt3DRender::QRenderTargetSelector( mClipRenderStateSet );
-    wboitRenderTargetSelector->setTarget( wboitRenderTarget );
-
-    Qt3DRender::QClearBuffers *wboitAccumulationClearBuffers = new Qt3DRender::QClearBuffers( wboitRenderTargetSelector );
-    wboitAccumulationClearBuffers->setBuffers( Qt3DRender::QClearBuffers::ColorBuffer );
-    wboitAccumulationClearBuffers->setColorBuffer( mAccumulationOutput );
-    wboitAccumulationClearBuffers->setClearColor( QColor::fromRgbF( 0.0, 0.0, 0.0, 0.0 ) );
-
-    Qt3DRender::QClearBuffers *wboitReveleageClearBuffers = new Qt3DRender::QClearBuffers( wboitAccumulationClearBuffers );
-    wboitReveleageClearBuffers->setBuffers( Qt3DRender::QClearBuffers::ColorBuffer );
-    wboitReveleageClearBuffers->setColorBuffer( mRevealageOutput );
-    wboitReveleageClearBuffers->setClearColor( QColor::fromRgbF( 1.0, 0.0, 0.0, 0.0 ) );
-
-    Qt3DRender::QLayerFilter *transparentObjectsLayerFilter = new Qt3DRender::QLayerFilter( wboitReveleageClearBuffers );
-    transparentObjectsLayerFilter->addLayer( mTransparentObjectsLayer );
-    transparentObjectsLayerFilter->setFilterMode( Qt3DRender::QLayerFilter::AcceptAnyMatchingLayers );
-
-    Qt3DRender::QTechniqueFilter *billboardTechniqueFilter = new Qt3DRender::QTechniqueFilter( transparentObjectsLayerFilter );
-    Qt3DRender::QFilterKey *billboardFilterKey = new Qt3DRender::QFilterKey( billboardTechniqueFilter );
-    billboardFilterKey->setName( QStringLiteral( "pass" ) );
-    billboardFilterKey->setValue( "billboard_wboit" );
-    billboardTechniqueFilter->addMatch( billboardFilterKey );
-
-    Qt3DRender::QRenderStateSet *wboitRenderStateSet = new Qt3DRender::QRenderStateSet( billboardTechniqueFilter );
-
-    Qt3DRender::QBlendEquation *blendEquation = new Qt3DRender::QBlendEquation;
-    blendEquation->setBlendFunction( Qt3DRender::QBlendEquation::Add );
-    wboitRenderStateSet->addRenderState( blendEquation );
-
-    Qt3DRender::QBlendEquationArguments *accumulationBlendArgs = new Qt3DRender::QBlendEquationArguments;
-    accumulationBlendArgs->setSourceRgb( Qt3DRender::QBlendEquationArguments::One );
-    accumulationBlendArgs->setDestinationRgb( Qt3DRender::QBlendEquationArguments::One );
-    accumulationBlendArgs->setSourceAlpha( Qt3DRender::QBlendEquationArguments::One );
-    accumulationBlendArgs->setDestinationAlpha( Qt3DRender::QBlendEquationArguments::One );
-    accumulationBlendArgs->setBufferIndex( 0 );
-
-    Qt3DRender::QBlendEquationArguments *revealageBlendArgs = new Qt3DRender::QBlendEquationArguments;
-    revealageBlendArgs->setSourceRgb( Qt3DRender::QBlendEquationArguments::Zero );
-    revealageBlendArgs->setDestinationRgb( Qt3DRender::QBlendEquationArguments::OneMinusSourceColor );
-    revealageBlendArgs->setBufferIndex( 1 );
-
-    wboitRenderStateSet->addRenderState( accumulationBlendArgs );
-    wboitRenderStateSet->addRenderState( revealageBlendArgs );
-
-    Qt3DRender::QDepthTest *wboitDepthTest = new Qt3DRender::QDepthTest;
-    wboitDepthTest->setDepthFunction( Qt3DRender::QDepthTest::Less );
-    wboitRenderStateSet->addRenderState( wboitDepthTest );
-
     Qt3DRender::QNoDepthMask *noDepthMask = new Qt3DRender::QNoDepthMask;
-    wboitRenderStateSet->addRenderState( noDepthMask );
-
-    Qt3DRender::QCullFace *noCullFace = new Qt3DRender::QCullFace;
-    noCullFace->setMode( Qt3DRender::QCullFace::CullingMode::NoCulling );
-    wboitRenderStateSet->addRenderState( noCullFace );
-  }
-
-  // third branch: transparent layer filter - depth
-  if ( false )
-  {
-    Qt3DRender::QLayerFilter *transparentObjectsLayerFilter = new Qt3DRender::QLayerFilter( mClipRenderStateSet );
-    transparentObjectsLayerFilter->addLayer( mTransparentObjectsLayer );
-    transparentObjectsLayerFilter->setFilterMode( Qt3DRender::QLayerFilter::AcceptAnyMatchingLayers );
-
-    Qt3DRender::QSortPolicy *sortPolicy = new Qt3DRender::QSortPolicy( transparentObjectsLayerFilter );
-
-    QVector<Qt3DRender::QSortPolicy::SortType> sortTypes;
-    sortTypes.push_back( Qt3DRender::QSortPolicy::BackToFront );
-    sortPolicy->setSortTypes( sortTypes );
-
-    Qt3DRender::QRenderStateSet *transparentObjectsRenderStateSetDepth = new Qt3DRender::QRenderStateSet( sortPolicy );
-
-    Qt3DRender::QDepthTest *depthTest = new Qt3DRender::QDepthTest;
-    depthTest->setDepthFunction( Qt3DRender::QDepthTest::Less );
-    transparentObjectsRenderStateSetDepth->addRenderState( depthTest );
-
-    Qt3DRender::QColorMask *noColorMask = new Qt3DRender::QColorMask;
-    noColorMask->setAlphaMasked( false );
-    noColorMask->setRedMasked( false );
-    noColorMask->setGreenMasked( false );
-    noColorMask->setBlueMasked( false );
-    transparentObjectsRenderStateSetDepth->addRenderState( noColorMask );
+    billboardWboitStateSet->addRenderState( noDepthMask );
 
     Qt3DRender::QCullFace *cullFace = new Qt3DRender::QCullFace;
     cullFace->setMode( Qt3DRender::QCullFace::CullingMode::NoCulling );
-    transparentObjectsRenderStateSetDepth->addRenderState( cullFace );
+    billboardWboitStateSet->addRenderState( cullFace );
+
+    Qt3DRender::QBlendEquation *blendEquation = new Qt3DRender::QBlendEquation;
+    blendEquation->setBlendFunction( Qt3DRender::QBlendEquation::Add );
+    billboardWboitStateSet->addRenderState( blendEquation );
+
+    Qt3DRender::QBlendEquationArguments *blendEquationArgs = new Qt3DRender::QBlendEquationArguments;
+    blendEquationArgs->setSourceRgb( Qt3DRender::QBlendEquationArguments::Blending::SourceAlpha );
+    blendEquationArgs->setDestinationRgb( Qt3DRender::QBlendEquationArguments::Blending::OneMinusSourceAlpha );
+    billboardWboitStateSet->addRenderState( blendEquationArgs );
   }
 
   mDebugOverlay = new Qt3DRender::QDebugOverlay( mClearBuffers );
