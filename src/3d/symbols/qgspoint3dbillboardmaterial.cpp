@@ -89,8 +89,8 @@ QgsPoint3DBillboardMaterial::QgsPoint3DBillboardMaterial( Mode mode )
     Qt3DRender::QRenderPass *renderPass = new Qt3DRender::QRenderPass( this );
     renderPass->setShaderProgram( shaderProgram );
 
-    Qt3DRender::QNoDepthMask *noDepthMask = new Qt3DRender::QNoDepthMask( renderPass );
-    renderPass->addRenderState( noDepthMask );
+    //    Qt3DRender::QNoDepthMask *noDepthMask = new Qt3DRender::QNoDepthMask( renderPass );
+    // renderPass->addRenderState( noDepthMask );
 
     // without this filter the default forward renderer would not render this
     Qt3DRender::QFilterKey *filterKey = new Qt3DRender::QFilterKey;
