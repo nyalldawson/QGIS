@@ -141,6 +141,7 @@ QImage QgsFontTextureAtlas::renderAtlasTexture() const
 
   QPainter painter( &res );
   QgsRenderContext context = QgsRenderContext::fromQPainter( &painter );
+  context.setFlag( Qgis::RenderContextFlag::Antialiasing );
   for ( const QgsCharTextureRect &rect : mRects )
   {
     QgsTextRenderer::drawText( QPointF( -rect.characterOffsetFromOrigin.x() + rect.paddedRect.x + mTexturePaddingPixels, -rect.characterOffsetFromOrigin.y() + rect.paddedRect.y + mTexturePaddingPixels ), 0, Qgis::TextHorizontalAlignment::Left, { rect.grapheme }, context, mFormat );
