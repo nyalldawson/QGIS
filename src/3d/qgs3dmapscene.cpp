@@ -887,7 +887,7 @@ void Qgs3DMapScene::finalizeNewEntity( Qt3DCore::QEntity *newEntity )
         }
       }
     }
-#if 0
+#if 1
     /*
      * Adds transparency layer to QgsPoint3DBillboardMaterial entities,
      * so that they get rendered in the transparent pipeline instead
