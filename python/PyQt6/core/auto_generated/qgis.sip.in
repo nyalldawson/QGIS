@@ -2456,6 +2456,18 @@ The development version
       Always,
     };
 
+    enum class TileEdge /BaseType=IntFlag/
+    {
+      Left,
+      Right,
+      Top,
+      Bottom,
+      All
+    };
+
+    typedef QFlags<Qgis::TileEdge> TileEdges;
+
+
     enum class ProfileSurfaceSymbology /BaseType=IntEnum/
     {
       Line,
@@ -4055,6 +4067,8 @@ QFlags<Qgis::MapGridFrameSideFlag> operator|(Qgis::MapGridFrameSideFlag f1, QFla
 QFlags<Qgis::SymbolConverterCapability> operator|(Qgis::SymbolConverterCapability f1, QFlags<Qgis::SymbolConverterCapability> f2);
 
 QFlags<Qgis::ArcGisRestServiceCapability> operator|(Qgis::ArcGisRestServiceCapability f1, QFlags<Qgis::ArcGisRestServiceCapability> f2);
+
+QFlags<Qgis::TileEdge> operator|(Qgis::TileEdge f1, QFlags<Qgis::TileEdge> f2);
 
 
 
