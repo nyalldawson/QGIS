@@ -1257,6 +1257,10 @@ bool Qgs3DMapScene::exportScene( const Qgs3DMapExportSettings &exportSettings )
   if ( mTerrain )
     exporter.parseTerrain( mTerrain, "Terrain" );
 
+  // Export diorama bottom entity if present
+  if ( mDiorama )
+    exporter.parseDiorama( mDiorama, u"Diorama_bottom"_s );
+
   const bool sceneSaved = exporter.save( exportSettings.sceneName(), exportSettings.sceneFolderPath() );
   if ( !sceneSaved )
   {

@@ -80,6 +80,13 @@ class _3D_EXPORT Qgs3DSceneExporter : public Qt3DCore::QEntity
     void parseTerrain( QgsTerrainEntity *terrain, const QString &layer );
 
     /**
+     * Creates export objects for the diorama entity (bottom and any
+     * geometry renderer children).
+     * \since QGIS 4.2
+    */
+    void parseDiorama( Qt3DCore::QEntity *dioramaEntity, const QString &layerName );
+
+    /**
      * Saves the scene to a .obj file
      * Returns FALSE if the operation failed
      */

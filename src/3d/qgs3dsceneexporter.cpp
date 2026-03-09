@@ -250,6 +250,23 @@ void Qgs3DSceneExporter::processEntityMaterial( Qt3DCore::QEntity *entity, Qgs3D
   }
 }
 
+void Qgs3DSceneExporter::parseDiorama( Qt3DCore::QEntity *dioramaEntity, const QString &layerName )
+{
+  if ( !dioramaEntity )
+    return;
+
+  const QList<Qt3DRender::QGeometryRenderer *> renderers = dioramaEntity->findChildren<Qt3DRender::QGeometryRenderer *>();
+  for ( Qt3DRender::QGeometryRenderer *renderer : renderers )
+  {
+    Qgs3DExportObject *object = processGeometryRenderer( renderer, layerName );
+    if ( object )
+    {
+      object->setSmoothEdges( mSmoothEdges );
+      mObjects.push_back( object );
+    }
+  }
+}
+
 void Qgs3DSceneExporter::parseTerrain( QgsTerrainEntity *terrain, const QString &layerName )
 {
   Qgs3DMapSettings *settings = terrain->mapSettings();
@@ -468,6 +485,27 @@ void Qgs3DSceneExporter::parseDemTile( QgsTerrainTileEntity *tileEntity, const Q
     QgsTerrainTextureImage *textureImage = tileEntity->textureImage();
     const QImage img = textureImage->getImage();
     object->setTextureImage( img );
+  }
+
+  // Export any diorama wall child entities (created by QgsDemTerrainTileLoader
+  // when diorama mode is enabled).
+  const QList<Qt3DCore::QEntity *> childEntities = tileEntity->findChildren<Qt3DCore::QEntity *>( QString(), Qt::FindDirectChildrenOnly );
+  for ( Qt3DCore::QEntity *child : childEntities )
+  {
+    Qt3DRender::QGeometryRenderer *childRenderer = findTypedComponent<Qt3DRender::QGeometryRenderer>( child );
+    if ( !childRenderer )
+      continue;
+
+    // Skip the main tile geometry (already exported above)
+    if ( childRenderer == mesh )
+      continue;
+
+    Qgs3DExportObject *wallObject = processGeometryRenderer( childRenderer, layerName + u"Diorama_wall"_s );
+    if ( wallObject )
+    {
+      wallObject->setSmoothEdges( mSmoothEdges );
+      mObjects.push_back( wallObject );
+    }
   }
 }
 

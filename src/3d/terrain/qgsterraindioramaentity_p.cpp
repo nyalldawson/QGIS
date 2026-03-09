@@ -49,6 +49,7 @@ void QgsTerrainDioramaEntity::buildGeometry( const Qgs3DMapSettings &mapSettings
   const double yMin = extent.yMinimum();
   const float w = static_cast<float>( extent.width() );
   const float h = static_cast<float>( extent.height() );
+  const QgsVector3D origin = mapSettings.origin();
 
   struct Vertex
   {
@@ -158,6 +159,7 @@ void QgsTerrainDioramaEntity::buildGeometry( const Qgs3DMapSettings &mapSettings
 
   QgsGeoTransform *transform = new QgsGeoTransform;
   transform->setGeoTranslation( QgsVector3D( xMin, yMin, 0 ) );
+  transform->setOrigin( origin );
   addComponent( transform );
 }
 
