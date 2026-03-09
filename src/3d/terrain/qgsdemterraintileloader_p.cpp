@@ -25,6 +25,7 @@
 #include "qgseventtracing.h"
 #include "qgsgeotransform.h"
 #include "qgsonlineterraingenerator.h"
+#include "qgsphongmaterialsettings.h"
 #include "qgsterrainentity.h"
 #include "qgsterraingenerator.h"
 #include "qgsterraintexturegenerator_p.h"
@@ -33,7 +34,9 @@
 #include <QMutexLocker>
 #include <QString>
 #include <Qt3DCore/QTransform>
+#include <Qt3DRender/QCullFace>
 #include <Qt3DRender/QGeometryRenderer>
+#include <Qt3DRender/QTechnique>
 
 #include "moc_qgsdemterraintileloader_p.cpp"
 
@@ -139,16 +142,247 @@ Qt3DCore::QEntity *QgsDemTerrainTileLoader::createEntity( Qt3DCore::QEntity *par
   transform->setGeoTranslation( QgsVector3D( extent.xMinimum(), extent.yMinimum(), 0 ) );
   entity->addComponent( transform );
 
+  double dioramaBaseHeight = std::numeric_limits< double >::max();
+  // Create diorama wall geometry for outer edges of the map extent.
+  // The outer edges are exactly those where skirts were suppressed.
+  if ( map->isDioramaEnabled() && skirtEdges != Qgis::TileEdge::All )
+  {
+    createDioramaWalls( entity, skirtEdges, side, map->terrainSettings()->verticalScale(), static_cast<float>( map->dioramaHeight() ) );
+    dioramaBaseHeight = map->dioramaHeight();
+  }
+
   // clang-format off
   mNode->setExactBox3D(
-    QgsBox3D( extent.xMinimum(), extent.yMinimum(), zMin * map->terrainSettings()->verticalScale(),
-             extent.xMinimum() + side, extent.yMinimum() + side, zMax * map->terrainSettings()->verticalScale() )
+          QgsBox3D( extent.xMinimum(), extent.yMinimum(), std::min( dioramaBaseHeight, zMin * map->terrainSettings()->verticalScale() ),
+                    extent.xMinimum() + side, extent.yMinimum() + side, zMax * map->terrainSettings()->verticalScale() )
   );
   // clang-format on
+
   mNode->updateParentBoundingBoxesRecursively();
 
   entity->setParent( parent );
   return entity;
+}
+
+void QgsDemTerrainTileLoader::createDioramaWalls( QgsTerrainTileEntity *tileEntity, Qgis::TileEdges skirtEdges, double side, float vertScale, float baseZ )
+{
+  // The heightmap is mResolution x mResolution floats.
+  // Height at (i,j) = zData[j * mResolution + i], where:
+  //   i goes 0..mResolution-1 (left to right, x = i * dx, dx = side/(mResolution-1))
+  //   j goes 0..mResolution-1 (top to bottom in local coords, y = side - j * dy, dy = side/(mResolution-1))
+  // In map CRS terms (with tile transform at xMin, yMin):
+  //   j=0 -> local y=side -> map yMax (NORTH)
+  //   j=mResolution-1 -> local y=0 -> map yMin (SOUTH)
+  //   i=0 -> local x=0 -> map xMin (WEST)
+  //   i=mResolution-1 -> local x=side -> map xMax (EAST)
+  //
+  // Outer edges (where we need diorama walls) are exactly the edges where
+  // skirts were NOT applied. The skirtEdges bitmask tells us which edges
+  // HAVE skirts, so outer edges are the complement.
+
+  const float *zData = reinterpret_cast<const float *>( mHeightMap.constData() );
+  const int res = mResolution;
+  const float dx = static_cast<float>( side ) / static_cast<float>( res - 1 );
+  const float dy = static_cast<float>( side ) / static_cast<float>( res - 1 );
+  const float fSide = static_cast<float>( side );
+
+  struct Vertex
+  {
+      float pos[3];
+      float normal[3];
+  };
+
+  auto buildEdgeWall = [&]( const QVector<QVector3D> &edgePositions, const QVector3D &outwardNormal ) {
+    if ( edgePositions.size() < 2 )
+      return;
+
+    QVector<Vertex> vertices;
+    vertices.reserve( ( edgePositions.size() - 1 ) * 6 );
+
+    for ( int k = 0; k < edgePositions.size() - 1; ++k )
+    {
+      const QVector3D &p0 = edgePositions[k];
+      const QVector3D &p1 = edgePositions[k + 1];
+      const QVector3D p2( p1.x(), p1.y(), baseZ );
+      const QVector3D p3( p0.x(), p0.y(), baseZ );
+
+      Vertex v;
+      v.normal[0] = outwardNormal.x();
+      v.normal[1] = outwardNormal.y();
+      v.normal[2] = outwardNormal.z();
+
+      // Triangle 1: p0, p1, p2
+      v.pos[0] = p0.x();
+      v.pos[1] = p0.y();
+      v.pos[2] = p0.z();
+      vertices.append( v );
+      v.pos[0] = p1.x();
+      v.pos[1] = p1.y();
+      v.pos[2] = p1.z();
+      vertices.append( v );
+      v.pos[0] = p2.x();
+      v.pos[1] = p2.y();
+      v.pos[2] = p2.z();
+      vertices.append( v );
+
+      // Triangle 2: p0, p2, p3
+      v.pos[0] = p0.x();
+      v.pos[1] = p0.y();
+      v.pos[2] = p0.z();
+      vertices.append( v );
+      v.pos[0] = p2.x();
+      v.pos[1] = p2.y();
+      v.pos[2] = p2.z();
+      vertices.append( v );
+      v.pos[0] = p3.x();
+      v.pos[1] = p3.y();
+      v.pos[2] = p3.z();
+      vertices.append( v );
+    }
+
+    if ( vertices.isEmpty() )
+      return;
+
+    // Create a child entity parented to the tile entity. It will inherit
+    // the tile's QgsGeoTransform, so coordinates are in tile-local space.
+    Qt3DCore::QEntity *wallEntity = new Qt3DCore::QEntity( tileEntity );
+
+    const int stride = 6 * sizeof( float );
+    QByteArray bufferData;
+    bufferData.resize( vertices.size() * stride );
+    memcpy( bufferData.data(), vertices.constData(), bufferData.size() );
+
+    Qt3DCore::QBuffer *buffer = new Qt3DCore::QBuffer();
+    buffer->setData( bufferData );
+
+    Qt3DCore::QAttribute *posAttr = new Qt3DCore::QAttribute();
+    posAttr->setName( Qt3DCore::QAttribute::defaultPositionAttributeName() );
+    posAttr->setVertexBaseType( Qt3DCore::QAttribute::Float );
+    posAttr->setVertexSize( 3 );
+    posAttr->setAttributeType( Qt3DCore::QAttribute::VertexAttribute );
+    posAttr->setBuffer( buffer );
+    posAttr->setByteStride( stride );
+    posAttr->setByteOffset( 0 );
+    posAttr->setCount( vertices.size() );
+
+    Qt3DCore::QAttribute *normalAttr = new Qt3DCore::QAttribute();
+    normalAttr->setName( Qt3DCore::QAttribute::defaultNormalAttributeName() );
+    normalAttr->setVertexBaseType( Qt3DCore::QAttribute::Float );
+    normalAttr->setVertexSize( 3 );
+    normalAttr->setAttributeType( Qt3DCore::QAttribute::VertexAttribute );
+    normalAttr->setBuffer( buffer );
+    normalAttr->setByteStride( stride );
+    normalAttr->setByteOffset( 3 * sizeof( float ) );
+    normalAttr->setCount( vertices.size() );
+
+    Qt3DCore::QGeometry *geometry = new Qt3DCore::QGeometry();
+    geometry->addAttribute( posAttr );
+    geometry->addAttribute( normalAttr );
+
+    Qt3DRender::QGeometryRenderer *renderer = new Qt3DRender::QGeometryRenderer();
+    renderer->setGeometry( geometry );
+    renderer->setPrimitiveType( Qt3DRender::QGeometryRenderer::Triangles );
+    renderer->setVertexCount( vertices.size() );
+    wallEntity->addComponent( renderer );
+
+    // Default material
+    QgsPhongMaterialSettings materialSettings;
+    materialSettings.setDiffuse( QColor( 160, 160, 160 ) );
+    materialSettings.setAmbient( QColor( 80, 80, 80 ) );
+    materialSettings.setSpecular( QColor( 30, 30, 30 ) );
+    materialSettings.setShininess( 1.0 );
+
+    QgsMaterialContext materialContext;
+    materialContext.setIsSelected( false );
+    QgsMaterial *material = materialSettings.toMaterial( QgsMaterialSettingsRenderingTechnique::Triangles, materialContext );
+
+    // Disable backface culling
+    const QVector<Qt3DRender::QTechnique *> techniques = material->effect()->techniques();
+    for ( Qt3DRender::QTechnique *technique : techniques )
+    {
+      const QVector<Qt3DRender::QRenderPass *> passes = technique->renderPasses();
+      for ( Qt3DRender::QRenderPass *pass : passes )
+      {
+        Qt3DRender::QCullFace *cullFace = new Qt3DRender::QCullFace;
+        cullFace->setMode( Qt3DRender::QCullFace::NoCulling );
+        pass->addRenderState( cullFace );
+      }
+    }
+
+    wallEntity->addComponent( material );
+  };
+
+  // South edge (map yMin): j=res-1, local y=0.
+  // Outer if skirt was suppressed on Bottom (SkirtEdgeBottom corresponds to j=res, the south skirt row).
+  if ( !skirtEdges.testFlag( Qgis::TileEdge::Bottom ) )
+  {
+    QVector<QVector3D> edge;
+    edge.reserve( res );
+    const int j = res - 1;
+    for ( int i = 0; i < res; ++i )
+    {
+      float z = zData[j * res + i];
+      if ( std::isnan( z ) )
+        z = 0;
+      edge.append( QVector3D( static_cast<float>( i ) * dx, 0.0f, z * vertScale ) );
+    }
+    buildEdgeWall( edge, QVector3D( 0, -1, 0 ) );
+  }
+
+  // North edge (map yMax): j=0, local y=side.
+  // Outer if skirt was suppressed on Top (SkirtEdgeTop corresponds to j=-1, the north skirt row).
+  if ( !skirtEdges.testFlag( Qgis::TileEdge::Top ) )
+  {
+    QVector<QVector3D> edge;
+    edge.reserve( res );
+    const int j = 0;
+    // Collect right-to-left so the strip faces outward (+Y).
+    for ( int i = res - 1; i >= 0; --i )
+    {
+      float z = zData[j * res + i];
+      if ( std::isnan( z ) )
+        z = 0;
+      edge.append( QVector3D( static_cast<float>( i ) * dx, fSide, z * vertScale ) );
+    }
+    buildEdgeWall( edge, QVector3D( 0, 1, 0 ) );
+  }
+
+  // West edge (map xMin): i=0, local x=0.
+  // Outer if skirt was suppressed on Left.
+  if ( !skirtEdges.testFlag( Qgis::TileEdge::Left ) )
+  {
+    QVector<QVector3D> edge;
+    edge.reserve( res );
+    const int i = 0;
+    // j goes 0..res-1, local y goes from side to 0.
+    // Collect south-to-north (j descending = y ascending) so strip faces outward (-X).
+    for ( int j = res - 1; j >= 0; --j )
+    {
+      float z = zData[j * res + i];
+      if ( std::isnan( z ) )
+        z = 0;
+      edge.append( QVector3D( 0.0f, fSide - static_cast<float>( j ) * dy, z * vertScale ) );
+    }
+    buildEdgeWall( edge, QVector3D( -1, 0, 0 ) );
+  }
+
+  // East edge (map xMax): i=res-1, local x=side.
+  // Outer if skirt was suppressed on Right.
+  if ( !skirtEdges.testFlag( Qgis::TileEdge::Right ) )
+  {
+    QVector<QVector3D> edge;
+    edge.reserve( res );
+    const int i = res - 1;
+    // Collect north-to-south (j ascending = y descending) so strip faces outward (+X).
+    for ( int j = 0; j < res; ++j )
+    {
+      float z = zData[j * res + i];
+      if ( std::isnan( z ) )
+        z = 0;
+      edge.append( QVector3D( fSide, fSide - static_cast<float>( j ) * dy, z * vertScale ) );
+    }
+    buildEdgeWall( edge, QVector3D( 1, 0, 0 ) );
+  }
 }
 
 void QgsDemTerrainTileLoader::onHeightMapReady( int jobId, const QByteArray &heightMap )

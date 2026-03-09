@@ -872,6 +872,56 @@ Sets whether 2D map overlay is enabled
 .. versionadded:: 4.0
 %End
 
+    bool isDioramaEnabled() const;
+%Docstring
+Returns ``True`` if the diorama mode is enabled.
+
+When diorama mode is enabled, the edges of the terrain are extended
+downward to a configurable height and the bottom is filled in, giving
+the appearance of a solid 3D-printed model.
+
+.. seealso:: :py:func:`setDioramaEnabled`
+
+.. seealso:: :py:func:`dioramaHeight`
+
+.. versionadded:: 4.2
+%End
+
+    void setDioramaEnabled( bool enabled );
+%Docstring
+Sets whether the diorama mode is ``enabled``.
+
+.. seealso:: :py:func:`isDioramaEnabled`
+
+.. seealso:: :py:func:`setDioramaHeight`
+
+.. versionadded:: 4.2
+%End
+
+    double dioramaHeight() const;
+%Docstring
+Returns the diorama base height (in map units).
+
+This is the absolute Z value to which the diorama edges and bottom
+extend down to.
+
+.. seealso:: :py:func:`setDioramaHeight`
+
+.. seealso:: :py:func:`isDioramaEnabled`
+
+.. versionadded:: 4.2
+%End
+
+    void setDioramaHeight( double height );
+%Docstring
+Sets the diorama base ``height`` (in map units).
+
+.. seealso:: :py:func:`dioramaHeight`
+
+.. seealso:: :py:func:`isDioramaEnabled`
+
+.. versionadded:: 4.2
+%End
 
   signals:
 
@@ -1204,6 +1254,13 @@ Emitted when the 2D map overlay is enabled or disabled
 .. seealso:: :py:func:`setIs2DMapOverlayEnabled`
 
 .. versionadded:: 4.0
+%End
+
+    void dioramaSettingsChanged();
+%Docstring
+Emitted when the diorama settings have changed.
+
+.. versionadded:: 4.2
 %End
 
   private:

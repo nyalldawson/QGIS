@@ -59,7 +59,7 @@ class QgsChunkNode;
 class QgsDoubleRange;
 class Qgs3DMapSceneEntity;
 class QgsCameraController;
-
+class QgsTerrainDioramaEntity;
 
 /**
  * \ingroup qgis_3d
@@ -405,6 +405,7 @@ class _3D_EXPORT Qgs3DMapScene : public QObject
     QgsCameraController *mCameraController = nullptr;
     QgsTerrainEntity *mTerrain = nullptr;
     QgsGlobeEntity *mGlobe = nullptr;
+    QgsTerrainDioramaEntity *mDiorama = nullptr;
     QList<Qgs3DMapSceneEntity *> mSceneEntities;
     //! Entity that shows view center - useful for debugging camera issues
     Qt3DCore::QEntity *mEntityCameraViewCenter = nullptr;

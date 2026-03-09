@@ -59,6 +59,7 @@
 #include "qgsskyboxentity.h"
 #include "qgsskyboxsettings.h"
 #include "qgssourcecache.h"
+#include "qgsterraindioramaentity_p.h"
 #include "qgsterrainentity.h"
 #include "qgsterraingenerator.h"
 #include "qgstiledscenelayer.h"
@@ -143,6 +144,7 @@ Qgs3DMapScene::Qgs3DMapScene( Qgs3DMapSettings &map, QgsAbstract3DEngine *engine
   connect( &map, &Qgs3DMapSettings::terrainSettingsChanged, this, &Qgs3DMapScene::createTerrain );
 
   connect( &map, &Qgs3DMapSettings::terrainShadingChanged, this, &Qgs3DMapScene::createTerrain );
+  connect( &map, &Qgs3DMapSettings::dioramaSettingsChanged, this, &Qgs3DMapScene::createTerrain );
   connect( &map, &Qgs3DMapSettings::lightSourcesChanged, this, &Qgs3DMapScene::updateLights );
   connect( &map, &Qgs3DMapSettings::showLightSourceOriginsChanged, this, &Qgs3DMapScene::updateLights );
   connect( &map, &Qgs3DMapSettings::fieldOfViewChanged, this, &Qgs3DMapScene::updateCameraLens );
@@ -604,6 +606,9 @@ void Qgs3DMapScene::createTerrain()
     mGlobe = nullptr;
   }
 
+  delete mDiorama;
+  mDiorama = nullptr;
+
   if ( !mTerrainUpdateScheduled )
   {
     // defer re-creation of terrain: there may be multiple invocations of this slot, so create the new entity just once
@@ -674,6 +679,18 @@ void Qgs3DMapScene::createTerrainDeferred()
 
     // add new entity - if any 3D renderer
     addLayerEntity( layer );
+  }
+
+  if ( mMap.isDioramaEnabled() && mMap.sceneMode() == Qgis::SceneMode::Local && mMap.terrainRenderingEnabled() )
+  {
+    // diorama bottom entity
+    // diorama wall geometry is created per-tile in the terrain tile loader
+    mDiorama = new QgsTerrainDioramaEntity( mMap, this );
+
+    QgsFrameGraph *frameGraph = mEngine->frameGraph();
+    mDiorama->addComponent( frameGraph->forwardRenderView().renderLayer() );
+
+    handleClippingOnEntity( mDiorama );
   }
 
   emit terrainEntityChanged();

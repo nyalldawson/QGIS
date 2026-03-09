@@ -803,6 +803,48 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
      */
     void setIs2DMapOverlayEnabled( bool enabled );
 
+    /**
+     * Returns TRUE if the diorama mode is enabled.
+     *
+     * When diorama mode is enabled, the edges of the terrain are extended
+     * downward to a configurable height and the bottom is filled in, giving
+     * the appearance of a solid 3D-printed model.
+     *
+     * \see setDioramaEnabled()
+     * \see dioramaHeight()
+     * \since QGIS 4.2
+     */
+    bool isDioramaEnabled() const;
+
+    /**
+     * Sets whether the diorama mode is \a enabled.
+     *
+     * \see isDioramaEnabled()
+     * \see setDioramaHeight()
+     * \since QGIS 4.2
+     */
+    void setDioramaEnabled( bool enabled );
+
+    /**
+     * Returns the diorama base height (in map units).
+     *
+     * This is the absolute Z value to which the diorama edges and bottom
+     * extend down to.
+     *
+     * \see setDioramaHeight()
+     * \see isDioramaEnabled()
+     * \since QGIS 4.2
+     */
+    double dioramaHeight() const;
+
+    /**
+     * Sets the diorama base \a height (in map units).
+     *
+     * \see dioramaHeight()
+     * \see isDioramaEnabled()
+     * \since QGIS 4.2
+    */
+    void setDioramaHeight( double height );
 
   signals:
 
@@ -1069,6 +1111,12 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
      */
     void show2DMapOverlayChanged();
 
+    /**
+     * Emitted when the diorama settings have changed.
+     * \since QGIS 4.2
+     */
+    void dioramaSettingsChanged();
+
   private:
 #ifdef SIP_RUN
     Qgs3DMapSettings &operator=( const Qgs3DMapSettings & );
@@ -1143,6 +1191,9 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
     bool mShowExtentIn2DView = false;
 
     bool mShow2DMapOverlay = false;
+
+    bool mDioramaEnabled = false;
+    double mDioramaHeight = 0.0;
 };
 
 

@@ -98,6 +98,8 @@ Qgs3DMapSettings::Qgs3DMapSettings( const Qgs3DMapSettings &other )
   , mExtent( other.mExtent )
   , mShowExtentIn2DView( other.mShowExtentIn2DView )
   , mShow2DMapOverlay( other.mShow2DMapOverlay )
+  , mDioramaEnabled( other.mDioramaEnabled )
+  , mDioramaHeight( other.mDioramaHeight )
 {
   setTerrainSettings( other.mTerrainSettings ? other.mTerrainSettings->clone() : new QgsFlatTerrainSettings() );
 
@@ -308,6 +310,18 @@ void Qgs3DMapSettings::readXml( const QDomElement &elem, const QgsReadWriteConte
   {
     mShow2DMapOverlay = false;
   }
+
+  QDomElement elemDiorama = elem.firstChildElement( u"diorama"_s );
+  if ( !elemDiorama.isNull() )
+  {
+    mDioramaEnabled = elemDiorama.attribute( u"enabled"_s, u"0"_s ).toInt();
+    mDioramaHeight = elemDiorama.attribute( u"height"_s, u"0"_s ).toDouble();
+  }
+  else
+  {
+    mDioramaEnabled = false;
+    mDioramaHeight = 0.0;
+  }
 }
 
 QDomElement Qgs3DMapSettings::writeXml( QDomDocument &doc, const QgsReadWriteContext &context ) const
@@ -449,6 +463,14 @@ QDomElement Qgs3DMapSettings::writeXml( QDomDocument &doc, const QgsReadWriteCon
     QDomElement elemMapOverlay = doc.createElement( u"map-overlay"_s );
     elemMapOverlay.setAttribute( u"enabled"_s, 1 );
     elem.appendChild( elemMapOverlay );
+  }
+
+  if ( mDioramaEnabled )
+  {
+    QDomElement elemDiorama = doc.createElement( u"diorama"_s );
+    elemDiorama.setAttribute( u"enabled"_s, 1 );
+    elemDiorama.setAttribute( u"height"_s, mDioramaHeight );
+    elem.appendChild( elemDiorama );
   }
 
   return elem;
@@ -1516,6 +1538,7 @@ void Qgs3DMapSettings::connectChangedSignalsToSettingsChanged()
   connect( this, &Qgs3DMapSettings::showExtentIn2DViewChanged, this, &Qgs3DMapSettings::settingsChanged );
   connect( this, &Qgs3DMapSettings::stopUpdatesChanged, this, &Qgs3DMapSettings::settingsChanged );
   connect( this, &Qgs3DMapSettings::showDebugPanelChanged, this, &Qgs3DMapSettings::settingsChanged );
+  connect( this, &Qgs3DMapSettings::dioramaSettingsChanged, this, &Qgs3DMapSettings::settingsChanged );
 }
 
 
@@ -1574,4 +1597,40 @@ void Qgs3DMapSettings::setIs2DMapOverlayEnabled( bool enabled )
 
   mShow2DMapOverlay = enabled;
   emit show2DMapOverlayChanged();
+}
+
+bool Qgs3DMapSettings::isDioramaEnabled() const
+{
+  QGIS_PROTECT_QOBJECT_THREAD_ACCESS
+
+  return mDioramaEnabled;
+}
+
+void Qgs3DMapSettings::setDioramaEnabled( bool enabled )
+{
+  QGIS_PROTECT_QOBJECT_THREAD_ACCESS
+
+  if ( mDioramaEnabled == enabled )
+    return;
+
+  mDioramaEnabled = enabled;
+  emit dioramaSettingsChanged();
+}
+
+double Qgs3DMapSettings::dioramaHeight() const
+{
+  QGIS_PROTECT_QOBJECT_THREAD_ACCESS
+
+  return mDioramaHeight;
+}
+
+void Qgs3DMapSettings::setDioramaHeight( double height )
+{
+  QGIS_PROTECT_QOBJECT_THREAD_ACCESS
+
+  if ( qgsDoubleNear( mDioramaHeight, height ) )
+    return;
+
+  mDioramaHeight = height;
+  emit dioramaSettingsChanged();
 }

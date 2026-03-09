@@ -45,7 +45,7 @@ class QgsRasterLayer;
 class QgsRasterBlock;
 class QgsCoordinateTransformContext;
 class QgsTerrainGenerator;
-
+class QgsTerrainTileEntity;
 /**
  * \ingroup qgis_3d
  * \brief Chunk loader for DEM terrain tiles.
@@ -65,6 +65,8 @@ class QgsDemTerrainTileLoader : public QgsTerrainTileLoader
     void onHeightMapReady( int jobId, const QByteArray &heightMap );
 
   private:
+    void createDioramaWalls( QgsTerrainTileEntity *tileEntity, Qgis::TileEdges skirtEdges, double side, float vertScale, float baseZ );
+
     int mHeightMapJobId = -1;
     QByteArray mHeightMap;
     int mResolution = 0;

@@ -134,6 +134,7 @@ set(QGIS_3D_SRCS
   terrain/qgsonlinedemterrainsettings.cpp
   terrain/qgsquantizedmeshterraingenerator.cpp
   terrain/qgsquantizedmeshterrainsettings.cpp
+  terrain/qgsterraindioramaentity_p.cpp
   terrain/qgsterraindownloader.cpp
   terrain/qgsterrainentity.cpp
   terrain/qgsterraingenerator.cpp
@@ -280,6 +281,7 @@ set(QGIS_3D_PRIVATE_HDRS
   symbols/qgspoint3dsymbol_p.h
   symbols/qgspolygon3dsymbol_p.h
   symbols/qgspointcloud3dsymbol_p.h
+  terrain/qgsterraindioramaentity_p.h
   terrain/qgsdemterraintilegeometry_p.h
   terrain/qgsdemterraintileloader_p.h
   terrain/qgsterraintexturegenerator_p.h
