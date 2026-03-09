@@ -16,8 +16,8 @@
 #include "qgsterraindioramaentity_p.h"
 
 #include "qgs3dmapsettings.h"
+#include "qgsabstractmaterialsettings.h"
 #include "qgsgeotransform.h"
-#include "qgsphongmaterialsettings.h"
 
 #include <Qt3DCore/QAttribute>
 #include <Qt3DCore/QBuffer>
@@ -131,16 +131,11 @@ void QgsTerrainDioramaEntity::buildGeometry( const Qgs3DMapSettings &mapSettings
   renderer->setVertexCount( vertices.size() );
   addComponent( renderer );
 
-  // Default material
-  QgsPhongMaterialSettings materialSettings;
-  materialSettings.setDiffuse( QColor( 160, 160, 160 ) );
-  materialSettings.setAmbient( QColor( 80, 80, 80 ) );
-  materialSettings.setSpecular( QColor( 30, 30, 30 ) );
-  materialSettings.setShininess( 1.0 );
-
+  // Use the diorama material from settings
+  QgsAbstractMaterialSettings *dioramaMaterialSettings = mapSettings.dioramaMaterial();
   QgsMaterialContext materialContext;
   materialContext.setIsSelected( false );
-  QgsMaterial *material = materialSettings.toMaterial( QgsMaterialSettingsRenderingTechnique::Triangles, materialContext );
+  QgsMaterial *material = dioramaMaterialSettings->toMaterial( QgsMaterialSettingsRenderingTechnique::Triangles, materialContext );
 
   // Disable backface culling
   const QVector<Qt3DRender::QTechnique *> techniques = material->effect()->techniques();

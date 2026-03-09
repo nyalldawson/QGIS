@@ -25,6 +25,7 @@
 #include "qgsflatterrainsettings.h"
 #include "qgslightsource.h"
 #include "qgsmaplayerlistutils_p.h"
+#include "qgsmaterialregistry.h"
 #include "qgspointlightsettings.h"
 #include "qgsprojectelevationproperties.h"
 #include "qgsprojectviewsettings.h"
@@ -46,6 +47,7 @@ Qgs3DMapSettings::Qgs3DMapSettings()
   connect( this, &Qgs3DMapSettings::settingsChanged, [&]() { QgsProject::instance()->setDirty(); } );
   connectChangedSignalsToSettingsChanged();
   mTerrainSettings = std::make_unique<QgsFlatTerrainSettings>();
+  mDioramaMaterial = std::make_unique<QgsPhongMaterialSettings>();
 }
 
 Qgs3DMapSettings::Qgs3DMapSettings( const Qgs3DMapSettings &other )
@@ -100,6 +102,7 @@ Qgs3DMapSettings::Qgs3DMapSettings( const Qgs3DMapSettings &other )
   , mShow2DMapOverlay( other.mShow2DMapOverlay )
   , mDioramaEnabled( other.mDioramaEnabled )
   , mDioramaHeight( other.mDioramaHeight )
+  , mDioramaMaterial( other.mDioramaMaterial ? std::unique_ptr<QgsAbstractMaterialSettings>( other.mDioramaMaterial->clone() ) : std::make_unique<QgsPhongMaterialSettings>() )
 {
   setTerrainSettings( other.mTerrainSettings ? other.mTerrainSettings->clone() : new QgsFlatTerrainSettings() );
 
@@ -316,11 +319,20 @@ void Qgs3DMapSettings::readXml( const QDomElement &elem, const QgsReadWriteConte
   {
     mDioramaEnabled = elemDiorama.attribute( u"enabled"_s, u"0"_s ).toInt();
     mDioramaHeight = elemDiorama.attribute( u"height"_s, u"0"_s ).toDouble();
+
+    const QString materialType = elemDiorama.attribute( u"material_type"_s, u"phong"_s );
+    mDioramaMaterial.reset( Qgs3D::materialRegistry()->createMaterialSettings( materialType ) );
+    if ( !mDioramaMaterial )
+      mDioramaMaterial.reset( Qgs3D::materialRegistry()->createMaterialSettings( u"phong"_s ) );
+    QDomElement elemDioramaMaterial = elemDiorama.firstChildElement( u"material"_s );
+    if ( !elemDioramaMaterial.isNull() )
+      mDioramaMaterial->readXml( elemDioramaMaterial, context );
   }
   else
   {
     mDioramaEnabled = false;
     mDioramaHeight = 0.0;
+    mDioramaMaterial = std::make_unique<QgsPhongMaterialSettings>();
   }
 }
 
@@ -470,6 +482,12 @@ QDomElement Qgs3DMapSettings::writeXml( QDomDocument &doc, const QgsReadWriteCon
     QDomElement elemDiorama = doc.createElement( u"diorama"_s );
     elemDiorama.setAttribute( u"enabled"_s, 1 );
     elemDiorama.setAttribute( u"height"_s, mDioramaHeight );
+    elemDiorama.setAttribute( u"material_type"_s, mDioramaMaterial->type() );
+
+    QDomElement elemDioramaMaterial = doc.createElement( u"material"_s );
+    mDioramaMaterial->writeXml( elemDioramaMaterial, context );
+    elemDiorama.appendChild( elemDioramaMaterial );
+
     elem.appendChild( elemDiorama );
   }
 
@@ -1632,5 +1650,29 @@ void Qgs3DMapSettings::setDioramaHeight( double height )
     return;
 
   mDioramaHeight = height;
+  emit dioramaSettingsChanged();
+}
+
+QgsAbstractMaterialSettings *Qgs3DMapSettings::dioramaMaterial() const
+{
+  QGIS_PROTECT_QOBJECT_THREAD_ACCESS
+
+  return mDioramaMaterial.get();
+}
+
+void Qgs3DMapSettings::setDioramaMaterial( QgsAbstractMaterialSettings *material )
+{
+  QGIS_PROTECT_QOBJECT_THREAD_ACCESS
+
+  if ( material == mDioramaMaterial.get() )
+    return;
+
+  if ( mDioramaMaterial && material && mDioramaMaterial->equals( material ) )
+  {
+    delete material;
+    return;
+  }
+
+  mDioramaMaterial.reset( material );
   emit dioramaSettingsChanged();
 }

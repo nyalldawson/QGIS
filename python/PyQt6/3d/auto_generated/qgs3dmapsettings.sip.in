@@ -923,6 +923,30 @@ Sets the diorama base ``height`` (in map units).
 .. versionadded:: 4.2
 %End
 
+    QgsAbstractMaterialSettings *dioramaMaterial() const;
+%Docstring
+Returns the material settings used for shading of the diorama walls and
+floor.
+
+.. seealso:: :py:func:`setDioramaMaterial`
+
+.. seealso:: :py:func:`isDioramaEnabled`
+
+.. versionadded:: 4.2
+%End
+
+    void setDioramaMaterial( QgsAbstractMaterialSettings *material /Transfer/ );
+%Docstring
+Sets the ``material`` settings used for shading of the diorama walls and
+floor.
+
+Ownership of ``material`` is transferred to the settings.
+
+.. seealso:: :py:func:`dioramaMaterial`
+
+.. versionadded:: 4.2
+%End
+
   signals:
 
     void settingsChanged();

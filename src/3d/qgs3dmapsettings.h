@@ -846,6 +846,25 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
     */
     void setDioramaHeight( double height );
 
+    /**
+     * Returns the material settings used for shading of the diorama walls and floor.
+     *
+     * \see setDioramaMaterial()
+     * \see isDioramaEnabled()
+     * \since QGIS 4.2
+    */
+    QgsAbstractMaterialSettings *dioramaMaterial() const;
+
+    /**
+     * Sets the \a material settings used for shading of the diorama walls and floor.
+     *
+     * Ownership of \a material is transferred to the settings.
+     *
+     * \see dioramaMaterial()
+     * \since QGIS 4.2
+    */
+    void setDioramaMaterial( QgsAbstractMaterialSettings *material SIP_TRANSFER );
+
   signals:
 
     /**
@@ -1194,6 +1213,7 @@ class _3D_EXPORT Qgs3DMapSettings : public QObject, public QgsTemporalRangeObjec
 
     bool mDioramaEnabled = false;
     double mDioramaHeight = 0.0;
+    std::unique_ptr<QgsAbstractMaterialSettings> mDioramaMaterial;
 };
 
 

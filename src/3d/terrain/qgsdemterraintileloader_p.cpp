@@ -18,6 +18,7 @@
 #include <limits>
 
 #include "qgs3dmapsettings.h"
+#include "qgsabstractmaterialsettings.h"
 #include "qgsabstractterrainsettings.h"
 #include "qgschunknode.h"
 #include "qgsdemterraingenerator.h"
@@ -147,7 +148,7 @@ Qt3DCore::QEntity *QgsDemTerrainTileLoader::createEntity( Qt3DCore::QEntity *par
   // The outer edges are exactly those where skirts were suppressed.
   if ( map->isDioramaEnabled() && skirtEdges != Qgis::TileEdge::All )
   {
-    createDioramaWalls( entity, skirtEdges, side, map->terrainSettings()->verticalScale(), static_cast<float>( map->dioramaHeight() ) );
+    createDioramaWalls( entity, skirtEdges, side, map->terrainSettings()->verticalScale(), static_cast<float>( map->dioramaHeight() ), *map->dioramaMaterial() );
     dioramaBaseHeight = map->dioramaHeight();
   }
 
@@ -164,7 +165,7 @@ Qt3DCore::QEntity *QgsDemTerrainTileLoader::createEntity( Qt3DCore::QEntity *par
   return entity;
 }
 
-void QgsDemTerrainTileLoader::createDioramaWalls( QgsTerrainTileEntity *tileEntity, Qgis::TileEdges skirtEdges, double side, float vertScale, float baseZ )
+void QgsDemTerrainTileLoader::createDioramaWalls( QgsTerrainTileEntity *tileEntity, Qgis::TileEdges skirtEdges, double side, float vertScale, float baseZ, const QgsAbstractMaterialSettings &dioramaMaterial )
 {
   // The heightmap is mResolution x mResolution floats.
   // Height at (i,j) = zData[j * mResolution + i], where:
@@ -285,16 +286,9 @@ void QgsDemTerrainTileLoader::createDioramaWalls( QgsTerrainTileEntity *tileEnti
     renderer->setVertexCount( vertices.size() );
     wallEntity->addComponent( renderer );
 
-    // Default material
-    QgsPhongMaterialSettings materialSettings;
-    materialSettings.setDiffuse( QColor( 160, 160, 160 ) );
-    materialSettings.setAmbient( QColor( 80, 80, 80 ) );
-    materialSettings.setSpecular( QColor( 30, 30, 30 ) );
-    materialSettings.setShininess( 1.0 );
-
     QgsMaterialContext materialContext;
     materialContext.setIsSelected( false );
-    QgsMaterial *material = materialSettings.toMaterial( QgsMaterialSettingsRenderingTechnique::Triangles, materialContext );
+    QgsMaterial *material = dioramaMaterial.toMaterial( QgsMaterialSettingsRenderingTechnique::Triangles, materialContext );
 
     // Disable backface culling
     const QVector<Qt3DRender::QTechnique *> techniques = material->effect()->techniques();
