@@ -115,6 +115,76 @@ Sets whether terrain export is enabled.
 .. versionadded:: 4.0
 %End
 
+    bool dioramaExportEnabled() const;
+%Docstring
+Returns whether the terrain should be exported in diorama mode.
+
+When enabled, the terrain surface will be exported without skirts and
+will include walls extending down to
+:py:func:`~Qgs3DMapExportSettings.dioramaHeight` and a bottom face,
+forming a closed mesh suitable for 3D printing.
+
+.. seealso:: :py:func:`setDioramaExportEnabled`
+
+.. seealso:: :py:func:`dioramaHeight`
+
+.. versionadded:: 4.2
+%End
+
+    void setDioramaExportEnabled( bool enabled );
+%Docstring
+Sets whether the terrain should be exported in diorama mode.
+
+.. seealso:: :py:func:`dioramaExportEnabled`
+
+.. versionadded:: 4.2
+%End
+
+    double dioramaHeight() const;
+%Docstring
+Returns the base height (in map units) for the diorama export.
+
+The walls and bottom face will extend down to this Z value.
+
+.. seealso:: :py:func:`setDioramaHeight`
+
+.. seealso:: :py:func:`dioramaExportEnabled`
+
+.. versionadded:: 4.2
+%End
+
+    void setDioramaHeight( double height );
+%Docstring
+Sets the base ``height`` (in map units) for the diorama export.
+
+.. seealso:: :py:func:`dioramaHeight`
+
+.. versionadded:: 4.2
+%End
+
+    int terrainTileZoomLevel() const;
+%Docstring
+Returns the terrain tile zoom level for export.
+
+A value of 0 means export as a single tile (the default).
+
+Higher values produce more tiles at higher resolution. The actual number
+of tiles is 4^zoomLevel (quadtree subdivision).
+
+.. seealso:: :py:func:`setTerrainTileZoomLevel`
+
+.. versionadded:: 4.2
+%End
+
+    void setTerrainTileZoomLevel( int level );
+%Docstring
+Sets the terrain tile zoom ``level`` for export.
+
+.. seealso:: :py:func:`terrainTileZoomLevel`
+
+.. versionadded:: 4.2
+%End
+
 };
 
 /************************************************************************

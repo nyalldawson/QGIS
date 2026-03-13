@@ -47,6 +47,7 @@ class QgsLine3DSymbol;
 class QgsPoint3DSymbol;
 class QgsMeshEntity;
 class TestQgs3DExporter;
+class QgsChunkLoaderFactory;
 
 
 /**
@@ -139,6 +140,52 @@ class _3D_EXPORT Qgs3DSceneExporter : public Qt3DCore::QEntity
      */
     void setTerrainExportEnabled( bool enabled ) { mTerrainExportEnabled = enabled; }
 
+    /**
+     * Returns whether the terrain should be exported in diorama mode.
+     *
+     * \see setDioramaExportEnabled()
+     * \since QGIS 4.2
+     */
+    bool dioramaExportEnabled() const { return mDioramaExportEnabled; }
+
+    /**
+     * Sets whether the terrain should be exported in diorama mode.
+     *
+     * \see dioramaExportEnabled()
+     * \since QGIS 4.2
+     */
+    void setDioramaExportEnabled( bool enabled ) { mDioramaExportEnabled = enabled; }
+
+    /**
+     * Returns the diorama base height for export.
+     *
+     * \see setDioramaHeight()
+     * \since QGIS 4.2
+     */
+    double dioramaHeight() const { return mDioramaHeight; }
+
+    /**
+     * Sets the diorama base height for export.
+     *
+     * \see dioramaHeight()
+     * \since QGIS 4.2
+     */
+    void setDioramaHeight( double height ) { mDioramaHeight = height; }
+
+    /**
+     * Returns the terrain tile zoom level for export.
+     * \see setTerrainTileZoomLevel()
+     * \since QGIS 4.2
+     */
+    int terrainTileZoomLevel() const { return mTerrainTileZoomLevel; }
+
+    /**
+     * Sets the terrain tile zoom level for export.
+     * \see terrainTileZoomLevel()
+     * \since QGIS 4.2
+     */
+    void setTerrainTileZoomLevel( int level ) { mTerrainTileZoomLevel = level; }
+
   private:
     //! Constructs Qgs3DExportObject from instanced point geometry
     QVector<Qgs3DExportObject *> processInstancedPointGeometry( Qt3DCore::QEntity *entity, const QString &objectNamePrefix );
@@ -167,6 +214,12 @@ class _3D_EXPORT Qgs3DSceneExporter : public Qt3DCore::QEntity
     //! Constructs a Qgs3DExportObject from the mesh terrain entity
     void parseMeshTile( QgsTerrainTileEntity *meshEntity, const QString &layerName );
 
+    //! Constructs a Qgs3DExportObject for the diorama bottom face
+    void exportDioramaBottom( const Qgs3DMapSettings *settings, const QString &layerName );
+
+    //! Recursively collects chunk nodes at a given depth in the quadtree
+    void collectNodesAtDepth( QgsChunkNode *node, int targetDepth, QgsChunkLoaderFactory *factory, QVector<QgsChunkNode *> &result );
+
     QString getObjectName( const QString &name );
 
   private:
@@ -180,6 +233,9 @@ class _3D_EXPORT Qgs3DSceneExporter : public Qt3DCore::QEntity
     int mTerrainTextureResolution = 512;
     float mScale = 1.0f;
     bool mTerrainExportEnabled = true;
+    bool mDioramaExportEnabled = false;
+    double mDioramaHeight = 0.0;
+    int mTerrainTileZoomLevel = 0;
 
     QSet<QgsFeatureId> mExportedFeatureIds;
 

@@ -278,31 +278,93 @@ void Qgs3DSceneExporter::parseTerrain( QgsTerrainEntity *terrain, const QString 
   QgsTerrainGenerator *generator = settings->terrainGenerator();
   if ( !generator )
     return;
-  QgsTerrainTileEntity *terrainTile = nullptr;
+
+  // When diorama export is enabled, temporarily configure the map settings
+  // so that createEntity() will generate wall geometry alongside the terrain.
+  const bool origDioramaEnabled = settings->isDioramaEnabled();
+  const double origDioramaHeight = settings->dioramaHeight();
+  if ( mDioramaExportEnabled )
+  {
+    settings->setDioramaEnabled( true );
+    settings->setDioramaHeight( mDioramaHeight );
+  }
+
   QgsTerrainTextureGenerator *textureGenerator = terrain->textureGenerator();
   textureGenerator->waitForFinished();
   const QSize oldResolution = textureGenerator->textureSize();
   textureGenerator->setTextureSize( QSize( mTerrainTextureResolution, mTerrainTextureResolution ) );
+
+  bool anyTileExported = false;
+
   switch ( generator->type() )
   {
     case QgsTerrainGenerator::Dem:
-      terrainTile = getDemTerrainEntity( terrain, node, settings->origin() );
-      parseDemTile( terrainTile, layerName + u"_"_s );
+    {
+      if ( mTerrainTileZoomLevel > 0 )
+      {
+        // Create a temporary root node for the quadtree traversal.
+        // We cannot modify the terrain entity's root node, so we create
+        // our own starting from the same box and error.
+        QgsChunkNode tempRoot( node->tileId(), node->box3D(), node->error() );
+
+        QVector<QgsChunkNode *> tileNodes;
+        collectNodesAtDepth( &tempRoot, mTerrainTileZoomLevel, generator, tileNodes );
+
+        for ( QgsChunkNode *tileNode : std::as_const( tileNodes ) )
+        {
+          QgsTerrainTileEntity *terrainTile = getDemTerrainEntity( terrain, tileNode, settings->origin() );
+          if ( terrainTile )
+          {
+            parseDemTile( terrainTile, layerName + u"_"_s );
+            anyTileExported = true;
+          }
+        }
+        // tempRoot destructor will clean up all child nodes via populateChildren
+      }
+      else
+      {
+        QgsTerrainTileEntity *terrainTile = getDemTerrainEntity( terrain, node, settings->origin() );
+        if ( terrainTile )
+        {
+          parseDemTile( terrainTile, layerName + u"_"_s );
+          anyTileExported = true;
+        }
+      }
       break;
+    }
     case QgsTerrainGenerator::Flat:
-      terrainTile = getFlatTerrainEntity( terrain, node, settings->origin() );
+    {
+      QgsTerrainTileEntity *terrainTile = getFlatTerrainEntity( terrain, node, settings->origin() );
       parseFlatTile( terrainTile, layerName + u"_"_s );
+      anyTileExported = ( terrainTile != nullptr );
       break;
+    }
     case QgsTerrainGenerator::Mesh:
-      terrainTile = getMeshTerrainEntity( terrain, node, settings->origin() );
+    {
+      QgsTerrainTileEntity *terrainTile = getMeshTerrainEntity( terrain, node, settings->origin() );
       parseMeshTile( terrainTile, layerName + u"_"_s );
+      anyTileExported = ( terrainTile != nullptr );
       break;
+    }
     // TODO: implement other terrain types
     case QgsTerrainGenerator::Online:
     case QgsTerrainGenerator::QuantizedMesh:
       break;
   }
   textureGenerator->setTextureSize( oldResolution );
+
+  // Build and export the diorama bottom face
+  if ( mDioramaExportEnabled && anyTileExported )
+  {
+    exportDioramaBottom( settings, layerName );
+  }
+
+  // Restore original diorama settings
+  if ( mDioramaExportEnabled )
+  {
+    settings->setDioramaEnabled( origDioramaEnabled );
+    settings->setDioramaHeight( origDioramaHeight );
+  }
 }
 
 QgsTerrainTileEntity *Qgs3DSceneExporter::getFlatTerrainEntity( QgsTerrainEntity *terrain, QgsChunkNode *node, const QgsVector3D &mapOrigin )
@@ -507,6 +569,75 @@ void Qgs3DSceneExporter::parseDemTile( QgsTerrainTileEntity *tileEntity, const Q
       mObjects.push_back( wallObject );
     }
   }
+}
+
+void Qgs3DSceneExporter::collectNodesAtDepth( QgsChunkNode *node, int targetDepth, QgsChunkLoaderFactory *factory, QVector<QgsChunkNode *> &result )
+{
+  if ( targetDepth <= 0 )
+  {
+    result.append( node );
+    return;
+  }
+
+  // Create children for this node using the loader factory (the quadtree logic).
+  // We call populateChildren() so that the parent takes ownership and will
+  // clean up child nodes when the parent is deleted.
+  QVector<QgsChunkNode *> children = factory->createChildren( node );
+
+  if ( children.isEmpty() )
+  {
+    // Leaf node — can't subdivide further
+    result.append( node );
+    return;
+  }
+
+  node->populateChildren( children );
+
+  for ( QgsChunkNode *child : std::as_const( children ) )
+  {
+    collectNodesAtDepth( child, targetDepth - 1, factory, result );
+  }
+}
+
+void Qgs3DSceneExporter::exportDioramaBottom( const Qgs3DMapSettings *settings, const QString &layerName )
+{
+  const QgsRectangle extent = settings->extent();
+  const QgsVector3D origin = settings->origin();
+  const float baseZ = static_cast<float>( mDioramaHeight );
+
+  // Build the bottom face in world coordinates (with origin subtracted)
+  // using the same coordinate system as the terrain export.
+  const float xMin = static_cast<float>( extent.xMinimum() - origin.x() );
+  const float xMax = static_cast<float>( extent.xMaximum() - origin.x() );
+  const float yMin = static_cast<float>( extent.yMinimum() - origin.y() );
+  const float yMax = static_cast<float>( extent.yMaximum() - origin.y() );
+  const float z = static_cast<float>( baseZ - origin.z() );
+
+  // Two triangles forming a quad, with vertices and face indices
+  QVector<float> positions;
+  positions << xMin << yMin << z; // 0: SW
+  positions << xMax << yMin << z; // 1: SE
+  positions << xMax << yMax << z; // 2: NE
+  positions << xMin << yMax << z; // 3: NW
+
+  // Downward-facing normal
+  QVector<float> normals;
+  normals << 0 << 0 << -1;
+  normals << 0 << 0 << -1;
+  normals << 0 << 0 << -1;
+  normals << 0 << 0 << -1;
+
+  QVector<uint> indices;
+  indices << 0 << 2 << 1; // SW, NE, SE
+  indices << 0 << 3 << 2; // SW, NW, NE
+
+  Qgs3DExportObject *object = new Qgs3DExportObject( getObjectName( layerName + u"Diorama_bottom"_s ) );
+  object->setSmoothEdges( mSmoothEdges );
+  object->setupTriangle( positions, indices, QMatrix4x4() );
+  if ( mExportNormals )
+    object->setupNormalCoordinates( normals, QMatrix4x4() );
+
+  mObjects.push_back( object );
 }
 
 void Qgs3DSceneExporter::parseMeshTile( QgsTerrainTileEntity *tileEntity, const QString &layerName )

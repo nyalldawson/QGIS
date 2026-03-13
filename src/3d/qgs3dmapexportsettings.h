@@ -88,6 +88,68 @@ class _3D_EXPORT Qgs3DMapExportSettings
      */
     void setTerrainExportEnabled( bool enabled ) { mTerrainExportEnabled = enabled; }
 
+    /**
+     * Returns whether the terrain should be exported in diorama mode.
+     *
+     * When enabled, the terrain surface will be exported without skirts and
+     * will include walls extending down to dioramaHeight() and a bottom face,
+     * forming a closed mesh suitable for 3D printing.
+     *
+     * \see setDioramaExportEnabled()
+     * \see dioramaHeight()
+     *
+     * \since QGIS 4.2
+     */
+    bool dioramaExportEnabled() const { return mDioramaExportEnabled; }
+
+    /**
+     * Sets whether the terrain should be exported in diorama mode.
+     *
+     * \see dioramaExportEnabled()
+     * \since QGIS 4.2
+     */
+    void setDioramaExportEnabled( bool enabled ) { mDioramaExportEnabled = enabled; }
+
+    /**
+     * Returns the base height (in map units) for the diorama export.
+     *
+     * The walls and bottom face will extend down to this Z value.
+     *
+     * \see setDioramaHeight()
+     * \see dioramaExportEnabled()
+     * \since QGIS 4.2
+     */
+    double dioramaHeight() const { return mDioramaHeight; }
+
+    /**
+     * Sets the base \a height (in map units) for the diorama export.
+     *
+     * \see dioramaHeight()
+     * \since QGIS 4.2
+     */
+    void setDioramaHeight( double height ) { mDioramaHeight = height; }
+
+    /**
+     * Returns the terrain tile zoom level for export.
+     *
+     * A value of 0 means export as a single tile (the default).
+     *
+     * Higher values produce more tiles at higher resolution. The actual
+     * number of tiles is 4^zoomLevel (quadtree subdivision).
+     *
+     * \see setTerrainTileZoomLevel()
+     * \since QGIS 4.2
+     */
+    int terrainTileZoomLevel() const { return mTerrainTileZoomLevel; }
+
+    /**
+     * Sets the terrain tile zoom \a level for export.
+     *
+     * \see terrainTileZoomLevel()
+     * \since QGIS 4.2
+     */
+    void setTerrainTileZoomLevel( int level ) { mTerrainTileZoomLevel = level; }
+
   private:
     QString mSceneName = QString( "Scene" );
     QString mSceneFolderPath = QDir::homePath();
@@ -98,6 +160,9 @@ class _3D_EXPORT Qgs3DMapExportSettings
     int mTerrainTextureResolution = 512;
     float mScale = 1.0f;
     bool mTerrainExportEnabled = true;
+    bool mDioramaExportEnabled = true;
+    double mDioramaHeight = 0.0;
+    int mTerrainTileZoomLevel = 0;
 };
 
 #endif // QGS3DMAPEXPORTSETTINGS_H

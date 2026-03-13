@@ -681,6 +681,8 @@ void Qgs3DMapScene::createTerrainDeferred()
     addLayerEntity( layer );
   }
 
+  // Create diorama bottom entity if enabled (only for local scene mode).
+  // The diorama wall geometry is created per-tile in QgsDemTerrainTileLoader::createEntity().
   if ( mMap.isDioramaEnabled() && mMap.sceneMode() == Qgis::SceneMode::Local && mMap.terrainRenderingEnabled() )
   {
     // diorama bottom entity
@@ -1229,6 +1231,9 @@ bool Qgs3DMapScene::exportScene( const Qgs3DMapExportSettings &exportSettings )
   exporter.setTerrainTextureResolution( exportSettings.terrainTextureResolution() );
   exporter.setScale( exportSettings.scale() );
   exporter.setTerrainExportEnabled( exportSettings.terrainExportEnabled() );
+  exporter.setDioramaExportEnabled( exportSettings.dioramaExportEnabled() );
+  exporter.setDioramaHeight( exportSettings.dioramaHeight() );
+  exporter.setTerrainTileZoomLevel( exportSettings.terrainTileZoomLevel() );
 
   for ( auto it = mLayerEntities.constBegin(); it != mLayerEntities.constEnd(); ++it )
   {
@@ -1257,8 +1262,9 @@ bool Qgs3DMapScene::exportScene( const Qgs3DMapExportSettings &exportSettings )
   if ( mTerrain )
     exporter.parseTerrain( mTerrain, "Terrain" );
 
-  // Export diorama bottom entity if present
-  if ( mDiorama )
+  // Export diorama bottom entity if present and not in diorama export mode
+  // (diorama export mode builds its own bottom face via parseTerrain)
+  if ( mDiorama && !exportSettings.dioramaExportEnabled() )
     exporter.parseDiorama( mDiorama, u"Diorama_bottom"_s );
 
   const bool sceneSaved = exporter.save( exportSettings.sceneName(), exportSettings.sceneFolderPath() );
