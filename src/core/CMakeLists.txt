@@ -4,12 +4,18 @@
 BISON_TARGET(QgsExpressionParser   qgsexpressionparser.yy   ${CMAKE_CURRENT_BINARY_DIR}/qgsexpressionparser.cpp COMPILE_FLAGS "-p exp_")
 FLEX_TARGET(QgsExpressionLexer qgsexpressionlexer.ll ${CMAKE_CURRENT_BINARY_DIR}/qgsexpressionlexer.cpp)
 ADD_FLEX_BISON_DEPENDENCY(QgsExpressionLexer QgsExpressionParser)
+
 BISON_TARGET(QgsSqlStatementParser qgssqlstatementparser.yy ${CMAKE_CURRENT_BINARY_DIR}/qgssqlstatementparser.cpp  COMPILE_FLAGS "-p sqlstatement_")
 FLEX_TARGET(QgsSqlStatementLexer qgssqlstatementlexer.ll ${CMAKE_CURRENT_BINARY_DIR}/qgssqlstatementlexer.cpp)
 ADD_FLEX_BISON_DEPENDENCY(QgsSqlStatementLexer QgsSqlStatementParser)
+
 BISON_TARGET(QgsMeshCalcParser mesh/qgsmeshcalcparser.yy ${CMAKE_CURRENT_BINARY_DIR}/qgsmeshcalcparser.cpp COMPILE_FLAGS "-p mesh_")
 FLEX_TARGET(QgsMeshCalcLexer mesh/qgsmeshcalclexer.ll ${CMAKE_CURRENT_BINARY_DIR}/qgsmeshcalclexer.cpp)
 ADD_FLEX_BISON_DEPENDENCY(QgsMeshCalcLexer QgsMeshCalcParser)
+
+BISON_TARGET(QgsVbScriptParser lexers/qgsvbscriptparser.yy ${CMAKE_CURRENT_BINARY_DIR}/qgsvbscriptparser.cpp  COMPILE_FLAGS "-p vbscript_ -Wno-conflicts-sr -Wno-conflicts-rr")
+FLEX_TARGET(QgsVbScriptLexer lexers/qgsvbscriptlexer.ll ${CMAKE_CURRENT_BINARY_DIR}/qgsvbscriptlexer.cpp)
+ADD_FLEX_BISON_DEPENDENCY(QgsVbScriptLexer QgsVbScriptParser)
 
 if (WITH_PDF4QT)
   SET(PDF4QT_BUILD_ONLY_CORE_LIBRARY TRUE)
@@ -37,6 +43,8 @@ set(QGIS_CORE_SRCS
   ${BISON_QgsSqlStatementParser_OUTPUTS}
   ${FLEX_QgsMeshCalcLexer_OUTPUTS}
   ${BISON_QgsMeshCalcParser_OUTPUTS}
+  ${FLEX_QgsVbScriptLexer_OUTPUTS}
+  ${BISON_QgsVbScriptParser_OUTPUTS}
 
   actions/qgsaction.cpp
   actions/qgsactionscope.cpp
@@ -754,6 +762,8 @@ set(QGIS_CORE_SRCS
   layout/qgsreportsectionfieldgroup.cpp
   layout/qgsreportsectionlayout.cpp
   layout/qgscompositionconverter.cpp
+
+  lexers/qgsvbscriptscript.cpp
 
   maprenderer/qgsmaprenderercache.cpp
   maprenderer/qgsmaprenderercustompainterjob.cpp
@@ -1736,6 +1746,8 @@ set(QGIS_CORE_HDRS
   layout/qgsreportsectionfieldgroup.h
   layout/qgsreportsectionlayout.h
 
+  lexers/qgsvbscriptscript.h
+
   locator/qgslocator.h
   locator/qgslocatorcontext.h
   locator/qgslocatorfilter.h
@@ -2712,6 +2724,7 @@ target_include_directories(qgis_core PUBLIC
   labeling/rules
   layertree
   layout
+  lexers
   locator
   maprenderer
   mesh

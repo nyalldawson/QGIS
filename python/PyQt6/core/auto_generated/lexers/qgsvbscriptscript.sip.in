@@ -1,0 +1,1217 @@
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/core/lexers/qgsvbscriptscript.h                                  *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.py again   *
+ ************************************************************************/
+
+
+
+
+
+
+class QgsVBScriptScript
+{
+%Docstring(signature="appended")
+Parses complete (multi-statement) VBScript scripts.
+
+.. versionadded:: 4.2
+%End
+
+%TypeHeaderCode
+#include "qgsvbscriptscript.h"
+%End
+  public:
+    explicit QgsVBScriptScript( const QString &code );
+%Docstring
+Creates a new script based on the provided string.
+%End
+    ~QgsVBScriptScript();
+
+    bool hasParserError() const;
+%Docstring
+Returns ``True`` if an error occurred when parsing the input statement.
+
+.. seealso:: :py:func:`parserErrorString`
+%End
+
+    QString parserErrorString() const;
+%Docstring
+Returns parser error string, if an error occurred while parsing.
+
+.. seealso:: :py:func:`hasParserError`
+%End
+
+    enum class UnaryOperator /BaseType=IntEnum/
+    {
+      uoNot,
+      uoMinus,
+      uoPos
+    };
+
+    enum class BinaryOperator /BaseType=IntEnum/
+    {
+      // Arithmetic
+      boAdd,
+      boSubtract,
+      boMultiply,
+      boDivide,
+      boIntegerDivide,
+      boMod,
+      boPower,
+      // String
+      boConcat,
+      // Comparison
+      boEQ,
+      boNE,
+      boLT,
+      boGT,
+      boLE,
+      boGE,
+      // Logical
+      boAnd,
+      boOr,
+      boXor,
+      boEqv,
+      boImp,
+      // Object
+      boIs,
+      boLike
+    };
+
+
+    enum class NodeType /BaseType=IntEnum/
+    {
+      ntLiteral,
+      ntIdent,
+      ntMe,
+      ntNew,
+      ntUnaryOp,
+      ntBinaryOp,
+      ntMember,
+      ntFunction,
+      ntCall,
+      ntAssign,
+      ntSetAssign,
+      ntDim,
+      ntReDim,
+      ntConst,
+      ntIf,
+      ntElseIf,
+      ntSelect,
+      ntCase,
+      ntFor,
+      ntForEach,
+      ntWhile,
+      ntDo,
+      ntWith,
+      ntExit,
+      ntOnError,
+      ntErase,
+      ntRandomize,
+      ntStop,
+      ntOptionExplicit,
+      ntSubDef,
+      ntFuncDef,
+      ntPropGet,
+      ntPropLet,
+      ntPropSet,
+      ntClassDef,
+      ntCallStmt,
+      ntStmtList,
+      ntExprList,
+      ntParamList,
+      ntDimList,
+      ntCaseList,
+      ntElseIfList,
+    };
+
+
+    const QgsVBScriptScript::Node *rootNode() const;
+%Docstring
+Returns the root node of the statement.
+
+The root node is ``None`` if parsing has failed.
+%End
+
+    class Node
+    {
+%Docstring(signature="appended")
+Abstract node class for VBScript script nodes.
+%End
+
+%ConvertToSubClassCode
+        switch ( sipCpp->nodeType() )
+        {
+          case QgsVBScriptScript::NodeType::ntLiteral:
+            sipType = sipType_QgsVBScriptScript_NodeLiteral;
+            break;
+          case QgsVBScriptScript::NodeType::ntIdent:
+            sipType = sipType_QgsVBScriptScript_NodeIdent;
+            break;
+          case QgsVBScriptScript::NodeType::ntMe:
+            sipType = sipType_QgsVBScriptScript_NodeIdent;
+            break;
+          case QgsVBScriptScript::NodeType::ntNew:
+            sipType = sipType_QgsVBScriptScript_NodeFunctionCall;
+            break;
+          case QgsVBScriptScript::NodeType::ntUnaryOp:
+            sipType = sipType_QgsVBScriptScript_NodeUnaryOperator;
+            break;
+          case QgsVBScriptScript::NodeType::ntBinaryOp:
+            sipType = sipType_QgsVBScriptScript_NodeBinaryOperator;
+            break;
+          case QgsVBScriptScript::NodeType::ntMember:
+            sipType = sipType_QgsVBScriptScript_NodeMember;
+            break;
+          case QgsVBScriptScript::NodeType::ntFunction:
+            sipType = sipType_QgsVBScriptScript_NodeFunctionCallOrArrayIndex;
+            break;
+          case QgsVBScriptScript::NodeType::ntCall:
+            sipType = sipType_QgsVBScriptScript_NodeFunctionCall;
+            break;
+          case QgsVBScriptScript::NodeType::ntAssign:
+          case QgsVBScriptScript::NodeType::ntSetAssign:
+            sipType = sipType_QgsVBScriptScript_NodeAssign;
+            break;
+          case QgsVBScriptScript::NodeType::ntDim:
+            sipType = sipType_QgsVBScriptScript_NodeDim;
+            break;
+          case QgsVBScriptScript::NodeType::ntReDim:
+            sipType = sipType_QgsVBScriptScript_NodeReDim;
+            break;
+          case QgsVBScriptScript::NodeType::ntConst:
+            sipType = sipType_QgsVBScriptScript_NodeConst;
+            break;
+          case QgsVBScriptScript::NodeType::ntIf:
+            sipType = sipType_QgsVBScriptScript_NodeIf;
+            break;
+          case QgsVBScriptScript::NodeType::ntElseIf:
+            sipType = sipType_QgsVBScriptScript_NodeIf;
+            break;
+          case QgsVBScriptScript::NodeType::ntSelect:
+            sipType = sipType_QgsVBScriptScript_NodeSelect;
+            break;
+          case QgsVBScriptScript::NodeType::ntCase:
+            sipType = sipType_QgsVBScriptScript_NodeSelect;
+            break;
+          case QgsVBScriptScript::NodeType::ntFor:
+            sipType = sipType_QgsVBScriptScript_NodeFor;
+            break;
+          case QgsVBScriptScript::NodeType::ntForEach:
+            sipType = sipType_QgsVBScriptScript_NodeForEach;
+            break;
+          case QgsVBScriptScript::NodeType::ntWhile:
+            sipType = sipType_QgsVBScriptScript_NodeWhile;
+            break;
+          case QgsVBScriptScript::NodeType::ntDo:
+            sipType = sipType_QgsVBScriptScript_NodeDo;
+            break;
+          case QgsVBScriptScript::NodeType::ntWith:
+            sipType = sipType_QgsVBScriptScript_NodeWith;
+            break;
+          case QgsVBScriptScript::NodeType::ntExit:
+            sipType = sipType_QgsVBScriptScript_NodeExit;
+            break;
+          case QgsVBScriptScript::NodeType::ntOnError:
+            sipType = sipType_QgsVBScriptScript_NodeOnError;
+            break;
+          case QgsVBScriptScript::NodeType::ntErase:
+          case QgsVBScriptScript::NodeType::ntRandomize:
+          case QgsVBScriptScript::NodeType::ntStop:
+          case QgsVBScriptScript::NodeType::ntOptionExplicit:
+            sipType = sipType_QgsVBScriptScript_NodeIdent;
+            break;
+          case QgsVBScriptScript::NodeType::ntSubDef:
+            sipType = sipType_QgsVBScriptScript_NodeSubDef;
+            break;
+          case QgsVBScriptScript::NodeType::ntFuncDef:
+            sipType = sipType_QgsVBScriptScript_NodeFuncDef;
+            break;
+          case QgsVBScriptScript::NodeType::ntPropGet:
+          case QgsVBScriptScript::NodeType::ntPropLet:
+          case QgsVBScriptScript::NodeType::ntPropSet:
+            sipType = sipType_QgsVBScriptScript_NodePropDef;
+            break;
+          case QgsVBScriptScript::NodeType::ntClassDef:
+            sipType = sipType_QgsVBScriptScript_NodeClassDef;
+            break;
+          case QgsVBScriptScript::NodeType::ntCallStmt:
+            sipType = sipType_QgsVBScriptScript_NodeFunctionCall;
+            break;
+          case QgsVBScriptScript::NodeType::ntStmtList:
+            sipType = sipType_QgsVBScriptScript_NodeStatementList;
+            break;
+          case QgsVBScriptScript::NodeType::ntExprList:
+            sipType = sipType_QgsVBScriptScript_NodeExpressionList;
+            break;
+          case QgsVBScriptScript::NodeType::ntParamList:
+            sipType = sipType_QgsVBScriptScript_NodeParameterList;
+            break;
+          case QgsVBScriptScript::NodeType::ntDimList:
+            sipType = sipType_QgsVBScriptScript_NodeDim;
+            break;
+          case QgsVBScriptScript::NodeType::ntCaseList:
+            sipType = sipType_QgsVBScriptScript_NodeSelect;
+            break;
+          case QgsVBScriptScript::NodeType::ntElseIfList:
+            sipType = sipType_QgsVBScriptScript_NodeIf;
+            break;
+          default:
+            sipType = nullptr;
+            break;
+        }
+%End
+      public:
+        virtual ~Node();
+
+        virtual NodeType nodeType() const = 0;
+%Docstring
+Returns the type of the node.
+%End
+
+        virtual QString dump() const = 0;
+%Docstring
+Returns a statement which represents this node as string.
+%End
+
+        virtual void accept( Visitor &v ) const = 0;
+%Docstring
+Supports the visitor pattern.
+
+For any implementation this should look like
+
+.. code-block:: python
+
+       v.visit(self)
+
+:param v: A visitor that visits this node.
+%End
+
+        virtual Node *clone() const = 0 /Factory/;
+%Docstring
+Generate a clone of this node.
+
+Ownership is transferred to the caller.
+
+:return: a deep copy of this node.
+%End
+    };
+
+    class NodeLiteral : Node
+    {
+%Docstring(signature="appended")
+Literal value (integer, float, string, date, bool, Empty, Nothing,
+Null).
+%End
+
+      public:
+        explicit NodeLiteral( const QVariant &val );
+%Docstring
+Constructor
+%End
+
+        QVariant value() const;
+%Docstring
+Returns the value of the literal.
+%End
+
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const /Factory/;
+
+
+    };
+
+    class NodeIdent : Node
+    {
+%Docstring(signature="appended")
+Identifier node (eg variable name).
+%End
+
+      public:
+        explicit NodeIdent( const QString &name );
+%Docstring
+Constructor
+%End
+
+        QString name() const;
+%Docstring
+Returns the identifier name.
+%End
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const /Factory/;
+
+
+    };
+
+    class NodeUnaryOperator : Node
+    {
+%Docstring(signature="appended")
+Unary logical/arithmetical operator ( NOT, - ).
+%End
+
+      public:
+        NodeUnaryOperator( UnaryOperator op, Node *operand /Transfer/ );
+%Docstring
+Constructor
+%End
+
+        UnaryOperator op() const;
+%Docstring
+Returns the operator
+%End
+        Node *operand() const;
+%Docstring
+Returns the operand
+%End
+
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const /Factory/;
+
+
+      private:
+        NodeUnaryOperator( const NodeUnaryOperator &other );
+    };
+
+    class NodeBinaryOperator : Node
+    {
+%Docstring(signature="appended")
+Binary logical/arithmetical operator (AND, OR, =, +, ...).
+%End
+
+      public:
+        NodeBinaryOperator( BinaryOperator op, Node *left /Transfer/, Node *right /Transfer/ );
+%Docstring
+Constructor
+%End
+
+        BinaryOperator op() const;
+%Docstring
+Operator
+%End
+
+        Node *left() const;
+%Docstring
+Left operand
+%End
+        Node *right() const;
+%Docstring
+Right operand
+%End
+
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const /Factory/;
+
+
+      private:
+        NodeBinaryOperator( const NodeBinaryOperator &other );
+    };
+
+    class NodeMember : Node
+    {
+%Docstring(signature="appended")
+Object member (e.g. obj.member).
+%End
+
+      public:
+        NodeMember( Node *obj /Transfer/, const QString &member );
+%Docstring
+Constructor
+%End
+
+        Node *obj() const;
+%Docstring
+Returns the object
+%End
+        QString member() const;
+%Docstring
+Returns the name of the member
+%End
+
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const /Factory/;
+
+
+      private:
+        NodeMember( const NodeMember &other );
+    };
+
+    class NodeFunctionCallOrArrayIndex : Node
+    {
+%Docstring(signature="appended")
+Function call or array index (e.g. arr(i) or arr(i,j)).
+
+.. warning::
+
+   Usage of this node is ambiguous, and depends on whether the callee
+   refers to a defined function name or array name.
+%End
+
+      public:
+        NodeFunctionCallOrArrayIndex( Node *calleeOrBase /Transfer/, QgsVBScriptScript::NodeExpressionList *arguments /Transfer/ );
+%Docstring
+Constructor
+%End
+
+        QgsVBScriptScript::Node *calleeOrBase() const;
+%Docstring
+Returns the name of the function or array
+%End
+
+        QgsVBScriptScript::NodeExpressionList *arguments() const;
+%Docstring
+Returns the arguments for the function, or array indices
+%End
+
+        virtual QgsVBScriptScript::NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const /Factory/;
+
+
+      private:
+        NodeFunctionCallOrArrayIndex( const NodeFunctionCallOrArrayIndex &other );
+    };
+
+    class NodeFunctionCall : Node
+    {
+%Docstring(signature="appended")
+Function call.
+%End
+
+      public:
+        NodeFunctionCall( Node *callee /Transfer/, QgsVBScriptScript::NodeExpressionList *arguments /Transfer/ );
+
+        QgsVBScriptScript::Node *callee() const;
+%Docstring
+Retrurns the callee (function being called)
+%End
+
+        QgsVBScriptScript::NodeExpressionList *arguments() const;
+%Docstring
+Returns the arguments for the function
+%End
+
+        virtual QgsVBScriptScript::NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual QgsVBScriptScript::Node *clone() const /Factory/;
+
+
+      private:
+        NodeFunctionCall( const NodeFunctionCall &other );
+    };
+
+    class NodeExpressionList : Node
+    {
+%Docstring(signature="appended")
+Expression list (arguments, array dimensions, case expressions, etc).
+%End
+
+      public:
+        NodeExpressionList();
+        ~NodeExpressionList();
+
+        void append( QgsVBScriptScript::Node *node /Transfer/ );
+%Docstring
+Appends a node to the list.
+%End
+
+        void prepend( QgsVBScriptScript::Node *node /Transfer/ );
+%Docstring
+Prepends node to the list.
+%End
+
+        QList<QgsVBScriptScript::Node *> expressions() const;
+%Docstring
+Returns the list of expressions contained in the node.
+%End
+
+        int count() const;
+%Docstring
+Returns the total number of expressions contained in the node.
+%End
+
+        virtual QgsVBScriptScript::NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual QgsVBScriptScript::Node *clone() const /Factory/;
+
+
+      private:
+        NodeExpressionList( const NodeExpressionList &other );
+    };
+
+    class NodeStatementList : Node
+    {
+%Docstring(signature="appended")
+Statement list (body of subroutines, functions, if branches, etc).
+%End
+
+      public:
+        NodeStatementList();
+        ~NodeStatementList();
+
+        void append( Node *node /Transfer/ );
+%Docstring
+Appends a node to the list.
+%End
+
+        QList<QgsVBScriptScript::Node *> statements() const;
+%Docstring
+Returns the list of statements contained in the node.
+%End
+
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const /Factory/;
+
+
+      private:
+        NodeStatementList( const NodeStatementList &other );
+    };
+
+    struct Parameter
+    {
+        QString name;
+        bool byRef;
+        bool isArray;
+    };
+
+    class NodeParameterList : Node
+    {
+%Docstring(signature="appended")
+Represents a list of subroutine or function parameters.
+%End
+
+      public:
+        NodeParameterList();
+
+        void append( const Parameter &parameter );
+%Docstring
+Appends a parameter to the list
+%End
+
+        QList<QgsVBScriptScript::Parameter> parameters() const;
+%Docstring
+Returns the list of parameters contained in the node.
+%End
+
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const /Factory/;
+
+
+    };
+
+    class NodeAssign : Node
+    {
+%Docstring(signature="appended")
+An assignment node.
+%End
+
+      public:
+        NodeAssign( Node *lhs /Transfer/, Node *rhs /Transfer/, bool isSet = false );
+%Docstring
+Constructor
+%End
+
+        Node *lhs() const;
+%Docstring
+Returns the left hand side of the assignment
+%End
+        Node *rhs() const;
+%Docstring
+Returns the right hand side of the assignment
+%End
+
+        bool isSet() const;
+%Docstring
+Returns ``True`` if the node is a "SET" assignment
+%End
+
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const /Factory/;
+
+
+      private:
+        NodeAssign( const NodeAssign &other );
+    };
+
+    class DimVar
+    {
+%Docstring(signature="appended")
+Represents a dimensioned variable.
+%End
+
+      public:
+        QString name;
+
+        QgsVBScriptScript::NodeExpressionList *dims;
+    };
+
+    class NodeDim : Node
+    {
+%Docstring(signature="appended")
+Represents an array dimension.
+%End
+
+      public:
+        NodeDim( const QString &visibility = QString() );
+%Docstring
+Constructor
+%End
+        ~NodeDim();
+
+        void append( const QgsVBScriptScript::DimVar &variable );
+%Docstring
+Appends a variable to the dimension
+%End
+
+        void setVisibility( const QString &visibility );
+%Docstring
+Sets the visibility of the dimension.
+%End
+
+        const QList<QgsVBScriptScript::DimVar> &variables() const;
+%Docstring
+Returns the dimensioned variables.
+%End
+
+        QString visibility() const;
+%Docstring
+Returns the visibility of the dimension.
+%End
+
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const /Factory/;
+
+
+      private:
+        NodeDim( const NodeDim &other );
+    };
+
+    class NodeReDim : Node
+    {
+%Docstring(signature="appended")
+A re-dimension node.
+%End
+
+      public:
+        NodeReDim( bool preserve );
+%Docstring
+Constructor
+%End
+        ~NodeReDim();
+
+        void append( const QgsVBScriptScript::DimVar &variable );
+%Docstring
+Appends a variable to the dimension
+%End
+
+        const QList<QgsVBScriptScript::DimVar> &variables() const;
+%Docstring
+Returns the dimensioned variables.
+%End
+
+        bool preserve() const;
+%Docstring
+Returns ``True`` if the ReDim is set to preserve values.
+%End
+
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const /Factory/;
+
+
+      private:
+        NodeReDim( const NodeReDim &other );
+    };
+
+    class NodeConst : Node
+    {
+%Docstring(signature="appended")
+A const statement.
+%End
+
+      public:
+        NodeConst( const QString &visibility, const QString &name, Node *value /Transfer/ );
+%Docstring
+Constructor
+%End
+
+        QString visibility() const;
+%Docstring
+Returns the object visibility
+%End
+
+        QString name() const;
+%Docstring
+Returns the associated object name
+%End
+
+        Node *value() const;
+%Docstring
+Returns the object's value
+%End
+
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const /Factory/;
+
+
+      private:
+        NodeConst( const NodeConst &other );
+    };
+
+    class NodeElseIf
+    {
+%Docstring(signature="appended")
+An else if block.
+%End
+
+      public:
+        NodeElseIf( Node *condition /Transfer/, NodeStatementList *body /Transfer/ );
+%Docstring
+Constructor
+%End
+        ~NodeElseIf();
+
+        Node *condition() const;
+%Docstring
+Returns the condition node
+%End
+        NodeStatementList *thenBody() const;
+%Docstring
+Returns the THEN body
+%End
+
+      private:
+        NodeElseIf( const NodeElseIf &other );
+    };
+
+    class NodeIf : Node
+    {
+%Docstring(signature="appended")
+An if block.
+%End
+
+      public:
+        NodeIf( Node *condition /Transfer/, NodeStatementList *then /Transfer/, QList<QgsVBScriptScript::NodeElseIf *> elseIfs /Transfer/, NodeStatementList *elseBranch /Transfer/ );
+%Docstring
+Constructor
+%End
+        ~NodeIf();
+
+        Node *condition() const;
+%Docstring
+Returns the condition node
+%End
+        NodeStatementList *thenBody() const;
+%Docstring
+Returns the THEN body
+%End
+        const QList<QgsVBScriptScript::NodeElseIf *> &elseIfs() const;
+%Docstring
+Returns a list of ELSE IF blocks
+%End
+        NodeStatementList *elseBody() const;
+%Docstring
+Returns the ELSE body
+%End
+
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const /Factory/;
+
+
+      private:
+        NodeIf( const NodeIf &other );
+    };
+
+    class NodeCase
+    {
+      public:
+        NodeCase( NodeExpressionList *exprs, NodeStatementList *body );
+        ~NodeCase();
+        NodeExpressionList *expressions; // null = Case Else
+        NodeStatementList *body;
+    };
+    class NodeSelect : Node
+    {
+      public:
+        NodeSelect( Node *expr, QList<QgsVBScriptScript::NodeCase *> cases );
+        ~NodeSelect();
+        Node *expr() const;
+        const QList<QgsVBScriptScript::NodeCase *> &cases() const;
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const;
+
+
+      private:
+        NodeSelect( const NodeSelect &other );
+    };
+
+    class NodeFor : Node
+    {
+      public:
+        NodeFor( const QString &var, Node *from, Node *to, Node *step, NodeStatementList *body );
+        QString varName() const;
+        Node *from() const;
+        Node *to() const;
+        Node *step() const;
+        NodeStatementList *body() const;
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const;
+
+
+      private:
+        NodeFor( const NodeFor &other );
+    };
+
+    class NodeForEach : Node
+    {
+      public:
+        NodeForEach( const QString &var, Node *collection, NodeStatementList *body );
+        QString varName() const;
+        Node *collection() const;
+        NodeStatementList *body() const;
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const;
+
+
+      private:
+        NodeForEach( const NodeForEach &other );
+    };
+
+    class NodeWhile : Node
+    {
+      public:
+        NodeWhile( Node *cond, NodeStatementList *body );
+        Node *condition() const;
+        NodeStatementList *body() const;
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const;
+
+
+      private:
+        NodeWhile( const NodeWhile &other );
+    };
+
+    enum class DoMode /BaseType=IntEnum/
+    {
+      doInfinite,
+      doWhilePre,
+      doUntilPre,
+      doWhilePost,
+      doUntilPost
+    };
+    class NodeDo : Node
+    {
+      public:
+        NodeDo( DoMode mode, Node *cond, NodeStatementList *body );
+        DoMode mode() const;
+        Node *condition() const;
+        NodeStatementList *body() const;
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const;
+
+
+      private:
+        NodeDo( const NodeDo &other );
+    };
+
+    class NodeWith : Node
+    {
+      public:
+        NodeWith( Node *obj, NodeStatementList *body );
+        Node *obj() const;
+        NodeStatementList *body() const;
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const;
+
+
+      private:
+        NodeWith( const NodeWith &other );
+    };
+
+    class NodeExit : Node
+    {
+      public:
+        explicit NodeExit( const QString &what );
+        QString what() const;
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const;
+
+    };
+
+    class NodeOnError : Node
+    {
+      public:
+        enum class Mode /BaseType=IntEnum/
+        {
+          ResumeNext,
+          GoTo0
+        };
+        explicit NodeOnError( Mode m );
+        Mode mode() const;
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const;
+
+    };
+
+    class NodeSubDef : Node
+    {
+      public:
+        NodeSubDef( const QString &vis, const QString &name, QgsVBScriptScript::NodeParameterList *params, NodeStatementList *body );
+        QString visibility() const;
+        QString name() const;
+        QgsVBScriptScript::NodeParameterList *params() const;
+        NodeStatementList *body() const;
+        virtual NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const;
+
+
+      private:
+        NodeSubDef( const NodeSubDef &other );
+    };
+
+    class NodeFuncDef : Node
+    {
+      public:
+        NodeFuncDef( const QString &vis, const QString &name, QgsVBScriptScript::NodeParameterList *params, QgsVBScriptScript::NodeStatementList *body );
+        QString visibility() const;
+        QString name() const;
+        QgsVBScriptScript::NodeParameterList *params() const;
+        QgsVBScriptScript::NodeStatementList *body() const;
+        virtual QgsVBScriptScript::NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const;
+
+
+      private:
+        NodeFuncDef( const NodeFuncDef &other );
+    };
+
+    enum class PropKind /BaseType=IntEnum/
+    {
+      pkGet,
+      pkLet,
+      pkSet
+    };
+    class NodePropDef : Node
+    {
+      public:
+        NodePropDef( const QString &vis, QgsVBScriptScript::PropKind kind, const QString &name, QgsVBScriptScript::NodeParameterList *params, QgsVBScriptScript::NodeStatementList *body );
+        QString visibility() const;
+        QgsVBScriptScript::PropKind kind() const;
+        QString name() const;
+        QgsVBScriptScript::NodeParameterList *params() const;
+        QgsVBScriptScript::NodeStatementList *body() const;
+        virtual QgsVBScriptScript::NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const;
+
+
+      private:
+        NodePropDef( const NodePropDef &other );
+    };
+
+    class NodeClassDef : Node
+    {
+      public:
+        NodeClassDef( const QString &name, QgsVBScriptScript::NodeStatementList *body );
+        QString name() const;
+        QgsVBScriptScript::NodeStatementList *body() const;
+        virtual QgsVBScriptScript::NodeType nodeType() const;
+        virtual QString dump() const;
+
+        virtual void accept( Visitor &v ) const;
+
+        virtual Node *clone() const;
+
+
+      private:
+        NodeClassDef( const NodeClassDef &other );
+    };
+
+    class Visitor
+    {
+      public:
+        virtual ~Visitor();
+        virtual void visit( const NodeLiteral & ) = 0;
+        virtual void visit( const NodeIdent & ) = 0;
+        virtual void visit( const NodeUnaryOperator & ) = 0;
+        virtual void visit( const NodeBinaryOperator & ) = 0;
+        virtual void visit( const NodeMember & ) = 0;
+        virtual void visit( const NodeFunctionCallOrArrayIndex & ) = 0;
+        virtual void visit( const NodeFunctionCall & ) = 0;
+        virtual void visit( const NodeAssign & ) = 0;
+        virtual void visit( const NodeDim & ) = 0;
+        virtual void visit( const NodeReDim & ) = 0;
+        virtual void visit( const NodeConst & ) = 0;
+        virtual void visit( const NodeIf & ) = 0;
+        virtual void visit( const NodeSelect & ) = 0;
+        virtual void visit( const NodeFor & ) = 0;
+        virtual void visit( const NodeForEach & ) = 0;
+        virtual void visit( const NodeWhile & ) = 0;
+        virtual void visit( const NodeDo & ) = 0;
+        virtual void visit( const NodeWith & ) = 0;
+        virtual void visit( const NodeExit & ) = 0;
+        virtual void visit( const NodeOnError & ) = 0;
+        virtual void visit( const NodeSubDef & ) = 0;
+        virtual void visit( const NodeFuncDef & ) = 0;
+        virtual void visit( const NodePropDef & ) = 0;
+        virtual void visit( const NodeClassDef & ) = 0;
+        virtual void visit( const NodeStatementList & ) = 0;
+        virtual void visit( const NodeExpressionList & ) = 0;
+        virtual void visit( const NodeParameterList & ) = 0;
+    };
+
+    class RecursiveVisitor : Visitor
+    {
+      public:
+        virtual void visit( const NodeLiteral & );
+        virtual void visit( const NodeIdent & );
+        virtual void visit( const NodeUnaryOperator &n );
+        virtual void visit( const NodeBinaryOperator &n );
+        virtual void visit( const NodeMember &n );
+        virtual void visit( const NodeFunctionCallOrArrayIndex &n );
+        virtual void visit( const NodeFunctionCall &n );
+        virtual void visit( const NodeAssign &n );
+        virtual void visit( const NodeDim & );
+        virtual void visit( const NodeReDim & );
+        virtual void visit( const NodeConst &n );
+        virtual void visit( const NodeIf &n );
+
+        virtual void visit( const NodeSelect &n );
+
+        virtual void visit( const NodeFor &n );
+
+        virtual void visit( const NodeForEach &n );
+
+        virtual void visit( const NodeWhile &n );
+
+        virtual void visit( const NodeDo &n );
+
+        virtual void visit( const NodeWith &n );
+
+        virtual void visit( const NodeExit & );
+        virtual void visit( const NodeOnError & );
+        virtual void visit( const NodeSubDef &n );
+
+        virtual void visit( const NodeFuncDef &n );
+
+        virtual void visit( const NodePropDef &n );
+
+        virtual void visit( const NodeClassDef &n );
+
+        virtual void visit( const NodeStatementList &n );
+        virtual void visit( const NodeExpressionList &n );
+        virtual void visit( const NodeParameterList & );
+    };
+
+    void acceptVisitor( QgsVBScriptScript::Visitor &v ) const;
+
+  private:
+    QgsVBScriptScript( const QgsVBScriptScript &other );
+};
+
+
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/core/lexers/qgsvbscriptscript.h                                  *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.py again   *
+ ************************************************************************/

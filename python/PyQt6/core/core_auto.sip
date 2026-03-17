@@ -498,6 +498,7 @@
 %Include auto_generated/layout/qgsreport.sip
 %Include auto_generated/layout/qgsreportsectionfieldgroup.sip
 %Include auto_generated/layout/qgsreportsectionlayout.sip
+%Include auto_generated/lexers/qgsvbscriptscript.sip
 %Include auto_generated/locator/qgslocator.sip
 %Include auto_generated/locator/qgslocatorcontext.sip
 %Include auto_generated/locator/qgslocatorfilter.sip
