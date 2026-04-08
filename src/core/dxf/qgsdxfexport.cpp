@@ -1156,7 +1156,8 @@ void QgsDxfExport::writePolyline( const QgsPointSequence &line, const QString &l
     return;
   }
 
-  if ( mForce2d || !line.at( 0 ).is3D() )
+  const bool is2D = mForce2d || !line.at( 0 ).is3D();
+  if ( !mFlags.testFlag( FlagForcePolylineExport ) && is2D )
   {
     bool polygon = line[0] == line[line.size() - 1];
     if ( polygon )
@@ -1186,9 +1187,18 @@ void QgsDxfExport::writePolyline( const QgsPointSequence &line, const QString &l
     writeGroup( 8, layer );
     writeGroup( 6, lineStyleName );
     writeGroup( color );
-    writeGroup( 100, u"AcDb3dPolyline"_s );
-    writeGroup( 0, QgsPoint( Qgis::WkbType::PointZ, 0.0, 0.0, 0.0 ) );
-    writeGroup( 70, 8 );
+    if ( is2D )
+    {
+      writeGroup( 100, u"AcDb2dPolyline"_s );
+      writeGroup( 0, QgsPoint( Qgis::WkbType::Point, 0.0, 0.0 ) );
+      writeGroup( 70, 0 );
+    }
+    else
+    {
+      writeGroup( 100, u"AcDb3dPolyline"_s );
+      writeGroup( 0, QgsPoint( Qgis::WkbType::PointZ, 0.0, 0.0, 0.0 ) );
+      writeGroup( 70, 8 );
+    }
 
     for ( int i = 0; i < n; i++ )
     {
@@ -1199,9 +1209,9 @@ void QgsDxfExport::writePolyline( const QgsPointSequence &line, const QString &l
       writeGroup( 8, layer );
       writeGroup( color );
       writeGroup( 100, u"AcDbVertex"_s );
-      writeGroup( 100, u"AcDb3dPolylineVertex"_s );
+      writeGroup( 100, is2D ? u"AcDb2dVertex"_s : u"AcDb3dPolylineVertex"_s );
       writeGroup( 0, line[i] );
-      writeGroup( 70, 32 );
+      writeGroup( 70, is2D ? 0 : 32 );
     }
 
     writeGroup( 0, u"SEQEND"_s );
@@ -1298,7 +1308,8 @@ void QgsDxfExport::writePolyline( const QgsCurve &curve, const QString &layer, c
   QVector<double> bulges;
   appendCurve( curve, points, bulges );
 
-  if ( mForce2d || !curve.is3D() )
+  const bool is2D = mForce2d || !curve.is3D();
+  if ( !mFlags.testFlag( FlagForcePolylineExport ) && is2D )
   {
     writeGroup( 0, u"LWPOLYLINE"_s );
     writeHandle();
@@ -1338,9 +1349,18 @@ void QgsDxfExport::writePolyline( const QgsCurve &curve, const QString &layer, c
     writeGroup( 8, layer );
     writeGroup( 6, lineStyleName );
     writeGroup( color );
-    writeGroup( 100, u"AcDb3dPolyline"_s );
-    writeGroup( 0, QgsPoint( Qgis::WkbType::PointZ, 0.0, 0.0, 0.0 ) );
-    writeGroup( 70, 8 );
+    if ( is2D )
+    {
+      writeGroup( 100, u"AcDb2dPolyline"_s );
+      writeGroup( 0, QgsPoint( Qgis::WkbType::Point, 0.0, 0.0 ) );
+      writeGroup( 70, 0 );
+    }
+    else
+    {
+      writeGroup( 100, u"AcDb3dPolyline"_s );
+      writeGroup( 0, QgsPoint( Qgis::WkbType::PointZ, 0.0, 0.0, 0.0 ) );
+      writeGroup( 70, 8 );
+    }
 
     for ( int i = 0; i < points.size(); i++ )
     {
@@ -1351,11 +1371,11 @@ void QgsDxfExport::writePolyline( const QgsCurve &curve, const QString &layer, c
       writeGroup( 8, layer );
       writeGroup( color );
       writeGroup( 100, u"AcDbVertex"_s );
-      writeGroup( 100, u"AcDb3dPolylineVertex"_s );
+      writeGroup( 100, is2D ? u"AcDb2dVertex"_s : u"AcDb3dPolylineVertex"_s );
       writeGroup( 0, points[i] );
       if ( bulges[i] != 0.0 )
         writeGroup( 42, bulges[i] );
-      writeGroup( 70, 32 );
+      writeGroup( 70, is2D ? 0 : 32 );
     }
 
     writeGroup( 0, u"SEQEND"_s );
@@ -1645,24 +1665,41 @@ void QgsDxfExport::writeFilledCircle( const QString &layer, const QColor &color,
 
 void QgsDxfExport::writeCircle( const QString &layer, const QColor &color, const QgsPoint &pt, double radius, const QString &lineStyleName, double width )
 {
-  writeGroup( 0, u"LWPOLYLINE"_s );
-  writeHandle();
-  writeGroup( 330, mBlockHandle );
-  writeGroup( 8, layer );
-  writeGroup( 100, u"AcDbEntity"_s );
-  writeGroup( 100, u"AcDbPolyline"_s );
-  writeGroup( 6, lineStyleName );
-  writeGroup( color );
+  if ( !mFlags.testFlag( FlagForcePolylineExport ) )
+  {
+    writeGroup( 0, u"LWPOLYLINE"_s );
+    writeHandle();
+    writeGroup( 330, mBlockHandle );
+    writeGroup( 8, layer );
+    writeGroup( 100, u"AcDbEntity"_s );
+    writeGroup( 100, u"AcDbPolyline"_s );
+    writeGroup( 6, lineStyleName );
+    writeGroup( color );
 
-  writeGroup( 90, 2 );
+    writeGroup( 90, 2 );
 
-  writeGroup( 70, 1 );
-  writeGroup( 43, width );
+    writeGroup( 70, 1 );
+    writeGroup( 43, width );
 
-  writeGroup( 0, QgsPoint( pt.x() - radius, pt.y() ) );
-  writeGroup( 42, 1.0 );
-  writeGroup( 0, QgsPoint( pt.x() + radius, pt.y() ) );
-  writeGroup( 42, 1.0 );
+    writeGroup( 0, QgsPoint( pt.x() - radius, pt.y() ) );
+    writeGroup( 42, 1.0 );
+    writeGroup( 0, QgsPoint( pt.x() + radius, pt.y() ) );
+    writeGroup( 42, 1.0 );
+  }
+  else
+  {
+    writeGroup( 0, u"CIRCLE"_s );
+    writeHandle();
+    writeGroup( 330, mBlockHandle );
+    writeGroup( 8, layer );
+    writeGroup( 100, u"AcDbEntity"_s );
+    writeGroup( 100, u"AcDbCircle"_s );
+    writeGroup( 6, lineStyleName );
+    writeGroup( color );
+    writeGroup( 39, width );
+    writeGroup( 10, QgsPoint( pt.x(), pt.y() ) );
+    writeGroup( 40, radius );
+  }
 }
 
 void QgsDxfExport::writeText( const QString &layer, const QString &text, const QgsPoint &pt, double size, double angle, const QColor &color, HAlign hali, VAlign vali )

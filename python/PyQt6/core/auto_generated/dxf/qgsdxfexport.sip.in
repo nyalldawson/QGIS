@@ -113,7 +113,8 @@ If not set the source layer's name will be used.
     {
       FlagNoMText,
       FlagOnlySelectedFeatures,
-      FlagHairlineWidthExport
+      FlagHairlineWidthExport,
+      FlagForcePolylineExport,
     };
     typedef QFlags<QgsDxfExport::Flag> Flags;
 

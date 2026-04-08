@@ -165,7 +165,8 @@ class CORE_EXPORT QgsDxfExport : public QgsLabelSink
     {
       FlagNoMText = 1 << 1,              //!< Export text as TEXT elements. If not set, text will be exported as MTEXT elements.
       FlagOnlySelectedFeatures = 1 << 2, //!< Use only selected features for the export.
-      FlagHairlineWidthExport = 1 << 3   //!Export all lines with minimum width and don't fill polygons. Since QGIS 3.38
+      FlagHairlineWidthExport = 1 << 3,  //!< Export all lines with minimum width and don't fill polygons. \since QGIS 3.38
+      FlagForcePolylineExport = 1 << 4,  //!< Always use POLYLINE entities (never LWPOLYLINE). \since QGIS 4.2
     };
     Q_DECLARE_FLAGS( Flags, Flag )
 
