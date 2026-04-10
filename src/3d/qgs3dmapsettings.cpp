@@ -317,20 +317,20 @@ void Qgs3DMapSettings::readXml( const QDomElement &elem, const QgsReadWriteConte
   QDomElement elemDiorama = elem.firstChildElement( u"diorama"_s );
   if ( !elemDiorama.isNull() )
   {
-    mDioramaEnabled = elemDiorama.attribute( u"enabled"_s, u"0"_s ).toInt();
+    mDioramaEnabled = true; //elemDiorama.attribute( u"enabled"_s, u"0"_s ).toInt();
     mDioramaHeight = elemDiorama.attribute( u"height"_s, u"0"_s ).toDouble();
 
     const QString materialType = elemDiorama.attribute( u"material_type"_s, u"phong"_s );
-    mDioramaMaterial.reset( Qgs3D::materialRegistry()->createMaterialSettings( materialType ) );
+    mDioramaMaterial = Qgs3D::materialRegistry()->createMaterialSettings( materialType );
     if ( !mDioramaMaterial )
-      mDioramaMaterial.reset( Qgs3D::materialRegistry()->createMaterialSettings( u"phong"_s ) );
+      mDioramaMaterial = Qgs3D::materialRegistry()->createMaterialSettings( u"phong"_s );
     QDomElement elemDioramaMaterial = elemDiorama.firstChildElement( u"material"_s );
     if ( !elemDioramaMaterial.isNull() )
       mDioramaMaterial->readXml( elemDioramaMaterial, context );
   }
   else
   {
-    mDioramaEnabled = false;
+    mDioramaEnabled = true;
     mDioramaHeight = 0.0;
     mDioramaMaterial = std::make_unique<QgsPhongMaterialSettings>();
   }

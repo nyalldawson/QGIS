@@ -17,6 +17,7 @@
 
 #include <limits>
 
+#include "qgs3d.h"
 #include "qgs3dmapsettings.h"
 #include "qgsabstractmaterialsettings.h"
 #include "qgsabstractterrainsettings.h"
@@ -25,6 +26,7 @@
 #include "qgsdemterraintilegeometry_p.h"
 #include "qgseventtracing.h"
 #include "qgsgeotransform.h"
+#include "qgsmaterial3dhandler.h"
 #include "qgsonlineterraingenerator.h"
 #include "qgsphongmaterialsettings.h"
 #include "qgsterrainentity.h"
@@ -288,7 +290,7 @@ void QgsDemTerrainTileLoader::createDioramaWalls( QgsTerrainTileEntity *tileEnti
 
     QgsMaterialContext materialContext;
     materialContext.setIsSelected( false );
-    QgsMaterial *material = dioramaMaterial.toMaterial( QgsMaterialSettingsRenderingTechnique::Triangles, materialContext );
+    QgsMaterial *material = Qgs3D::toMaterial( &dioramaMaterial, Qgis::MaterialRenderingTechnique::Triangles, materialContext );
 
     // Disable backface culling
     const QVector<Qt3DRender::QTechnique *> techniques = material->effect()->techniques();
