@@ -101,7 +101,7 @@ Constructor for QgsStyle, with the specified ``parent`` object.
       LabelSettingsEntity,
       LegendPatchShapeEntity,
       Symbol3DEntity,
-      MaterialSettingsEntity,
+      Asset3DEntity,
     };
 
     QString name() const;
@@ -277,21 +277,20 @@ Returns ``True`` if the operation was successful.
 .. versionadded:: 3.16
 %End
 
-    bool addMaterialSettings( const QString &name, QgsAbstractMaterialSettings *settings /Transfer/, bool update = false );
+    bool addAsset3D( const QString &name, QgsAbstract3DAsset *asset /Transfer/, bool update = false );
 %Docstring
-Adds a 3D material ``settings`` with the specified ``name`` to the
-style.
+Adds a 3D ``asset`` with the specified ``name`` to the style.
 
-Ownership of ``settings`` is transferred.
+Ownership of ``asset`` is transferred.
 
 If ``update`` is set to ``True``, the style database will be
-automatically updated with the new material settings.
+automatically updated with the new asset.
 
 Returns ``True`` if the operation was successful.
 
 .. note::
 
-   Adding material settings with the name of existing ones replaces them.
+   Adding 3D assets with the name of existing ones replaces them.
 
 .. versionadded:: 4.2
 %End
@@ -872,47 +871,45 @@ Returns a list of names of 3d symbols in the style.
 .. versionadded:: 3.16
 %End
 
-    bool saveMaterialSettings( const QString &name, QgsAbstractMaterialSettings *settings /Transfer/, bool favorite, const QStringList &tags );
+    bool saveAsset3D( const QString &name, QgsAbstract3DAsset *asset /Transfer/, bool favorite, const QStringList &tags );
 %Docstring
-Adds 3D material ``settings`` to the database.
+Adds 3D ``asset`` to the database.
 
-:param name: is the name of the material settings
-:param settings: 3D material settings to save. Ownership is transferred.
-:param favorite: is a boolean value to specify whether the material
-                 settings should be added to favorites
-:param tags: is a list of tags that are associated with the material
-             settings
+:param name: is the name of the asset
+:param asset: 3D asset to save. Ownership is transferred.
+:param favorite: is a boolean value to specify whether the asset should
+                 be added to favorites
+:param tags: is a list of tags that are associated with the asset
 
 :return: returns the success state of the save operation
 
 .. versionadded:: 4.2
 %End
 
-    bool renameMaterialSettings( const QString &oldName, const QString &newName );
+    bool renameAsset3D( const QString &oldName, const QString &newName );
 %Docstring
-Changes a 3D material settings's name.
+Changes a 3D asset's name.
 
 .. versionadded:: 4.2
 %End
 
-    QStringList materialSettingsNames() const;
+    QStringList asset3DNames() const;
 %Docstring
-Returns a list of names of 3D material settings in the style.
+Returns a list of names of 3D assets in the style.
 
 .. versionadded:: 4.2
 %End
 
-    int materialSettingsCount() const;
+    int asset3DCount() const;
 %Docstring
-Returns count of 3D material settings in the style.
+Returns count of 3D assets in the style.
 
 .. versionadded:: 4.2
 %End
 
-    std::unique_ptr< QgsAbstractMaterialSettings > materialSettings( const QString &name ) const;
+    std::unique_ptr< QgsAbstract3DAsset > asset3D( const QString &name ) const;
 %Docstring
-Returns a new copy of the 3D material settings with the specified
-``name``.
+Returns a new copy of the 3D asset with the specified ``name``.
 
 .. versionadded:: 4.2
 %End
@@ -1418,8 +1415,8 @@ database.
         sipType = sipType_QgsStyleSymbol3DEntity;
         break;
 
-      case QgsStyle::MaterialSettingsEntity:
-        sipType = sipType_QgsStyleMaterialSettingsEntity;
+      case QgsStyle::Asset3DEntity:
+        sipType = sipType_QgsStyleAsset3DEntity;
         break;
 
       case QgsStyle::SmartgroupEntity:
@@ -1613,10 +1610,10 @@ Returns the entity's symbol.
 };
 
 
-class QgsStyleMaterialSettingsEntity : QgsStyleEntityInterface
+class QgsStyleAsset3DEntity : QgsStyleEntityInterface
 {
 %Docstring(signature="appended")
-A 3D material settings entity for :py:class:`QgsStyle` databases.
+A 3D asset entity for :py:class:`QgsStyle` databases.
 
 .. versionadded:: 4.2
 %End
@@ -1625,20 +1622,19 @@ A 3D material settings entity for :py:class:`QgsStyle` databases.
 #include "qgsstyle.h"
 %End
   public:
-    QgsStyleMaterialSettingsEntity( const QgsAbstractMaterialSettings *settings );
+    QgsStyleAsset3DEntity( const QgsAbstract3DAsset *asset );
 %Docstring
-Constructor for QgsStyleMaterialSettingsEntity, with the specified
-``settings``.
+Constructor for QgsStyleAsset3DEntity, with the specified ``asset``.
 
-Ownership of ``settings`` is NOT transferred.
+Ownership of ``asset`` is NOT transferred.
 %End
 
     virtual QgsStyle::StyleEntity type() const;
 
 
-    const QgsAbstractMaterialSettings *settings() const;
+    const QgsAbstract3DAsset *asset() const;
 %Docstring
-Returns the entity's settings.
+Returns the entity's asset.
 %End
 
 };

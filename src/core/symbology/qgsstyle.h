@@ -37,7 +37,7 @@ class QgsStyleEntityInterface;
 class QgsAbstract3DSymbol;
 class QDomDocument;
 class QDomElement;
-class QgsAbstractMaterialSettings;
+class QgsAbstract3DAsset;
 
 typedef QMap<QString, QgsColorRamp * > QgsVectorColorRampMap;
 typedef QMap<int, QString> QgsSymbolGroupMap;
@@ -212,7 +212,7 @@ class CORE_EXPORT QgsStyle : public QObject
       LabelSettingsEntity,    //!< Label settings
       LegendPatchShapeEntity, //!< Legend patch shape \since QGIS 3.14
       Symbol3DEntity,         //!< 3D symbol entity \since QGIS 3.14
-      MaterialSettingsEntity, //!< Material settings \since QGIS 4.2
+      Asset3DEntity,          //!< 3D asset \since QGIS 4.2
     };
 
     /**
@@ -347,18 +347,18 @@ class CORE_EXPORT QgsStyle : public QObject
     bool addSymbol3D( const QString &name, QgsAbstract3DSymbol *symbol SIP_TRANSFER, bool update = false );
 
     /**
-     * Adds a 3D material \a settings with the specified \a name to the style.
+     * Adds a 3D \a asset with the specified \a name to the style.
      *
-     * Ownership of \a settings is transferred.
+     * Ownership of \a asset is transferred.
      *
-     * If \a update is set to TRUE, the style database will be automatically updated with the new material settings.
+     * If \a update is set to TRUE, the style database will be automatically updated with the new asset.
      *
      * Returns TRUE if the operation was successful.
      *
-     * \note Adding material settings with the name of existing ones replaces them.
+     * \note Adding 3D assets with the name of existing ones replaces them.
      * \since QGIS 4.2
      */
-    bool addMaterialSettings( const QString &name, QgsAbstractMaterialSettings *settings SIP_TRANSFER, bool update = false );
+    bool addAsset3D( const QString &name, QgsAbstract3DAsset *asset SIP_TRANSFER, bool update = false );
 
     /**
      * Adds a new tag and returns the tag's id
@@ -869,43 +869,43 @@ class CORE_EXPORT QgsStyle : public QObject
     QStringList symbol3DNames() const;
 
     /**
-     * Adds 3D material \a settings to the database.
+     * Adds 3D \a asset to the database.
      *
-     * \param name is the name of the material settings
-     * \param settings 3D material settings to save. Ownership is transferred.
-     * \param favorite is a boolean value to specify whether the material settings should be added to favorites
-     * \param tags is a list of tags that are associated with the material settings
+     * \param name is the name of the asset
+     * \param asset 3D asset to save. Ownership is transferred.
+     * \param favorite is a boolean value to specify whether the asset should be added to favorites
+     * \param tags is a list of tags that are associated with the asset
      * \returns returns the success state of the save operation
      *
      * \since QGIS 4.2
      */
-    bool saveMaterialSettings( const QString &name, QgsAbstractMaterialSettings *settings SIP_TRANSFER, bool favorite, const QStringList &tags );
+    bool saveAsset3D( const QString &name, QgsAbstract3DAsset *asset SIP_TRANSFER, bool favorite, const QStringList &tags );
 
     /**
-     * Changes a 3D material settings's name.
+     * Changes a 3D asset's name.
      *
      * \since QGIS 4.2
      */
-    bool renameMaterialSettings( const QString &oldName, const QString &newName );
+    bool renameAsset3D( const QString &oldName, const QString &newName );
 
     /**
-     * Returns a list of names of 3D material settings in the style.
+     * Returns a list of names of 3D assets in the style.
      * \since QGIS 4.2
      */
-    QStringList materialSettingsNames() const;
+    QStringList asset3DNames() const;
 
     /**
-     * Returns count of 3D material settings in the style.
+     * Returns count of 3D assets in the style.
      * \since QGIS 4.2
      */
-    int materialSettingsCount() const;
+    int asset3DCount() const;
 
     /**
-     * Returns a new copy of the 3D material settings with the specified \a name.
+     * Returns a new copy of the 3D asset with the specified \a name.
      *
      * \since QGIS 4.2
      */
-    std::unique_ptr< QgsAbstractMaterialSettings > materialSettings( const QString &name ) const;
+    std::unique_ptr< QgsAbstract3DAsset > asset3D( const QString &name ) const;
 
     /**
      * Creates an on-disk database
@@ -1306,7 +1306,7 @@ class CORE_EXPORT QgsStyle : public QObject
     QgsLabelSettingsMap mLabelSettings;
     QMap<QString, QgsLegendPatchShape > mLegendPatchShapes;
     QMap<QString, QgsAbstract3DSymbol * > m3dSymbols;
-    QMap<QString, QgsAbstractMaterialSettings * > mMaterialSettings;
+    QMap<QString, QgsAbstract3DAsset * > m3dAssets;
 
     QHash< QgsStyle::StyleEntity, QHash< QString, QStringList > > mCachedTags;
     QHash< QgsStyle::StyleEntity, QHash< QString, bool > > mCachedFavorites;
@@ -1430,8 +1430,8 @@ class CORE_EXPORT QgsStyleEntityInterface
         sipType = sipType_QgsStyleSymbol3DEntity;
         break;
 
-      case QgsStyle::MaterialSettingsEntity:
-        sipType = sipType_QgsStyleMaterialSettingsEntity;
+      case QgsStyle::Asset3DEntity:
+        sipType = sipType_QgsStyleAsset3DEntity;
         break;
 
       case QgsStyle::SmartgroupEntity:
@@ -1624,32 +1624,32 @@ class CORE_EXPORT QgsStyleSymbol3DEntity : public QgsStyleEntityInterface
 
 
 /**
- * \class QgsStyleMaterialSettingsEntity
+ * \class QgsStyleAsset3DEntity
  * \ingroup core
- * \brief A 3D material settings entity for QgsStyle databases.
+ * \brief A 3D asset entity for QgsStyle databases.
  * \since QGIS 4.2
  */
-class CORE_EXPORT QgsStyleMaterialSettingsEntity : public QgsStyleEntityInterface
+class CORE_EXPORT QgsStyleAsset3DEntity : public QgsStyleEntityInterface
 {
   public:
     /**
-   * Constructor for QgsStyleMaterialSettingsEntity, with the specified \a settings.
-   *
-   * Ownership of \a settings is NOT transferred.
-   */
-    QgsStyleMaterialSettingsEntity( const QgsAbstractMaterialSettings *settings )
-      : mSettings( settings )
+     * Constructor for QgsStyleAsset3DEntity, with the specified \a asset.
+     *
+     * Ownership of \a asset is NOT transferred.
+    */
+    QgsStyleAsset3DEntity( const QgsAbstract3DAsset *asset )
+      : mAsset( asset )
     {}
 
     QgsStyle::StyleEntity type() const override;
 
     /**
-   * Returns the entity's settings.
-   */
-    const QgsAbstractMaterialSettings *settings() const { return mSettings; }
+     * Returns the entity's asset.
+     */
+    const QgsAbstract3DAsset *asset() const { return mAsset; }
 
   private:
-    const QgsAbstractMaterialSettings *mSettings = nullptr;
+    const QgsAbstract3DAsset *mAsset = nullptr;
 };
 
 #endif

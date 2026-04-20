@@ -18,6 +18,7 @@
 #include <sqlite3.h>
 
 #include "qgs3dsymbolregistry.h"
+#include "qgsabstract3dasset.h"
 #include "qgsabstract3dsymbol.h"
 #include "qgsabstractmaterialsettings.h"
 #include "qgsapplication.h"
@@ -82,14 +83,14 @@ enum Symbol3DTable
 };
 
 /**
- * Columns available in the 3D material settings table.
+ * Columns available in the 3D assets table.
  */
-enum MaterialSettingsTable
+enum Asset3DTable
 {
-  MaterialSettingsTableId,         //!< 3d material settings ID
-  MaterialSettingsTableName,       //!< 3d material settings name
-  MaterialSettingsTableXML,        //!< 3d material settings definition (as XML)
-  MaterialSettingsTableFavoriteId, //!< 3d material settings is favorite flag
+  Asset3DTableTableId,         //!< 3d asset ID
+  Asset3DTableTableName,       //!< 3d asset name
+  Asset3DTableTableXML,        //!< 3d asset definition (as XML)
+  Asset3DTableTableFavoriteId, //!< 3d asset is favorite flag
 };
 
 QgsStyle *QgsStyle::sDefaultStyle = nullptr;
@@ -151,8 +152,8 @@ bool QgsStyle::addEntity( const QString &name, const QgsStyleEntityInterface *en
     case Symbol3DEntity:
       return addSymbol3D( name, static_cast< const QgsStyleSymbol3DEntity * >( entity )->symbol()->clone(), update );
 
-    case MaterialSettingsEntity:
-      return addMaterialSettings( name, static_cast< const QgsStyleMaterialSettingsEntity * >( entity )->settings()->clone(), update );
+    case Asset3DEntity:
+      return addAsset3D( name, static_cast< const QgsStyleAsset3DEntity * >( entity )->asset()->clone(), update );
 
     case TagEntity:
     case SmartgroupEntity:
@@ -323,8 +324,8 @@ bool QgsStyle::renameEntity( QgsStyle::StyleEntity type, const QString &oldName,
     case Symbol3DEntity:
       return renameSymbol3D( oldName, newName );
 
-    case MaterialSettingsEntity:
-      return renameMaterialSettings( oldName, newName );
+    case Asset3DEntity:
+      return renameAsset3D( oldName, newName );
 
     case TagEntity:
     case SmartgroupEntity:
@@ -473,23 +474,23 @@ bool QgsStyle::addSymbol3D( const QString &name, QgsAbstract3DSymbol *symbol, bo
   return true;
 }
 
-bool QgsStyle::addMaterialSettings( const QString &name, QgsAbstractMaterialSettings *settings, bool update )
+bool QgsStyle::addAsset3D( const QString &name, QgsAbstract3DAsset *asset, bool update )
 {
   // delete previous settings (if any)
-  auto it = mMaterialSettings.constFind( name );
-  if ( it != mMaterialSettings.constEnd() )
+  auto it = m3dAssets.constFind( name );
+  if ( it != m3dAssets.constEnd() )
   {
     // TODO remove groups and tags?
     delete it.value();
-    mMaterialSettings.insert( name, settings );
+    m3dAssets.insert( name, asset );
     if ( update )
-      updateSymbol( MaterialSettingsEntity, name );
+      updateSymbol( Asset3DEntity, name );
   }
   else
   {
-    mMaterialSettings.insert( name, settings );
+    m3dAssets.insert( name, asset );
     if ( update )
-      saveMaterialSettings( name, settings, false, QStringList() );
+      saveAsset3D( name, asset, false, QStringList() );
   }
 
   return true;

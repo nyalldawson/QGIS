@@ -116,7 +116,7 @@ QgsStyle.TextFormatEntity = QgsStyle.StyleEntity.TextFormatEntity
 QgsStyle.LabelSettingsEntity = QgsStyle.StyleEntity.LabelSettingsEntity
 QgsStyle.LegendPatchShapeEntity = QgsStyle.StyleEntity.LegendPatchShapeEntity
 QgsStyle.Symbol3DEntity = QgsStyle.StyleEntity.Symbol3DEntity
-QgsStyle.MaterialSettingsEntity = QgsStyle.StyleEntity.MaterialSettingsEntity
+QgsStyle.Asset3DEntity = QgsStyle.StyleEntity.Asset3DEntity
 # monkey patching scoped based enum
 QgsStyle.TextFormatContext.Labeling.__doc__ = "Text format used in labeling"
 QgsStyle.TextFormatContext.__doc__ = """Text format context.
@@ -172,7 +172,7 @@ try:
 except (NameError, AttributeError):
     pass
 try:
-    QgsStyleMaterialSettingsEntity.__overridden_methods__ = ['type']
-    QgsStyleMaterialSettingsEntity.__group__ = ['symbology']
+    QgsStyleAsset3DEntity.__overridden_methods__ = ['type']
+    QgsStyleAsset3DEntity.__group__ = ['symbology']
 except (NameError, AttributeError):
     pass
