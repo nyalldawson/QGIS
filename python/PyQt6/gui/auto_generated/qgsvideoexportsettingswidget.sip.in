@@ -1,0 +1,123 @@
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/gui/qgsvideoexportsettingswidget.h                               *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.py again   *
+ ************************************************************************/
+
+
+
+
+
+class QgsVideoExportSettingsWidget : QgsPanelWidget
+{
+%Docstring(signature="appended")
+A widget for configuring video export settings.
+
+.. versionadded:: 4.2
+%End
+
+%TypeHeaderCode
+#include "qgsvideoexportsettingswidget.h"
+%End
+  public:
+    explicit QgsVideoExportSettingsWidget( QWidget *parent /TransferThis/ = 0 );
+%Docstring
+Constructor for QgsVideoExportSettingsWidget, with the specified
+``parent`` widget.
+%End
+
+    QMediaFormat::FileFormat fileFormat() const;
+%Docstring
+Returns the selected output file format.
+
+.. seealso:: :py:func:`setFileFormat`
+%End
+
+    void setFileFormat( QMediaFormat::FileFormat format );
+%Docstring
+Sets the selected output file ``format``.
+
+.. seealso:: :py:func:`fileFormat`
+%End
+
+    QMediaFormat::VideoCodec videoCodec() const;
+%Docstring
+Returns the selected output video codec.
+
+.. seealso:: :py:func:`setVideoCodec`
+%End
+
+    void setVideoCodec( QMediaFormat::VideoCodec codec );
+%Docstring
+Sets the selected output video ``codec``.
+
+.. seealso:: :py:func:`videoCodec`
+%End
+
+    QMediaRecorder::EncodingMode encodingMode() const;
+%Docstring
+Returns the selected video encoding mode.
+
+.. seealso:: :py:func:`setEncodingMode`
+%End
+
+    void setEncodingMode( QMediaRecorder::EncodingMode mode );
+%Docstring
+Sets the selected video encoding ``mode``.
+
+.. seealso:: :py:func:`encodingMode`
+%End
+
+    QMediaRecorder::Quality quality() const;
+%Docstring
+Returns the selected video encoding quality.
+
+.. seealso:: :py:func:`setQuality`
+%End
+
+    void setQuality( QMediaRecorder::Quality quality );
+%Docstring
+Sets the selected video encoding ``quality``.
+
+.. seealso:: :py:func:`quality`
+%End
+
+    int videoBitRate() const;
+%Docstring
+Returns the selected video encoding bit rate.
+
+.. seealso:: :py:func:`setVideoBitRate`
+%End
+
+    void setVideoBitRate( int rate );
+%Docstring
+Sets the video encoding bit ``rate``.
+
+.. seealso:: :py:func:`videoBitRate`
+%End
+
+    double framesPerSecond() const;
+%Docstring
+Returns the selected frames per second.
+
+.. seealso:: :py:func:`setFramesPerSecond`
+%End
+
+    void setFramesPerSecond( double framesPerSecond );
+%Docstring
+Sets the frames per second.
+
+.. seealso:: :py:func:`framesPerSecond`
+%End
+
+};
+
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/gui/qgsvideoexportsettingswidget.h                               *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.py again   *
+ ************************************************************************/

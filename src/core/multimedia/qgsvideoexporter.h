@@ -191,7 +191,7 @@ class CORE_EXPORT QgsVideoExporter : public QObject
     void setQuality( QMediaRecorder::Quality quality );
 
     /**
-     * Returns the video encoding bit rate.
+     * Returns the video encoding bit rate (in bits per second).
      *
      * \see setVideoBitRate()
      * \since QGIS 4.2
@@ -199,7 +199,7 @@ class CORE_EXPORT QgsVideoExporter : public QObject
     int videoBitRate() const;
 
     /**
-     * Sets the video encoding bit \a rate.
+     * Sets the video encoding bit \a rate (in bits per second).
      *
      * \see videoBitRate()
      * \since QGIS 4.2

@@ -184,7 +184,7 @@ Sets the video encoding ``quality``.
 
     int videoBitRate() const;
 %Docstring
-Returns the video encoding bit rate.
+Returns the video encoding bit rate (in bits per second).
 
 .. seealso:: :py:func:`setVideoBitRate`
 
@@ -193,7 +193,7 @@ Returns the video encoding bit rate.
 
     void setVideoBitRate( int rate );
 %Docstring
-Sets the video encoding bit ``rate``.
+Sets the video encoding bit ``rate`` (in bits per second).
 
 .. seealso:: :py:func:`videoBitRate`
 
