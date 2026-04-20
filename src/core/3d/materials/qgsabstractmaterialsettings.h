@@ -49,6 +49,8 @@ class CORE_EXPORT QgsAbstractMaterialSettings : public QgsAbstract3DAsset
      */
     virtual QString type() const = 0;
 
+    virtual QgsAbstractMaterialSettings *clone() const override = 0 SIP_FACTORY;
+
     /**
      * Returns TRUE if the material requires texture coordinates to be generated
      * during triangulation.

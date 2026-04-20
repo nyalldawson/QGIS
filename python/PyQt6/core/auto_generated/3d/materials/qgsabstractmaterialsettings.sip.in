@@ -34,6 +34,8 @@ Abstract base class for material settings.
 Returns the unique type name for the material.
 %End
 
+    virtual QgsAbstractMaterialSettings *clone() const = 0 /Factory/;
+
     virtual bool requiresTextureCoordinates() const;
 %Docstring
 Returns ``True`` if the material requires texture coordinates to be
