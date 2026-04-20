@@ -159,6 +159,54 @@ class CORE_EXPORT QgsVideoExporter : public QObject
     QMediaFormat::VideoCodec videoCodec() const;
 
     /**
+     * Returns the video encoding mode.
+     *
+     * \see setEncodingMode()
+     * \since QGIS 4.2
+     */
+    QMediaRecorder::EncodingMode encodingMode() const;
+
+    /**
+     * Sets the video encoding \a mode.
+     *
+     * \see encodingMode()
+     * \since QGIS 4.2
+     */
+    void setEncodingMode( QMediaRecorder::EncodingMode mode );
+
+    /**
+     * Returns the video encoding quality.
+     *
+     * \see setQuality()
+     * \since QGIS 4.2
+     */
+    QMediaRecorder::Quality quality() const;
+
+    /**
+     * Sets the video encoding \a quality.
+     *
+     * \see quality()
+     * \since QGIS 4.2
+     */
+    void setQuality( QMediaRecorder::Quality quality );
+
+    /**
+     * Returns the video encoding bit rate.
+     *
+     * \see setVideoBitRate()
+     * \since QGIS 4.2
+     */
+    int videoBitRate() const;
+
+    /**
+     * Sets the video encoding bit \a rate.
+     *
+     * \see videoBitRate()
+     * \since QGIS 4.2
+     */
+    void setVideoBitRate( int rate );
+
+    /**
      * Returns the last error received while writing the video.
      *
      * \see errorString()
@@ -204,6 +252,9 @@ class CORE_EXPORT QgsVideoExporter : public QObject
     qint64 mFrameDurationUs = 100000;
     QMediaFormat::FileFormat mFormat = QMediaFormat::FileFormat::MPEG4;
     QMediaFormat::VideoCodec mCodec = QMediaFormat::VideoCodec::H264;
+    QMediaRecorder::EncodingMode mEncodingMode = QMediaRecorder::EncodingMode::TwoPassEncoding;
+    QMediaRecorder::Quality mQuality = QMediaRecorder::Quality::VeryHighQuality;
+    int mVideoBitRate = 2000;
     QMediaRecorder::Error mError = QMediaRecorder::Error::NoError;
     int mCurrentFrameIndex = 0;
     QPointer< QgsFeedback > mFeedback;

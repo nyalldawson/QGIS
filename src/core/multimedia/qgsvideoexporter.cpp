@@ -104,6 +104,36 @@ QMediaFormat::VideoCodec QgsVideoExporter::videoCodec() const
   return mCodec;
 }
 
+QMediaRecorder::EncodingMode QgsVideoExporter::encodingMode() const
+{
+  return mEncodingMode;
+}
+
+void QgsVideoExporter::setEncodingMode( QMediaRecorder::EncodingMode mode )
+{
+  mEncodingMode = mode;
+}
+
+QMediaRecorder::Quality QgsVideoExporter::quality() const
+{
+  return mQuality;
+}
+
+void QgsVideoExporter::setQuality( QMediaRecorder::Quality quality )
+{
+  mQuality = quality;
+}
+
+int QgsVideoExporter::videoBitRate() const
+{
+  return mVideoBitRate;
+}
+
+void QgsVideoExporter::setVideoBitRate( int rate )
+{
+  mVideoBitRate = rate;
+}
+
 QMediaRecorder::Error QgsVideoExporter::error() const
 {
   return mError;
@@ -131,10 +161,9 @@ void QgsVideoExporter::writeVideo()
   mediaFormat.setVideoCodec( mCodec );
   mRecorder->setMediaFormat( mediaFormat );
 
-  // TODO: expose
-  mRecorder->setQuality( QMediaRecorder::Quality::VeryHighQuality );
-  mRecorder->setVideoBitRate( 2000 );
-  mRecorder->setEncodingMode( QMediaRecorder::EncodingMode::TwoPassEncoding );
+  mRecorder->setQuality( mQuality );
+  mRecorder->setVideoBitRate( mVideoBitRate );
+  mRecorder->setEncodingMode( mEncodingMode );
 
   mRecorder->setVideoResolution( mSize );
   mRecorder->setVideoFrameRate( mFramesPerSecond );

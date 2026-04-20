@@ -146,6 +146,60 @@ Returns the output video codec.
 .. seealso:: :py:func:`setVideoCodec`
 %End
 
+    QMediaRecorder::EncodingMode encodingMode() const;
+%Docstring
+Returns the video encoding mode.
+
+.. seealso:: :py:func:`setEncodingMode`
+
+.. versionadded:: 4.2
+%End
+
+    void setEncodingMode( QMediaRecorder::EncodingMode mode );
+%Docstring
+Sets the video encoding ``mode``.
+
+.. seealso:: :py:func:`encodingMode`
+
+.. versionadded:: 4.2
+%End
+
+    QMediaRecorder::Quality quality() const;
+%Docstring
+Returns the video encoding quality.
+
+.. seealso:: :py:func:`setQuality`
+
+.. versionadded:: 4.2
+%End
+
+    void setQuality( QMediaRecorder::Quality quality );
+%Docstring
+Sets the video encoding ``quality``.
+
+.. seealso:: :py:func:`quality`
+
+.. versionadded:: 4.2
+%End
+
+    int videoBitRate() const;
+%Docstring
+Returns the video encoding bit rate.
+
+.. seealso:: :py:func:`setVideoBitRate`
+
+.. versionadded:: 4.2
+%End
+
+    void setVideoBitRate( int rate );
+%Docstring
+Sets the video encoding bit ``rate``.
+
+.. seealso:: :py:func:`videoBitRate`
+
+.. versionadded:: 4.2
+%End
+
     QMediaRecorder::Error error() const;
 %Docstring
 Returns the last error received while writing the video.
