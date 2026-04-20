@@ -625,7 +625,7 @@ void QgsStyleManagerDialog::tabItemType_currentChanged( int )
   const bool isLabelSettings = currentItemType() == 5;
   const bool isLegendPatchShape = currentItemType() == 6;
   const bool isSymbol3D = currentItemType() == 7;
-  const bool isMaterialSettings = currentItemType() == 8;
+  const bool isAsset3D = currentItemType() == 8;
   searchBox->setPlaceholderText(
     isSymbol             ? tr( "Filter symbols…" )
     : isColorRamp        ? tr( "Filter color ramps…" )
@@ -633,7 +633,7 @@ void QgsStyleManagerDialog::tabItemType_currentChanged( int )
     : isLabelSettings    ? tr( "Filter label settings…" )
     : isLegendPatchShape ? tr( "Filter legend patch shapes…" )
     : isSymbol3D         ? tr( "Filter 3D symbols…" )
-                         : tr( "Filter materials…" )
+                         : tr( "Filter 3D assets…" )
   );
 
   const bool readOnly = isReadOnly();
@@ -649,8 +649,9 @@ void QgsStyleManagerDialog::tabItemType_currentChanged( int )
   {
     btnAddItem->setMenu( mMenuBtnAddItemSymbol3D );
   }
-  else if ( !readOnly && isMaterialSettings ) //  material settings tab
+  else if ( !readOnly && isAsset3D ) //  3d assets tab
   {
+    // TODO
     btnAddItem->setMenu( nullptr );
   }
   else if ( !readOnly && isLabelSettings ) // label settings tab
@@ -682,7 +683,7 @@ void QgsStyleManagerDialog::tabItemType_currentChanged( int )
                    : isLabelSettings    ? QgsStyle::LabelSettingsEntity
                    : isLegendPatchShape ? QgsStyle::LegendPatchShapeEntity
                    : isSymbol3D         ? QgsStyle::Symbol3DEntity
-                                        : QgsStyle::MaterialSettingsEntity )
+                                        : QgsStyle::Asset3DEntity )
     );
     mModel->setEntityFilterEnabled( !allTypesSelected() );
     mModel->setSymbolTypeFilterEnabled( isSymbol && !allTypesSelected() );
@@ -763,7 +764,7 @@ void QgsStyleManagerDialog::copyItem()
     case QgsStyle::Symbol3DEntity:
     case QgsStyle::TagEntity:
     case QgsStyle::SmartgroupEntity:
-    case QgsStyle::MaterialSettingsEntity:
+    case QgsStyle::Asset3DEntity:
       return;
   }
 }
@@ -888,7 +889,7 @@ int QgsStyleManagerDialog::selectedItemType()
     return 6;
   else if ( entity == QgsStyle::Symbol3DEntity )
     return 7;
-  else if ( entity == QgsStyle::MaterialSettingsEntity )
+  else if ( entity == QgsStyle::Asset3DEntity )
     return 8;
 
   return mModel->data( index, static_cast<int>( QgsStyleModel::CustomRole::SymbolType ) ).toInt();
@@ -946,7 +947,7 @@ int QgsStyleManagerDialog::copyItems(
   const QStringList favoriteLabelSettings = src->symbolsOfFavorite( QgsStyle::LabelSettingsEntity );
   const QStringList favoriteLegendPatchShapes = src->symbolsOfFavorite( QgsStyle::LegendPatchShapeEntity );
   const QStringList favorite3dSymbols = src->symbolsOfFavorite( QgsStyle::Symbol3DEntity );
-  const QStringList favoriteMaterialSettings = src->symbolsOfFavorite( QgsStyle::MaterialSettingsEntity );
+  const QStringList favorite3dAssets = src->symbolsOfFavorite( QgsStyle::Asset3DEntity );
 
   for ( auto &details : items )
   {
@@ -1302,24 +1303,24 @@ int QgsStyleManagerDialog::copyItems(
         break;
       }
 
-      case QgsStyle::MaterialSettingsEntity:
+      case QgsStyle::Asset3DEntity:
       {
-        std::unique_ptr<QgsAbstractMaterialSettings > settings( src->materialSettings( details.name ) );
-        if ( !settings )
+        std::unique_ptr<QgsAbstract3DAsset > asset( src->asset3D( details.name ) );
+        if ( !asset )
           continue;
 
-        const bool hasDuplicateName = dst->materialSettingsNames().contains( details.name );
+        const bool hasDuplicateName = dst->asset3DNames().contains( details.name );
         bool overwriteThis = false;
         if ( isImport )
-          addItemToFavorites = favoriteMaterialSettings.contains( details.name );
+          addItemToFavorites = favorite3dAssets.contains( details.name );
 
         if ( hasDuplicateName && prompt )
         {
           cursorOverride.reset();
           int res = QMessageBox::warning(
             parentWidget,
-            isImport ? tr( "Import Material" ) : tr( "Export Material" ),
-            tr( "A material with the name “%1” already exists.\nOverwrite?" ).arg( details.name ),
+            isImport ? tr( "Import 3D Asset" ) : tr( "Export 3D Asset" ),
+            tr( "A 3D asset with the name “%1” already exists.\nOverwrite?" ).arg( details.name ),
             QMessageBox::Yes | QMessageBox::YesToAll | QMessageBox::No | QMessageBox::NoToAll | QMessageBox::Cancel
           );
           cursorOverride = std::make_unique<QgsTemporaryCursorOverride>( Qt::WaitCursor );
@@ -1352,9 +1353,9 @@ int QgsStyleManagerDialog::copyItems(
 
         if ( !hasDuplicateName || overwriteAll || overwriteThis )
         {
-          QgsAbstractMaterialSettings *newSettings = settings.get();
-          dst->addMaterialSettings( details.name, settings.release() );
-          dst->saveMaterialSettings( details.name, newSettings, addItemToFavorites, symbolTags );
+          QgsAbstract3DAsset *newAsset = asset.get();
+          dst->addAsset3D( details.name, asset.release() );
+          dst->saveAsset3D( details.name, newAsset, addItemToFavorites, symbolTags );
           count++;
         }
         break;
@@ -2265,7 +2266,7 @@ bool QgsStyleManagerDialog::addMaterialSettings()
   if ( !settings )
     return false;
 
-  QgsStyleSaveDialog saveDlg( this, QgsStyle::MaterialSettingsEntity );
+  QgsStyleSaveDialog saveDlg( this, QgsStyle::Asset3DEntity );
   const QString defaultTag = groupTree->currentIndex().isValid() ? groupTree->currentIndex().data( GroupModelRoles::TagName ).toString() : QString();
   saveDlg.setDefaultTags( defaultTag );
   if ( !saveDlg.exec() )
@@ -2281,12 +2282,12 @@ bool QgsStyleManagerDialog::addMaterialSettings()
     {
       QMessageBox::warning( this, tr( "Save Material" ), tr( "Cannot save materials without a name. Enter a name." ) );
     }
-    else if ( mStyle->materialSettingsNames().contains( name ) )
+    else if ( mStyle->asset3DNames().contains( name ) )
     {
-      int res = QMessageBox::warning( this, tr( "Save Material" ), tr( "A material with the name '%1' already exists. Overwrite?" ).arg( name ), QMessageBox::Yes | QMessageBox::No );
+      int res = QMessageBox::warning( this, tr( "Save Material" ), tr( "A 3D asset with the name '%1' already exists. Overwrite?" ).arg( name ), QMessageBox::Yes | QMessageBox::No );
       if ( res == QMessageBox::Yes )
       {
-        mStyle->removeEntityByName( QgsStyle::MaterialSettingsEntity, name );
+        mStyle->removeEntityByName( QgsStyle::Asset3DEntity, name );
         nameInvalid = false;
       }
     }
@@ -2310,8 +2311,8 @@ bool QgsStyleManagerDialog::addMaterialSettings()
 
   // add new material to style and re-populate the list
   QgsAbstractMaterialSettings *newSettings = settings.get();
-  mStyle->addMaterialSettings( name, settings.release() );
-  mStyle->saveMaterialSettings( name, newSettings, saveDlg.isFavorite(), symbolTags );
+  mStyle->addAsset3D( name, settings.release() );
+  mStyle->saveAsset3D( name, newSettings, saveDlg.isFavorite(), symbolTags );
 
   mModified = true;
   return true;
@@ -2323,22 +2324,27 @@ bool QgsStyleManagerDialog::editMaterialSettings()
   if ( settingsName.isEmpty() )
     return false;
 
-  std::unique_ptr<QgsAbstractMaterialSettings> settings( mStyle->materialSettings( settingsName ) );
+  std::unique_ptr<QgsAbstract3DAsset> asset( mStyle->asset3D( settingsName ) );
+  if ( !asset )
+    return false;
+
+  // TODO
+  QgsAbstractMaterialSettings *settings = dynamic_cast< QgsAbstractMaterialSettings *>( asset.get() );
   if ( !settings )
     return false;
 
   // let the user edit the settings and update list when done
-  QgsMaterialWidgetDialog dlg( settings.get(), this );
+  QgsMaterialWidgetDialog dlg( settings, this );
   dlg.setWindowTitle( settingsName );
   if ( !dlg.exec() )
     return false;
 
-  settings = dlg.settings();
+  asset = dlg.settings();
   if ( !settings )
     return false;
 
   // by adding the setting to style with the same name the old effectively gets overwritten
-  mStyle->addMaterialSettings( settingsName, settings.release(), true );
+  mStyle->addAsset3D( settingsName, asset.release(), true );
   mModified = true;
   return true;
 }
@@ -2432,9 +2438,10 @@ void QgsStyleManagerDialog::removeItem()
     }
     else if ( currentItemType() == 8 )
     {
+      // TODO not generic string
       if ( QMessageBox::Yes
            != QMessageBox::
-             question( this, tr( "Remove Material" ), QString( tr( "Do you really want to remove %n material(s)?", nullptr, static_cast< int >( items.count() ) ) ), QMessageBox::Yes, QMessageBox::No ) )
+             question( this, tr( "Remove 3D Asset" ), QString( tr( "Do you really want to remove %n 3D asset(s)?", nullptr, static_cast< int >( items.count() ) ) ), QMessageBox::Yes, QMessageBox::No ) )
         return;
     }
   }
@@ -3040,7 +3047,7 @@ void QgsStyleManagerDialog::listitemsContextMenu( QPoint point )
   }
 
   const QList<ItemDetails> items = selectedItems();
-  mActionCopyItem->setEnabled( !items.isEmpty() && ( items.at( 0 ).entityType != QgsStyle::ColorrampEntity && items.at( 0 ).entityType != QgsStyle::MaterialSettingsEntity ) );
+  mActionCopyItem->setEnabled( !items.isEmpty() && ( items.at( 0 ).entityType != QgsStyle::ColorrampEntity && items.at( 0 ).entityType != QgsStyle::Asset3DEntity ) );
 
   bool enablePaste = false;
   std::unique_ptr<QgsSymbol> tempSymbol( QgsSymbolLayerUtils::symbolFromMimeData( QApplication::clipboard()->mimeData() ) );

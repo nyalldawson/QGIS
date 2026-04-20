@@ -78,9 +78,9 @@ void Qgs3DIconGenerator::generateIcon( QgsStyle *style, QgsStyle::StyleEntity ty
       break;
     }
 
-    case QgsStyle::MaterialSettingsEntity:
+    case QgsStyle::Asset3DEntity:
     {
-      generateThumbnailForMaterial( style, name );
+      generateThumbnailForAsset( style, name );
       break;
     }
   }
@@ -113,9 +113,20 @@ QImage Qgs3DIconGenerator::scaleAndCenterImage( const QImage &source, const QSiz
   return result;
 }
 
-void Qgs3DIconGenerator::generateThumbnailForMaterial( QgsStyle *style, const QString &name )
+void Qgs3DIconGenerator::generateThumbnailForAsset( QgsStyle *style, const QString &name )
 {
-  std::unique_ptr< QgsAbstractMaterialSettings > settings( style->materialSettings( name ) );
+  std::unique_ptr< QgsAbstract3DAsset > settings( style->asset3D( name ) );
+  if ( !settings )
+    return;
+
+  if ( auto material = dynamic_cast< QgsAbstractMaterialSettings * >( settings.get() ) )
+  {
+    generateThumbnailForMaterial( material, name );
+  }
+}
+
+void Qgs3DIconGenerator::generateThumbnailForMaterial( QgsAbstractMaterialSettings *settings, const QString &name )
+{
   if ( !settings )
     return;
 
@@ -159,7 +170,7 @@ void Qgs3DIconGenerator::generateThumbnailForMaterial( QgsStyle *style, const QS
 
   if ( thumbnail.isNull() )
   {
-    thumbnail = renderMaterial( settings.get() );
+    thumbnail = renderMaterial( settings );
     thumbnail.save( targetFileName, "WEBP", 97 );
   }
 
@@ -176,7 +187,7 @@ void Qgs3DIconGenerator::generateThumbnailForMaterial( QgsStyle *style, const QS
     icon.addPixmap( QPixmap::fromImage( scaled ) );
   }
 
-  emit iconGenerated( QgsStyle::MaterialSettingsEntity, name, icon );
+  emit iconGenerated( QgsStyle::Asset3DEntity, name, icon );
 }
 
 QImage Qgs3DIconGenerator::renderMaterial( const QgsAbstractMaterialSettings *settings )

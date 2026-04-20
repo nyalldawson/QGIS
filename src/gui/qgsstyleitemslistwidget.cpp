@@ -314,11 +314,12 @@ void QgsStyleItemsListWidget::setEntityType( QgsStyle::StyleEntity type )
         groupsCombo->setItemText( allGroup, tr( "All 3D Symbols" ) );
       break;
 
-    case QgsStyle::MaterialSettingsEntity:
-      btnSaveSymbol->setText( tr( "Save Material…" ) );
-      btnSaveSymbol->setToolTip( tr( "Save material to styles" ) );
+    case QgsStyle::Asset3DEntity:
+      // TODO -- not generic name
+      btnSaveSymbol->setText( tr( "Save 3D Asset…" ) );
+      btnSaveSymbol->setToolTip( tr( "Save 3D asset to styles" ) );
       if ( allGroup >= 0 )
-        groupsCombo->setItemText( allGroup, tr( "All Materials" ) );
+        groupsCombo->setItemText( allGroup, tr( "All 3D Assets" ) );
       break;
 
     case QgsStyle::TagEntity:
@@ -341,10 +342,11 @@ void QgsStyleItemsListWidget::setEntityTypes( const QList<QgsStyle::StyleEntity>
     if ( allGroup >= 0 )
       groupsCombo->setItemText( allGroup, tr( "All Settings" ) );
   }
-  else if ( filters.length() == 2 && filters.contains( QgsStyle::Symbol3DEntity ) && filters.contains( QgsStyle::MaterialSettingsEntity ) )
+  else if ( filters.length() == 2 && filters.contains( QgsStyle::Symbol3DEntity ) && filters.contains( QgsStyle::Asset3DEntity ) )
   {
     btnSaveSymbol->setText( tr( "Save Symbol" ) );
-    btnSaveSymbol->setToolTip( tr( "Save 3D symbol or material to styles" ) );
+    // TODO not generic string
+    btnSaveSymbol->setToolTip( tr( "Save 3D symbol or 3D asset to styles" ) );
     if ( allGroup >= 0 )
       groupsCombo->setItemText( allGroup, tr( "All Symbols" ) );
   }
@@ -463,8 +465,8 @@ void QgsStyleItemsListWidget::populateGroups()
         allText = tr( "All 3D Symbols" );
         break;
 
-      case QgsStyle::MaterialSettingsEntity:
-        allText = tr( "All Materials" );
+      case QgsStyle::Asset3DEntity:
+        allText = tr( "All 3D Assets" );
         break;
 
       case QgsStyle::TagEntity:

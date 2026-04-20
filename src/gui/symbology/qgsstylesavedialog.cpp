@@ -74,12 +74,12 @@ QgsStyleSaveDialog::QgsStyleSaveDialog( QWidget *parent, QgsStyle::StyleEntity t
 
     case QgsStyle::Symbol3DEntity:
       this->setWindowTitle( tr( "Save New 3D Symbol" ) );
-      possibleEntities << QgsStyle::Symbol3DEntity << QgsStyle::MaterialSettingsEntity;
+      possibleEntities << QgsStyle::Symbol3DEntity << QgsStyle::Asset3DEntity;
       break;
 
-    case QgsStyle::MaterialSettingsEntity:
-      this->setWindowTitle( tr( "Save New Material Settings" ) );
-      possibleEntities << QgsStyle::MaterialSettingsEntity;
+    case QgsStyle::Asset3DEntity:
+      this->setWindowTitle( tr( "Save New 3D Asset" ) );
+      possibleEntities << QgsStyle::Asset3DEntity;
       break;
 
     case QgsStyle::TagEntity:
@@ -137,8 +137,9 @@ QgsStyleSaveDialog::QgsStyleSaveDialog( QWidget *parent, QgsStyle::StyleEntity t
           mComboSaveAs->addItem( QgsApplication::getThemeIcon( u"3d.svg"_s ), tr( "3D Symbol" ), e );
           break;
 
-        case QgsStyle::MaterialSettingsEntity:
-          mComboSaveAs->addItem( QgsApplication::getThemeIcon( u"3d.svg"_s ), tr( "Material" ), e );
+        case QgsStyle::Asset3DEntity:
+          // TODO improve, using non-generic string
+          mComboSaveAs->addItem( QgsApplication::getThemeIcon( u"3d.svg"_s ), tr( "3D Asset" ), e );
           break;
 
         case QgsStyle::TagEntity:

@@ -19,6 +19,7 @@
 #include "qgsstylemodel.h"
 
 class QgsSymbol;
+class QgsAbstractMaterialSettings;
 
 class Qgs3DIconGenerator : public QgsAbstractStyleEntityIconGenerator
 {
@@ -30,7 +31,8 @@ class Qgs3DIconGenerator : public QgsAbstractStyleEntityIconGenerator
     void generateIcon( QgsStyle *style, QgsStyle::StyleEntity type, const QString &name ) override;
 
   private:
-    void generateThumbnailForMaterial( QgsStyle *style, const QString &name );
+    void generateThumbnailForAsset( QgsStyle *style, const QString &name );
+    void generateThumbnailForMaterial( QgsAbstractMaterialSettings *, const QString &name );
     static QImage renderMaterial( const QgsAbstractMaterialSettings *material );
     static QImage scaleAndCenterImage( const QImage &source, const QSize &targetSize );
     static void setMaximumDepthAsTransparent( const QImage &depthImage, QImage &renderImage );

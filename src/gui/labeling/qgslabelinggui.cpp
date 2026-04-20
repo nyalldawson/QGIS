@@ -839,7 +839,7 @@ void QgsLabelingGui::setFormatFromStyle( const QString &name, QgsStyle::StyleEnt
     case QgsStyle::TextFormatEntity:
     case QgsStyle::LegendPatchShapeEntity:
     case QgsStyle::Symbol3DEntity:
-    case QgsStyle::MaterialSettingsEntity:
+    case QgsStyle::Asset3DEntity:
     {
       QgsTextFormatWidget::setFormatFromStyle( name, type, stylePath );
       return;
@@ -936,7 +936,7 @@ void QgsLabelingGui::saveFormat()
     case QgsStyle::SmartgroupEntity:
     case QgsStyle::LegendPatchShapeEntity:
     case QgsStyle::Symbol3DEntity:
-    case QgsStyle::MaterialSettingsEntity:
+    case QgsStyle::Asset3DEntity:
       break;
   }
 }

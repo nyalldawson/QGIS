@@ -55,7 +55,9 @@ QgsSymbol3DWidget::QgsSymbol3DWidget( QgsVectorLayer *layer, QWidget *parent )
 
   mStyleWidget = new QgsStyleItemsListWidget( this );
   mStyleWidget->setStyle( QgsStyle::defaultStyle() );
-  mStyleWidget->setEntityTypes( QList<QgsStyle::StyleEntity>() << QgsStyle::Symbol3DEntity << QgsStyle::MaterialSettingsEntity );
+
+  // TODO only show materials
+  mStyleWidget->setEntityTypes( QList<QgsStyle::StyleEntity>() << QgsStyle::Symbol3DEntity << QgsStyle::Asset3DEntity );
   mStyleWidget->setLayerType( mLayer->geometryType() );
 
   connect( mStyleWidget, &QgsStyleItemsListWidget::selectionChangedWithStylePath, this, &QgsSymbol3DWidget::setSymbolFromStyle );
@@ -127,25 +129,32 @@ void QgsSymbol3DWidget::setSymbolFromStyle( const QString &name, QgsStyle::Style
       emit widgetChanged();
       break;
     }
-    case QgsStyle::MaterialSettingsEntity:
+    case QgsStyle::Asset3DEntity:
     {
       // get new instance of material from style
-      std::unique_ptr<QgsAbstractMaterialSettings> material( style->materialSettings( name ) );
+      std::unique_ptr<QgsAbstract3DAsset> asset( style->asset3D( name ) );
+      if ( !asset )
+        return;
+
+      auto material = dynamic_cast< QgsAbstractMaterialSettings * >( asset.get() );
       if ( !material )
         return;
 
       std::unique_ptr< QgsAbstract3DSymbol > newSymbol = symbol();
       if ( newSymbol && newSymbol->type() == "line"_L1 )
       {
-        qgis::down_cast< QgsLine3DSymbol *>( newSymbol.get() )->setMaterialSettings( material.release() );
+        asset.release();
+        qgis::down_cast< QgsLine3DSymbol *>( newSymbol.get() )->setMaterialSettings( material );
       }
       else if ( newSymbol && newSymbol->type() == "point"_L1 )
       {
-        qgis::down_cast< QgsPoint3DSymbol *>( newSymbol.get() )->setMaterialSettings( material.release() );
+        asset.release();
+        qgis::down_cast< QgsPoint3DSymbol *>( newSymbol.get() )->setMaterialSettings( material );
       }
       else if ( newSymbol && newSymbol->type() == "polygon"_L1 )
       {
-        qgis::down_cast< QgsPolygon3DSymbol *>( newSymbol.get() )->setMaterialSettings( material.release() );
+        asset.release();
+        qgis::down_cast< QgsPolygon3DSymbol *>( newSymbol.get() )->setMaterialSettings( material );
       }
 
       setSymbol( newSymbol.get(), mLayer );
@@ -204,7 +213,7 @@ void QgsSymbol3DWidget::saveSymbol()
       break;
     }
 
-    case QgsStyle::MaterialSettingsEntity:
+    case QgsStyle::Asset3DEntity:
     {
       std::unique_ptr<QgsAbstract3DSymbol> newSymbol( symbol() );
       std::unique_ptr<QgsAbstractMaterialSettings> newMaterial;
@@ -222,24 +231,24 @@ void QgsSymbol3DWidget::saveSymbol()
       }
 
       // check if there is material with same name
-      if ( destinationStyle->materialSettingsNames().contains( saveDlg.name() ) )
+      if ( destinationStyle->asset3DNames().contains( saveDlg.name() ) )
       {
         const int res = QMessageBox::warning( this, tr( "Save Material" ), tr( "A material with the name '%1' already exists. Overwrite?" ).arg( saveDlg.name() ), QMessageBox::Yes | QMessageBox::No );
         if ( res != QMessageBox::Yes )
         {
           return;
         }
-        destinationStyle->removeEntityByName( QgsStyle::MaterialSettingsEntity, saveDlg.name() );
+        destinationStyle->removeEntityByName( QgsStyle::Asset3DEntity, saveDlg.name() );
       }
 
       const QStringList symbolTags = saveDlg.tags().split( ',' );
 
       // add new material to style and re-populate the list
       QgsAbstractMaterialSettings *s = newMaterial.get();
-      destinationStyle->addMaterialSettings( saveDlg.name(), newMaterial.release() );
+      destinationStyle->addAsset3D( saveDlg.name(), newMaterial.release() );
 
       // make sure the material is stored
-      destinationStyle->saveMaterialSettings( saveDlg.name(), s, saveDlg.isFavorite(), symbolTags );
+      destinationStyle->saveAsset3D( saveDlg.name(), s, saveDlg.isFavorite(), symbolTags );
       break;
     }
   }

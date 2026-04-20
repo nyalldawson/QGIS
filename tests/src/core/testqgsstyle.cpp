@@ -512,10 +512,10 @@ void TestStyle::testCreate3dSymbol()
 
 void TestStyle::testCreateMaterialSettings()
 {
-  QVERIFY( mStyle->materialSettingsNames().isEmpty() );
-  QCOMPARE( mStyle->materialSettingsCount(), 0 );
+  QVERIFY( mStyle->asset3DNames().isEmpty() );
+  QCOMPARE( mStyle->asset3DCount(), 0 );
   // non existent settings, should be default
-  QVERIFY( !mStyle->materialSettings( QString( "blah" ) ) );
+  QVERIFY( !mStyle->asset3D( QString( "blah" ) ) );
 
   const QSignalSpy spy( mStyle, &QgsStyle::entityAdded );
   const QSignalSpy spyChanged( mStyle, &QgsStyle::entityChanged );
@@ -523,32 +523,32 @@ void TestStyle::testCreateMaterialSettings()
   // add material
   QgsGoochMaterialSettings settings;
   settings.setWarm( QColor( 0, 0, 255 ) );
-  QVERIFY( mStyle->addMaterialSettings( "test_settings", settings.clone(), true ) );
+  QVERIFY( mStyle->addAsset3D( "test_settings", settings.clone(), true ) );
   QCOMPARE( spy.count(), 1 );
   QCOMPARE( spyChanged.count(), 0 );
 
-  QVERIFY( mStyle->materialSettingsNames().contains( u"test_settings"_s ) );
-  QCOMPARE( mStyle->materialSettingsCount(), 1 );
-  std::unique_ptr<QgsGoochMaterialSettings> retrieved( dynamic_cast<QgsGoochMaterialSettings *>( mStyle->materialSettings( u"test_settings"_s ).release() ) );
+  QVERIFY( mStyle->asset3DNames().contains( u"test_settings"_s ) );
+  QCOMPARE( mStyle->asset3DCount(), 1 );
+  std::unique_ptr<QgsGoochMaterialSettings> retrieved( dynamic_cast<QgsGoochMaterialSettings *>( mStyle->asset3D( u"test_settings"_s ).release() ) );
   QCOMPARE( retrieved->warm().name(), u"#0000ff"_s );
 
   settings.setWarm( QColor( 0, 255, 255 ) );
-  QVERIFY( mStyle->addMaterialSettings( "test_settings", settings.clone(), true ) );
-  QVERIFY( mStyle->materialSettingsNames().contains( u"test_settings"_s ) );
-  QCOMPARE( mStyle->materialSettingsCount(), 1 );
-  retrieved.reset( dynamic_cast<QgsGoochMaterialSettings *>( mStyle->materialSettings( u"test_settings"_s ).release() ) );
+  QVERIFY( mStyle->addAsset3D( "test_settings", settings.clone(), true ) );
+  QVERIFY( mStyle->asset3DNames().contains( u"test_settings"_s ) );
+  QCOMPARE( mStyle->asset3DCount(), 1 );
+  retrieved.reset( dynamic_cast<QgsGoochMaterialSettings *>( mStyle->asset3D( u"test_settings"_s ).release() ) );
   QCOMPARE( retrieved->warm().name(), u"#00ffff"_s );
   QCOMPARE( spy.count(), 1 );
   QCOMPARE( spyChanged.count(), 1 );
 
   QgsPhongMaterialSettings phong;
   phong.setAmbient( QColor( 0, 155, 255 ) );
-  QVERIFY( mStyle->addMaterialSettings( "test_format2", phong.clone(), true ) );
-  QVERIFY( mStyle->materialSettingsNames().contains( u"test_format2"_s ) );
-  QCOMPARE( mStyle->materialSettingsCount(), 2 );
-  retrieved.reset( dynamic_cast<QgsGoochMaterialSettings *>( mStyle->materialSettings( u"test_settings"_s ).release() ) );
+  QVERIFY( mStyle->addAsset3D( "test_format2", phong.clone(), true ) );
+  QVERIFY( mStyle->asset3DNames().contains( u"test_format2"_s ) );
+  QCOMPARE( mStyle->asset3DCount(), 2 );
+  retrieved.reset( dynamic_cast<QgsGoochMaterialSettings *>( mStyle->asset3D( u"test_settings"_s ).release() ) );
   QCOMPARE( retrieved->warm().name(), u"#00ffff"_s );
-  std::unique_ptr<QgsPhongMaterialSettings> retrieved2( dynamic_cast<QgsPhongMaterialSettings *>( mStyle->materialSettings( u"test_format2"_s ).release() ) );
+  std::unique_ptr<QgsPhongMaterialSettings> retrieved2( dynamic_cast<QgsPhongMaterialSettings *>( mStyle->asset3D( u"test_format2"_s ).release() ) );
   QCOMPARE( retrieved2->ambient().name(), u"#009bff"_s );
   QCOMPARE( spy.count(), 2 );
   QCOMPARE( spyChanged.count(), 1 );
@@ -559,19 +559,19 @@ void TestStyle::testCreateMaterialSettings()
   QgsStyle style2;
   QVERIFY( style2.importXml( QDir::tempPath() + "/text_style.xml" ) );
 
-  QVERIFY( style2.materialSettingsNames().contains( u"test_settings"_s ) );
-  QVERIFY( style2.materialSettingsNames().contains( u"test_format2"_s ) );
-  QCOMPARE( style2.materialSettingsCount(), 2 );
-  retrieved.reset( dynamic_cast<QgsGoochMaterialSettings *>( style2.materialSettings( u"test_settings"_s ).release() ) );
+  QVERIFY( style2.asset3DNames().contains( u"test_settings"_s ) );
+  QVERIFY( style2.asset3DNames().contains( u"test_format2"_s ) );
+  QCOMPARE( style2.asset3DCount(), 2 );
+  retrieved.reset( dynamic_cast<QgsGoochMaterialSettings *>( style2.asset3D( u"test_settings"_s ).release() ) );
   QCOMPARE( retrieved->warm().name(), u"#00ffff"_s );
-  retrieved2.reset( dynamic_cast<QgsPhongMaterialSettings *>( style2.materialSettings( u"test_format2"_s ).release() ) );
+  retrieved2.reset( dynamic_cast<QgsPhongMaterialSettings *>( style2.asset3D( u"test_format2"_s ).release() ) );
   QCOMPARE( retrieved2->ambient().name(), u"#009bff"_s );
 
-  QCOMPARE( mStyle->allNames( QgsStyle::MaterialSettingsEntity ), QStringList() << u"test_format2"_s << u"test_settings"_s );
+  QCOMPARE( mStyle->allNames( QgsStyle::Asset3DEntity ), QStringList() << u"test_format2"_s << u"test_settings"_s );
 
-  QgsStyleMaterialSettingsEntity entity( &settings );
+  QgsStyleAsset3DEntity entity( &settings );
   QVERIFY( mStyle->addEntity( "test_settings2", &entity, true ) );
-  QVERIFY( mStyle->materialSettingsNames().contains( u"test_settings2"_s ) );
+  QVERIFY( mStyle->asset3DNames().contains( u"test_settings2"_s ) );
 }
 
 void TestStyle::testLoadColorRamps()
@@ -838,29 +838,29 @@ void TestStyle::testFavorites()
 
   // material settings
   const QgsGoochMaterialSettings materialSettings1;
-  QVERIFY( mStyle->addMaterialSettings( u"settings_1"_s, materialSettings1.clone(), true ) );
-  favorites = mStyle->symbolsOfFavorite( QgsStyle::MaterialSettingsEntity );
+  QVERIFY( mStyle->addAsset3D( u"settings_1"_s, materialSettings1.clone(), true ) );
+  favorites = mStyle->symbolsOfFavorite( QgsStyle::Asset3DEntity );
   QCOMPARE( favorites.count(), 0 );
-  QVERIFY( !mStyle->isFavorite( QgsStyle::MaterialSettingsEntity, u"settings_1"_s ) );
+  QVERIFY( !mStyle->isFavorite( QgsStyle::Asset3DEntity, u"settings_1"_s ) );
 
-  mStyle->addFavorite( QgsStyle::MaterialSettingsEntity, u"settings_1"_s );
+  mStyle->addFavorite( QgsStyle::Asset3DEntity, u"settings_1"_s );
   QCOMPARE( favoriteChangedSpy.count(), 13 );
-  QCOMPARE( favoriteChangedSpy.at( 12 ).at( 0 ).toInt(), static_cast<int>( QgsStyle::MaterialSettingsEntity ) );
+  QCOMPARE( favoriteChangedSpy.at( 12 ).at( 0 ).toInt(), static_cast<int>( QgsStyle::Asset3DEntity ) );
   QCOMPARE( favoriteChangedSpy.at( 12 ).at( 1 ).toString(), u"settings_1"_s );
   QCOMPARE( favoriteChangedSpy.at( 12 ).at( 2 ).toBool(), true );
-  favorites = mStyle->symbolsOfFavorite( QgsStyle::MaterialSettingsEntity );
+  favorites = mStyle->symbolsOfFavorite( QgsStyle::Asset3DEntity );
   QCOMPARE( favorites.count(), 1 );
   QVERIFY( favorites.contains( u"settings_1"_s ) );
-  QVERIFY( mStyle->isFavorite( QgsStyle::MaterialSettingsEntity, u"settings_1"_s ) );
+  QVERIFY( mStyle->isFavorite( QgsStyle::Asset3DEntity, u"settings_1"_s ) );
 
-  mStyle->removeFavorite( QgsStyle::MaterialSettingsEntity, u"settings_1"_s );
+  mStyle->removeFavorite( QgsStyle::Asset3DEntity, u"settings_1"_s );
   QCOMPARE( favoriteChangedSpy.count(), 14 );
-  QCOMPARE( favoriteChangedSpy.at( 13 ).at( 0 ).toInt(), static_cast<int>( QgsStyle::MaterialSettingsEntity ) );
+  QCOMPARE( favoriteChangedSpy.at( 13 ).at( 0 ).toInt(), static_cast<int>( QgsStyle::Asset3DEntity ) );
   QCOMPARE( favoriteChangedSpy.at( 13 ).at( 1 ).toString(), u"settings_1"_s );
   QCOMPARE( favoriteChangedSpy.at( 13 ).at( 2 ).toBool(), false );
-  favorites = mStyle->symbolsOfFavorite( QgsStyle::MaterialSettingsEntity );
+  favorites = mStyle->symbolsOfFavorite( QgsStyle::Asset3DEntity );
   QCOMPARE( favorites.count(), 0 );
-  QVERIFY( !mStyle->isFavorite( QgsStyle::MaterialSettingsEntity, u"settings_1"_s ) );
+  QVERIFY( !mStyle->isFavorite( QgsStyle::Asset3DEntity, u"settings_1"_s ) );
 }
 
 void TestStyle::testTags()
@@ -1361,29 +1361,29 @@ void TestStyle::testTags()
   // materials
   // tag format
   const QgsGoochMaterialSettings material1;
-  QVERIFY( mStyle->addMaterialSettings( "material1", material1.clone(), true ) );
+  QVERIFY( mStyle->addAsset3D( "material1", material1.clone(), true ) );
   const QgsGoochMaterialSettings material2;
-  QVERIFY( mStyle->addMaterialSettings( "material2", material1.clone(), true ) );
+  QVERIFY( mStyle->addAsset3D( "material2", material1.clone(), true ) );
 
-  QVERIFY( mStyle->tagSymbol( QgsStyle::MaterialSettingsEntity, "material1", QStringList() << "blue" << "starry" ) );
+  QVERIFY( mStyle->tagSymbol( QgsStyle::Asset3DEntity, "material1", QStringList() << "blue" << "starry" ) );
   QCOMPARE( tagsChangedSpy.count(), 45 );
-  QCOMPARE( tagsChangedSpy.at( 44 ).at( 0 ).toInt(), static_cast<int>( QgsStyle::MaterialSettingsEntity ) );
+  QCOMPARE( tagsChangedSpy.at( 44 ).at( 0 ).toInt(), static_cast<int>( QgsStyle::Asset3DEntity ) );
   QCOMPARE( tagsChangedSpy.at( 44 ).at( 1 ).toString(), u"material1"_s );
   QCOMPARE( tagsChangedSpy.at( 44 ).at( 2 ).toStringList(), QStringList() << u"blue"_s << u"starry"_s );
 
-  QVERIFY( mStyle->tagSymbol( QgsStyle::MaterialSettingsEntity, "material2", QStringList() << "red" << "circle" ) );
+  QVERIFY( mStyle->tagSymbol( QgsStyle::Asset3DEntity, "material2", QStringList() << "red" << "circle" ) );
   QCOMPARE( tagsChangedSpy.count(), 46 );
-  QCOMPARE( tagsChangedSpy.at( 45 ).at( 0 ).toInt(), static_cast<int>( QgsStyle::MaterialSettingsEntity ) );
+  QCOMPARE( tagsChangedSpy.at( 45 ).at( 0 ).toInt(), static_cast<int>( QgsStyle::Asset3DEntity ) );
   QCOMPARE( tagsChangedSpy.at( 45 ).at( 1 ).toString(), u"material2"_s );
   QCOMPARE( tagsChangedSpy.at( 45 ).at( 2 ).toStringList(), QStringList() << u"red"_s << u"circle"_s );
 
   //bad format name
-  QVERIFY( !mStyle->tagSymbol( QgsStyle::MaterialSettingsEntity, "no patch", QStringList() << "red" << "circle" ) );
+  QVERIFY( !mStyle->tagSymbol( QgsStyle::Asset3DEntity, "no patch", QStringList() << "red" << "circle" ) );
   QCOMPARE( tagsChangedSpy.count(), 46 );
   //tag which hasn't been added yet
-  QVERIFY( mStyle->tagSymbol( QgsStyle::MaterialSettingsEntity, "material2", QStringList() << "red settings" ) );
+  QVERIFY( mStyle->tagSymbol( QgsStyle::Asset3DEntity, "material2", QStringList() << "red settings" ) );
   QCOMPARE( tagsChangedSpy.count(), 47 );
-  QCOMPARE( tagsChangedSpy.at( 46 ).at( 0 ).toInt(), static_cast<int>( QgsStyle::MaterialSettingsEntity ) );
+  QCOMPARE( tagsChangedSpy.at( 46 ).at( 0 ).toInt(), static_cast<int>( QgsStyle::Asset3DEntity ) );
   QCOMPARE( tagsChangedSpy.at( 46 ).at( 1 ).toString(), u"material2"_s );
   QCOMPARE( tagsChangedSpy.at( 46 ).at( 2 ).toStringList(), QStringList() << u"red"_s << u"circle"_s << u"red settings"_s );
 
@@ -1391,32 +1391,32 @@ void TestStyle::testTags()
   QVERIFY( tags.contains( u"red settings"_s ) );
 
   //check that tags have been applied
-  tags = mStyle->tagsOfSymbol( QgsStyle::MaterialSettingsEntity, u"material1"_s );
+  tags = mStyle->tagsOfSymbol( QgsStyle::Asset3DEntity, u"material1"_s );
   QCOMPARE( tags.count(), 2 );
   QVERIFY( tags.contains( "blue" ) );
   QVERIFY( tags.contains( "starry" ) );
-  tags = mStyle->tagsOfSymbol( QgsStyle::MaterialSettingsEntity, u"material2"_s );
+  tags = mStyle->tagsOfSymbol( QgsStyle::Asset3DEntity, u"material2"_s );
   QCOMPARE( tags.count(), 3 );
   QVERIFY( tags.contains( "red" ) );
   QVERIFY( tags.contains( "circle" ) );
   QVERIFY( tags.contains( "red settings" ) );
 
   //remove a tag, including a non-present tag
-  QVERIFY( mStyle->detagSymbol( QgsStyle::MaterialSettingsEntity, "material1", QStringList() << "bad" << "blue" ) );
-  tags = mStyle->tagsOfSymbol( QgsStyle::MaterialSettingsEntity, u"material1"_s );
+  QVERIFY( mStyle->detagSymbol( QgsStyle::Asset3DEntity, "material1", QStringList() << "bad" << "blue" ) );
+  tags = mStyle->tagsOfSymbol( QgsStyle::Asset3DEntity, u"material1"_s );
   QCOMPARE( tags.count(), 1 );
   QVERIFY( tags.contains( "starry" ) );
   QCOMPARE( tagsChangedSpy.count(), 48 );
-  QCOMPARE( tagsChangedSpy.at( 47 ).at( 0 ).toInt(), static_cast<int>( QgsStyle::MaterialSettingsEntity ) );
+  QCOMPARE( tagsChangedSpy.at( 47 ).at( 0 ).toInt(), static_cast<int>( QgsStyle::Asset3DEntity ) );
   QCOMPARE( tagsChangedSpy.at( 47 ).at( 1 ).toString(), u"material1"_s );
   QCOMPARE( tagsChangedSpy.at( 47 ).at( 2 ).toStringList(), QStringList() << u"starry"_s );
 
   // completely detag symbol
-  QVERIFY( mStyle->detagSymbol( QgsStyle::MaterialSettingsEntity, u"material1"_s ) );
-  tags = mStyle->tagsOfSymbol( QgsStyle::MaterialSettingsEntity, u"material1"_s );
+  QVERIFY( mStyle->detagSymbol( QgsStyle::Asset3DEntity, u"material1"_s ) );
+  tags = mStyle->tagsOfSymbol( QgsStyle::Asset3DEntity, u"material1"_s );
   QCOMPARE( tags.count(), 0 );
   QCOMPARE( tagsChangedSpy.count(), 49 );
-  QCOMPARE( tagsChangedSpy.at( 48 ).at( 0 ).toInt(), static_cast<int>( QgsStyle::MaterialSettingsEntity ) );
+  QCOMPARE( tagsChangedSpy.at( 48 ).at( 0 ).toInt(), static_cast<int>( QgsStyle::Asset3DEntity ) );
   QCOMPARE( tagsChangedSpy.at( 48 ).at( 1 ).toString(), u"material1"_s );
   QCOMPARE( tagsChangedSpy.at( 48 ).at( 2 ).toStringList(), QStringList() );
 }
@@ -1460,9 +1460,9 @@ void TestStyle::testSmartGroup()
   QVERIFY( style.addSymbol3D( "different symbol3D bbb", symbol3d2.clone(), true ) );
 
   const QgsGoochMaterialSettings material1;
-  QVERIFY( style.addMaterialSettings( "material a", material1.clone(), true ) );
+  QVERIFY( style.addAsset3D( "material a", material1.clone(), true ) );
   const QgsGoochMaterialSettings material2;
-  QVERIFY( style.addMaterialSettings( "different mt bbb", material2.clone(), true ) );
+  QVERIFY( style.addAsset3D( "different mt bbb", material2.clone(), true ) );
 
   QVERIFY( style.smartgroupNames().empty() );
   QVERIFY( style.smartgroup( 5 ).isEmpty() );
@@ -1483,7 +1483,7 @@ void TestStyle::testSmartGroup()
   QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::LabelSettingsEntity, 1 ), QStringList() << u"settings a"_s );
   QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::LegendPatchShapeEntity, 1 ), QStringList() << u"shp a"_s );
   QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::Symbol3DEntity, 1 ), QStringList() << u"symbol3D a"_s );
-  QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::MaterialSettingsEntity, 1 ), QStringList() << u"material a"_s );
+  QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::Asset3DEntity, 1 ), QStringList() << u"material a"_s );
 
   res = style.addSmartgroup( u"tag"_s, u"OR"_s, QStringList(), QStringList(), QStringList() << "c", QStringList() << "a" );
   QCOMPARE( res, 2 );
@@ -1499,7 +1499,7 @@ void TestStyle::testSmartGroup()
   QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::LabelSettingsEntity, 2 ), QStringList() << u"different l bbb"_s );
   QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::LegendPatchShapeEntity, 2 ), QStringList() << u"different shp bbb"_s );
   QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::Symbol3DEntity, 2 ), QStringList() << u"different symbol3D bbb"_s );
-  QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::MaterialSettingsEntity, 2 ), QStringList() << u"different mt bbb"_s );
+  QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::Asset3DEntity, 2 ), QStringList() << u"different mt bbb"_s );
 
   // tag some symbols
   style.tagSymbol( QgsStyle::SymbolEntity, "symbolA", QStringList() << "red" << "blue" );
@@ -1514,8 +1514,8 @@ void TestStyle::testSmartGroup()
   style.tagSymbol( QgsStyle::LegendPatchShapeEntity, "different shp bbb", QStringList() << "blue" << "red" );
   style.tagSymbol( QgsStyle::Symbol3DEntity, "symbol3D a", QStringList() << "blue" );
   style.tagSymbol( QgsStyle::Symbol3DEntity, "different symbol3D bbb", QStringList() << "blue" << "red" );
-  style.tagSymbol( QgsStyle::MaterialSettingsEntity, "material a", QStringList() << "blue" );
-  style.tagSymbol( QgsStyle::MaterialSettingsEntity, "different mt bbb", QStringList() << "blue" << "red" );
+  style.tagSymbol( QgsStyle::Asset3DEntity, "material a", QStringList() << "blue" );
+  style.tagSymbol( QgsStyle::Asset3DEntity, "different mt bbb", QStringList() << "blue" << "red" );
 
   // adding tags modifies groups!
   QCOMPARE( groupModifiedSpy.count(), 4 );
@@ -1534,7 +1534,7 @@ void TestStyle::testSmartGroup()
   QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::LabelSettingsEntity, 3 ), QStringList() << u"settings a"_s );
   QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::LegendPatchShapeEntity, 3 ), QStringList() << u"shp a"_s );
   QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::Symbol3DEntity, 3 ), QStringList() << u"symbol3D a"_s );
-  QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::MaterialSettingsEntity, 3 ), QStringList() << u"material a"_s );
+  QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::Asset3DEntity, 3 ), QStringList() << u"material a"_s );
 
   res = style.addSmartgroup( u"combined"_s, u"AND"_s, QStringList() << "blue", QStringList(), QStringList(), QStringList() << "a" );
   QCOMPARE( res, 4 );
@@ -1550,7 +1550,7 @@ void TestStyle::testSmartGroup()
   QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::LabelSettingsEntity, 4 ), QStringList() << u"different l bbb"_s );
   QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::LegendPatchShapeEntity, 4 ), QStringList() << u"different shp bbb"_s );
   QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::Symbol3DEntity, 4 ), QStringList() << u"different symbol3D bbb"_s );
-  QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::MaterialSettingsEntity, 4 ), QStringList() << u"different mt bbb"_s );
+  QCOMPARE( style.symbolsOfSmartgroup( QgsStyle::Asset3DEntity, 4 ), QStringList() << u"different mt bbb"_s );
 
   style.remove( QgsStyle::SmartgroupEntity, 1 );
   QCOMPARE( style.smartgroupNames(), QStringList() << u"tag"_s << u"tags"_s << u"combined"_s );
@@ -1618,8 +1618,9 @@ class TestVisitor : public QgsStyleEntityVisitorInterface
           mFound << u"symbol 3d: %1 %2 %3"_s.arg( entity.description, entity.identifier, static_cast<const QgsStyleSymbol3DEntity *>( entity.entity )->symbol()->type() );
           break;
 
-        case QgsStyle::MaterialSettingsEntity:
-          mFound << u"material: %1 %2 %3"_s.arg( entity.description, entity.identifier, static_cast<const QgsStyleMaterialSettingsEntity *>( entity.entity )->settings()->type() );
+        case QgsStyle::Asset3DEntity:
+          mFound << u"material: %1 %2 %3"_s
+                      .arg( entity.description, entity.identifier, static_cast< const QgsAbstractMaterialSettings * >( static_cast<const QgsStyleAsset3DEntity *>( entity.entity )->asset() )->type() );
           break;
 
         case QgsStyle::TagEntity:
