@@ -15,6 +15,7 @@
 
 #include "qgsstylemodel.h"
 
+#include "qgsabstract3dasset.h"
 #include "qgsabstractmaterialsettings.h"
 #include "qgsapplication.h"
 #include "qgscombinedstylemodel.h"
@@ -37,7 +38,7 @@ using namespace Qt::StringLiterals;
 const double ICON_PADDING_FACTOR = 0.16;
 
 const auto ENTITIES
-  = { QgsStyle::SymbolEntity, QgsStyle::ColorrampEntity, QgsStyle::TextFormatEntity, QgsStyle::LabelSettingsEntity, QgsStyle::LegendPatchShapeEntity, QgsStyle::Symbol3DEntity, QgsStyle::MaterialSettingsEntity };
+  = { QgsStyle::SymbolEntity, QgsStyle::ColorrampEntity, QgsStyle::TextFormatEntity, QgsStyle::LabelSettingsEntity, QgsStyle::LegendPatchShapeEntity, QgsStyle::Symbol3DEntity, QgsStyle::Asset3DEntity };
 
 QgsAbstractStyleEntityIconGenerator *QgsStyleModel::sIconGenerator = nullptr;
 
@@ -234,7 +235,7 @@ QVariant QgsStyleModel::data( const QModelIndex &index, int role ) const
               case QgsStyle::TagEntity:
               case QgsStyle::SmartgroupEntity:
               case QgsStyle::Symbol3DEntity:
-              case QgsStyle::MaterialSettingsEntity:
+              case QgsStyle::Asset3DEntity:
                 break;
             }
             return tooltip;
@@ -391,7 +392,7 @@ QVariant QgsStyleModel::data( const QModelIndex &index, int role ) const
             }
 
             case QgsStyle::Symbol3DEntity:
-            case QgsStyle::MaterialSettingsEntity:
+            case QgsStyle::Asset3DEntity:
             {
               // hack for now -- we just use a generic "3d icon" svg file.
               // TODO - render proper thumbnails
@@ -409,11 +410,11 @@ QVariant QgsStyleModel::data( const QModelIndex &index, int role ) const
                   sIconGenerator->generateIcon( mStyle, entityType, name );
                 }
               }
-              else if ( entityType == QgsStyle::MaterialSettingsEntity )
+              else if ( entityType == QgsStyle::Asset3DEntity )
               {
-                if ( sIconGenerator && !mPendingMaterialSettingsIcons.contains( name ) )
+                if ( sIconGenerator && !mPending3dAssetIcons.contains( name ) )
                 {
-                  mPendingMaterialSettingsIcons.insert( name );
+                  mPending3dAssetIcons.insert( name );
                   sIconGenerator->generateIcon( mStyle, entityType, name );
                 }
               }
@@ -472,7 +473,7 @@ QVariant QgsStyleModel::data( const QModelIndex &index, int role ) const
         case QgsStyle::LabelSettingsEntity:
         case QgsStyle::TextFormatEntity:
         case QgsStyle::Symbol3DEntity:
-        case QgsStyle::MaterialSettingsEntity:
+        case QgsStyle::Asset3DEntity:
           return QVariant();
       }
       return QVariant();
@@ -492,7 +493,7 @@ QVariant QgsStyleModel::data( const QModelIndex &index, int role ) const
         case QgsStyle::ColorrampEntity:
         case QgsStyle::SmartgroupEntity:
         case QgsStyle::TextFormatEntity:
-        case QgsStyle::MaterialSettingsEntity:
+        case QgsStyle::Asset3DEntity:
           return QVariant();
       }
       return QVariant();
@@ -521,7 +522,7 @@ QVariant QgsStyleModel::data( const QModelIndex &index, int role ) const
         case QgsStyle::ColorrampEntity:
         case QgsStyle::SmartgroupEntity:
         case QgsStyle::TextFormatEntity:
-        case QgsStyle::MaterialSettingsEntity:
+        case QgsStyle::Asset3DEntity:
           return QVariant();
       }
       return QVariant();
@@ -531,10 +532,15 @@ QVariant QgsStyleModel::data( const QModelIndex &index, int role ) const
     {
       switch ( entityType )
       {
-        case QgsStyle::MaterialSettingsEntity:
+        case QgsStyle::Asset3DEntity:
         {
-          std::unique_ptr< QgsAbstractMaterialSettings > settings = mStyle->materialSettings( name );
-          return settings ? settings->type() : QVariant();
+          // TODO
+          std::unique_ptr< QgsAbstract3DAsset > settings = mStyle->asset3D( name );
+          if ( QgsAbstractMaterialSettings *materialSettings = dynamic_cast< QgsAbstractMaterialSettings *>( settings.get() ) )
+          {
+            return materialSettings->type();
+          }
+          return QVariant();
         }
 
         case QgsStyle::LegendPatchShapeEntity:
@@ -834,9 +840,9 @@ void QgsStyleModel::iconGenerated( QgsStyle::StyleEntity type, const QString &na
       emit dataChanged( index( row, 0 ), index( row, 0 ) );
       break;
 
-    case QgsStyle::MaterialSettingsEntity:
-      mPendingMaterialSettingsIcons.remove( name );
-      mIconCache[QgsStyle::MaterialSettingsEntity].insert( name, icon );
+    case QgsStyle::Asset3DEntity:
+      mPending3dAssetIcons.remove( name );
+      mIconCache[QgsStyle::Asset3DEntity].insert( name, icon );
       emit dataChanged( index( row, 0 ), index( row, 0 ) );
       break;
 
@@ -988,7 +994,7 @@ bool QgsStyleProxyModel::filterAcceptsRow( int source_row, const QModelIndex &so
       case QgsStyle::ColorrampEntity:
       case QgsStyle::SmartgroupEntity:
       case QgsStyle::LegendPatchShapeEntity:
-      case QgsStyle::MaterialSettingsEntity:
+      case QgsStyle::Asset3DEntity:
         break;
 
       case QgsStyle::LabelSettingsEntity:
@@ -1048,7 +1054,7 @@ bool QgsStyleProxyModel::filterAcceptsRow( int source_row, const QModelIndex &so
     }
   }
 
-  if ( mRenderingTechniqueFilterEnabled && styleEntityType == QgsStyle::MaterialSettingsEntity )
+  if ( mRenderingTechniqueFilterEnabled && styleEntityType == QgsStyle::Asset3DEntity )
   {
     const QString materialType = sourceModel()->data( index, static_cast< int >( QgsStyleModel::CustomRole::MaterialType ) ).toString();
     if ( !materialType.isEmpty() )

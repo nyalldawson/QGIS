@@ -57,6 +57,9 @@ class CORE_EXPORT QgsAbstractMaterialSettings : public QgsAbstract3DAsset
      */
     virtual bool requiresTextureCoordinates() const;
 
+    void readXml( const QDomElement &element, const QgsReadWriteContext &context ) override;
+    void writeXml( QDomElement &element, const QgsReadWriteContext &context ) const override;
+
     // *INDENT-OFF*
     //! Data definable properties.
     enum class Property SIP_MONKEYPATCH_SCOPEENUM_UNNEST( QgsAbstractMaterialSettings, Property ) : int

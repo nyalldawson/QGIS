@@ -87,10 +87,10 @@ enum Symbol3DTable
  */
 enum Asset3DTable
 {
-  Asset3DTableTableId,         //!< 3d asset ID
-  Asset3DTableTableName,       //!< 3d asset name
-  Asset3DTableTableXML,        //!< 3d asset definition (as XML)
-  Asset3DTableTableFavoriteId, //!< 3d asset is favorite flag
+  Asset3DTableId,         //!< 3d asset ID
+  Asset3DTableName,       //!< 3d asset name
+  Asset3DTableXML,        //!< 3d asset definition (as XML)
+  Asset3DTableFavoriteId, //!< 3d asset is favorite flag
 };
 
 QgsStyle *QgsStyle::sDefaultStyle = nullptr;
@@ -650,7 +650,7 @@ void QgsStyle::createTables()
     "name TEXT UNIQUE,"
     "xml TEXT,"
     "favorite INTEGER);"
-    "CREATE TABLE materialsettings("
+    "CREATE TABLE asset3d("
     "id INTEGER PRIMARY KEY,"
     "name TEXT UNIQUE,"
     "xml TEXT,"
@@ -676,9 +676,9 @@ void QgsStyle::createTables()
     "CREATE TABLE symbol3dtagmap("
     "tag_id INTEGER NOT NULL,"
     "symbol3d_id INTEGER);"
-    "CREATE TABLE materialsettingstagmap("
+    "CREATE TABLE asset3dtagmap("
     "tag_id INTEGER NOT NULL,"
-    "materialsettings_id INTEGER);"
+    "asset3d_id INTEGER);"
     "CREATE TABLE smartgroup("
     "id INTEGER PRIMARY KEY,"
     "name TEXT,"
@@ -770,20 +770,20 @@ bool QgsStyle::load( const QString &filename )
     runEmptyQuery( query );
   }
 
-  // make sure 3D material settings table exists
-  query = qgs_sqlite3_mprintf( "SELECT name FROM sqlite_master WHERE name='materialsettings'" );
+  // make sure 3D asset  table exists
+  query = qgs_sqlite3_mprintf( "SELECT name FROM sqlite_master WHERE name='asset3d'" );
   statement = mCurrentDB.prepare( query, rc );
   if ( rc != SQLITE_OK || sqlite3_step( statement.get() ) != SQLITE_ROW )
   {
     query = qgs_sqlite3_mprintf(
-      "CREATE TABLE materialsettings("
+      "CREATE TABLE asset3d("
       "id INTEGER PRIMARY KEY,"
       "name TEXT UNIQUE,"
       "xml TEXT,"
       "favorite INTEGER);"
-      "CREATE TABLE materialsettingstagmap("
+      "CREATE TABLE asset3dtagmap("
       "tag_id INTEGER NOT NULL,"
-      "materialsettings_id INTEGER);"
+      "asset3d_id INTEGER);"
     );
     runEmptyQuery( query );
   }
@@ -796,7 +796,7 @@ bool QgsStyle::load( const QString &filename )
     "UPDATE labelsettings SET favorite=0 WHERE favorite IS NULL;"
     "UPDATE legendpatchshapes SET favorite=0 WHERE favorite IS NULL;"
     "UPDATE symbol3d SET favorite=0 WHERE favorite IS NULL;"
-    "UPDATE materialsettings SET favorite=0 WHERE favorite IS NULL;"
+    "UPDATE asset3d SET favorite=0 WHERE favorite IS NULL;"
   );
   runEmptyQuery( query );
 
@@ -956,33 +956,35 @@ bool QgsStyle::load( const QString &filename )
   }
 
   {
-    QgsScopedRuntimeProfile profile( tr( "Load material settings" ) );
-    query = qgs_sqlite3_mprintf( "SELECT * FROM materialsettings" );
+    QgsScopedRuntimeProfile profile( tr( "Load 3d assets" ) );
+    query = qgs_sqlite3_mprintf( "SELECT * FROM asset3d" );
     statement = mCurrentDB.prepare( query, rc );
 
     while ( rc == SQLITE_OK && sqlite3_step( statement.get() ) == SQLITE_ROW )
     {
       QDomDocument doc;
-      const QString settingsName = statement.columnAsText( MaterialSettingsTableName );
-      QgsScopedRuntimeProfile profile( settingsName );
-      const QString xmlstring = statement.columnAsText( MaterialSettingsTableXML );
+      const QString assetName = statement.columnAsText( Asset3DTableName );
+      QgsScopedRuntimeProfile profile( assetName );
+      const QString xmlstring = statement.columnAsText( Asset3DTableXML );
       if ( !doc.setContent( xmlstring ) )
       {
-        QgsDebugError( "Cannot open material settings " + settingsName );
+        QgsDebugError( "Cannot open 3d asset " + assetName );
         continue;
       }
-      QDomElement settingsElement = doc.documentElement();
+      QDomElement assetElement = doc.documentElement();
 
-      const QString materialType = settingsElement.attribute( u"type"_s );
+      // TODO here
+
+      const QString materialType = assetElement.attribute( u"type"_s );
       std::unique_ptr< QgsAbstractMaterialSettings > settings = QgsApplication::materialRegistry()->createMaterialSettings( materialType );
       if ( settings )
       {
-        settings->readXml( settingsElement, QgsReadWriteContext() );
-        mMaterialSettings.insert( settingsName, settings.release() );
+        settings->readXml( assetElement, QgsReadWriteContext() );
+        m3dAssets.insert( assetName, settings.release() );
       }
       else
       {
-        QgsDebugError( "Cannot open material settings " + settingsName );
+        QgsDebugError( "Cannot open material settings " + assetName );
         continue;
       }
     }
@@ -1431,82 +1433,84 @@ QStringList QgsStyle::symbol3DNames() const
   return m3dSymbols.keys();
 }
 
-bool QgsStyle::saveMaterialSettings( const QString &name, QgsAbstractMaterialSettings *settings, bool favorite, const QStringList &tags )
+bool QgsStyle::saveAsset3D( const QString &name, QgsAbstract3DAsset *asset, bool favorite, const QStringList &tags )
 {
   // insert it into the database
   QDomDocument doc( u"dummy"_s );
+  // HERE
   QDomElement elem = doc.createElement( u"settings"_s );
-  elem.setAttribute( u"type"_s, settings->type() );
-  settings->writeXml( elem, QgsReadWriteContext() );
+  // TODO
+  // elem.setAttribute( u"type"_s, asset->type() );
+  asset->writeXml( elem, QgsReadWriteContext() );
 
   QByteArray xmlArray;
   QTextStream stream( &xmlArray );
   elem.save( stream, 4 );
-  QString query = qgs_sqlite3_mprintf( "INSERT INTO materialsettings VALUES (NULL, '%q', '%q', %d);", name.toUtf8().constData(), xmlArray.constData(), ( favorite ? 1 : 0 ) );
+  QString query = qgs_sqlite3_mprintf( "INSERT INTO asset3d VALUES (NULL, '%q', '%q', %d);", name.toUtf8().constData(), xmlArray.constData(), ( favorite ? 1 : 0 ) );
   if ( !runEmptyQuery( query ) )
   {
-    QgsDebugError( u"Couldn't insert material settings into the database!"_s );
+    QgsDebugError( u"Couldn't insert 3D asset into the database!"_s );
     return false;
   }
 
-  mCachedFavorites[MaterialSettingsEntity].insert( name, favorite );
+  mCachedFavorites[Asset3DEntity].insert( name, favorite );
 
-  tagSymbol( MaterialSettingsEntity, name, tags );
+  tagSymbol( Asset3DEntity, name, tags );
 
-  emit entityAdded( MaterialSettingsEntity, name );
+  emit entityAdded( Asset3DEntity, name );
 
   return true;
 }
 
-bool QgsStyle::renameMaterialSettings( const QString &oldName, const QString &newName )
+bool QgsStyle::renameAsset3D( const QString &oldName, const QString &newName )
 {
-  if ( mMaterialSettings.contains( newName ) )
+  if ( m3dAssets.contains( newName ) )
   {
-    QgsDebugError( u"material settings of new name already exists."_s );
+    QgsDebugError( u"3d asset of new name already exists."_s );
     return false;
   }
 
-  if ( !mMaterialSettings.contains( oldName ) )
+  if ( !m3dAssets.contains( oldName ) )
     return false;
-  std::unique_ptr< QgsAbstractMaterialSettings > settings( mMaterialSettings.take( oldName ) );
+  std::unique_ptr< QgsAbstract3DAsset > asset( m3dAssets.take( oldName ) );
 
-  mMaterialSettings.insert( newName, settings.release() );
-  mCachedTags[MaterialSettingsEntity].remove( oldName );
-  mCachedFavorites[MaterialSettingsEntity].remove( oldName );
+  m3dAssets.insert( newName, asset.release() );
+  mCachedTags[Asset3DEntity].remove( oldName );
+  mCachedFavorites[Asset3DEntity].remove( oldName );
 
-  int materialSettingsId = 0;
+  int asset3DId = 0;
   sqlite3_statement_unique_ptr statement;
-  QString query = qgs_sqlite3_mprintf( "SELECT id FROM materialsettings WHERE name='%q'", oldName.toUtf8().constData() );
+  QString query = qgs_sqlite3_mprintf( "SELECT id FROM asset3d WHERE name='%q'", oldName.toUtf8().constData() );
   int nErr;
   statement = mCurrentDB.prepare( query, nErr );
   if ( nErr == SQLITE_OK && sqlite3_step( statement.get() ) == SQLITE_ROW )
   {
-    materialSettingsId = sqlite3_column_int( statement.get(), 0 );
+    asset3DId = sqlite3_column_int( statement.get(), 0 );
   }
-  const bool result = rename( MaterialSettingsEntity, materialSettingsId, newName );
+  const bool result = rename( Asset3DEntity, asset3DId, newName );
   if ( result )
   {
-    emit entityRenamed( MaterialSettingsEntity, oldName, newName );
+    emit entityRenamed( Asset3DEntity, oldName, newName );
   }
 
   return result;
 }
 
-QStringList QgsStyle::materialSettingsNames() const
+QStringList QgsStyle::asset3DNames() const
 {
-  return mMaterialSettings.keys();
+  return m3dAssets.keys();
 }
 
-int QgsStyle::materialSettingsCount() const
+int QgsStyle::asset3DCount() const
 {
-  return static_cast< int >( mMaterialSettings.size() );
+  return static_cast< int >( m3dAssets.size() );
 }
 
-std::unique_ptr< QgsAbstractMaterialSettings > QgsStyle::materialSettings( const QString &name ) const
+std::unique_ptr< QgsAbstract3DAsset > QgsStyle::asset3D( const QString &name ) const
 {
-  auto it = mMaterialSettings.constFind( name );
-  if ( it != mMaterialSettings.constEnd() )
-    return std::unique_ptr< QgsAbstractMaterialSettings >( it.value()->clone() );
+  auto it = m3dAssets.constFind( name );
+  if ( it != m3dAssets.constEnd() )
+    return std::unique_ptr< QgsAbstract3DAsset >( it.value()->clone() );
   return nullptr;
 }
 
@@ -1731,9 +1735,9 @@ bool QgsStyle::removeEntityByName( QgsStyle::StyleEntity type, const QString &na
       break;
     }
 
-    case QgsStyle::MaterialSettingsEntity:
+    case QgsStyle::Asset3DEntity:
     {
-      std::unique_ptr< QgsAbstractMaterialSettings > settings( mMaterialSettings.take( name ) );
+      std::unique_ptr< QgsAbstract3DAsset > settings( m3dAssets.take( name ) );
       if ( !settings )
         return false;
 
@@ -2486,8 +2490,8 @@ QStringList QgsStyle::allNames( QgsStyle::StyleEntity type ) const
     case Symbol3DEntity:
       return symbol3DNames();
 
-    case MaterialSettingsEntity:
-      return materialSettingsNames();
+    case Asset3DEntity:
+      return asset3DNames();
 
     case TagEntity:
       return tags();
@@ -2774,7 +2778,7 @@ bool QgsStyle::exportXml( const QString &filename )
   const QStringList favoriteTextFormats = symbolsOfFavorite( TextFormatEntity );
   const QStringList favoriteLegendShapes = symbolsOfFavorite( LegendPatchShapeEntity );
   const QStringList favorite3DSymbols = symbolsOfFavorite( Symbol3DEntity );
-  const QStringList favoriteMaterialSettings = symbolsOfFavorite( MaterialSettingsEntity );
+  const QStringList favorite3DAssets = symbolsOfFavorite( Asset3DEntity );
 
   // save symbols and attach tags
   QDomElement symbolsElem = QgsSymbolLayerUtils::saveSymbols( mSymbols, u"symbols"_s, doc, QgsReadWriteContext() );
@@ -2895,25 +2899,26 @@ bool QgsStyle::exportXml( const QString &filename )
     symbols3DElem.appendChild( symbolEl );
   }
 
-  // save material settings and attach tags
-  QDomElement materialSettingsElem = doc.createElement( u"materialsettings"_s );
-  for ( auto it = mMaterialSettings.constBegin(); it != mMaterialSettings.constEnd(); ++it )
+  // save 3d assets and attach tags
+  QDomElement assets3DElem = doc.createElement( u"assets3d"_s );
+  for ( auto it = m3dAssets.constBegin(); it != m3dAssets.constEnd(); ++it )
   {
+    // TODO
     QDomElement materialSettingEl = doc.createElement( u"material"_s );
     materialSettingEl.setAttribute( u"name"_s, it.key() );
     QDomElement defEl = doc.createElement( u"definition"_s );
     it.value()->writeXml( defEl, QgsReadWriteContext() );
     materialSettingEl.appendChild( defEl );
-    QStringList tags = tagsOfSymbol( MaterialSettingsEntity, it.key() );
+    QStringList tags = tagsOfSymbol( Asset3DEntity, it.key() );
     if ( tags.count() > 0 )
     {
       materialSettingEl.setAttribute( u"tags"_s, tags.join( ',' ) );
     }
-    if ( favoriteMaterialSettings.contains( it.key() ) )
+    if ( favorite3DAssets.contains( it.key() ) )
     {
       materialSettingEl.setAttribute( u"favorite"_s, u"1"_s );
     }
-    materialSettingsElem.appendChild( materialSettingEl );
+    assets3DElem.appendChild( materialSettingEl );
   }
   root.appendChild( symbolsElem );
   root.appendChild( rampsElem );
@@ -2921,7 +2926,7 @@ bool QgsStyle::exportXml( const QString &filename )
   root.appendChild( labelSettingsElem );
   root.appendChild( legendPatchShapesElem );
   root.appendChild( symbols3DElem );
-  root.appendChild( materialSettingsElem );
+  root.appendChild( assets3DElem );
 
   // save
   QFile f( filename );
@@ -3271,11 +3276,11 @@ bool QgsStyle::importXml( const QString &filename, int sinceVersion )
     }
   }
 
-  // load material settings
+  // load 3d assets
   if ( version == STYLE_CURRENT_VERSION )
   {
-    const QDomElement materialSettingsElement = docEl.firstChildElement( u"materialsettings"_s );
-    e = materialSettingsElement.firstChildElement();
+    const QDomElement assets3DElement = docEl.firstChildElement( u"assets3d"_s );
+    e = assets3DElement.firstChildElement();
     for ( ; !e.isNull(); e = e.nextSiblingElement() )
     {
       const int entityAddedVersion = e.attribute( u"addedVersion"_s ).toInt();
@@ -3285,6 +3290,7 @@ bool QgsStyle::importXml( const QString &filename, int sinceVersion )
         continue;
       }
 
+      // TODO
       if ( e.tagName() == "material"_L1 )
       {
         QString name = e.attribute( u"name"_s );
@@ -3306,10 +3312,10 @@ bool QgsStyle::importXml( const QString &filename, int sinceVersion )
         {
           settings->readXml( materialElem, QgsReadWriteContext() );
           QgsAbstractMaterialSettings *newMaterial = settings.get();
-          addMaterialSettings( name, settings.release() );
+          addAsset3D( name, settings.release() );
           if ( mCurrentDB )
           {
-            saveMaterialSettings( name, newMaterial, favorite, tags );
+            saveAsset3D( name, newMaterial, favorite, tags );
           }
         }
       }
@@ -3416,25 +3422,26 @@ bool QgsStyle::updateSymbol( StyleEntity type, const QString &name )
       break;
     }
 
-    case MaterialSettingsEntity:
+    case Asset3DEntity:
     {
       // check if it is an existing symbol
-      auto it = mMaterialSettings.constFind( name );
-      if ( it == mMaterialSettings.constEnd() || !it.value() )
+      auto it = m3dAssets.constFind( name );
+      if ( it == m3dAssets.constEnd() || !it.value() )
       {
-        QgsDebugError( u"Update request received for unavailable material"_s );
+        QgsDebugError( u"Update request received for unavailable 3D asset"_s );
         return false;
       }
 
+      // TODO
       symEl = doc.createElement( u"material"_s );
       it.value()->writeXml( symEl, QgsReadWriteContext() );
       if ( symEl.isNull() )
       {
-        QgsDebugError( u"Couldn't convert material settings to valid XML!"_s );
+        QgsDebugError( u"Couldn't convert 3D asset to valid XML!"_s );
         return false;
       }
       symEl.save( stream, 4 );
-      query = qgs_sqlite3_mprintf( "UPDATE materialsettings SET xml='%q' WHERE name='%q';", xmlArray.constData(), name.toUtf8().constData() );
+      query = qgs_sqlite3_mprintf( "UPDATE asset3d SET xml='%q' WHERE name='%q';", xmlArray.constData(), name.toUtf8().constData() );
       break;
     }
 
@@ -3552,7 +3559,7 @@ bool QgsStyle::updateSymbol( StyleEntity type, const QString &name )
       case TagEntity:
       case SmartgroupEntity:
       case Symbol3DEntity:
-      case MaterialSettingsEntity:
+      case Asset3DEntity:
         break;
     }
     emit entityChanged( type, name );
@@ -3641,8 +3648,8 @@ QString QgsStyle::entityTableName( QgsStyle::StyleEntity type )
     case Symbol3DEntity:
       return u"symbol3d"_s;
 
-    case MaterialSettingsEntity:
-      return u"materialsettings"_s;
+    case Asset3DEntity:
+      return u"asset3d"_s;
 
     case TagEntity:
       return u"tag"_s;
@@ -3675,8 +3682,8 @@ QString QgsStyle::tagmapTableName( QgsStyle::StyleEntity type )
     case Symbol3DEntity:
       return u"symbol3dtagmap"_s;
 
-    case MaterialSettingsEntity:
-      return u"materialsettingstagmap"_s;
+    case Asset3DEntity:
+      return u"asset3dtagmap"_s;
 
     case TagEntity:
     case SmartgroupEntity:
@@ -3707,8 +3714,8 @@ QString QgsStyle::tagmapEntityIdFieldName( QgsStyle::StyleEntity type )
     case Symbol3DEntity:
       return u"symbol3d_id"_s;
 
-    case MaterialSettingsEntity:
-      return u"materialsettings_id"_s;
+    case Asset3DEntity:
+      return u"asset3d_id"_s;
 
     case TagEntity:
     case SmartgroupEntity:
@@ -3747,7 +3754,7 @@ QgsStyle::StyleEntity QgsStyleSymbol3DEntity::type() const
   return QgsStyle::Symbol3DEntity;
 }
 
-QgsStyle::StyleEntity QgsStyleMaterialSettingsEntity::type() const
+QgsStyle::StyleEntity QgsStyleAsset3DEntity::type() const
 {
-  return QgsStyle::MaterialSettingsEntity;
+  return QgsStyle::Asset3DEntity;
 }
