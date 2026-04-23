@@ -432,6 +432,7 @@ set(QGIS_CORE_SRCS
 
   fromencodedcomponenthelper.cpp
   qgis.cpp
+  qgs2danimationsettings.cpp
   qgsabstractcontentcache.cpp
   qgsabstractgeopdfexporter.cpp
   qgsapplication.cpp
@@ -1159,6 +1160,7 @@ set(QGIS_CORE_HDRS
   fromencodedcomponenthelper.h
   qgis.h
   qgis_sip.h
+  qgs2danimationsettings.h
   qgsabstractcontentcache.h
   qgsabstractgeopdfexporter.h
   qgsaggregatecalculator.h

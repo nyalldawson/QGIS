@@ -1,5 +1,6 @@
 // Include auto-generated SIP files
 %Include auto_generated/qgis.sip
+%Include auto_generated/qgs2danimationsettings.sip
 %Include auto_generated/qgsabstractcontentcache.sip
 %Include auto_generated/qgsaggregatecalculator.sip
 %Include auto_generated/qgsalignrasterdata.sip

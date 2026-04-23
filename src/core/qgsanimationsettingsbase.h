@@ -27,7 +27,7 @@ class QgsReadWriteContext;
 
 
 /**
- * \ingroup qgis_3d
+ * \ingroup core
  * \brief Base template class for animation properties.
  *
  * Handles key frame duration, lookup, and easing curve calculations.

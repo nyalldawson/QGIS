@@ -1,0 +1,98 @@
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/core/qgs2danimationsettings.h                                    *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.py again   *
+ ************************************************************************/
+
+
+
+
+struct Qgs2DAnimationKeyFrame
+{
+%TypeHeaderCode
+#include "qgs2danimationsettings.h"
+%End
+    double time;
+    QgsPointXY center;
+    double scale;
+    double rotation;
+};
+
+class Qgs2DAnimationSettings
+{
+%Docstring(signature="appended")
+Holds information about animation in 2D view.
+
+The animation is defined as a series of keyframes.
+
+.. versionadded:: 4.2
+%End
+
+%TypeHeaderCode
+#include "qgs2danimationsettings.h"
+%End
+  public:
+    Qgs2DAnimationSettings();
+
+    virtual void readXml( const QDomElement &elem, QgsReadWriteContext &context );
+
+    virtual QDomElement writeXml( QDomDocument &doc, QgsReadWriteContext &context ) const;
+
+
+
+    void setKeyFrames( const QVector<Qgs2DAnimationKeyFrame> &keyFrames );
+%Docstring
+Configures ``keyFrames`` of the animation.
+
+.. note::
+
+   Key frames must be ordered by time.
+
+.. seealso:: :py:func:`keyFrames`
+%End
+
+    QVector<Qgs2DAnimationKeyFrame> keyFrames() const;
+%Docstring
+Returns the key frames of the animation.
+
+.. seealso:: :py:func:`setKeyFrames`
+%End
+
+    void setEasingCurve( const QEasingCurve &curve );
+%Docstring
+Sets the interpolation method for transitions.
+
+.. seealso:: :py:func:`easingCurve`
+%End
+
+    QEasingCurve easingCurve() const;
+%Docstring
+Returns the interpolation method for transitions.
+
+.. seealso:: :py:func:`setEasingCurve`
+%End
+
+    double duration() const;
+%Docstring
+Returns the duration of the whole animation (in seconds).
+%End
+
+    Qgs2DAnimationKeyFrame interpolate( double time ) const;
+%Docstring
+Finds the correct keyframes and calculates the interpolation progress.
+%End
+  protected:
+    virtual Qgs2DAnimationKeyFrame interpolateKeyFrame( const Qgs2DAnimationKeyFrame &k0, const Qgs2DAnimationKeyFrame &k1, double eIp, double time ) const;
+
+};
+
+
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/core/qgs2danimationsettings.h                                    *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.py again   *
+ ************************************************************************/
