@@ -64,6 +64,8 @@ ranges are sorted in ascending order.
         QList<QgsDateTimeRange> availableTemporalRanges;
 
         double frameRate;
+
+        Qgs2DAnimationSettings movieSettings;
     };
 
     static bool exportAnimation( const QgsMapSettings &mapSettings, const AnimationExportSettings &settings, QString &error /Out/, QgsFeedback *feedback = 0 );

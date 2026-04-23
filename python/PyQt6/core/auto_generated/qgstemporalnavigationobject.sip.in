@@ -251,6 +251,24 @@ Sets the total number of ``frames`` for the movie.
 .. versionadded:: 3.36
 %End
 
+    Qgs2DAnimationSettings movieSettings() const;
+%Docstring
+Returns the movie animation settings.
+
+.. seealso:: :py:func:`setMovieSettings`
+
+.. versionadded:: 4.2
+%End
+
+    void setMovieSettings( const Qgs2DAnimationSettings settings );
+%Docstring
+Sets the movie animation settings.
+
+.. seealso:: :py:func:`movieSettings`
+
+.. versionadded:: 4.2
+%End
+
   signals:
 
     void stateChanged( Qgis::AnimationState state );

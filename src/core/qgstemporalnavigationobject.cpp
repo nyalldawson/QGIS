@@ -83,6 +83,19 @@ void QgsTemporalNavigationObject::setTotalMovieFrames( long long frames )
   emit temporalExtentsChanged( mTemporalExtents );
 }
 
+Qgs2DAnimationSettings QgsTemporalNavigationObject::movieSettings() const
+{
+  return mMovieSettings;
+}
+
+void QgsTemporalNavigationObject::setMovieSettings( const Qgs2DAnimationSettings settings )
+{
+  mMovieSettings = settings;
+
+  emit totalMovieFramesChanged( mTotalMovieFrames );
+  emit temporalExtentsChanged( mTemporalExtents );
+}
+
 bool QgsTemporalNavigationObject::isLooping() const
 {
   return mLoopAnimation;

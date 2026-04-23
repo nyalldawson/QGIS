@@ -102,6 +102,9 @@ bool QgsTemporalUtils::exportAnimation( const QgsMapSettings &mapSettings, const
     navigator.setAvailableTemporalRanges( settings.availableTemporalRanges );
   }
   navigator.setTemporalRangeCumulative( settings.temporalRangeCumulative );
+  navigator.setMovieSettings( settings.movieSettings );
+  navigator.setNavigationMode( Qgis::TemporalNavigationMode::Movie );
+  navigator.setTotalMovieFrames( static_cast< int >( settings.movieSettings.keyFrames().last().time ) + 1 );
 
   QgsMapSettings ms = mapSettings;
   const QgsExpressionContext context = ms.expressionContext();
@@ -110,6 +113,7 @@ bool QgsTemporalUtils::exportAnimation( const QgsMapSettings &mapSettings, const
   const long long totalFrames = navigator.totalFrameCount();
   long long currentFrame = 0;
 
+  Qgs2DAnimationSettings movieSettings = navigator.movieSettings();
   while ( currentFrame < totalFrames )
   {
     if ( feedback )
@@ -123,10 +127,17 @@ bool QgsTemporalUtils::exportAnimation( const QgsMapSettings &mapSettings, const
     }
 
     navigator.setCurrentFrameNumber( currentFrame );
+    Qgs2DAnimationKeyFrame keyFrame = movieSettings.interpolate( currentFrame );
 
     ms.setIsTemporal( true );
     ms.setTemporalRange( navigator.dateTimeRangeForFrameNumber( currentFrame ) );
     ms.setCurrentFrame( currentFrame );
+
+    QgsRectangle thisExtent = QgsRectangle::fromCenterAndSize( keyFrame.center, ms.extent().width(), ms.extent().height() );
+    ms.setExtent( thisExtent );
+    thisExtent.scale( keyFrame.scale / ms.scale() );
+    ms.setExtent( thisExtent );
+    ms.setRotation( keyFrame.rotation );
 
     QgsExpressionContext frameContext = context;
     frameContext.appendScope( navigator.createExpressionContextScope() );

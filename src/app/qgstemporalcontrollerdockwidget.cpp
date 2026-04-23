@@ -44,6 +44,19 @@ QgsTemporalControllerDockWidget::QgsTemporalControllerDockWidget( const QString 
   setWidget( stack );
 
   connect( mControllerWidget, &QgsTemporalControllerWidget::exportAnimation, this, &QgsTemporalControllerDockWidget::exportAnimation );
+
+  connect( temporalController(), &QgsTemporalController::updateTemporalRange, this, [this] {
+    if ( mCanvas )
+    {
+      // most definitely NOTE the right place for this!!
+      Qgs2DAnimationSettings movieSettings = mControllerWidget->temporalController()->movieSettings();
+      Qgs2DAnimationKeyFrame keyFrame = movieSettings.interpolate( mControllerWidget->temporalController()->currentFrameNumber() );
+
+      mCanvas->setCenter( keyFrame.center );
+      mCanvas->zoomScale( keyFrame.scale );
+      mCanvas->setRotation( keyFrame.rotation );
+    }
+  } );
 }
 
 QgsTemporalController *QgsTemporalControllerDockWidget::temporalController()
@@ -53,8 +66,9 @@ QgsTemporalController *QgsTemporalControllerDockWidget::temporalController()
 
 void QgsTemporalControllerDockWidget::setMapCanvas( QgsMapCanvas *canvas )
 {
-  if ( canvas && canvas->viewport() )
-    canvas->viewport()->installEventFilter( this );
+  mCanvas = canvas;
+  if ( mCanvas && mCanvas->viewport() )
+    mCanvas->viewport()->installEventFilter( this );
 }
 
 bool QgsTemporalControllerDockWidget::eventFilter( QObject *object, QEvent *event )
@@ -117,6 +131,9 @@ void QgsTemporalControllerDockWidget::exportAnimation()
     animationSettings.decorations = decorations;
     if ( frameDuration.originalUnit() == Qgis::TemporalUnit::IrregularStep )
       animationSettings.availableTemporalRanges = QgsTemporalUtils::usedTemporalRangesForProject( QgsProject::instance() );
+
+    animationSettings.movieSettings = mControllerWidget->temporalController()->movieSettings();
+    animationSettings.frameRate = mControllerWidget->temporalController()->framesPerSecond();
 
     const bool success = QgsTemporalUtils::exportAnimation( s, animationSettings, error, &progressFeedback );
 

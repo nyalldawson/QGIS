@@ -58,6 +58,7 @@ class APP_EXPORT QgsTemporalControllerDockWidget : public QgsDockWidget
 
   private:
     QgsTemporalControllerWidget *mControllerWidget = nullptr;
+    QgsMapCanvas *mCanvas = nullptr;
 };
 
 #endif // QGSTEMPORALCONTROLLERDOCKWIDGET_H

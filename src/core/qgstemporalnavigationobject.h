@@ -20,6 +20,7 @@
 #define QGSTEMPORALNAVIGATIONOBJECT_H
 
 #include "qgis_core.h"
+#include "qgs2danimationsettings.h"
 #include "qgsexpressioncontextscopegenerator.h"
 #include "qgsinterval.h"
 #include "qgsrange.h"
@@ -239,6 +240,22 @@ class CORE_EXPORT QgsTemporalNavigationObject : public QgsTemporalController, pu
      */
     void setTotalMovieFrames( long long frames );
 
+    /**
+     * Returns the movie animation settings.
+     *
+     * \see setMovieSettings()
+     * \since QGIS 4.2
+     */
+    Qgs2DAnimationSettings movieSettings() const;
+
+    /**
+     * Sets the movie animation settings.
+     *
+     * \see movieSettings()
+     * \since QGIS 4.2
+     */
+    void setMovieSettings( const Qgs2DAnimationSettings settings );
+
   signals:
 
     /**
@@ -365,6 +382,7 @@ class CORE_EXPORT QgsTemporalNavigationObject : public QgsTemporalController, pu
 
     //! Total frame count, for Movie mode only
     long long mTotalMovieFrames = 100;
+    Qgs2DAnimationSettings mMovieSettings;
 
     QgsTemporalNavigationObject( const QgsTemporalNavigationObject & ) = delete;
     QgsTemporalNavigationObject &operator=( const QgsTemporalNavigationObject & ) = delete;

@@ -17,6 +17,7 @@
 #define QGSTEMPORALUTILS_H
 
 #include "qgis_core.h"
+#include "qgs2danimationsettings.h"
 #include "qgsinterval.h"
 #include "qgsrange.h"
 
@@ -181,6 +182,12 @@ class CORE_EXPORT QgsTemporalUtils
        * \since QGIS 3.26
        */
         double frameRate = 30;
+
+        /**
+         * The movie animation settings.
+         * \since QGIS 4.2
+         */
+        Qgs2DAnimationSettings movieSettings;
     };
 
     /**
