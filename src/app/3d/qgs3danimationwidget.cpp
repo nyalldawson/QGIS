@@ -82,11 +82,11 @@ void Qgs3DAnimationWidget::setAnimation( const Qgs3DAnimationSettings &animSetti
   // initialize GUI from the given animation
   cboKeyframe->clear();
   cboKeyframe->addItem( tr( "<none>" ) );
-  for ( const Qgs3DAnimationSettings::Keyframe &keyframe : animSettings.keyFrames() )
+  for ( const Qgs3DAnimationKeyFrame &keyframe : animSettings.keyFrames() )
   {
     cboKeyframe->addItem( u"%1 s"_s.arg( keyframe.time ) );
     const int lastIndex = cboKeyframe->count() - 1;
-    cboKeyframe->setItemData( lastIndex, QVariant::fromValue<Qgs3DAnimationSettings::Keyframe>( keyframe ), Qt::UserRole + 1 );
+    cboKeyframe->setItemData( lastIndex, QVariant::fromValue<Qgs3DAnimationKeyFrame>( keyframe ), Qt::UserRole + 1 );
   }
 
   initializeController( animSettings );
@@ -103,22 +103,22 @@ Qgs3DAnimationSettings Qgs3DAnimationWidget::animation() const
 {
   Qgs3DAnimationSettings animSettings;
   animSettings.setEasingCurve( QEasingCurve( ( QEasingCurve::Type ) cboInterpolation->currentIndex() ) );
-  Qgs3DAnimationSettings::Keyframes keyframes;
+  QVector< Qgs3DAnimationKeyFrame > keyframes;
   for ( int i = 1; i < cboKeyframe->count(); ++i )
   {
-    Qgs3DAnimationSettings::Keyframe kf;
-    kf = cboKeyframe->itemData( i, Qt::UserRole + 1 ).value<Qgs3DAnimationSettings::Keyframe>();
+    Qgs3DAnimationKeyFrame kf;
+    kf = cboKeyframe->itemData( i, Qt::UserRole + 1 ).value<Qgs3DAnimationKeyFrame>();
     keyframes << kf;
   }
-  animSettings.setKeyframes( keyframes );
+  animSettings.setKeyFrames( keyframes );
   return animSettings;
 }
 
 void Qgs3DAnimationWidget::setDefaultAnimation()
 {
   Qgs3DAnimationSettings animSettings;
-  Qgs3DAnimationSettings::Keyframes kf;
-  Qgs3DAnimationSettings::Keyframe f1, f2;
+  QVector<Qgs3DAnimationKeyFrame> kf;
+  Qgs3DAnimationKeyFrame f1, f2;
   f1.time = 0;
   f1.point = mCameraController->lookingAtMapPoint();
   f1.dist = mCameraController->distance();
@@ -132,7 +132,7 @@ void Qgs3DAnimationWidget::setDefaultAnimation()
   f2.yaw = f1.yaw;
 
   kf << f1 << f2;
-  animSettings.setKeyframes( kf );
+  animSettings.setKeyFrames( kf );
 
   setAnimation( animSettings );
 }
@@ -231,7 +231,7 @@ void Qgs3DAnimationWidget::onSliderValueChanged()
   if ( cboKeyframe->currentIndex() != 0 )
     cboKeyframe->setCurrentIndex( 0 );
 
-  const Qgs3DAnimationSettings::Keyframe kf = mAnimationSettings->interpolate( sliderTime->value() / 100. );
+  const Qgs3DAnimationKeyFrame kf = mAnimationSettings->interpolate( sliderTime->value() / 100. );
   mCameraController->setLookingAtMapPoint( kf.point, kf.dist, kf.pitch, kf.yaw );
 }
 
@@ -242,12 +242,12 @@ void Qgs3DAnimationWidget::onCameraChanged()
 
   // update keyframe's camera position/rotation
   const int i = cboKeyframe->currentIndex();
-  Qgs3DAnimationSettings::Keyframe kf = cboKeyframe->itemData( i, Qt::UserRole + 1 ).value<Qgs3DAnimationSettings::Keyframe>();
+  Qgs3DAnimationKeyFrame kf = cboKeyframe->itemData( i, Qt::UserRole + 1 ).value<Qgs3DAnimationKeyFrame>();
   kf.point = mCameraController->lookingAtMapPoint();
   kf.dist = mCameraController->distance();
   kf.pitch = mCameraController->pitch();
   kf.yaw = mCameraController->yaw();
-  cboKeyframe->setItemData( i, QVariant::fromValue<Qgs3DAnimationSettings::Keyframe>( kf ), Qt::UserRole + 1 );
+  cboKeyframe->setItemData( i, QVariant::fromValue<Qgs3DAnimationKeyFrame>( kf ), Qt::UserRole + 1 );
 
   initializeController( animation() );
 }
@@ -263,7 +263,7 @@ void Qgs3DAnimationWidget::onKeyframeChanged()
     return;
 
   // jump to the camera view of the keyframe
-  const Qgs3DAnimationSettings::Keyframe kf = cboKeyframe->itemData( cboKeyframe->currentIndex(), Qt::UserRole + 1 ).value<Qgs3DAnimationSettings::Keyframe>();
+  const Qgs3DAnimationKeyFrame kf = cboKeyframe->itemData( cboKeyframe->currentIndex(), Qt::UserRole + 1 ).value<Qgs3DAnimationKeyFrame>();
 
   whileBlocking( sliderTime )->setValue( kf.time * 100 );
   mCameraController->setLookingAtMapPoint( kf.point, kf.dist, kf.pitch, kf.yaw );
@@ -272,7 +272,7 @@ void Qgs3DAnimationWidget::onKeyframeChanged()
 int Qgs3DAnimationWidget::findIndexForKeyframe( float time )
 {
   int newIndex = 0;
-  for ( const Qgs3DAnimationSettings::Keyframe &keyframe : mAnimationSettings->keyFrames() )
+  for ( const Qgs3DAnimationKeyFrame &keyframe : mAnimationSettings->keyFrames() )
   {
     if ( keyframe.time > time )
       break;
@@ -288,7 +288,7 @@ float Qgs3DAnimationWidget::askForKeyframeTime( float defaultTime, bool *ok )
     return 0;
 
   // figure out position of this keyframe
-  for ( const Qgs3DAnimationSettings::Keyframe &keyframe : mAnimationSettings->keyFrames() )
+  for ( const Qgs3DAnimationKeyFrame &keyframe : mAnimationSettings->keyFrames() )
   {
     if ( keyframe.time == t )
     {
@@ -311,7 +311,7 @@ void Qgs3DAnimationWidget::onAddKeyframe()
 
   const int index = findIndexForKeyframe( t );
 
-  Qgs3DAnimationSettings::Keyframe kf;
+  Qgs3DAnimationKeyFrame kf;
   kf.time = t;
   kf.point = mCameraController->lookingAtMapPoint();
   kf.dist = mCameraController->distance();
@@ -319,7 +319,7 @@ void Qgs3DAnimationWidget::onAddKeyframe()
   kf.yaw = mCameraController->yaw();
 
   cboKeyframe->insertItem( index + 1, u"%1 s"_s.arg( kf.time ) );
-  cboKeyframe->setItemData( index + 1, QVariant::fromValue<Qgs3DAnimationSettings::Keyframe>( kf ), Qt::UserRole + 1 );
+  cboKeyframe->setItemData( index + 1, QVariant::fromValue<Qgs3DAnimationKeyFrame>( kf ), Qt::UserRole + 1 );
 
   initializeController( animation() );
 
@@ -346,7 +346,7 @@ void Qgs3DAnimationWidget::onEditKeyframe()
   if ( index <= 0 )
     return;
 
-  Qgs3DAnimationSettings::Keyframe kf = cboKeyframe->itemData( index, Qt::UserRole + 1 ).value<Qgs3DAnimationSettings::Keyframe>();
+  Qgs3DAnimationKeyFrame kf = cboKeyframe->itemData( index, Qt::UserRole + 1 ).value<Qgs3DAnimationKeyFrame>();
 
   bool ok;
   const float t = askForKeyframeTime( kf.time, &ok );
@@ -364,7 +364,7 @@ void Qgs3DAnimationWidget::onEditKeyframe()
   kf.time = t;
 
   cboKeyframe->insertItem( newIndex + 1, u"%1 s"_s.arg( kf.time ) );
-  cboKeyframe->setItemData( newIndex + 1, QVariant::fromValue<Qgs3DAnimationSettings::Keyframe>( kf ), Qt::UserRole + 1 );
+  cboKeyframe->setItemData( newIndex + 1, QVariant::fromValue<Qgs3DAnimationKeyFrame>( kf ), Qt::UserRole + 1 );
 
   initializeController( animation() );
 
@@ -377,7 +377,7 @@ void Qgs3DAnimationWidget::onDuplicateKeyframe()
   if ( index <= 0 )
     return;
 
-  Qgs3DAnimationSettings::Keyframe kf = cboKeyframe->itemData( index, Qt::UserRole + 1 ).value<Qgs3DAnimationSettings::Keyframe>();
+  Qgs3DAnimationKeyFrame kf = cboKeyframe->itemData( index, Qt::UserRole + 1 ).value<Qgs3DAnimationKeyFrame>();
 
   bool ok;
   const float t = askForKeyframeTime( kf.time, &ok );
@@ -390,7 +390,7 @@ void Qgs3DAnimationWidget::onDuplicateKeyframe()
   kf.time = t;
 
   cboKeyframe->insertItem( newIndex + 1, u"%1 s"_s.arg( kf.time ) );
-  cboKeyframe->setItemData( newIndex + 1, QVariant::fromValue<Qgs3DAnimationSettings::Keyframe>( kf ), Qt::UserRole + 1 );
+  cboKeyframe->setItemData( newIndex + 1, QVariant::fromValue<Qgs3DAnimationKeyFrame>( kf ), Qt::UserRole + 1 );
 
   initializeController( animation() );
 

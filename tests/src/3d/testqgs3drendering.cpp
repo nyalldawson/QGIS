@@ -1739,15 +1739,15 @@ void TestQgs3DRendering::testAnimationExport()
   map.setTerrainGenerator( flatTerrain );
 
   Qgs3DAnimationSettings animSettings;
-  Qgs3DAnimationSettings::Keyframes keyframes;
-  Qgs3DAnimationSettings::Keyframe kf1;
+  QVector<Qgs3DAnimationKeyFrame> keyframes;
+  Qgs3DAnimationKeyFrame kf1;
   kf1.dist = 2500;
-  Qgs3DAnimationSettings::Keyframe kf2;
+  Qgs3DAnimationKeyFrame kf2;
   kf2.time = 2;
   kf2.dist = 3000;
   keyframes << kf1;
   keyframes << kf2;
-  animSettings.setKeyframes( keyframes );
+  animSettings.setKeyFrames( keyframes );
 
   const QString dir = QDir::temp().path();
   QString error;

@@ -273,7 +273,7 @@ bool Qgs3DUtils::exportAnimation(
     }
     ++frameNo;
 
-    const Qgs3DAnimationSettings::Keyframe kf = animationSettings.interpolate( time );
+    const Qgs3DAnimationKeyFrame kf = animationSettings.interpolate( time );
     scene->cameraController()->setLookingAtMapPoint( kf.point, kf.dist, kf.pitch, kf.yaw );
 
     QString fileName( fileNameTemplate );

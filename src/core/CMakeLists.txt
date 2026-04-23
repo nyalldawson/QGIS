@@ -438,6 +438,7 @@ set(QGIS_CORE_SRCS
   qgsapplicationthemeregistry.cpp
   qgsaggregatecalculator.cpp
   qgsanimatedicon.cpp
+  qgsanimationsettingsbase.cpp
   qgsarrowiterator.cpp
   qgspostgresstringutils.cpp
   qgsattributes.cpp
@@ -1163,6 +1164,7 @@ set(QGIS_CORE_HDRS
   qgsaggregatecalculator.h
   qgsalignrasterdata.h
   qgsanimatedicon.h
+  qgsanimationsettingsbase.h
   qgsapplication.h
   qgsapplicationthemeregistry.h
   qgsarchive.h

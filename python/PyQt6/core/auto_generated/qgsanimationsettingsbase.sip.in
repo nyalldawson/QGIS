@@ -1,0 +1,102 @@
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/core/qgsanimationsettingsbase.h                                  *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.py again   *
+ ************************************************************************/
+
+
+
+
+
+
+template<KeyFrameT>
+class QgsAnimationSettingsBase
+{
+%Docstring(signature="appended")
+Base template class for animation properties.
+
+Handles key frame duration, lookup, and easing curve calculations.
+
+.. versionadded:: 4.2
+%End
+
+%TypeHeaderCode
+#include "qgsanimationsettingsbase.h"
+%End
+  public:
+    virtual ~QgsAnimationSettingsBase();
+    void setKeyFrames( const QVector<KeyFrameT> &keyFrames );
+%Docstring
+Configures ``keyFrames`` of the animation.
+
+.. note::
+
+   Key frames must be ordered by time.
+
+.. seealso:: :py:func:`keyFrames`
+%End
+
+    QVector<KeyFrameT> keyFrames() const;
+%Docstring
+Returns the key frames of the animation.
+
+.. seealso:: :py:func:`setKeyFrames`
+%End
+
+    void setEasingCurve( const QEasingCurve &curve );
+%Docstring
+Sets the interpolation method for transitions.
+
+.. seealso:: :py:func:`easingCurve`
+%End
+
+    QEasingCurve easingCurve() const;
+%Docstring
+Returns the interpolation method for transitions.
+
+.. seealso:: :py:func:`setEasingCurve`
+%End
+
+    double duration() const;
+%Docstring
+Returns the duration of the whole animation (in seconds).
+%End
+    KeyFrameT interpolate( double time ) const;
+%Docstring
+Finds the correct key frames and calculates the interpolation between
+them for a given point in ``time`` (in seconds).
+%End
+
+    virtual void readXml( const QDomElement &elem, QgsReadWriteContext &context ) = 0;
+%Docstring
+Reads configuration from a DOM element previously written by
+:py:func:`~QgsAnimationSettingsBase.writeXml`.
+
+\since :py:func:`~QgsAnimationSettingsBase.writeXml`
+%End
+
+    virtual QDomElement writeXml( QDomDocument &doc, QgsReadWriteContext &context ) const = 0;
+%Docstring
+Writes configuration to a DOM element, to be used later with
+:py:func:`~QgsAnimationSettingsBase.readXml`.
+
+.. seealso:: :py:func:`readXml`
+%End
+
+  protected:
+    virtual KeyFrameT interpolateKeyFrame( const KeyFrameT &k0, const KeyFrameT &k1, double eIp, double time ) const = 0;
+%Docstring
+Subclasses must implement this to blend their specific properties
+%End
+
+};
+
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/core/qgsanimationsettingsbase.h                                  *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.py again   *
+ ************************************************************************/

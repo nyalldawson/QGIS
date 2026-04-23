@@ -16482,7 +16482,7 @@ void QgisApp::write3DMapViewSettings( Qgs3DMapCanvasWidget *widget, QDomDocument
   elem3DMap.appendChild( elem3DMapSettings );
   QDomElement elemCamera = widget->mapCanvas3D()->cameraController()->writeXml( doc );
   elem3DMap.appendChild( elemCamera );
-  QDomElement elemAnimation = widget->animationWidget()->animation().writeXml( doc );
+  QDomElement elemAnimation = widget->animationWidget()->animation().writeXml( doc, readWriteContext );
   elemAnimation.setAttribute( u"widget-visible"_s, !widget->animationWidget()->isHidden() ? 1 : 0 );
   elem3DMap.appendChild( elemAnimation );
 
@@ -16525,7 +16525,7 @@ void QgisApp::read3DMapViewSettings( Qgs3DMapCanvasWidget *widget, QDomElement &
   if ( !elemAnimation.isNull() )
   {
     Qgs3DAnimationSettings animationSettings;
-    animationSettings.readXml( elemAnimation );
+    animationSettings.readXml( elemAnimation, readWriteContext );
     widget->animationWidget()->setAnimation( animationSettings );
     bool animationWidgetIsVisible = elemAnimation.attribute( u"widget-visible"_s, u"0"_s ).toInt();
     if ( animationWidgetIsVisible )
