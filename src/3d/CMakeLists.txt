@@ -83,6 +83,7 @@ set(QGIS_3D_SRCS
   materials/qgsmetalroughmaterial3dhandler.cpp
   materials/qgsmetalroughtexturedmaterial3dhandler.cpp
   materials/qgsnullmaterial3dhandler.cpp
+  materials/qgspbrmaterial.cpp
   materials/qgsphongmaterial3dhandler.cpp
   materials/qgsphongtexturedmaterial.cpp
   materials/qgsphongtexturedmaterial3dhandler.cpp
@@ -216,6 +217,7 @@ set(QGIS_3D_HDRS
   materials/qgsmetalroughmaterial3dhandler.h
   materials/qgsmetalroughtexturedmaterial3dhandler.h
   materials/qgsnullmaterial3dhandler.h
+  materials/qgspbrmaterial.h
   materials/qgsphongmaterial3dhandler.h
   materials/qgsphongtexturedmaterial.h
   materials/qgsphongtexturedmaterial3dhandler.h
