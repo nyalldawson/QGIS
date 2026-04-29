@@ -55,6 +55,8 @@ void QgsTerrainTileLoader::loadTexture()
   mTextureJobId = mTerrain->textureGenerator()->render( mExtentMapCrs, mNode->tileId(), mTileDebugText );
 }
 
+#include "qgsclothmaterial.h"
+
 void QgsTerrainTileLoader::createTextureComponent( QgsTerrainTileEntity *entity, bool isShadingEnabled, const QgsPhongMaterialSettings &shadingMaterial, bool useTexture )
 {
   Qt3DRender::QTexture2D *texture = useTexture || !isShadingEnabled ? createTexture( entity ) : nullptr;
@@ -64,12 +66,16 @@ void QgsTerrainTileLoader::createTextureComponent( QgsTerrainTileEntity *entity,
   {
     if ( isShadingEnabled )
     {
-      QgsPhongTexturedMaterial *phongTexturedMaterial = new QgsPhongTexturedMaterial();
+      QgsClothMaterial *phongTexturedMaterial = new QgsClothMaterial();
+      phongTexturedMaterial->setBaseColorTexture( texture );
+      phongTexturedMaterial->setRoughness( 1 );
+#if 0
       phongTexturedMaterial->setAmbient( shadingMaterial.ambient() );
       phongTexturedMaterial->setSpecular( shadingMaterial.specular() );
       phongTexturedMaterial->setShininess( static_cast<float>( shadingMaterial.shininess() ) );
       phongTexturedMaterial->setDiffuseTexture( texture );
       phongTexturedMaterial->setOpacity( static_cast<float>( shadingMaterial.opacity() ) );
+#endif
       material = phongTexturedMaterial;
     }
     else
