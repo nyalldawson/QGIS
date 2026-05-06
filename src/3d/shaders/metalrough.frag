@@ -1,7 +1,13 @@
 // Copyright (C) 2017 Klaralvdalens Datakonsult AB (KDAB).
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 
-#version 140
+#version 330 core
+
+// accumulates pre-multiplied color values
+layout(location = 0) out vec4 accum;
+// stores pixel revealage
+layout(location = 1) out vec4 reveal;
+
 
 // defines are added here as a pre-processing step
 
@@ -61,6 +67,19 @@ uniform float opacity;
 const float PI = 3.14159265359;
 
 #pragma include light.inc.frag
+
+float getWeight(float z, vec4 color) {
+    float maxColor = max(max(color.r, color.g), color.b);
+        float colorWeight = max(min(1.0, maxColor * color.a), color.a);
+
+        // This is Morgan McGuire's recommended equation for linear distance.
+        // '200.0' represents the rough visible depth scale of your scene in world units.
+        // If your objects are huge (e.g. 10,000 units), increase 200.0.
+        // If they are tiny (e.g. 5 units), decrease it.
+        float depthWeight = 0.03 / (1e-5 + pow(z / 50.0, 4.0));
+
+        return colorWeight * clamp(depthWeight, 1e-2, 3e3);
+}
 
 #if defined(NORMAL_MAP) || defined(HEIGHT_MAP)
 mat3 calcTangentToWorldSpaceMatrix(const in vec3 wNormal, const in vec4 wTangent)
@@ -563,8 +582,15 @@ void main()
 #endif
 #endif
 
-    fragColor = vec4(metalRoughFunction(c, m, r, ao,
+    vec4 color = vec4(metalRoughFunction(c, m, r, ao,
                                    worldPosition,
                                    worldView,
                                    n, activeTexCoord).rgb, opacity);
+
+    color = min(color, vec4(1.0));
+    float dist = length(eyePosition - worldPosition);
+    float weight = getWeight(dist, color);
+        accum = vec4(color.rgb * color.a, color.a) * weight;
+        reveal =vec4( color.a );
+
 }

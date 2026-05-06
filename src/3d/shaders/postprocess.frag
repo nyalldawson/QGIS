@@ -173,10 +173,8 @@ void main()
       // premultiplied
       vec3 average_color = accumulation.rgb / max(accumulation.a, EPSILON);
 
-
-
             // Blend using the opacity from the revealage buffer.
-            finalColor = mix(litOpaqueColor, average_color, 1.0 - clamp(reveal, 0.0, 1.0));
+            finalColor = mix(finalColor, average_color, 1.0 - clamp(reveal, 0.0, 1.0));
         }
    }
 }
