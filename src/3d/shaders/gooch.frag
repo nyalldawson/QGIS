@@ -55,12 +55,22 @@ vec3 goochModel( const in vec3 pos, const in vec3 n )
             s = normalize( vec3( lights[i].position ) - pos );
         }
 
+        float visibilityFactor = 1.0;
+        if (renderShadows == 1 && i == shadowLightIndex)
+        {
+            int cascadeIndex = calcCascadeIndexMapBased(pos);
+            visibilityFactor = calcShadowFactor(cascadeIndex, pos);
+        }
+
         // Calculate the cos theta factor mapped onto the range [0,1]
         float sDotNFactor = ( 1.0 + dot( s, n ) ) / 2.0;
 
         // Calculate the tone by blending the kcool and kwarm contributions
         // as per equation (2)
         vec3 intensity = mix( kcool, kwarm, sDotNFactor );
+
+        // If the pixel is shadowed, force the intensity to fall back to the unlit 'kcool' tone
+        intensity = mix( kcool, intensity, visibilityFactor );
 
         // Calculate the vector from the fragment to the eye position
         vec3 v = normalize( eyePosition - pos );
