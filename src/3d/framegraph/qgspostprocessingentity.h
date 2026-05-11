@@ -50,6 +50,9 @@ class QgsPostprocessingEntity : public QgsRenderPassQuad
     //! Sets whether shadow rendering is enabled
     void setShadowRenderingEnabled( bool enabled );
     void setShowCascadingShadowSplits( bool enabled );
+
+    //! Sets the index of the directional light that is casting shadows
+    void setShadowLightIndex( int index );
     //! Sets the shadow bias value
     void setShadowBias( float shadowBias );
     //! Sets whether eye dome lighting is enabled
@@ -83,6 +86,7 @@ class QgsPostprocessingEntity : public QgsRenderPassQuad
     Qt3DRender::QParameter *mMainCameraInvViewMatrixParameter = nullptr;
     Qt3DRender::QParameter *mMainCameraInvProjMatrixParameter = nullptr;
 
+    Qt3DRender::QParameter *mShadowLightIndexParameter = nullptr;
     Qt3DRender::QCamera *mLightCameras[Qgs3D::NUM_SHADOW_CASCADES] = { nullptr };
     Qt3DRender::QParameter *mCsmMatricesParameter = nullptr;
 #if 0 // required for interval based cascades only

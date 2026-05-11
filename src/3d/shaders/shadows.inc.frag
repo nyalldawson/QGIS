@@ -1,6 +1,9 @@
 uniform sampler2DArray shadowTexture;
 uniform float shadowBias;
 
+uniform int renderShadows;
+uniform int shadowLightIndex;
+
 // if you change the number of cascades, you also need to update Qgs3D::NUM_SHADOW_CASCADES
 const int NUMBER_CASCADES = 4;
 uniform mat4 csmMatrices[NUMBER_CASCADES];

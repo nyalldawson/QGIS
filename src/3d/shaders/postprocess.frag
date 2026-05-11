@@ -12,8 +12,6 @@ uniform mat4 invertedCameraProj;
 uniform float farPlane;
 uniform float nearPlane;
 
-uniform int renderShadows;
-
 uniform int edlEnabled;
 uniform float edlStrength;
 uniform int edlDistance;
@@ -28,9 +26,9 @@ out vec4 fragColor;
 // Exposure correction
 uniform float exposure = 0.0;
 
-#ifdef ENABLE_EFFECTS
-
 #pragma include shadows.inc.frag
+
+#ifdef ENABLE_EFFECTS
 
 vec3 WorldPosFromDepth(float depth) {
     float z = depth * 2.0 - 1.0;
@@ -102,24 +100,16 @@ void main()
   float depth = texture(depthTexture, texCoord).r;
   vec3 worldPosition = WorldPosFromDepth( depth );
 
-  // if shadow rendering is disabled or the pixel is outside the shadow rendering distance don't render shadows
+#ifdef TINT_CASCADES
   if ( renderShadows != 0 || depth < 1.0 )
   {
-#if 1
     int cascadeIndex = calcCascadeIndexMapBased(worldPosition);
-#else
-    float viewZ = linearizeDepth(depth);
-    int cascadeIndex = calcCascadeIndexIntervalBased(viewZ);
-#endif
-    float visibilityFactor = calcShadowFactor(cascadeIndex, worldPosition);
 
-    finalColor = finalColor * mix(0.5, 1.0, visibilityFactor);
-
-#ifdef TINT_CASCADES
     // for debugging: shade pixels by cascade index, to visualise cascade breaks
     finalColor = mix(finalColor, cascadeTint(cascadeIndex), 0.5);
-#endif
   }
+#endif
+
   if (edlEnabled != 0)
   {
     float shade = exp(-edlFactor(texCoord) * edlStrength);

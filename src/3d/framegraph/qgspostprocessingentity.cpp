@@ -47,12 +47,14 @@ QgsPostprocessingEntity::QgsPostprocessingEntity( QgsFrameGraph *frameGraph, Qt3
 
   mColorTextureParameter = new Qt3DRender::QParameter( u"colorTexture"_s, forwardRenderView.colorTexture() );
   mDepthTextureParameter = new Qt3DRender::QParameter( u"depthTexture"_s, forwardRenderView.depthTexture() );
-  mShadowMapParameter = new Qt3DRender::QParameter( u"shadowTexture"_s, shadowRenderView.mapTextureArray() );
   mAmbientOcclusionTextureParameter = new Qt3DRender::QParameter( u"ssaoTexture"_s, aoRenderView.blurredFactorMapTexture() );
   mMaterial->addParameter( mColorTextureParameter );
   mMaterial->addParameter( mDepthTextureParameter );
-  mMaterial->addParameter( mShadowMapParameter );
   mMaterial->addParameter( mAmbientOcclusionTextureParameter );
+
+  QList<Qt3DRender::QParameter *> globalShadowParams;
+  mShadowMapParameter = new Qt3DRender::QParameter( u"shadowTexture"_s, shadowRenderView.mapTextureArray() );
+  globalShadowParams << mShadowMapParameter;
 
   mMainCamera = frameGraph->mainCamera();
 
@@ -65,11 +67,11 @@ QgsPostprocessingEntity::QgsPostprocessingEntity( QgsFrameGraph *frameGraph, Qt3
   // We must take care that the parameter value is always a variant list of equal length!
   const QVariantList csmMatrices = QVariantList( Qgs3D::NUM_SHADOW_CASCADES, QVariant::fromValue( QMatrix4x4() ) );
   mCsmMatricesParameter = new Qt3DRender::QParameter( QString( "csmMatrices[0]" ), csmMatrices );
-  mMaterial->addParameter( mCsmMatricesParameter );
+  globalShadowParams << mCsmMatricesParameter;
 
 #if 0 // required for interval based cascades only
   mCsmSplitsParameter = new Qt3DRender::QParameter( QString( "csmSplits[0]" ), QVariantList( Qgs3D::NUM_SHADOW_CASCADES, 0.0f ) );
-  mMaterial->addParameter( mCsmSplitsParameter );
+  globalShadowParams << mCsmSplitsParameter;
 #endif
 
   mFarPlaneParameter = new Qt3DRender::QParameter( u"farPlane"_s, mMainCamera->farPlane() );
@@ -89,10 +91,13 @@ QgsPostprocessingEntity::QgsPostprocessingEntity( QgsFrameGraph *frameGraph, Qt3
   connect( mMainCamera, &Qt3DRender::QCamera::viewMatrixChanged, mMainCameraInvViewMatrixParameter, [&]() { mMainCameraInvViewMatrixParameter->setValue( mMainCamera->viewMatrix().inverted() ); } );
 
   mRenderShadowsParameter = new Qt3DRender::QParameter( u"renderShadows"_s, QVariant::fromValue( 0 ) );
-  mMaterial->addParameter( mRenderShadowsParameter );
-
+  globalShadowParams << mRenderShadowsParameter;
+  mShadowLightIndexParameter = new Qt3DRender::QParameter( u"shadowLightIndex"_s, QVariant::fromValue( 0 ) );
+  globalShadowParams << mShadowLightIndexParameter;
   mShadowBiasParameter = new Qt3DRender::QParameter( u"shadowBias"_s, QVariant::fromValue( 0.00001f ) );
-  mMaterial->addParameter( mShadowBiasParameter );
+  globalShadowParams << mShadowBiasParameter;
+
+  frameGraph->addGlobalParameters( globalShadowParams );
 
   mEyeDomeLightingEnabledParameter = new Qt3DRender::QParameter( u"edlEnabled"_s, QVariant::fromValue( 0 ) );
   mEyeDomeLightingStrengthParameter = new Qt3DRender::QParameter( u"edlStrength"_s, QVariant::fromValue( 1000.0f ) );
@@ -242,6 +247,11 @@ void QgsPostprocessingEntity::setShowCascadingShadowSplits( bool enabled )
     const QByteArray finalFragmentShaderCode = Qgs3DUtils::addDefinesToShaderCode( fragmentShaderCode, defines );
     mShader->setFragmentShaderCode( finalFragmentShaderCode );
   }
+}
+
+void QgsPostprocessingEntity::setShadowLightIndex( int index )
+{
+  mShadowLightIndexParameter->setValue( QVariant::fromValue( index ) );
 }
 
 void QgsPostprocessingEntity::setShadowBias( float shadowBias )

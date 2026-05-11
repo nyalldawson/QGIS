@@ -272,6 +272,10 @@ QgsFrameGraph::QgsFrameGraph( QSurface *surface, QSize s, Qt3DRender::QCamera *m
   mGlobalParamsStorage = new Qt3DRender::QRenderPassFilter( mMainViewPort );
   mGlobalParamsStorage->setObjectName( "GlobalParametersStore" );
 
+  // shadow rendering pass -- must be constructed BEFORE the forward render pass,
+  // to ensure it always has the correct depth available.
+  constructShadowRenderPass();
+
   // Forward render
   constructForwardRenderPass();
 
@@ -290,9 +294,6 @@ QgsFrameGraph::QgsFrameGraph( QSurface *surface, QSize s, Qt3DRender::QCamera *m
   mMsaaDepthBlitNode = new Qt3DRender::QBlitFramebuffer( mGlobalParamsStorage );
   mMsaaDepthBlitNode->setObjectName( "MsaaDepthBlitFramebuffer" );
   mMsaaDepthBlitNode->setEnabled( false );
-
-  // shadow rendering pass
-  constructShadowRenderPass();
 
   // depth buffer processing
   constructDepthRenderPass();
@@ -382,12 +383,16 @@ void QgsFrameGraph::updateShadowSettings( const QgsShadowSettings &shadowSetting
   {
     int selectedLight = shadowSettings.selectedDirectionalLight();
     QgsDirectionalLightSettings *light = nullptr;
+    int globalLightIndex = 0;
     for ( int i = 0, dirLight = 0; !light && i < lightSources.size(); i++ )
     {
       if ( lightSources[i]->type() == Qgis::LightSourceType::Directional )
       {
         if ( dirLight == selectedLight )
+        {
           light = qgis::down_cast< QgsDirectionalLightSettings * >( lightSources[i] );
+          globalLightIndex = i;
+        }
         dirLight++;
       }
     }
@@ -398,6 +403,7 @@ void QgsFrameGraph::updateShadowSettings( const QgsShadowSettings &shadowSetting
       shadowRenderView().setMapSize( size, size );
       shadowRenderView().setEnabled( true );
       mPostprocessingEntity->setShadowRenderingEnabled( true );
+      mPostprocessingEntity->setShadowLightIndex( globalLightIndex );
       mPostprocessingEntity->setShadowBias( static_cast<float>( shadowSettings.shadowBias() ) );
       mPostprocessingEntity->updateShadowSettings( *light, static_cast<float>( shadowSettings.maximumShadowRenderingDistance() ) );
       mPostprocessingEntity->setShowCascadingShadowSplits( shadowSettings.showCascadeSplits() );

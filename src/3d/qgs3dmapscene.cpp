@@ -989,7 +989,19 @@ void Qgs3DMapScene::finalizeNewEntity( Qt3DCore::QEntity *newEntity )
 
   // Add the required QLayers to the entity
   newEntity->addComponent( frameGraph->forwardRenderView().renderLayer() );
-  newEntity->addComponent( frameGraph->shadowRenderView().entityCastingShadowsLayer() );
+
+  // Determine if this entity type should cast physical shadows
+  bool castsShadows = true;
+  // Exclude 2D Billboard point symbols
+  if ( !newEntity->findChildren<QgsPoint3DBillboardMaterial *>().isEmpty() )
+  {
+    castsShadows = false;
+  }
+  // Only assign the shadow layer if the entity is valid volumetric geometry
+  if ( castsShadows )
+  {
+    newEntity->addComponent( frameGraph->shadowRenderView().entityCastingShadowsLayer() );
+  }
 
   // Finalize adding the 3D transparent objects by adding the layer components to the entities
   Qt3DRender::QLayer *transparentLayer = frameGraph->forwardRenderView().transparentObjectLayer();
