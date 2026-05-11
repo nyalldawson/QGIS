@@ -59,7 +59,7 @@ vec3 goochModel( const in vec3 pos, const in vec3 n )
         if (renderShadows == 1 && i == shadowLightIndex)
         {
             int cascadeIndex = calcCascadeIndexMapBased(pos);
-            visibilityFactor = calcShadowFactor(cascadeIndex, pos);
+            visibilityFactor = calcShadowFactor(cascadeIndex, pos, n, s);
         }
 
         // Calculate the cos theta factor mapped onto the range [0,1]

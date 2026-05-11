@@ -89,7 +89,7 @@ void adsModelNormalMapped(const in vec3 worldPos,
             if (renderShadows == 1 && i == shadowLightIndex)
             {
                 int cascadeIndex = calcCascadeIndexMapBased(worldPos);
-                visibilityFactor = calcShadowFactor(cascadeIndex, worldPos);
+                visibilityFactor = calcShadowFactor(cascadeIndex, worldPos, n, s);
             }
         }
 
@@ -165,7 +165,7 @@ void adsModel(const in vec3 worldPos,
             if (renderShadows == 1 && i == shadowLightIndex)
             {
                 int cascadeIndex = calcCascadeIndexMapBased(worldPos);
-                visibilityFactor = calcShadowFactor(cascadeIndex, worldPos);
+                visibilityFactor = calcShadowFactor(cascadeIndex, worldPos, n, s);
             }
         }
 
@@ -237,7 +237,7 @@ void adModel(const in vec3 worldPos,
             if (renderShadows == 1 && i == shadowLightIndex)
             {
                 int cascadeIndex = calcCascadeIndexMapBased(worldPos);
-                visibilityFactor = calcShadowFactor(cascadeIndex, worldPos);
+                visibilityFactor = calcShadowFactor(cascadeIndex, worldPos, n, s);
             }
         }
 

@@ -357,7 +357,7 @@ vec3 pbrModel(const in int lightIndex,
         if (renderShadows == 1 && lightIndex == shadowLightIndex)
         {
             int cascadeIndex = calcCascadeIndexMapBased(wPosition);
-            visibilityFactor = calcShadowFactor(cascadeIndex, wPosition);
+            visibilityFactor = calcShadowFactor(cascadeIndex, wPosition, n, s);
         }
     }
 

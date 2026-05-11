@@ -53,13 +53,19 @@ int calcCascadeIndexIntervalBased(float viewZ)
 }
 #endif
 
-float calcShadowFactor(int cascadeIndex, vec3 worldPosition)
+float calcShadowFactor(int cascadeIndex, vec3 worldPosition, vec3 worldNormal, vec3 lightDir)
 {
   float layerIndex = float(cascadeIndex);
   mat4 lightMatrix = csmMatrices[cascadeIndex];
   vec2 texelSize = 1.0 / vec2(textureSize(shadowTexture, 0).xy);
 
-  vec4 LightSpacePos = lightMatrix * vec4(worldPosition, 1.0);
+  float cascadeScale = pow(2.0, layerIndex);
+  float slopeScale = clamp(1.0 - dot(worldNormal, lightDir), 0.0, 1.0);
+  // shadowBias values from QGIS are very low (~0.00001), so scale them up to a usable size
+  float normalOffsetScale = shadowBias * 2500.0 * cascadeScale;
+  vec3 biasedPosition = worldPosition + (worldNormal * normalOffsetScale * slopeScale);
+
+  vec4 LightSpacePos = lightMatrix * vec4(biasedPosition, 1.0);
   vec3 ProjCoords = LightSpacePos.xyz / LightSpacePos.w;
 
   vec2 UVCoords;
@@ -75,6 +81,7 @@ float calcShadowFactor(int cascadeIndex, vec3 worldPosition)
 
   // percentage close filtering of the shadow map
   float shadow = 0.0;
+  float dynamicZBias = shadowBias * cascadeScale;
   int k = 1;
   for(int x = -k; x <= k; ++x)
   {
@@ -82,7 +89,7 @@ float calcShadowFactor(int cascadeIndex, vec3 worldPosition)
     {
       vec3 arrayCoord = vec3(UVCoords + vec2(x, y) * texelSize, layerIndex);
       float pcfDepth = texture(shadowTexture, arrayCoord).r;
-      shadow += z - shadowBias > pcfDepth ? 0.0 : 1.0;
+      shadow += z - dynamicZBias > pcfDepth ? 0.0 : 1.0;
     }
   }
   return shadow / (2 * k + 1) / (2 * k + 1);
