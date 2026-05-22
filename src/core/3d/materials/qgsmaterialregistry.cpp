@@ -17,6 +17,7 @@
 
 #include "qgsabstractmaterialsettings.h"
 #include "qgsapplication.h"
+#include "qgsclothmaterialsettings.h"
 #include "qgsgoochmaterialsettings.h"
 #include "qgsmetalroughmaterialsettings.h"
 #include "qgsmetalroughtexturedmaterialsettings.h"
@@ -68,6 +69,9 @@ bool QgsMaterialRegistry::populate()
     nullptr,
     QgsApplication::getThemeIcon( u"/mIconPhongTexturedMaterial.svg"_s )
   ) );
+  addMaterialSettingsType(
+    new QgsMaterialSettingsMetadata( u"cloth"_s, QObject::tr( "Physically Based (Cloth)" ), QgsClothMaterialSettings::create, QgsClothMaterialSettings::supportsTechnique, nullptr, QgsApplication::getThemeIcon( u"/mIconGoochMaterial.svg"_s ) )
+  );
   return true;
 }
 

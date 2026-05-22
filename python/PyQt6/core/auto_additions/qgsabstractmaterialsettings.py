@@ -21,6 +21,9 @@ QgsAbstractMaterialSettings.BaseColor.__doc__ = "Base color (metal-rough materia
 QgsAbstractMaterialSettings.EmissionColor = QgsAbstractMaterialSettings.Property.EmissionColor
 QgsAbstractMaterialSettings.EmissionColor.is_monkey_patched = True
 QgsAbstractMaterialSettings.EmissionColor.__doc__ = "Emission color (metal-rough material) \n.. versionadded:: 4.2"
+QgsAbstractMaterialSettings.SheenColor = QgsAbstractMaterialSettings.Property.SheenColor
+QgsAbstractMaterialSettings.SheenColor.is_monkey_patched = True
+QgsAbstractMaterialSettings.SheenColor.__doc__ = "Sheen color (cloth material) \n.. versionadded:: 4.2"
 QgsAbstractMaterialSettings.Property.__doc__ = """Data definable properties.
 
 * ``Diffuse``: Diffuse color (phong material)
@@ -33,6 +36,10 @@ QgsAbstractMaterialSettings.Property.__doc__ = """Data definable properties.
   .. versionadded:: 4.2
 
 * ``EmissionColor``: Emission color (metal-rough material)
+
+  .. versionadded:: 4.2
+
+* ``SheenColor``: Sheen color (cloth material)
 
   .. versionadded:: 4.2
 

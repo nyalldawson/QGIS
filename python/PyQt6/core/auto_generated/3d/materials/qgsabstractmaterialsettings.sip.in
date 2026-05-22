@@ -54,6 +54,10 @@ Abstract base class for material settings.
     {
       sipType = sipType_QgsMetalRoughTexturedMaterialSettings;
     }
+    else if ( sipCpp->type() == "cloth" )
+    {
+      sipType = sipType_QgsClothMaterialSettings;
+    }
     else
     {
       sipType = 0;
@@ -115,7 +119,8 @@ triangulation.
       Cool,
       Specular,
       BaseColor,
-      EmissionColor
+      EmissionColor,
+      SheenColor
     };
 
     void setDataDefinedProperties( const QgsPropertyCollection &collection );

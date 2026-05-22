@@ -14,7 +14,7 @@ in vec3 worldNormal;
 #ifdef DATA_DEFINED
 in DataColor {
     vec3 base;
-    vec3 emission;
+    vec3 secondary;
 } vs_in;
 #elif defined(BASE_COLOR_MAP)
 uniform sampler2D baseColorMap;
@@ -53,13 +53,17 @@ uniform float parallaxScale = 0.1;
 #endif
 
 #ifdef DATA_DEFINED
-// DataColor has emission color
+// DataColor has emission color as secondary color
 #elif defined(EMISSION_MAP)
 uniform sampler2D emissionMap;
 #else
 uniform vec3 emissiveColor;
 #endif
 uniform float emissiveFactor = 1;
+
+#ifdef CLOTH_MATERIAL
+uniform vec3 sheenColor;
+#endif
 
 #if defined(BASE_COLOR_MAP) || defined(METALNESS_MAP) || defined(ROUGHNESS_MAP) || defined(AMBIENT_OCCLUSION_MAP) || defined(NORMAL_MAP)|| defined(HEIGHT_MAP) || defined(EMISSION_MAP)
 in vec2 texCoord;
@@ -105,6 +109,37 @@ mat3 calcTangentSpace(const in vec3 wNormal, const in vec3 wPosition, const in v
     vec3 B = -normalize(cross(N, T));
 
     return mat3(T, B, N);
+}
+#endif
+
+#ifdef CLOTH_MATERIAL
+float charlieDistribution(const in float nDotH, const in float alpha)
+{
+    // The Estevez and Kulla Charlie NDF for cloth fuzz/sheen
+    float invAlpha = 1.0 / max(alpha, 0.000001);
+    float cos2h = nDotH * nDotH;
+    float sin2h = max(1.0 - cos2h, 0.0078125); // Prevent divide by zero
+    return (2.0 + invAlpha) * pow(sin2h, invAlpha * 0.5) / (2.0 * PI);
+}
+
+float neubeltVisibility(const in float sDotN, const in float vDotN)
+{
+    // Softer visibility term designed specifically for cloth
+    return 1.0 / (4.0 * (sDotN + vDotN - sDotN * vDotN) + 0.0001);
+}
+
+vec3 clothSpecularModel(const in vec3 sheenColor,
+                        const in float nDotH,
+                        const in float sDotN,
+                        const in float vDotN,
+                        const in float alpha)
+{
+    float D = charlieDistribution(nDotH, alpha);
+    float V = neubeltVisibility(sDotN, vDotN);
+
+    // For cloth, Fresnel is usually baked directly into the sheen color
+    // to give authors direct control over the fuzz tint.
+    return sheenColor * D * V;
 }
 #endif
 
@@ -462,6 +497,87 @@ vec3 pbrIblModel(const in vec3 wNormal,
     return color;
 }
 
+#ifdef CLOTH_MATERIAL
+vec3 clothModel(const in int lightIndex,
+                const in vec3 wPosition,
+                const in vec3 wNormal,
+                const in vec3 wView,
+                const in vec3 baseColor,
+                const in vec3 sheenColor,
+                const in float alpha,
+                const in float ambientOcclusion)
+{
+    vec3 n = wNormal;
+    vec3 s = vec3(0.0);
+    vec3 v = wView;
+    vec3 h = vec3(0.0);
+
+    float vDotN = max(dot(v, n), 0.001);
+    float sDotN = 0.0;
+    float att = 1.0;
+    float visibilityFactor = 1.0;
+
+    if (lights[lightIndex].type != TYPE_DIRECTIONAL) {
+        vec3 sUnnormalized = vec3(lights[lightIndex].position) - wPosition;
+        s = normalize(sUnnormalized);
+        sDotN = max(dot(s, n), 0.0);
+
+        if (sDotN > 0.0) {
+            float dist = length(sUnnormalized);
+            att = 1.0 / (lights[lightIndex].constantAttenuation +
+                         lights[lightIndex].linearAttenuation * dist +
+                         lights[lightIndex].quadraticAttenuation * dist * dist);
+
+            if (lights[lightIndex].type == TYPE_SPOT) {
+                if (degrees(acos(dot(-s, lights[lightIndex].direction))) > lights[lightIndex].cutOffAngle)
+                    sDotN = 0.0;
+            }
+        }
+    } else {
+        s = normalize(-lights[lightIndex].direction);
+        sDotN = max(dot(s, n), 0.0);
+        if (renderShadows == 1 && lightIndex == shadowLightIndex)
+        {
+               visibilityFactor = calcVisibilityAfterShadowing(wPosition);
+           }
+    }
+
+    h = normalize(s + v);
+    float nDotH = max(dot(n, h), 0.0);
+
+    // Diffuse Component (Softer Lambert)
+    vec3 diffuse = (baseColor * lights[lightIndex].color) * sDotN / PI;
+
+    // Specular Component (Sheen)
+    vec3 specularFactor = vec3(0.0);
+    if (sDotN > 0.0) {
+        specularFactor = clothSpecularModel(sheenColor, nDotH, sDotN, vDotN, alpha);
+    }
+
+    vec3 specularColor = lights[lightIndex].color;
+    vec3 specular = specularColor * specularFactor * sDotN;
+
+    // Combine diffuse and specular
+    vec3 color = visibilityFactor * att * lights[lightIndex].intensity * (diffuse + specular);
+    color *= ambientOcclusion;
+
+    return color;
+}
+
+vec3 clothIblModel(const in vec3 wNormal,
+                   const in vec3 wView,
+                   const in vec3 baseColor,
+                   const in float ambientOcclusion)
+{
+    // Advanced cloth specular IBL requires a separate pre-computed Look-Up Table (LUT)
+    // for the Charlie distribution. For this implementation, we handle diffuse IBL
+    // so ambient lighting still works, leaving the sheen to direct lighting.
+    vec3 n = wNormal;
+    vec3 diffuse = baseColor * texture(envLight.irradiance, n).rgb;
+    return diffuse * ambientOcclusion;
+}
+#endif
+
 vec4 metalRoughFunction(const in vec4 baseColor,
                         const in float metalness,
                         const in float roughness,
@@ -477,6 +593,12 @@ vec4 metalRoughFunction(const in vec4 baseColor,
     float alpha = remapRoughness(roughness);
 
     for (int i = 0; i < envLightCount; ++i) {
+#ifdef CLOTH_MATERIAL
+        cLinear += clothIblModel(worldNormal,
+                                         worldView,
+                                         baseColor.rgb,
+                                         ambientOcclusion);
+#else
         cLinear += pbrIblModel(worldNormal,
                                worldView,
                                baseColor.rgb,
@@ -484,9 +606,20 @@ vec4 metalRoughFunction(const in vec4 baseColor,
                                roughness,
                                alpha,
                                ambientOcclusion);
+#endif
     }
 
     for (int i = 0; i < lightCount; ++i) {
+#ifdef CLOTH_MATERIAL
+        cLinear += clothModel(i,
+                                      worldPosition,
+                                      worldNormal,
+                                      worldView,
+                                      baseColor.rgb,
+                                      sheenColor,
+                                      alpha,
+                                      ambientOcclusion);
+#else
         cLinear += pbrModel(i,
                             worldPosition,
                             worldNormal,
@@ -496,10 +629,11 @@ vec4 metalRoughFunction(const in vec4 baseColor,
                             roughness,
                             alpha,
                             ambientOcclusion);
+#endif
     }
 
 #ifdef DATA_DEFINED
-    cLinear += vs_in.emission * emissiveFactor;
+    cLinear += vs_in.secondary * emissiveFactor;
 #elif defined(EMISSION_MAP)
     vec3 emission = texture(emissionMap, activeTexCoord).rgb * emissiveFactor;
     cLinear += emission;

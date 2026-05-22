@@ -77,6 +77,7 @@ void QgsAbstractMaterialSettings::initPropertyDefinitions() const
     { static_cast<int>( Property::Cool ), QgsPropertyDefinition( "cool", QObject::tr( "Cool" ), QgsPropertyDefinition::ColorNoAlpha, origin ) },
     { static_cast<int>( Property::Specular ), QgsPropertyDefinition( "specular", QObject::tr( "Specular" ), QgsPropertyDefinition::ColorNoAlpha, origin ) },
     { static_cast<int>( Property::BaseColor ), QgsPropertyDefinition( "baseColor", QObject::tr( "Base color" ), QgsPropertyDefinition::ColorNoAlpha, origin ) },
-    { static_cast<int>( Property::EmissionColor ), QgsPropertyDefinition( "emissionColor", QObject::tr( "Emission color" ), QgsPropertyDefinition::ColorNoAlpha, origin ) }
+    { static_cast<int>( Property::EmissionColor ), QgsPropertyDefinition( "emissionColor", QObject::tr( "Emission color" ), QgsPropertyDefinition::ColorNoAlpha, origin ) },
+    { static_cast<int>( Property::SheenColor ), QgsPropertyDefinition( "sheenColor", QObject::tr( "Sheen color" ), QgsPropertyDefinition::ColorNoAlpha, origin ) }
   };
 }
