@@ -116,7 +116,7 @@ mat3 calcTangentSpace(const in vec3 wNormal, const in vec3 wPosition, const in v
 float charlieDistribution(const in float nDotH, const in float alpha)
 {
     // The Estevez and Kulla Charlie NDF for cloth fuzz/sheen
-    float invAlpha = 1.0 / max(alpha, 0.000001);
+    float invAlpha = 1.0 / max(alpha,0.015);
     float cos2h = nDotH * nDotH;
     float sin2h = max(1.0 - cos2h, 0.0078125); // Prevent divide by zero
     return (2.0 + invAlpha) * pow(sin2h, invAlpha * 0.5) / (2.0 * PI);
@@ -125,7 +125,9 @@ float charlieDistribution(const in float nDotH, const in float alpha)
 float neubeltVisibility(const in float sDotN, const in float vDotN)
 {
     // Softer visibility term designed specifically for cloth
-    return 1.0 / (4.0 * (sDotN + vDotN - sDotN * vDotN) + 0.0001);
+    // Bias the denominator safely (+ 0.01) to prevent the sheen highlight
+        // from mathematically blowing up to infinity at extreme sharp corners
+    return 1.0 / (4.0 * (sDotN + vDotN - sDotN * vDotN) + 0.01);
 }
 
 vec3 clothSpecularModel(const in vec3 sheenColor,
@@ -542,7 +544,11 @@ vec3 clothModel(const in int lightIndex,
            }
     }
 
-    h = normalize(s + v);
+    //h = normalize(s + v);
+    vec3 hUnnormalized = s + v;
+        float hLen = length(hUnnormalized);
+        h = hLen > 0.0001 ? hUnnormalized / hLen : n;
+
     float nDotH = max(dot(n, h), 0.0);
 
     // Diffuse Component (Softer Lambert)
