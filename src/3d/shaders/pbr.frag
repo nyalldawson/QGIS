@@ -115,19 +115,24 @@ mat3 calcTangentSpace(const in vec3 wNormal, const in vec3 wPosition, const in v
 #ifdef CLOTH_MATERIAL
 float charlieDistribution(const in float nDotH, const in float alpha)
 {
-    // The Estevez and Kulla Charlie NDF for cloth fuzz/sheen
+    // Estevez and Kulla 2017, "Production Friendly Microfacet Sheen BRDF"
+    // max is to prevent artifacts on edges of sharp objects if roughness is low --
     float invAlpha = 1.0 / max(alpha,0.015);
     float cos2h = nDotH * nDotH;
-    float sin2h = max(1.0 - cos2h, 0.0078125); // Prevent divide by zero
+    // as per https://github.com/google/filament/blob/f91d15189cd3cad799ef384026782e9290ae3c0f/shaders/src/surface_brdf.fs#L98
+    float sin2h = max(1.0 - cos2h, 0.0078125);
     return (2.0 + invAlpha) * pow(sin2h, invAlpha * 0.5) / (2.0 * PI);
 }
 
 float neubeltVisibility(const in float sDotN, const in float vDotN)
 {
-    // Softer visibility term designed specifically for cloth
+    // Neubelt and Pettineo 2013, "Crafting a Next-gen Material Pipeline for The Order: 1886"
+
     // Bias the denominator safely (+ 0.01) to prevent the sheen highlight
         // from mathematically blowing up to infinity at extreme sharp corners
-    return 1.0 / (4.0 * (sDotN + vDotN - sDotN * vDotN) + 0.01);
+
+    // as per https://github.com/google/filament/blob/f91d15189cd3cad799ef384026782e9290ae3c0f/shaders/src/surface_brdf.fs#L142C61-L142C71
+    return 1.0 / max(4.0 * (sDotN + vDotN - sDotN * vDotN), 0.00001532); //0.01);
 }
 
 vec3 clothSpecularModel(const in vec3 sheenColor,
