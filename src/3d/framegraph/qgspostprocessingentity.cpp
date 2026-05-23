@@ -119,6 +119,11 @@ QgsPostprocessingEntity::QgsPostprocessingEntity( QgsFrameGraph *frameGraph, Qt3
   mBloomFactorParameter = new Qt3DRender::QParameter( u"bloomFactor"_s, 0.05 );
   mMaterial->addParameter( mBloomFactorParameter );
 
+  mNoiseIntensityParameter = new Qt3DRender::QParameter( u"noiseIntensity"_s, QVariant::fromValue( 0.0f ) );
+  mMaterial->addParameter( mNoiseIntensityParameter );
+
+  mRandomSeedParameter = new Qt3DRender::QParameter( u"randomSeed"_s, QVariant::fromValue( 1.0f ) );
+  mMaterial->addParameter( mRandomSeedParameter );
   const QString vertexShaderPath = u"qrc:/shaders/postprocess.vert"_s;
   const QString fragmentShaderPath = u"qrc:/shaders/postprocess.frag"_s;
 
@@ -309,4 +314,14 @@ void QgsPostprocessingEntity::setBloomEnabled( bool enabled )
 void QgsPostprocessingEntity::setBloomFactor( float factor )
 {
   mBloomFactorParameter->setValue( factor );
+}
+
+void QgsPostprocessingEntity::setNoiseIntensity( float intensity )
+{
+  mNoiseIntensityParameter->setValue( QVariant::fromValue( intensity ) );
+}
+
+void QgsPostprocessingEntity::setRandomSeed( float seed )
+{
+  mRandomSeedParameter->setValue( QVariant::fromValue( seed ) );
 }

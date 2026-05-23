@@ -29,6 +29,7 @@
 #include "qgspostprocessingentity.h"
 #include "qgsshadowrenderview.h"
 
+#include <QTimer>
 #include <Qt3DCore/QAttribute>
 #include <Qt3DCore/QBuffer>
 #include <Qt3DCore/QGeometry>
@@ -262,6 +263,12 @@ QgsFrameGraph::QgsFrameGraph( QSurface *surface, QSize s, Qt3DRender::QCamera *m
   mRootEntity = root;
   mMainCamera = mainCamera;
 
+  mProgressiveRefinementTimer = new QTimer( this );
+  mProgressiveRefinementTimer->setInterval( 16 ); // ~60fps ticks
+  connect( mProgressiveRefinementTimer, &QTimer::timeout, this, &QgsFrameGraph::refineProgressiveRender );
+  connect( mMainCamera, &Qt3DRender::QCamera::viewMatrixChanged, this, &QgsFrameGraph::resetProgressiveRender );
+  connect( mMainCamera, &Qt3DRender::QCamera::projectionMatrixChanged, this, &QgsFrameGraph::resetProgressiveRender );
+
   mRubberBandsLayer = new Qt3DRender::QLayer;
   mRubberBandsLayer->setObjectName( "mRubberBandsLayer" );
   mRubberBandsLayer->setRecursive( true );
@@ -344,6 +351,45 @@ bool QgsFrameGraph::registerRenderView( std::unique_ptr<QgsAbstractRenderView> r
     out = false;
 
   return out;
+}
+
+void QgsFrameGraph::resetProgressiveRender()
+{
+  // Snap back to maximum pixelation on any camera movement
+  mCurrentNoiseIntensity = MAX_NOISE_INTENSITY;
+
+  if ( mPostprocessingEntity )
+  {
+    mPostprocessingEntity->setNoiseIntensity( mCurrentNoiseIntensity );
+  }
+
+  // Start refining if not already running
+  if ( !mProgressiveRefinementTimer->isActive() )
+  {
+    mProgressiveRefinementTimer->start();
+  }
+}
+
+void QgsFrameGraph::refineProgressiveRender()
+{
+  // Gradually decrease the block size
+  // Adjust this decay factor to control how fast it resolves
+  mCurrentNoiseIntensity -= 0.03f; // Tweak this for faster/slower resolve times
+
+  if ( mCurrentNoiseIntensity <= 0.0f )
+  {
+    mCurrentNoiseIntensity = 0.0f;
+    mProgressiveRefinementTimer->stop(); // Image is fully resolved
+  }
+
+  if ( mPostprocessingEntity )
+  {
+    mPostprocessingEntity->setNoiseIntensity( mCurrentNoiseIntensity );
+
+    // Generate a random float between 1.0 and 100.0 to shift the noise pattern
+    float newSeed = 1.0f + static_cast<float>( std::rand() ) / ( static_cast<float>( RAND_MAX / 99.0f ) );
+    mPostprocessingEntity->setRandomSeed( newSeed );
+  }
 }
 
 void QgsFrameGraph::setRenderViewEnabled( const QString &name, bool enable )

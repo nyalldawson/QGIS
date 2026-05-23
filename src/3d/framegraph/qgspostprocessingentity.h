@@ -96,6 +96,9 @@ class QgsPostprocessingEntity : public QgsRenderPassQuad
      */
     void setBloomFactor( float factor );
 
+    void setNoiseIntensity( float intensity );
+    void setRandomSeed( float seed );
+
   private:
     Qt3DRender::QCamera *mMainCamera = nullptr;
 
@@ -127,6 +130,9 @@ class QgsPostprocessingEntity : public QgsRenderPassQuad
     Qt3DRender::QParameter *mBloomTextureParameter = nullptr;
     Qt3DRender::QParameter *mBloomEnabledParameter = nullptr;
     Qt3DRender::QParameter *mBloomFactorParameter = nullptr;
+
+    Qt3DRender::QParameter *mNoiseIntensityParameter = nullptr;
+    Qt3DRender::QParameter *mRandomSeedParameter = nullptr;
 };
 
 #endif // QGSPOSTPROCESSINGENTITY_H

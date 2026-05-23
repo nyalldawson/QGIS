@@ -333,6 +333,13 @@ class _3D_EXPORT QgsFrameGraph : public Qt3DCore::QEntity
     Qt3DRender::QBlitFramebuffer *mMsaaBlitNode = nullptr;
     Qt3DRender::QBlitFramebuffer *mMsaaDepthBlitNode = nullptr;
 
+    float mCurrentNoiseIntensity = 0.0f;
+    const float MAX_NOISE_INTENSITY = 0.85f; // 85% of pixels start black
+    QTimer *mProgressiveRefinementTimer = nullptr;
+
+    void resetProgressiveRender();
+    void refineProgressiveRender();
+
     // holds renderviews according to their name
     std::map<QString, std::unique_ptr<QgsAbstractRenderView>> mRenderViewMap;
 

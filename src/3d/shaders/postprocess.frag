@@ -94,17 +94,41 @@ vec3 aces_approx(vec3 v)
   return clamp((v*(a*v+b))/(v*(c*v+d)+e), 0.0f, 1.0f);
 }
 
+// NEW: Progressive noise uniforms
+uniform float noiseIntensity;
+uniform float randomSeed;
+
+// Pseudo-random number generator
+float randxx(vec2 co){
+  return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
 
 void main()
 {
-  vec3 linearColor = texture(colorTexture, texCoord).rgb;
+vec2 currentTexCoord = texCoord;
+vec3 linearColor = texture(colorTexture, currentTexCoord).rgb;
 
-  vec3 finalColor = linearColor;
+vec3 finalColor = linearColor;
+
+// Simulate path-traced noise
+  if (noiseIntensity > 0.0) {
+      // Multiply texCoord by the changing seed to guarantee a new noise pattern every frame
+      float randomValue = randxx(texCoord * randomSeed);
+
+      if (randomValue < noiseIntensity) {
+        // Calculate the perceived luminance of the pixel
+                  // Using standard NTSC conversion weights for RGB to Grayscale
+                  float luminance = dot(finalColor, vec3(0.299, 0.587, 0.114));
+
+                  // Replace the colored pixel with its desaturated equivalent
+                  finalColor = min(vec3(luminance) * 9, vec3(1.0));
+      }
+  }
 
 #ifdef ENABLE_EFFECTS
 
 #ifdef TINT_CASCADES
-  float depth = texture(depthTexture, texCoord).r;
+  float depth = texture(depthTexture, currentTexCoord).r;
   if ( renderShadows != 0 && depth < 1.0 )
   {
     vec3 worldPosition = WorldPosFromDepth( depth );
@@ -116,12 +140,12 @@ void main()
   
   if (edlEnabled != 0)
   {
-    float shade = exp(-edlFactor(texCoord) * edlStrength);
+    float shade = exp(-edlFactor(currentTexCoord) * edlStrength);
     finalColor = finalColor * shade;
   }
   if ( ssaoEnabled != 0 )
   {
-    finalColor = finalColor.rgb * texture( ssaoTexture, texCoord ).r;
+    finalColor = finalColor.rgb * texture( ssaoTexture, currentTexCoord ).r;
   }
 #endif
 
@@ -133,7 +157,7 @@ void main()
   // bloom)
   if ( bloomEnabled != 0 )
   {
-    vec3 bloom = texture(bloomTexture, texCoord).rgb;
+    vec3 bloom = texture(bloomTexture, currentTexCoord).rgb;
     finalColor += bloom * bloomFactor;
   }
 #endif
