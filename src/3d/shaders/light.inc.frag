@@ -42,142 +42,6 @@ uniform int envLightCount = 0;
 
 #pragma include shadows.inc.frag
 
-void adsModel(const in vec3 worldPos,
-              const in vec3 worldNormal,
-              const in vec3 worldView,
-              const in float shininess,
-              out vec3 diffuseColor,
-              out vec3 specularColor)
-{
-    diffuseColor = vec3(0.0);
-    specularColor = vec3(0.0);
-
-    // We perform all work in world space
-    vec3 n = normalize(worldNormal);
-    vec3 s = vec3(0.0);
-
-    for (int i = 0; i < lightCount; ++i) {
-        float att = 1.0;
-        float sDotN = 0.0;
-        float visibilityFactor = 1.0;
-
-        if (lights[i].type != TYPE_DIRECTIONAL) {
-            // Point and Spot lights
-
-            // Light position is already in world space
-            vec3 sUnnormalized = lights[i].position - worldPos;
-            s = normalize(sUnnormalized); // Light direction
-
-            // Calculate the attenuation factor
-            sDotN = dot(s, n);
-            if (sDotN > 0.0) {
-                if (lights[i].constantAttenuation != 0.0
-                 || lights[i].linearAttenuation != 0.0
-                 || lights[i].quadraticAttenuation != 0.0) {
-                    float dist = length(sUnnormalized);
-                    att = 1.0 / (lights[i].constantAttenuation +
-                                 lights[i].linearAttenuation * dist +
-                                 lights[i].quadraticAttenuation * dist * dist);
-                }
-
-                // The light direction is in world space already
-                if (lights[i].type == TYPE_SPOT) {
-                    // Check if fragment is inside or outside of the spot light cone
-                    float cutOffCos = cos(radians(lights[i].cutOffAngle));
-                    if (dot(-s, lights[i].direction) < cutOffCos)
-                        sDotN = 0.0;
-                }
-            }
-        } else {
-            // Directional lights
-            // The light direction is in world space already
-            s = normalize(-lights[i].direction);
-            sDotN = dot(s, n);
-
-            if (renderShadows == 1 && i == shadowLightIndex)
-            {
-                visibilityFactor = calcVisibilityAfterShadowing(worldPos);
-            }
-        }
-
-        // Calculate the diffuse factor
-        float diffuse = max(sDotN, 0.0);
-
-        // Calculate the specular factor
-        float specular = 0.0;
-        if (diffuse > 0.0 && shininess > 0.0) {
-            float normFactor = (shininess + 2.0) / (2.0 * 3.14159);
-            vec3 r = reflect(-s, n);   // Reflection direction in world space
-            specular = normFactor * pow(max(dot(r, worldView), 0.0), shininess);
-        }
-
-        // Accumulate the diffuse and specular contributions
-        diffuseColor += visibilityFactor * att * lights[i].intensity * diffuse * lights[i].color;
-        specularColor += visibilityFactor * att * lights[i].intensity * specular * lights[i].color;
-    }
-}
-
-void adModel(const in vec3 worldPos,
-             const in vec3 worldNormal,
-             out vec3 diffuseColor)
-{
-    diffuseColor = vec3(0.0);
-
-    // We perform all work in world space
-    vec3 n = normalize(worldNormal);
-    vec3 s = vec3(0.0);
-
-    for (int i = 0; i < lightCount; ++i) {
-        float att = 1.0;
-        float sDotN = 0.0;
-        float visibilityFactor = 1.0;
-
-        if (lights[i].type != TYPE_DIRECTIONAL) {
-            // Point and Spot lights
-
-            // Light position is already in world space
-            vec3 sUnnormalized = lights[i].position - worldPos;
-            s = normalize(sUnnormalized); // Light direction
-
-            // Calculate the attenuation factor
-            sDotN = dot(s, n);
-            if (sDotN > 0.0) {
-                if (lights[i].constantAttenuation != 0.0
-                 || lights[i].linearAttenuation != 0.0
-                 || lights[i].quadraticAttenuation != 0.0) {
-                    float dist = length(sUnnormalized);
-                    att = 1.0 / (lights[i].constantAttenuation +
-                                 lights[i].linearAttenuation * dist +
-                                 lights[i].quadraticAttenuation * dist * dist);
-                }
-
-                // The light direction is in world space already
-                if (lights[i].type == TYPE_SPOT) {
-                    // Check if fragment is inside or outside of the spot light cone
-                    float cutOffCos = cos(radians(lights[i].cutOffAngle));
-                    if (dot(-s, lights[i].direction) < cutOffCos)
-                        sDotN = 0.0;
-                }
-            }
-        } else {
-            // Directional lights
-            // The light direction is in world space already
-            s = normalize(-lights[i].direction);
-            sDotN = dot(s, n);
-
-            if (renderShadows == 1 && i == shadowLightIndex)
-            {
-                visibilityFactor = calcVisibilityAfterShadowing(worldPos);
-            }
-        }
-
-        // Calculate the diffuse factor
-        float diffuse = max(sDotN, 0.0);
-
-        // Accumulate the diffuse contributions
-        diffuseColor += visibilityFactor * att * lights[i].intensity * diffuse * lights[i].color;
-    }
-}
 
 LightParams calculatePbrLightParams(const in int lightIndex,
                                    const in vec3 wPosition,
@@ -231,4 +95,59 @@ LightParams calculatePbrLightParams(const in int lightIndex,
     res.sDotN = max(res.sDotN, 0.0);
     res.nDotH = max(dot(wNormal, res.h), 0.0);
     return res;
+}
+
+void adsModel(const in vec3 worldPos,
+              const in vec3 worldNormal,
+              const in vec3 worldView,
+              const in float shininess,
+              out vec3 diffuseColor,
+              out vec3 specularColor)
+{
+    diffuseColor = vec3(0.0);
+    specularColor = vec3(0.0);
+
+    // We perform all work in world space
+    vec3 n = normalize(worldNormal);
+
+    for (int i = 0; i < lightCount; ++i) {
+        LightParams light = calculatePbrLightParams(i, worldPos, worldNormal, worldView);
+
+        // Calculate the diffuse factor
+        float diffuse = max(light.sDotN, 0.0);
+
+        // Calculate the specular factor
+        float specular = 0.0;
+        if (diffuse > 0.0 && shininess > 0.0) {
+            float normFactor = (shininess + 2.0) / (2.0 * 3.14159);
+            vec3 r = reflect(-light.s, n);   // Reflection direction in world space
+            specular = normFactor * pow(max(dot(r, worldView), 0.0), shininess);
+        }
+
+        // Accumulate the diffuse and specular contributions
+        diffuseColor += light.visibilityFactor * light.att * lights[i].intensity * diffuse * lights[i].color;
+        specularColor += light.visibilityFactor * light.att * lights[i].intensity * specular * lights[i].color;
+    }
+}
+
+void adModel(const in vec3 worldPos,
+             const in vec3 worldNormal,
+             out vec3 diffuseColor)
+{
+    vec3 worldView = normalize(eyePosition - worldPos);
+
+    diffuseColor = vec3(0.0);
+
+    // We perform all work in world space
+    vec3 n = normalize(worldNormal);
+
+    for (int i = 0; i < lightCount; ++i) {
+        LightParams light = calculatePbrLightParams(i, worldPos, worldNormal, worldView);
+
+        // Calculate the diffuse factor
+        float diffuse = max(light.sDotN, 0.0);
+
+        // Accumulate the diffuse contributions
+        diffuseColor += light.visibilityFactor * light.att * lights[i].intensity * diffuse * lights[i].color;
+    }
 }
