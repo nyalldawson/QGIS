@@ -113,39 +113,51 @@ mat3 calcTangentSpace(const in vec3 wNormal, const in vec3 wPosition, const in v
 #endif
 
 #ifdef CLOTH_MATERIAL
-float charlieDistribution(const in float nDotH, const in float alpha)
+float charlieDistribution(const in float alpha, const in float nDotH)
 {
     // Estevez and Kulla 2017, "Production Friendly Microfacet Sheen BRDF"
-    // max is to prevent artifacts on edges of sharp objects if roughness is low --
+
+    // max is to prevent artifacts on edges of sharp objects if roughness is low -- TODO STILL NEEDED?
     float invAlpha = 1.0 / max(alpha,0.015);
+
+
     float cos2h = nDotH * nDotH;
     // as per https://github.com/google/filament/blob/f91d15189cd3cad799ef384026782e9290ae3c0f/shaders/src/surface_brdf.fs#L98
     float sin2h = max(1.0 - cos2h, 0.0078125);
     return (2.0 + invAlpha) * pow(sin2h, invAlpha * 0.5) / (2.0 * PI);
 }
 
-float neubeltVisibility(const in float sDotN, const in float vDotN)
+float neubeltVisibility(const in float vDotN,const in float sDotN)
 {
     // Neubelt and Pettineo 2013, "Crafting a Next-gen Material Pipeline for The Order: 1886"
 
+// TODO still needed????
     // Bias the denominator safely (+ 0.01) to prevent the sheen highlight
-        // from mathematically blowing up to infinity at extreme sharp corners
+    // from mathematically blowing up to infinity at extreme sharp corners
 
     // as per https://github.com/google/filament/blob/f91d15189cd3cad799ef384026782e9290ae3c0f/shaders/src/surface_brdf.fs#L142C61-L142C71
     return 1.0 / max(4.0 * (sDotN + vDotN - sDotN * vDotN), 0.00001532); //0.01);
 }
 
+// as per https://github.com/google/filament/blob/c4d0d7368a6a290cd341498c4bb61c48354d65de/shaders/src/surface_shading_model_cloth.fs#L12
 vec3 clothSpecularModel(const in vec3 sheenColor,
                         const in float nDotH,
                         const in float sDotN,
                         const in float vDotN,
                         const in float alpha)
 {
-    float D = charlieDistribution(nDotH, alpha);
-    float V = neubeltVisibility(sDotN, vDotN);
+    // sDotN == NoL from filament
+    // vDotN == shading_NoV
+    // nDotH == NoH
+
+    // specular BRDF
+    float D = charlieDistribution(alpha, nDotH);
+    float V = neubeltVisibility(vDotN, sDotN);
 
     // For cloth, Fresnel is usually baked directly into the sheen color
     // to give authors direct control over the fuzz tint.
+
+    // https://github.com/google/filament/blob/c4d0d7368a6a290cd341498c4bb61c48354d65de/shaders/src/surface_shading_model_cloth.fs#L23
     return sheenColor * D * V;
 }
 #endif
@@ -260,13 +272,12 @@ float alphaToMipLevel(float alpha)
     return mipLevel;
 }
 
-float normalDistribution(const in vec3 n, const in vec3 h, const in float alpha)
+float normalDistribution(const in float nDotH, const in float alpha)
 {
     // Trowbridge-Reitz GGX
     // see https://google.github.io/filament/Filament.md.html, "Normal distribution function (specular D)"
     // https://learnopengl.com/PBR/Theory, "Normal distribution function"
     float alpha2 = alpha * alpha;
-    float nDotH = max(dot(n, h), 0.0);
     float nDotH2 = nDotH * nDotH;
 
     float denom = (nDotH2 * (alpha2 - 1.0) + 1.0);
@@ -364,75 +375,29 @@ vec3 pbrModel(const in int lightIndex,
               const in float ambientOcclusion)
 {
     // Calculate some useful quantities
-    vec3 n = wNormal;
-    vec3 s = vec3(0.0);
-    vec3 v = wView;
-    vec3 h = vec3(0.0);
+    float vDotN = dot(wView, wNormal);
 
-    float vDotN = dot(v, n);
-    float sDotN = 0.0;
-    float sDotH = 0.0;
-    float att = 1.0;
-    float visibilityFactor = 1.0;
-
-    if (lights[lightIndex].type != TYPE_DIRECTIONAL) {
-        // Point and Spot lights
-        vec3 sUnnormalized = vec3(lights[lightIndex].position) - wPosition;
-        s = normalize(sUnnormalized);
-
-        // Calculate the attenuation factor
-        sDotN = dot(s, n);
-        if (sDotN > 0.0) {
-            if (lights[lightIndex].constantAttenuation != 0.0
-             || lights[lightIndex].linearAttenuation != 0.0
-             || lights[lightIndex].quadraticAttenuation != 0.0) {
-                float dist = length(sUnnormalized);
-                att = 1.0 / (lights[lightIndex].constantAttenuation +
-                             lights[lightIndex].linearAttenuation * dist +
-                             lights[lightIndex].quadraticAttenuation * dist * dist);
-            }
-
-            // The light direction is in world space already
-            if (lights[lightIndex].type == TYPE_SPOT) {
-                // Check if fragment is inside or outside of the spot light cone
-                if (degrees(acos(dot(-s, lights[lightIndex].direction))) > lights[lightIndex].cutOffAngle)
-                    sDotN = 0.0;
-            }
-        }
-    } else {
-        // Directional lights
-        // The light direction is in world space already
-        s = normalize(-lights[lightIndex].direction);
-        sDotN = dot(s, n);
-
-        if (renderShadows == 1 && lightIndex == shadowLightIndex)
-        {
-            visibilityFactor = calcVisibilityAfterShadowing(wPosition);
-        }
-    }
-
-    h = normalize(s + v);
-    sDotH = dot(s, h);
+    LightParams light = calculatePbrLightParams(lightIndex, wPosition, wNormal, wView);
 
     // Calculate diffuse component
     vec3 diffuseColor = (1.0 - metalness) * baseColor * lights[lightIndex].color;
-    vec3 diffuse = diffuseColor * max(sDotN, 0.0) / PI;
+    vec3 diffuse = diffuseColor * light.sDotN / PI;
 
     // Calculate specular component
     vec3 dielectricColor = vec3(0.04);
     vec3 F0 = mix(dielectricColor, baseColor, metalness);
     vec3 specularFactor = vec3(0.0);
-    if (sDotN > 0.0) {
-        specularFactor = specularModel(F0, sDotH, sDotN, vDotN, n, h, roughness, false);
-        specularFactor *= normalDistribution(n, h, alpha);
+    if (light.sDotN > 0.0) {
+        specularFactor = specularModel(F0, light.sDotH, light.sDotN, vDotN, wNormal, light.h, roughness, false);
+        specularFactor *= normalDistribution(light.nDotH, alpha);
     }
     vec3 specularColor = lights[lightIndex].color;
-    vec3 specular = specularColor * specularFactor * max(sDotN, 0.0);
+    vec3 specular = specularColor * specularFactor * light.sDotN;
 
     // Blend between diffuse and specular to conserve energy
     // see https://learnopengl.com/PBR/Theory, "Energy conservation"
-    vec3 kS = fresnelFactor(F0, sDotH);
-    vec3 color = visibilityFactor * att * lights[lightIndex].intensity * (specular + diffuse * (vec3(1.0) - kS));
+    vec3 kS = fresnelFactor(F0, light.sDotH);
+    vec3 color = light.visibilityFactor * light.att * lights[lightIndex].intensity * (specular + diffuse * (vec3(1.0) - kS));
 
     // Reduce by ambient occlusion amount
     color *= ambientOcclusion;
@@ -514,62 +479,38 @@ vec3 clothModel(const in int lightIndex,
                 const in float alpha,
                 const in float ambientOcclusion)
 {
-    vec3 n = wNormal;
-    vec3 s = vec3(0.0);
-    vec3 v = wView;
-    vec3 h = vec3(0.0);
+    // variable names are also mapped to their filament equivalents
+    // from https://github.com/google/filament/blob/c4d0d7368a6a290cd341498c4bb61c48354d65de/shaders/src/surface_shading_model_cloth.fs#L12
+    // to facilitate comparisons
 
-    float vDotN = max(dot(v, n), 0.001);
-    float sDotN = 0.0;
-    float att = 1.0;
-    float visibilityFactor = 1.0;
+    vec3 n = wNormal; // shading_normal (filament)
+    vec3 v = wView; // light.l (filament)
 
-    if (lights[lightIndex].type != TYPE_DIRECTIONAL) {
-        vec3 sUnnormalized = vec3(lights[lightIndex].position) - wPosition;
-        s = normalize(sUnnormalized);
-        sDotN = max(dot(s, n), 0.0);
+    float vDotN = max(dot(v, n), 0.001); // shading_NoV (filament)
 
-        if (sDotN > 0.0) {
-            float dist = length(sUnnormalized);
-            att = 1.0 / (lights[lightIndex].constantAttenuation +
-                         lights[lightIndex].linearAttenuation * dist +
-                         lights[lightIndex].quadraticAttenuation * dist * dist);
-
-            if (lights[lightIndex].type == TYPE_SPOT) {
-                if (degrees(acos(dot(-s, lights[lightIndex].direction))) > lights[lightIndex].cutOffAngle)
-                    sDotN = 0.0;
-            }
-        }
-    } else {
-        s = normalize(-lights[lightIndex].direction);
-        sDotN = max(dot(s, n), 0.0);
-        if (renderShadows == 1 && lightIndex == shadowLightIndex)
-        {
-               visibilityFactor = calcVisibilityAfterShadowing(wPosition);
-           }
-    }
+    LightParams light = calculatePbrLightParams(lightIndex, wPosition, wNormal, wView);
 
     //h = normalize(s + v);
-    vec3 hUnnormalized = s + v;
+    vec3 hUnnormalized = light.s + v;
         float hLen = length(hUnnormalized);
-        h = hLen > 0.0001 ? hUnnormalized / hLen : n;
+      vec3 h = hLen > 0.0001 ? hUnnormalized / hLen : n;
 
-    float nDotH = max(dot(n, h), 0.0);
+    // nDotH == NoH (filament)
 
     // Diffuse Component (Softer Lambert)
-    vec3 diffuse = (baseColor * lights[lightIndex].color) * sDotN / PI;
+    vec3 diffuse = (baseColor * lights[lightIndex].color) * light.sDotN / PI;
 
     // Specular Component (Sheen)
     vec3 specularFactor = vec3(0.0);
-    if (sDotN > 0.0) {
-        specularFactor = clothSpecularModel(sheenColor, nDotH, sDotN, vDotN, alpha);
+    if (light.sDotN > 0.0) {
+        specularFactor = clothSpecularModel(sheenColor, light.nDotH, light.sDotN, vDotN, alpha);
     }
 
     vec3 specularColor = lights[lightIndex].color;
-    vec3 specular = specularColor * specularFactor * sDotN;
+    vec3 specular = specularColor * specularFactor * light.sDotN;
 
     // Combine diffuse and specular
-    vec3 color = visibilityFactor * att * lights[lightIndex].intensity * (diffuse + specular);
+    vec3 color = light.visibilityFactor * light.att * lights[lightIndex].intensity * (diffuse + specular);
     color *= ambientOcclusion;
 
     return color;
