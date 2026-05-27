@@ -115,6 +115,14 @@ class _3D_EXPORT QgsMetalRoughMaterial : public QgsMaterial
     void setEmissionFactor( double factor );
 
     /**
+     * Sets the sheen \a color.
+     */
+    void setSheenColor( const QColor &color );
+
+    //! Sets the sheen roughness
+    void setSheenRoughness( float roughness );
+
+    /**
      * Enables or disables instanced point rendering mode.
      * When \a enabled is TRUE the material uses the instanced vertex shader.
      * \a flags controls which per-instance attributes (scale, rotation) are active.
@@ -162,6 +170,8 @@ class _3D_EXPORT QgsMetalRoughMaterial : public QgsMaterial
     Qt3DRender::QParameter *mEmissionMapParameter = nullptr;
     Qt3DRender::QParameter *mEmissiveColorParameter = nullptr;
     Qt3DRender::QParameter *mEmissionFactorParameter = nullptr;
+    Qt3DRender::QParameter *mSheenColorParameter = nullptr;
+    Qt3DRender::QParameter *mSheenRoughnessParameter = nullptr;
     Qt3DRender::QParameter *mTextureScaleParameter = nullptr;
     Qt3DRender::QParameter *mTextureRotationParameter = nullptr;
     Qt3DRender::QParameter *mOpacityParameter = nullptr;

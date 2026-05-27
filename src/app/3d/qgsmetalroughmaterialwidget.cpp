@@ -45,6 +45,10 @@ QgsMetalRoughMaterialWidget::QgsMetalRoughMaterialWidget( QWidget *parent, bool 
   mEmissionStrengthSpinBox->setEnabled( false );
   mButtonEmissionColor->setShowNull( true, tr( "No Emission" ) );
 
+  mSheenRoughnessWidget->spinBox()->setShowClearButton( false );
+  mSheenRoughnessWidget->setEnabled( false );
+  mButtonSheenColor->setShowNull( true, tr( "No Sheen" ) );
+
   connect( mButtonBaseColor, &QgsColorButton::colorChanged, this, &QgsMetalRoughMaterialWidget::changed );
   connect( mMetalnessWidget, &QgsPercentageWidget::valueChanged, this, [this] {
     updateWidgetState();
@@ -66,6 +70,10 @@ QgsMetalRoughMaterialWidget::QgsMetalRoughMaterialWidget( QWidget *parent, bool 
   connect( mEmissionColorDataDefinedButton, &QgsPropertyOverrideButton::activated, this, [this] {
     mEmissionStrengthSpinBox->setEnabled( mButtonEmissionColor->color().isValid() || mEmissionColorDataDefinedButton->isActive() );
   } );
+
+  connect( mButtonSheenColor, &QgsColorButton::colorChanged, this, &QgsMetalRoughMaterialWidget::changed );
+  connect( mButtonSheenColor, &QgsColorButton::colorChanged, this, [this] { mSheenRoughnessWidget->setEnabled( mButtonSheenColor->color().isValid() ); } );
+  connect( mSheenRoughnessWidget, &QgsPercentageWidget::valueChanged, this, &QgsMetalRoughMaterialWidget::changed );
 
   connect( mBaseColorDataDefinedButton, &QgsPropertyOverrideButton::changed, this, &QgsMetalRoughMaterialWidget::changed );
   connect( mEmissionColorDataDefinedButton, &QgsPropertyOverrideButton::changed, this, &QgsMetalRoughMaterialWidget::changed );
@@ -123,6 +131,10 @@ void QgsMetalRoughMaterialWidget::setSettings( const QgsAbstractMaterialSettings
   mEmissionStrengthSpinBox->setValue( material->emissionFactor() * 100 );
   mEmissionStrengthSpinBox->setEnabled( mButtonEmissionColor->color().isValid() );
 
+  mButtonSheenColor->setColor( material->emissionColor() );
+  mSheenRoughnessWidget->setValue( material->sheenRoughness() );
+  mSheenRoughnessWidget->setEnabled( mButtonSheenColor->color().isValid() );
+
   mPropertyCollection = settings->dataDefinedProperties();
 
   mBaseColorDataDefinedButton->init( static_cast<int>( QgsAbstractMaterialSettings::Property::BaseColor ), mPropertyCollection, settings->propertyDefinitions(), layer, true );
@@ -144,6 +156,9 @@ std::unique_ptr<QgsAbstractMaterialSettings> QgsMetalRoughMaterialWidget::settin
   m->setOpacity( mOpacityWidget->opacity() );
   m->setEmissionColor( mButtonEmissionColor->color() );
   m->setEmissionFactor( mEmissionStrengthSpinBox->value() / 100.0 );
+
+  m->setSheenColor( mButtonSheenColor->color() );
+  m->setSheenRoughness( mSheenRoughnessWidget->value() );
 
   mPropertyCollection.setProperty( QgsAbstractMaterialSettings::Property::BaseColor, mBaseColorDataDefinedButton->toProperty() );
   mPropertyCollection.setProperty( QgsAbstractMaterialSettings::Property::EmissionColor, mEmissionColorDataDefinedButton->toProperty() );

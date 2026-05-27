@@ -251,6 +251,62 @@ directly. Larger values result in more light emission.
 .. versionadded:: 4.2
 %End
 
+    QColor sheenColor() const;
+%Docstring
+Returns the material's sheen color.
+
+A sheen layer is a common technique used in Physically-Based Rendering
+to represent cloth and fabric materials.
+
+An invalid color indicates that the sheen layer is disabled for this
+material.
+
+.. seealso:: :py:func:`setSheenColor`
+
+.. seealso:: :py:func:`sheenRoughness`
+
+.. versionadded:: 4.2
+%End
+
+    void setSheenColor( const QColor &color );
+%Docstring
+Sets the material's sheen ``color``.
+
+A sheen layer is a common technique used in Physically-Based Rendering
+to represent cloth and fabric materials.
+
+An invalid color indicates that the sheen layer is disabled for this
+material.
+
+.. seealso:: :py:func:`sheenColor`
+
+.. seealso:: :py:func:`setSheenRoughness`
+
+.. versionadded:: 4.2
+%End
+
+    double sheenRoughness() const;
+%Docstring
+Returns the material's sheen roughness, as a value between 0 and 1.
+
+.. seealso:: :py:func:`setSheenRoughness`
+
+.. seealso:: :py:func:`sheenColor`
+
+.. versionadded:: 4.2
+%End
+
+    void setSheenRoughness( double roughness );
+%Docstring
+Sets the material's sheen ``roughness``, as a value between 0 and 1.
+
+.. seealso:: :py:func:`sheenRoughness`
+
+.. seealso:: :py:func:`setSheenColor`
+
+.. versionadded:: 4.2
+%End
+
     virtual void setColorsFromBase( const QColor &baseColor );
 
 %Docstring

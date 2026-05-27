@@ -50,6 +50,8 @@ QgsMetalRoughMaterial::QgsMetalRoughMaterial( QNode *parent )
   , mEmissionMapParameter( new Qt3DRender::QParameter( u"emissionMap"_s, QVariant(), this ) )
   , mEmissiveColorParameter( new Qt3DRender::QParameter( u"emissiveColor"_s, Qgs3DUtils::srgbToLinear( QColor( 0, 0, 0 ) ), this ) )
   , mEmissionFactorParameter( new Qt3DRender::QParameter( u"emissiveFactor"_s, 1.0f, this ) )
+  , mSheenColorParameter( new Qt3DRender::QParameter( u"sheenColor"_s, Qgs3DUtils::srgbToLinear( QColor( 0, 0, 0 ) ), this ) )
+  , mSheenRoughnessParameter( new Qt3DRender::QParameter( u"sheenRoughness"_s, 0.0f, this ) )
   , mTextureScaleParameter( new Qt3DRender::QParameter( u"texCoordScale"_s, 1.0f, this ) )
   , mTextureRotationParameter( new Qt3DRender::QParameter( u"texCoordRotation"_s, 0.0f, this ) )
   , mOpacityParameter( new Qt3DRender::QParameter( u"opacity"_s, 1.0f ) )
@@ -320,6 +322,36 @@ void QgsMetalRoughMaterial::setEmissionFactor( double factor )
   mEmissionFactorParameter->setValue( factor );
 }
 
+void QgsMetalRoughMaterial::setSheenColor( const QColor &color )
+{
+  mSheenColorParameter->setValue( Qgs3DUtils::srgbToLinear( color ) );
+  const bool oldUsingSheenColor = mMetalRoughEffect->parameters().contains( mSheenColorParameter );
+  const bool newUsingSheenColor = color.isValid();
+  if ( newUsingSheenColor )
+  {
+    if ( !oldUsingSheenColor )
+    {
+      mMetalRoughEffect->addParameter( mSheenColorParameter );
+      mMetalRoughEffect->addParameter( mSheenRoughnessParameter );
+    }
+  }
+  else if ( oldUsingSheenColor )
+  {
+    mMetalRoughEffect->removeParameter( mSheenColorParameter );
+    mMetalRoughEffect->removeParameter( mSheenRoughnessParameter );
+  }
+
+  if ( oldUsingSheenColor != newUsingSheenColor )
+  {
+    updateShaders();
+  }
+}
+
+void QgsMetalRoughMaterial::setSheenRoughness( float roughness )
+{
+  mSheenRoughnessParameter->setValue( roughness );
+}
+
 void QgsMetalRoughMaterial::setTextureScale( float textureScale )
 {
   mTextureScaleParameter->setValue( textureScale );
@@ -399,6 +431,8 @@ void QgsMetalRoughMaterial::updateShaders()
     fragShaderDefines += "FLAT_SHADING";
   if ( mMetalRoughEffect->parameters().contains( mAnisotropyParameter ) )
     fragShaderDefines += "ANISOTROPY";
+  if ( mMetalRoughEffect->parameters().contains( mSheenColorParameter ) )
+    fragShaderDefines += "SHEEN";
   if ( mEnableEnvironmentalLighting )
     fragShaderDefines += "ENABLE_IBL";
 

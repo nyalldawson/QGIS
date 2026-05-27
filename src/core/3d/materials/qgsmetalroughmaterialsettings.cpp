@@ -77,6 +77,13 @@ void QgsMetalRoughMaterialSettings::readXml( const QDomElement &elem, const QgsR
   else
     mEmissiveColor = QColor();
   mEmissionFactor = elem.attribute( u"emission_factor"_s, u"1.0"_s ).toDouble();
+
+  if ( elem.hasAttribute( u"sheen_color"_s ) )
+    mSheenColor = QgsSymbolLayerUtils::decodeColor( elem.attribute( u"sheen_color"_s ) );
+  else
+    mSheenColor = QColor();
+  mSheenRoughness = elem.attribute( u"sheen_roughness"_s, u"0.0"_s ).toDouble();
+
   mMetalness = elem.attribute( u"metalness"_s, u"0.0"_s ).toDouble();
   mRoughness = elem.attribute( u"roughness"_s, u"0.5"_s ).toDouble();
   mOpacity = elem.attribute( u"opacity"_s, u"1.0"_s ).toDouble();
@@ -109,6 +116,12 @@ void QgsMetalRoughMaterialSettings::writeXml( QDomElement &elem, const QgsReadWr
   if ( !qgsDoubleNear( mEmissionFactor, 1.0 ) )
   {
     elem.setAttribute( u"emission_factor"_s, mEmissionFactor );
+  }
+  if ( mSheenColor.isValid() )
+    elem.setAttribute( u"sheen_color"_s, QgsSymbolLayerUtils::encodeColor( mSheenColor ) );
+  if ( !qgsDoubleNear( mSheenRoughness, 0.0 ) )
+  {
+    elem.setAttribute( u"sheen_roughness"_s, mSheenRoughness );
   }
   if ( !qgsDoubleNear( mOpacity, 1 ) )
   {

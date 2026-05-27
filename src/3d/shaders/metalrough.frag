@@ -66,6 +66,11 @@ uniform float anisotropy;
 uniform float anisotropyRotation;
 #endif
 
+#ifdef SHEEN
+uniform float sheenRoughness;
+uniform vec3 sheenColor;
+#endif
+
 #ifdef DATA_DEFINED
 // DataColor has emission color
 #elif defined(EMISSION_MAP)
@@ -255,6 +260,28 @@ vec2 environmentBrdfApproximation(const in float roughness, const in float viewD
     return ab;
 }
 
+#ifdef SHEEN
+float charlieDistribution(const in float nDotH, const in float roughness)
+{
+    // Estevez and Kulla 2017, "Production Friendly Microfacet Sheen BRDF"
+    // max is to prevent artifacts on edges of sharp objects if roughness is low --
+    float alpha = max(roughness * roughness, 0.000001);
+    float invAlpha = 1.0 / max(alpha,0.015);
+    float cos2h = nDotH * nDotH;
+    // as per https://github.com/google/filament/blob/f91d15189cd3cad799ef384026782e9290ae3c0f/shaders/src/surface_brdf.fs#L98
+    float sin2h = max(1.0 - cos2h, 0.0078125);
+    return (2.0 + invAlpha) * pow(sin2h, invAlpha * 0.5) / (2.0 * PI);
+}
+
+float neubeltVisibility(const in float sDotN, const in float vDotN)
+{
+    // Neubelt and Pettineo 2013, "Crafting a Next-gen Material Pipeline for The Order: 1886"
+
+    // as per https://github.com/google/filament/blob/f91d15189cd3cad799ef384026782e9290ae3c0f/shaders/src/surface_brdf.fs#L142C61-L142C71
+    return 1.0 / max(4.0 * (sDotN + vDotN - sDotN * vDotN), 0.00001532);
+}
+#endif
+
 #ifdef ANISOTROPY
 // anisotropic normal distribution function
 float normalDistributionAnisotropic(const in float tDotH, const in float bDotH, const in float nDotH, const in float alphaT, const in float alphaB)
@@ -402,7 +429,20 @@ vec3 pbrModel(const in int lightIndex,
     // Blend between diffuse and specular to conserve energy
     // see https://learnopengl.com/PBR/Theory, "Energy conservation"
     vec3 kS = fresnelFactor(F0, light.sDotH);
-    vec3 color = light.visibilityFactor * light.att * lights[lightIndex].intensity * (specular + diffuse * (vec3(1.0) - kS));
+    vec3 baseLayer = specular + diffuse * (vec3(1.0) - kS);
+
+#ifdef SHEEN
+    float sheenDistribution = charlieDistribution(light.nDotH, sheenRoughness);
+    float sheenVisibility = neubeltVisibility(max(light.sDotN, 0.001), max(vDotN, 0.001));
+    vec3 sheenSpecular = sheenColor * sheenDistribution * sheenVisibility;
+
+    float sheenMax = max(max(sheenColor.r, sheenColor.g), sheenColor.b);
+    vec3 sheenScaling = vec3(1.0) - sheenMax * sheenDistribution;
+
+    vec3 color = light.visibilityFactor * light.att * lights[lightIndex].intensity * (baseLayer * sheenScaling + sheenSpecular * light.sDotN) ;
+#else
+    vec3 color = light.visibilityFactor * light.att * lights[lightIndex].intensity * baseLayer;
+#endif
 
     // Reduce by ambient occlusion amount
     color *= ambientOcclusion;
