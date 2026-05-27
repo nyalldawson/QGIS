@@ -66,6 +66,11 @@ uniform float anisotropy;
 uniform float anisotropyRotation;
 #endif
 
+#ifdef SHEEN
+uniform float sheenRoughness;
+uniform vec3 sheenColor;
+#endif
+
 #ifdef CLEAR_COAT
 uniform float clearCoatFactor;
 uniform float clearCoatRoughness;
@@ -260,6 +265,45 @@ vec2 environmentBrdfApproximation(const in float roughness, const in float viewD
     return ab;
 }
 
+#ifdef SHEEN
+float charlieDistribution(const in float nDotH, const in float roughness)
+{
+    // Estevez and Kulla 2017, "Production Friendly Microfacet Sheen BRDF"
+    // max is to prevent artifacts on edges of sharp objects if roughness is low --
+    // https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_materials_sheen/README.md#sheen-distribution
+    float alpha = max(roughness * roughness, 0.000001);
+    float invAlpha = 1.0 / max(alpha,0.015);
+    float cos2h = nDotH * nDotH;
+    // as per https://github.com/google/filament/blob/f91d15189cd3cad799ef384026782e9290ae3c0f/shaders/src/surface_brdf.fs#L98
+    float sin2h = max(1.0 - cos2h, 0.0078125);
+    return (2.0 + invAlpha) * pow(sin2h, invAlpha * 0.5) / (2.0 * PI);
+}
+
+float neubeltVisibility(const in float sDotN, const in float vDotN)
+{
+    // Neubelt and Pettineo 2013, "Crafting a Next-gen Material Pipeline for The Order: 1886"
+    // (sometimes referred to as Ashikhmin visibility?)
+    // as per https://github.com/google/filament/blob/f91d15189cd3cad799ef384026782e9290ae3c0f/shaders/src/surface_brdf.fs#L142C61-L142C71
+    return 1.0 / max(4.0 * (sDotN + vDotN - sDotN * vDotN), 0.00001532);
+}
+
+// Curve-fit approximation to the "Charlie sheen" BRDF directional albedo.
+// Approximates Estevez and Kulla 2017 without requiring a dedicated DFG LUT.
+// https://github.com/dakom/awsm-renderer/blob/d484c47e8b967a95780c96843f799901d0f869e4/crates/renderer/src/render_passes/shared/shared_wgsl/lighting/brdf.wgsl#L254
+float sheenDirectionalAlbedo(const in float vDotN, const in float roughness)
+{
+    float alpha = roughness * roughness;
+    float e = alpha * (0.18 + 0.06 * (1.0 - vDotN));
+    return e;
+        #if 0
+    float a = roughness < 0.25 ? -339.2 * alpha + 161.4 * roughness - 25.9 : -8.48 * alpha + 14.3 * roughness - 9.95;
+    float b = roughness < 0.25 ? 44.0 * alpha - 23.7 * roughness + 3.26 : 1.97 * alpha - 3.27 * roughness + 0.72;
+    float DG = exp(a * vDotN + b) + (roughness < 0.25 ? 0.0 : 0.1 * (roughness - 0.25));
+    return clamp(DG / PI, 0.0, 1.0);
+#endif
+}
+#endif
+
 #ifdef ANISOTROPY
 // anisotropic normal distribution function
 float normalDistributionAnisotropic(const in float tDotH, const in float bDotH, const in float nDotH, const in float alphaT, const in float alphaB)
@@ -447,6 +491,21 @@ vec3 pbrModel(const in int lightIndex,
     vec3 Fd = diffuse * (vec3(1.0) - kS);
     vec3 Fr = specular;
 
+#ifdef SHEEN
+    float sheenDistribution = charlieDistribution(light.nDotH, sheenRoughness);
+    float sheenVisibility = neubeltVisibility(light.sDotN, vDotN);
+    vec3 sheenSpecular = sheenColor * sheenDistribution * sheenVisibility;
+
+    float sheenDirAlbedo = sheenDirectionalAlbedo(max(vDotN, 0.001), sheenRoughness);
+
+    float sheenMax = max(max(sheenColor.r, sheenColor.g), sheenColor.b);
+    vec3 sheenAlbedoScaling = max(vec3(1.0) - sheenMax * sheenDirAlbedo, vec3(0.0));
+
+    Fd *= sheenAlbedoScaling;
+    Fr *= sheenAlbedoScaling;
+    Fr += sheenSpecular * light.sDotN * lights[lightIndex].color;
+#endif
+
 #ifdef CLEAR_COAT
     // as per https://google.github.io/filament/Filament.md.html#materialsystem/clearcoatmodel/clearcoatparameterization, Listing 14
     float ccPerceptualRoughness = clamp(clearCoatRoughness, 0.089, 1.0);
@@ -564,6 +623,25 @@ vec3 pbrIblModelSphericalHarmonics(const in vec3 wNormal,
     vec3 kS = fresnelSchlickRoughness(F0, vDotN, roughness);
     vec3 Fd = diffuse * (vec3(1.0) - kS);
     vec3 Fr = specular;
+
+#ifdef SHEEN
+    // 1. Sample the environment map using the specific sheen roughness
+    float sheenLod = roughnessToMipLevel(sheenRoughness);
+    vec3 sheenIndirectSpecular = textureLod(globalSpecularMap, yUpReflect, sheenLod).rgb;
+
+    // 2. Calculate the Charlie directional albedo for the environment scale
+    float sheenDirAlbedo = sheenDirectionalAlbedo(vDotN, sheenRoughness);
+    vec3 sheenSpecularIbl = sheenColor * sheenIndirectSpecular * sheenDirAlbedo;
+
+    // 3. Scale the base layer down based on the sheen layer to conserve energy
+    // (This exactly mirrors your pbrModel logic)
+    float sheenMax = max(max(sheenColor.r, sheenColor.g), sheenColor.b);
+    vec3 sheenScaling = vec3(1.0) - sheenMax * sheenDirAlbedo;
+
+    Fd *= sheenScaling;
+    Fr *= sheenScaling;
+    Fr += sheenSpecularIbl;
+#endif
 
 #ifdef CLEAR_COAT
     // as per https://google.github.io/filament/Filament.md.html#materialsystem/clearcoatmodel/clearcoatparameterization, Listing 14

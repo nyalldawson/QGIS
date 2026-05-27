@@ -114,6 +114,14 @@ class _3D_EXPORT QgsMetalRoughMaterial : public QgsMaterial
     //! Sets the emission strength factor
     void setEmissionFactor( double factor );
 
+    /**
+     * Sets the sheen \a color.
+     */
+    void setSheenColor( const QColor &color );
+
+    //! Sets the sheen roughness
+    void setSheenRoughness( float roughness );
+
     //! Sets the clear coat factor
     void setClearCoatFactor( float factor );
 
@@ -168,6 +176,8 @@ class _3D_EXPORT QgsMetalRoughMaterial : public QgsMaterial
     Qt3DRender::QParameter *mEmissionMapParameter = nullptr;
     Qt3DRender::QParameter *mEmissiveColorParameter = nullptr;
     Qt3DRender::QParameter *mEmissionFactorParameter = nullptr;
+    Qt3DRender::QParameter *mSheenColorParameter = nullptr;
+    Qt3DRender::QParameter *mSheenRoughnessParameter = nullptr;
     Qt3DRender::QParameter *mClearCoatFactorParameter = nullptr;
     Qt3DRender::QParameter *mClearCoatRoughnessParameter = nullptr;
     Qt3DRender::QParameter *mTextureScaleParameter = nullptr;

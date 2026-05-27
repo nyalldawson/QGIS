@@ -230,6 +230,50 @@ class CORE_EXPORT QgsMetalRoughMaterialSettings : public QgsAbstractMaterialSett
     void setEmissionFactor( double factor ) { mEmissionFactor = factor; }
 
     /**
+     * Returns the material's sheen color.
+     *
+     * A sheen layer is a common technique used in Physically-Based Rendering to represent cloth and fabric materials.
+     *
+     * An invalid color indicates that the sheen layer is disabled for this material.
+     *
+     * \see setSheenColor()
+     * \see sheenRoughness()
+     * \since QGIS 4.2
+     */
+    QColor sheenColor() const { return mSheenColor; }
+
+    /**
+     * Sets the material's sheen \a color.
+     *
+     * A sheen layer is a common technique used in Physically-Based Rendering to represent cloth and fabric materials.
+     *
+     * An invalid color indicates that the sheen layer is disabled for this material.
+     *
+     * \see sheenColor()
+     * \see setSheenRoughness()
+     * \since QGIS 4.2
+     */
+    void setSheenColor( const QColor &color ) { mSheenColor = color; }
+
+    /**
+     * Returns the material's sheen roughness, as a value between 0 and 1.
+     *
+     * \see setSheenRoughness()
+     * \see sheenColor()
+     * \since QGIS 4.2
+     */
+    double sheenRoughness() const { return mSheenRoughness; }
+
+    /**
+     * Sets the material's sheen \a roughness, as a value between 0 and 1.
+     *
+     * \see sheenRoughness()
+     * \see setSheenColor()
+     * \since QGIS 4.2
+     */
+    void setSheenRoughness( double roughness ) { mSheenRoughness = roughness; }
+
+    /**
      * Returns the material's clear coat factor, as a value between 0 and 1.
      *
      * \see setClearCoatFactor()
@@ -286,6 +330,7 @@ class CORE_EXPORT QgsMetalRoughMaterialSettings : public QgsAbstractMaterialSett
     {
       return mBaseColor == other.mBaseColor
              && mEmissiveColor == other.mEmissiveColor
+             && mSheenColor == other.mSheenColor
              && qgsDoubleNear( mMetalness, other.mMetalness )
              && qgsDoubleNear( mRoughness, other.mRoughness )
              && qgsDoubleNear( mReflectance, other.mReflectance )
@@ -293,6 +338,7 @@ class CORE_EXPORT QgsMetalRoughMaterialSettings : public QgsAbstractMaterialSett
              && qgsDoubleNear( mAnisotropyRotation, other.mAnisotropyRotation )
              && qgsDoubleNear( mOpacity, other.mOpacity )
              && qgsDoubleNear( mEmissionFactor, other.mEmissionFactor )
+             && qgsDoubleNear( mSheenRoughness, other.mSheenRoughness )
              && qgsDoubleNear( mClearCoatFactor, other.mClearCoatFactor )
              && qgsDoubleNear( mClearCoatRoughness, other.mClearCoatRoughness )
              && dataDefinedProperties() == other.dataDefinedProperties();
@@ -307,6 +353,8 @@ class CORE_EXPORT QgsMetalRoughMaterialSettings : public QgsAbstractMaterialSett
     double mAnisotropy = 0.0;
     double mAnisotropyRotation = 0.0;
     double mEmissionFactor = 1.0;
+    QColor mSheenColor;
+    double mSheenRoughness = 0.5;
     double mClearCoatFactor = 0.0;
     double mClearCoatRoughness = 0.0;
     double mOpacity = 1.0;

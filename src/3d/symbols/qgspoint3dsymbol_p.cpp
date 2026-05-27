@@ -431,8 +431,8 @@ Qt3DCore::QGeometry *QgsInstancedPoint3DSymbolHandler::symbolGeometry( const Qgs
     case Qgis::Point3DShape::Sphere:
     {
       const float radius = symbol->shapeProperty( u"radius"_s ).toFloat();
-      const int rings = symbol->shapeProperty( u"rings"_s ).toInt();
-      const int slices = symbol->shapeProperty( u"slices"_s ).toInt();
+      const int rings = 64;  //symbol->shapeProperty( u"rings"_s ).toInt();
+      const int slices = 64; // symbol->shapeProperty( u"slices"_s ).toInt();
 
       const bool tangents = symbol->materialSettings() && symbol->materialSettings()->requiresTangents();
       Qt3DExtras::QSphereGeometry *g = new Qt3DExtras::QSphereGeometry;
