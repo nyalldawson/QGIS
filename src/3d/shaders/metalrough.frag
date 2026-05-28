@@ -280,6 +280,17 @@ float neubeltVisibility(const in float sDotN, const in float vDotN)
     // as per https://github.com/google/filament/blob/f91d15189cd3cad799ef384026782e9290ae3c0f/shaders/src/surface_brdf.fs#L142C61-L142C71
     return 1.0 / max(4.0 * (sDotN + vDotN - sDotN * vDotN), 0.00001532);
 }
+
+// Curve-fit approximation to the "Charlie sheen" BRDF directional albedo.
+// Approximates Estevez and Kulla 2017 without requiring a dedicated DFG LUT.
+float sheenDirectionalAlbedo(const in float vDotN, const in float roughness)
+{
+    float r2 = roughness * roughness;
+    float a = roughness < 0.25 ? -339.2 * r2 + 161.4 * roughness - 25.9 : -8.48 * r2 + 14.3 * roughness - 9.95;
+    float b = roughness < 0.25 ? 44.0 * r2 - 23.7 * roughness + 3.26 : 1.97 * r2 - 3.27 * roughness + 0.72;
+    float DG = exp(a * vDotN + b) + (roughness < 0.25 ? 0.0 : 0.1 * (roughness - 0.25));
+    return clamp(DG / PI, 0.0, 1.0);
+}
 #endif
 
 #ifdef ANISOTROPY
@@ -436,8 +447,11 @@ vec3 pbrModel(const in int lightIndex,
     float sheenVisibility = neubeltVisibility(max(light.sDotN, 0.001), max(vDotN, 0.001));
     vec3 sheenSpecular = sheenColor * sheenDistribution * sheenVisibility;
 
+    float sheenDirAlbedo = sheenDirectionalAlbedo(max(vDotN, 0.001), sheenRoughness);
+
     float sheenMax = max(max(sheenColor.r, sheenColor.g), sheenColor.b);
     vec3 sheenScaling = vec3(1.0) - sheenMax * sheenDistribution;
+    //vec3 sheenScaling = max(vec3(1.0) - sheenMax * sheenDirAlbedo, vec3(0.0));
 
     vec3 color = light.visibilityFactor * light.att * lights[lightIndex].intensity * (baseLayer * sheenScaling + sheenSpecular * light.sDotN) ;
 #else
@@ -531,7 +545,26 @@ vec3 pbrIblModelSphericalHarmonics(const in vec3 wNormal,
     // Blend between diffuse and specular to conserve energy
     // see https://learnopengl.com/PBR/Theory, "Energy conservation"
     vec3 kS = fresnelSchlickRoughness(F0, vDotN, roughness);
-    vec3 color = specular + diffuse * (vec3(1.0) - kS);
+    vec3 baseLayer = specular + diffuse * (vec3(1.0) - kS);
+
+#ifdef SHEEN
+    // 1. Sample the environment map using the specific sheen roughness
+    float sheenLod = roughnessToMipLevel(sheenRoughness);
+    vec3 sheenIndirectSpecular = textureLod(globalSpecularMap, yUpReflect, sheenLod).rgb;
+
+    // 2. Calculate the Charlie directional albedo for the environment scale
+    float sheenDirAlbedo = sheenDirectionalAlbedo(vDotN, sheenRoughness);
+    vec3 sheenSpecularIbl = sheenColor * sheenIndirectSpecular * sheenDirAlbedo;
+
+    // 3. Scale the base layer down based on the sheen layer to conserve energy
+    // (This exactly mirrors your pbrModel logic)
+    float sheenMax = max(max(sheenColor.r, sheenColor.g), sheenColor.b);
+    vec3 sheenScaling = vec3(1.0) - sheenMax * sheenDirAlbedo;
+
+    vec3 color = baseLayer * sheenScaling + sheenSpecularIbl;
+#else
+    vec3 color = baseLayer;
+#endif
 
     // Reduce by ambient occlusion amount
     color *= ambientOcclusion;

@@ -51,7 +51,7 @@ QgsMetalRoughMaterial::QgsMetalRoughMaterial( QNode *parent )
   , mEmissiveColorParameter( new Qt3DRender::QParameter( u"emissiveColor"_s, Qgs3DUtils::srgbToLinear( QColor( 0, 0, 0 ) ), this ) )
   , mEmissionFactorParameter( new Qt3DRender::QParameter( u"emissiveFactor"_s, 1.0f, this ) )
   , mSheenColorParameter( new Qt3DRender::QParameter( u"sheenColor"_s, Qgs3DUtils::srgbToLinear( QColor( 0, 0, 0 ) ), this ) )
-  , mSheenRoughnessParameter( new Qt3DRender::QParameter( u"sheenRoughness"_s, 0.0f, this ) )
+  , mSheenRoughnessParameter( new Qt3DRender::QParameter( u"sheenRoughness"_s, 0.15f, this ) )
   , mTextureScaleParameter( new Qt3DRender::QParameter( u"texCoordScale"_s, 1.0f, this ) )
   , mTextureRotationParameter( new Qt3DRender::QParameter( u"texCoordRotation"_s, 0.0f, this ) )
   , mOpacityParameter( new Qt3DRender::QParameter( u"opacity"_s, 1.0f ) )
@@ -349,7 +349,9 @@ void QgsMetalRoughMaterial::setSheenColor( const QColor &color )
 
 void QgsMetalRoughMaterial::setSheenRoughness( float roughness )
 {
-  mSheenRoughnessParameter->setValue( roughness );
+  // don't permit completely invalid sheen roughness -- the math
+  // breaks down for impossibly smooth sheen values
+  mSheenRoughnessParameter->setValue( std::max( roughness, 0.15f ) );
 }
 
 void QgsMetalRoughMaterial::setTextureScale( float textureScale )

@@ -537,6 +537,8 @@ class TestQgsMetalRoughMaterialSettings(unittest.TestCase):
         self.assertEqual(settings.reflectance(), 0.5)
         self.assertEqual(settings.anisotropy(), 0.0)
         self.assertEqual(settings.anisotropyRotation(), 0.0)
+        self.assertFalse(settings.sheenColor().isValid())
+        self.assertEqual(settings.sheenRoughness(), 0.5)
 
         # Test setters/getters
         settings.setBaseColor(QColor(255, 0, 0))
@@ -563,6 +565,12 @@ class TestQgsMetalRoughMaterialSettings(unittest.TestCase):
         settings.setAnisotropyRotation(45.5)
         self.assertEqual(settings.anisotropyRotation(), 45.5)
 
+        settings.setSheenColor(QColor(255, 0, 255))
+        self.assertEqual(settings.sheenColor(), QColor(255, 0, 255))
+
+        settings.setSheenRoughness(0.9)
+        self.assertEqual(settings.sheenRoughness(), 0.9)
+
     def test_clone(self):
         settings = QgsMetalRoughMaterialSettings()
         settings.setBaseColor(QColor(255, 0, 0))
@@ -573,6 +581,8 @@ class TestQgsMetalRoughMaterialSettings(unittest.TestCase):
         settings.setReflectance(0.7)
         settings.setAnisotropy(0.3)
         settings.setAnisotropyRotation(45.5)
+        settings.setSheenColor(QColor(255, 0, 255))
+        settings.setSheenRoughness(0.9)
 
         cloned = settings.clone()
         self.assertIsInstance(cloned, QgsMetalRoughMaterialSettings)
@@ -584,6 +594,8 @@ class TestQgsMetalRoughMaterialSettings(unittest.TestCase):
         self.assertEqual(cloned.reflectance(), 0.7)
         self.assertEqual(cloned.anisotropy(), 0.3)
         self.assertEqual(cloned.anisotropyRotation(), 45.5)
+        self.assertEqual(cloned.sheenColor(), QColor(255, 0, 255))
+        self.assertEqual(cloned.sheenRoughness(), 0.9)
 
     def test_equality(self):
         settings1 = QgsMetalRoughMaterialSettings()
@@ -631,6 +643,16 @@ class TestQgsMetalRoughMaterialSettings(unittest.TestCase):
         settings1.setAnisotropyRotation(45.5)
         self.assertEqual(settings1, settings2)
 
+        settings2.setSheenColor(QColor(255, 0, 255))
+        self.assertNotEqual(settings1, settings2)
+        settings1.setSheenColor(QColor(255, 0, 255))
+        self.assertEqual(settings1, settings2)
+
+        settings2.setSheenRoughness(0.9)
+        self.assertNotEqual(settings1, settings2)
+        settings1.setSheenRoughness(0.9)
+        self.assertEqual(settings1, settings2)
+
     def test_equals_method(self):
         settings1 = QgsMetalRoughMaterialSettings()
         settings2 = QgsMetalRoughMaterialSettings()
@@ -653,6 +675,8 @@ class TestQgsMetalRoughMaterialSettings(unittest.TestCase):
         settings.setReflectance(0.7)
         settings.setAnisotropy(0.3)
         settings.setAnisotropyRotation(45.5)
+        settings.setSheenColor(QColor(255, 0, 255))
+        settings.setSheenRoughness(0.9)
 
         doc = QDomDocument("settings")
         element = doc.createElement("settings")

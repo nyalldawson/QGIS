@@ -316,7 +316,7 @@ class CORE_EXPORT QgsMetalRoughMaterialSettings : public QgsAbstractMaterialSett
     double mAnisotropyRotation = 0.0;
     double mEmissionFactor = 1.0;
     QColor mSheenColor;
-    double mSheenRoughness = 0.0;
+    double mSheenRoughness = 0.5;
     double mOpacity = 1.0;
 };
 
