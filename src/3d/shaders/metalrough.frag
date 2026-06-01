@@ -444,16 +444,15 @@ vec3 pbrModel(const in int lightIndex,
 
 #ifdef SHEEN
     float sheenDistribution = charlieDistribution(light.nDotH, sheenRoughness);
-    float sheenVisibility = neubeltVisibility(max(light.sDotN, 0.001), max(vDotN, 0.001));
+    float sheenVisibility = neubeltVisibility(light.sDotN, vDotN);
     vec3 sheenSpecular = sheenColor * sheenDistribution * sheenVisibility;
 
     float sheenDirAlbedo = sheenDirectionalAlbedo(max(vDotN, 0.001), sheenRoughness);
 
     float sheenMax = max(max(sheenColor.r, sheenColor.g), sheenColor.b);
-    vec3 sheenScaling = vec3(1.0) - sheenMax * sheenDistribution;
-    //vec3 sheenScaling = max(vec3(1.0) - sheenMax * sheenDirAlbedo, vec3(0.0));
+    vec3 sheenAlbedoScaling = max(vec3(1.0) - sheenMax * sheenDirAlbedo, vec3(0.0));
 
-    vec3 color = light.visibilityFactor * light.att * lights[lightIndex].intensity * (baseLayer * sheenScaling + sheenSpecular * light.sDotN) ;
+    vec3 color = light.visibilityFactor * light.att * lights[lightIndex].intensity * (baseLayer * sheenAlbedoScaling + sheenSpecular * light.sDotN) ;
 #else
     vec3 color = light.visibilityFactor * light.att * lights[lightIndex].intensity * baseLayer;
 #endif

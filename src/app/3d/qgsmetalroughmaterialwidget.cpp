@@ -131,7 +131,7 @@ void QgsMetalRoughMaterialWidget::setSettings( const QgsAbstractMaterialSettings
   mEmissionStrengthSpinBox->setValue( material->emissionFactor() * 100 );
   mEmissionStrengthSpinBox->setEnabled( mButtonEmissionColor->color().isValid() );
 
-  mButtonSheenColor->setColor( material->emissionColor() );
+  mButtonSheenColor->setColor( material->sheenColor() );
   mSheenRoughnessWidget->setValue( material->sheenRoughness() );
   mSheenRoughnessWidget->setEnabled( mButtonSheenColor->color().isValid() );
 
