@@ -1106,7 +1106,7 @@ void TestQgs3DMaterialRendering::testMetalRoughEnvironmentLight_data()
   QTest::newRow( "dielectric 30% rough" ) << 0.0 << 0.3 << QColor( 200, 255, 200 ) << 0.5 << 0.0 << 0.0 << QColor() << 0.5 << 1.0 << "env_light_dielectric_30_rough";
   QTest::newRow( "dielectric 60% rough" ) << 0.0 << 0.6 << QColor( 200, 255, 200 ) << 0.5 << 0.0 << 0.0 << QColor() << 0.5 << 1.0 << "env_light_dielectric_60_rough";
   QTest::newRow( "dielectric 100% rough" ) << 0.0 << 1.0 << QColor( 200, 255, 200 ) << 0.5 << 0.0 << 0.0 << QColor() << 0.5 << 1.0 << "env_light_dielectric_100_rough";
-  QTest::newRow( "metal smooth" ) << 1.0 << 0.0 << QColor( 200, 255, 200 ) << 0.5 << 0.0 << 0.0 QColor() << 0.5 < < < < 1.0 << "env_light_metal_smooth";
+  QTest::newRow( "metal smooth" ) << 1.0 << 0.0 << QColor( 200, 255, 200 ) << 0.5 << 0.0 << 0.0 << QColor() << 0.5 << 1.0 << "env_light_metal_smooth";
   QTest::newRow( "metal 30% rough" ) << 1.0 << 0.3 << QColor( 200, 255, 200 ) << 0.5 << 0.0 << 0.0 << QColor() << 0.5 << 1.0 << "env_light_metal_30_rough";
   QTest::newRow( "metal 60% rough" ) << 1.0 << 0.6 << QColor( 200, 255, 200 ) << 0.5 << 0.0 << 0.0 << QColor() << 0.5 << 1.0 << "env_light_metal_60_rough";
   QTest::newRow( "metal 100% rough" ) << 1.0 << 1.0 << QColor( 200, 255, 200 ) << 0.5 << 0.0 << 0.0 << QColor() << 0.5 << 1.0 << "env_light_metal_100_rough";
@@ -1192,6 +1192,8 @@ void TestQgs3DMaterialRendering::testMetalRoughEnvironmentLight()
 
   QgsDirectionalLightSettings directionalLight;
   directionalLight.setDirection( QgsVector3D( 0.32, 0.27, -0.91 ) );
+  if ( sheenColor.isValid() )
+    directionalLight.setIntensity( 2 );
   mapSettings->setLightSources( { directionalLight.clone() } );
 
   QgsFlatTerrainGenerator *flatTerrain = new QgsFlatTerrainGenerator;

@@ -265,6 +265,7 @@ float charlieDistribution(const in float nDotH, const in float roughness)
 {
     // Estevez and Kulla 2017, "Production Friendly Microfacet Sheen BRDF"
     // max is to prevent artifacts on edges of sharp objects if roughness is low --
+    // https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_materials_sheen/README.md#sheen-distribution
     float alpha = max(roughness * roughness, 0.000001);
     float invAlpha = 1.0 / max(alpha,0.015);
     float cos2h = nDotH * nDotH;
@@ -276,20 +277,25 @@ float charlieDistribution(const in float nDotH, const in float roughness)
 float neubeltVisibility(const in float sDotN, const in float vDotN)
 {
     // Neubelt and Pettineo 2013, "Crafting a Next-gen Material Pipeline for The Order: 1886"
-
+    // (sometimes referred to as Ashikhmin visibility?)
     // as per https://github.com/google/filament/blob/f91d15189cd3cad799ef384026782e9290ae3c0f/shaders/src/surface_brdf.fs#L142C61-L142C71
     return 1.0 / max(4.0 * (sDotN + vDotN - sDotN * vDotN), 0.00001532);
 }
 
 // Curve-fit approximation to the "Charlie sheen" BRDF directional albedo.
 // Approximates Estevez and Kulla 2017 without requiring a dedicated DFG LUT.
+// https://github.com/dakom/awsm-renderer/blob/d484c47e8b967a95780c96843f799901d0f869e4/crates/renderer/src/render_passes/shared/shared_wgsl/lighting/brdf.wgsl#L254
 float sheenDirectionalAlbedo(const in float vDotN, const in float roughness)
 {
-    float r2 = roughness * roughness;
-    float a = roughness < 0.25 ? -339.2 * r2 + 161.4 * roughness - 25.9 : -8.48 * r2 + 14.3 * roughness - 9.95;
-    float b = roughness < 0.25 ? 44.0 * r2 - 23.7 * roughness + 3.26 : 1.97 * r2 - 3.27 * roughness + 0.72;
+    float alpha = roughness * roughness;
+    float e = alpha * (0.18 + 0.06 * (1.0 - vDotN));
+    return e;
+        #if 0
+    float a = roughness < 0.25 ? -339.2 * alpha + 161.4 * roughness - 25.9 : -8.48 * alpha + 14.3 * roughness - 9.95;
+    float b = roughness < 0.25 ? 44.0 * alpha - 23.7 * roughness + 3.26 : 1.97 * alpha - 3.27 * roughness + 0.72;
     float DG = exp(a * vDotN + b) + (roughness < 0.25 ? 0.0 : 0.1 * (roughness - 0.25));
     return clamp(DG / PI, 0.0, 1.0);
+#endif
 }
 #endif
 
