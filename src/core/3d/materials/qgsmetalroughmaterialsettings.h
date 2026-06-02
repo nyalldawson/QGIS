@@ -274,6 +274,42 @@ class CORE_EXPORT QgsMetalRoughMaterialSettings : public QgsAbstractMaterialSett
     void setSheenRoughness( double roughness ) { mSheenRoughness = roughness; }
 
     /**
+     * Returns the material's clear coat factor, as a value between 0 and 1.
+     *
+     * \see setClearCoatFactor()
+     * \see clearCoatRoughness()
+     * \since QGIS 4.2
+     */
+    double clearCoatFactor() const { return mClearCoatFactor; }
+
+    /**
+     * Sets the material's clear coat \a factor, as a value between 0 and 1.
+     *
+     * \see clearCoatFactor()
+     * \see setClearCoatRoughness()
+     * \since QGIS 4.2
+     */
+    void setClearCoatFactor( double factor ) { mClearCoatFactor = factor; }
+
+    /**
+     * Returns the material's clear coat roughness, as a value between 0 and 1.
+     *
+     * \see setClearCoatRoughness()
+     * \see clearCoatFactor()
+     * \since QGIS 4.2
+     */
+    double clearCoatRoughness() const { return mClearCoatRoughness; }
+
+    /**
+     * Sets the material's clear coat \a roughness, as a value between 0 and 1.
+     *
+     * \see clearCoatRoughness()
+     * \see setClearCoatFactor()
+     * \since QGIS 4.2
+     */
+    void setClearCoatRoughness( double roughness ) { mClearCoatRoughness = roughness; }
+
+    /**
      * Decomposes a base color into the material's color components, and sets the material's color accordingly.
      *
      * Since this material contains only a single color, this function
@@ -303,6 +339,8 @@ class CORE_EXPORT QgsMetalRoughMaterialSettings : public QgsAbstractMaterialSett
              && qgsDoubleNear( mOpacity, other.mOpacity )
              && qgsDoubleNear( mEmissionFactor, other.mEmissionFactor )
              && qgsDoubleNear( mSheenRoughness, other.mSheenRoughness )
+             && qgsDoubleNear( mClearCoatFactor, other.mClearCoatFactor )
+             && qgsDoubleNear( mClearCoatRoughness, other.mClearCoatRoughness )
              && dataDefinedProperties() == other.dataDefinedProperties();
     }
 
@@ -317,6 +355,8 @@ class CORE_EXPORT QgsMetalRoughMaterialSettings : public QgsAbstractMaterialSett
     double mEmissionFactor = 1.0;
     QColor mSheenColor;
     double mSheenRoughness = 0.5;
+    double mClearCoatFactor = 0.0;
+    double mClearCoatRoughness = 0.0;
     double mOpacity = 1.0;
 };
 

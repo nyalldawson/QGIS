@@ -40,6 +40,8 @@ QgsMetalRoughMaterialWidget::QgsMetalRoughMaterialWidget( QWidget *parent, bool 
   mRoughnessWidget->spinBox()->setShowClearButton( false );
   mReflectanceWidget->spinBox()->setClearValue( 50 );
   mAnisotropyWidget->spinBox()->setClearValue( 0 );
+  mClearCoatFactorWidget->spinBox()->setClearValue( 0 );
+  mClearCoatRoughnessWidget->spinBox()->setClearValue( 0 );
 
   mEmissionStrengthSpinBox->setClearValue( 100 );
   mEmissionStrengthSpinBox->setEnabled( false );
@@ -74,6 +76,10 @@ QgsMetalRoughMaterialWidget::QgsMetalRoughMaterialWidget( QWidget *parent, bool 
   connect( mButtonSheenColor, &QgsColorButton::colorChanged, this, &QgsMetalRoughMaterialWidget::changed );
   connect( mButtonSheenColor, &QgsColorButton::colorChanged, this, [this] { mSheenRoughnessWidget->setEnabled( mButtonSheenColor->color().isValid() ); } );
   connect( mSheenRoughnessWidget, &QgsPercentageWidget::valueChanged, this, &QgsMetalRoughMaterialWidget::changed );
+
+  connect( mClearCoatFactorWidget, &QgsPercentageWidget::valueChanged, this, &QgsMetalRoughMaterialWidget::changed );
+  connect( mClearCoatFactorWidget, &QgsPercentageWidget::valueChanged, this, [this] { mClearCoatRoughnessWidget->setEnabled( mClearCoatFactorWidget->value() > 0 ); } );
+  connect( mClearCoatRoughnessWidget, &QgsPercentageWidget::valueChanged, this, &QgsMetalRoughMaterialWidget::changed );
 
   connect( mBaseColorDataDefinedButton, &QgsPropertyOverrideButton::changed, this, &QgsMetalRoughMaterialWidget::changed );
   connect( mEmissionColorDataDefinedButton, &QgsPropertyOverrideButton::changed, this, &QgsMetalRoughMaterialWidget::changed );
@@ -131,6 +137,10 @@ void QgsMetalRoughMaterialWidget::setSettings( const QgsAbstractMaterialSettings
   mEmissionStrengthSpinBox->setValue( material->emissionFactor() * 100 );
   mEmissionStrengthSpinBox->setEnabled( mButtonEmissionColor->color().isValid() );
 
+  mClearCoatFactorWidget->setValue( material->clearCoatFactor() );
+  mClearCoatRoughnessWidget->setValue( material->clearCoatRoughness() );
+  mClearCoatRoughnessWidget->setEnabled( mClearCoatFactorWidget->value() > 0 );
+
   mButtonSheenColor->setColor( material->sheenColor() );
   mSheenRoughnessWidget->setValue( material->sheenRoughness() );
   mSheenRoughnessWidget->setEnabled( mButtonSheenColor->color().isValid() );
@@ -156,6 +166,9 @@ std::unique_ptr<QgsAbstractMaterialSettings> QgsMetalRoughMaterialWidget::settin
   m->setOpacity( mOpacityWidget->opacity() );
   m->setEmissionColor( mButtonEmissionColor->color() );
   m->setEmissionFactor( mEmissionStrengthSpinBox->value() / 100.0 );
+
+  m->setClearCoatFactor( mClearCoatFactorWidget->value() );
+  m->setClearCoatRoughness( mClearCoatRoughnessWidget->value() );
 
   m->setSheenColor( mButtonSheenColor->color() );
   m->setSheenRoughness( mSheenRoughnessWidget->value() );
