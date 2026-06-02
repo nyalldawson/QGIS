@@ -383,7 +383,7 @@ vec3 specularModel(const in vec3 F0,
     float G = geometricModel(sDotNPrime, vDotNPrime, roughness, isIBL);
 
     vec3 cSpec = F * G / (4.0 * sDotNPrime * vDotNPrime);
-    return clamp(cSpec, vec3(0.0), vec3(1.0));
+    return max(cSpec, vec3(0.0));
 }
 
 #ifdef CLEAR_COAT
@@ -435,7 +435,7 @@ vec3 pbrModel(const in int lightIndex,
     // Calculate some useful quantities
     vec3 v = wView;
 
-    float vDotN = dot(v, n);
+    float vDotN = max(dot(v, n), 0.0);
 
     LightParams light = calculateLightParams(lightIndex, wPosition, n, wView);
 
@@ -522,7 +522,7 @@ vec3 pbrModel(const in int lightIndex,
     vec3 Frc = vec3(Dc * Vc * Fc) * light.sDotN * lights[lightIndex].color;
 
     // Account for energy loss in the base layer
-    vec3 layeredColor = (Fd + Fr * (1.0 - Fc)) * (1.0 - Fc) + Frc;
+    vec3 layeredColor = (Fd + Fr) * (1.0 - Fc) + Frc;
 #else
     vec3 layeredColor = Fd + Fr;
 #endif
@@ -652,7 +652,7 @@ vec3 pbrIblModelSphericalHarmonics(const in vec3 wNormal,
     vec2 ccEnvBrdf = environmentBrdfApproximation(ccPerceptualRoughness, vDotN);
     vec3 Frc = ccIndirectSpecular * (0.04 * ccEnvBrdf.x + ccEnvBrdf.y) * clearCoatFactor;
     // Account for energy loss in the base layer
-    vec3 layeredColor = (Fd + Fr * (1.0 - Fc)) * (1.0 - Fc) + Frc;
+    vec3 layeredColor = (Fd + Fr) * (1.0 - Fc) + Frc;
 #else
     vec3 layeredColor = Fd + Fr;
 #endif
