@@ -1127,7 +1127,7 @@ void TestQgs3DMaterialRendering::testMetalRoughEnvironmentLight_data()
   QTest::newRow( "smooth dielectric anisotropy 0.8" ) << 0.0 << 0.0 << QColor( 100, 100, 100 ) << 0.5 << 0.8 << 0.0 << QColor() << 0.5 << 1.0 << "env_light_smooth_dielectric_anisotropy_high";
   QTest::newRow( "60% rough dielectric anisotropy 0.8" ) << 0.0 << 0.6 << QColor( 100, 100, 100 ) << 0.5 << 0.8 << 0.0 << QColor() << 0.5 << 1.0 << "env_light_rough_dielectric_anisotropy_high";
   QTest::newRow( "60% rough metal anisotropy 0.8 rotated 45" ) << 1.0 << 0.6 << QColor( 100, 100, 100 ) << 0.5 << 0.8 << 45.0 << QColor() << 0.5 << 1.0 << "env_light_anisotropy_rotated_45";
-  QTest::newRow( "60% rough metal anisotropy 0.8 rotated 90" ) << 1.0 << 0.6 << QColor( 100, 100, 100 ) << 0.5 << 0.8 << 90.0 << QColor() << 0.5 << .0 << "env_light_anisotropy_rotated_90";
+  QTest::newRow( "60% rough metal anisotropy 0.8 rotated 90" ) << 1.0 << 0.6 << QColor( 100, 100, 100 ) << 0.5 << 0.8 << 90.0 << QColor() << 0.5 << 1.0 << "env_light_anisotropy_rotated_90";
 
   QTest::newRow( "red velvet" ) << 0.0 << 1.0 << QColor::fromRgbF( 0.05, 0.0, 0.0 ) << 0.5 << 0.0 << 0.0 << QColor::fromRgbF( 0.85, 0.1, 0.1 ) << 0.9 << 0.0 << "red_velvet";
   QTest::newRow( "smooth silk" ) << 0.0 << 1.0 << QColor::fromRgbF( 0.5, 0.35, 0.15 ) << 0.5 << 0.0 << 0.0 << QColor::fromRgbF( 0.9, 0.85, 0.7 ) << 0.3 << 0.0 << "smooth_silk";
