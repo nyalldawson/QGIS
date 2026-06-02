@@ -1122,7 +1122,7 @@ void TestQgs3DMaterialRendering::testMetalRoughEnvironmentLight_data()
 
   QTest::newRow( "smooth metal anisotropy 0.4" ) << 1.0 << 0.0 << QColor( 100, 100, 100 ) << 0.5 << 0.4 << 0.0 << QColor() << 0.5 << 1.0 << "env_light_smooth_metal_anisotropy_mid";
   QTest::newRow( "smooth metal anisotropy 0.8" ) << 1.0 << 0.0 << QColor( 100, 100, 100 ) << 0.5 << 0.8 << 0.0 << QColor() << 0.5 << 1.0 << "env_light_smooth_metal_anisotropy_high";
-  QTest::newRow( "60% rough metal anisotropy 0.8" ) << 1.0 << 0.6 << QColor( 100, 100, 100 ) << 0.5 << 0.8 << 0.0 QColor() << 0.5 < < < < 1.0 << "env_light_rough_metal_anisotropy_high";
+  QTest::newRow( "60% rough metal anisotropy 0.8" ) << 1.0 << 0.6 << QColor( 100, 100, 100 ) << 0.5 << 0.8 << 0.0 << QColor() << 0.5 << 1.0 << "env_light_rough_metal_anisotropy_high";
   QTest::newRow( "smooth dielectric anisotropy 0.4" ) << 0.0 << 0.0 << QColor( 100, 100, 100 ) << 0.5 << 0.4 << 0.0 << QColor() << 0.5 << 1.0 << "env_light_smooth_dielectric_anisotropy_mid";
   QTest::newRow( "smooth dielectric anisotropy 0.8" ) << 0.0 << 0.0 << QColor( 100, 100, 100 ) << 0.5 << 0.8 << 0.0 << QColor() << 0.5 << 1.0 << "env_light_smooth_dielectric_anisotropy_high";
   QTest::newRow( "60% rough dielectric anisotropy 0.8" ) << 0.0 << 0.6 << QColor( 100, 100, 100 ) << 0.5 << 0.8 << 0.0 << QColor() << 0.5 << 1.0 << "env_light_rough_dielectric_anisotropy_high";
