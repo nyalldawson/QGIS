@@ -293,9 +293,10 @@ float neubeltVisibility(const in float sDotN, const in float vDotN)
 float sheenDirectionalAlbedo(const in float vDotN, const in float roughness)
 {
     float alpha = roughness * roughness;
+#if 0
     float e = alpha * (0.18 + 0.06 * (1.0 - vDotN));
     return e;
-        #if 0
+#else
     float a = roughness < 0.25 ? -339.2 * alpha + 161.4 * roughness - 25.9 : -8.48 * alpha + 14.3 * roughness - 9.95;
     float b = roughness < 0.25 ? 44.0 * alpha - 23.7 * roughness + 3.26 : 1.97 * alpha - 3.27 * roughness + 0.72;
     float DG = exp(a * vDotN + b) + (roughness < 0.25 ? 0.0 : 0.1 * (roughness - 0.25));
@@ -502,7 +503,8 @@ vec3 pbrModel(const in int lightIndex,
     vec3 sheenAlbedoScaling = max(vec3(1.0) - sheenMax * sheenDirAlbedo, vec3(0.0));
 
     Fd *= sheenAlbedoScaling;
-    Fr += sheenSpecular * light.sDotN;
+    Fr *= sheenAlbedoScaling;
+    Fr += sheenSpecular * light.sDotN * lights[lightIndex].color;
 #endif
 
 #ifdef CLEAR_COAT
@@ -638,6 +640,7 @@ vec3 pbrIblModelSphericalHarmonics(const in vec3 wNormal,
     vec3 sheenScaling = vec3(1.0) - sheenMax * sheenDirAlbedo;
 
     Fd *= sheenScaling;
+    Fr *= sheenScaling;
     Fr += sheenSpecularIbl;
 #endif
 
