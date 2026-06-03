@@ -287,6 +287,28 @@ float neubeltVisibility(const in float sDotN, const in float vDotN)
     return 1.0 / max(4.0 * (sDotN + vDotN - sDotN * vDotN), 0.00001532);
 }
 
+vec3 sheenSpecularModel(const in float nDotH, const in float sDotN, const in float vDotN, const in float sheenRoughness)
+{
+    float sheenDistribution = charlieDistribution(nDotH, sheenRoughness);
+    float sheenVisibility = neubeltVisibility(sDotN, vDotN);
+    vec3 sheenSpecular = sheenColor * sheenDistribution * sheenVisibility;
+    return sheenSpecular;
+}
+
+vec3 clothSpecularModel(const in vec3 sheenColor,
+                        const in float nDotH,
+                        const in float sDotN,
+                        const in float vDotN,
+                        const in float alpha)
+{
+    float D = charlieDistribution(nDotH, alpha);
+    float V = neubeltVisibility(sDotN, vDotN);
+
+    // For cloth, Fresnel is usually baked directly into the sheen color
+    // to give authors direct control over the fuzz tint.
+    return sheenColor * D * V;
+}
+
 // Curve-fit approximation to the "Charlie sheen" BRDF directional albedo.
 // Approximates Estevez and Kulla 2017 without requiring a dedicated DFG LUT.
 // https://github.com/dakom/awsm-renderer/blob/d484c47e8b967a95780c96843f799901d0f869e4/crates/renderer/src/render_passes/shared/shared_wgsl/lighting/brdf.wgsl#L254
@@ -439,6 +461,31 @@ vec3 pbrModel(const in int lightIndex,
 
     LightParams light = calculateLightParams(lightIndex, wPosition, n, wView);
 
+#ifdef SHEEN
+    // Diffuse Component (Softer Lambert)
+    // We do not multiply the diffuse term by the Fresnel term as discussed in
+    // Neubelt and Pettineo 2013, "Crafting a Next-gen Material Pipeline for The Order: 1886"
+    // as per https://github.com/google/filament/blob/c28dfde4b23af06f4ed796e2b35c9cf2ae8152e8/shaders/src/surface_shading_model_cloth.fs#L35
+    vec3 diffuse = (baseColor * lights[lightIndex].color) * light.sDotN / PI;
+
+    // Specular Component (Sheen)
+    vec3 specularFactor = vec3(0.0); // "Fr" from filament
+    if (light.sDotN > 0.0) {
+       specularFactor = clothSpecularModel(sheenColor, light.nDotH, light.sDotN, vDotN, sheenRoughness * sheenRoughness);
+    }
+
+    vec3 specular = specularFactor * light.sDotN;
+
+    // Combine diffuse and specular
+    // as per https://github.com/google/filament/blob/c28dfde4b23af06f4ed796e2b35c9cf2ae8152e8/shaders/src/surface_shading_model_cloth.fs#L56-L57
+    vec3 color = (diffuse + specular);
+    color *= light.visibilityFactor * light.att * lights[lightIndex].intensity * lights[lightIndex].color;
+    color *= ambientOcclusion;
+
+    return color;
+#else
+
+
     // Calculate diffuse component
     vec3 diffuseColor = (1.0 - metalness) * baseColor * lights[lightIndex].color;
     vec3 diffuse = diffuseColor * light.sDotN / PI;
@@ -492,9 +539,7 @@ vec3 pbrModel(const in int lightIndex,
     vec3 Fr = specular;
 
 #ifdef SHEEN
-    float sheenDistribution = charlieDistribution(light.nDotH, sheenRoughness);
-    float sheenVisibility = neubeltVisibility(light.sDotN, vDotN);
-    vec3 sheenSpecular = sheenColor * sheenDistribution * sheenVisibility;
+    vec3 sheenSpecular = sheenSpecularModel(light.nDotH, light.sDotN, vDotN, sheenRoughness );
 
     float sheenDirAlbedo = sheenDirectionalAlbedo(max(vDotN, 0.001), sheenRoughness);
 
@@ -534,6 +579,8 @@ vec3 pbrModel(const in int lightIndex,
     color *= ambientOcclusion;
 
     return color;
+
+#endif
 }
 
 #ifdef ENABLE_IBL
@@ -591,6 +638,27 @@ vec3 pbrIblModelSphericalHarmonics(const in vec3 wNormal,
         2.0 * c1 * (envLightSh[4] * wNormal.x * wNormal.y + envLightSh[7] * wNormal.x * wNormal.z + envLightSh[5] * wNormal.y * wNormal.z) +
         2.0 * c2 * (envLightSh[3] * wNormal.x + envLightSh[1] * wNormal.y + envLightSh[2] * wNormal.z);
     envIrradiance = max(envIrradiance, vec3(0.0));
+
+#ifdef SHEEN
+    // Cloth IBL Replacement
+    // We treat cloth as a distinct BRDF, skipping standard GGX and Fresnel darkening
+    vec3 diffuse = diffuseColor * envIrradiance;
+
+    // convert Z-up reflection to Y-up for OpenGL cubemap lookup
+    vec3 yUpReflect = vec3(l.x, l.z, -l.y);
+
+    // Sample the environment map using the specific sheen roughness
+    float sheenLod = roughnessToMipLevel(sheenRoughness);
+    vec3 sheenIndirectSpecular = textureLod(globalSpecularMap, yUpReflect, sheenLod).rgb;
+
+    // Calculate the Charlie directional albedo for the environment scale
+    float sheenDirAlbedo = sheenDirectionalAlbedo(vDotN, sheenRoughness);
+    vec3 specular = sheenColor * sheenIndirectSpecular * sheenDirAlbedo;
+
+    // Combine diffuse and specular directly (no base layer scaling for cloth)
+    vec3 color = (diffuse + specular) * ambientOcclusion;
+    return color;
+#else
 
     vec3 diffuse = diffuseColor * envIrradiance;
 
@@ -663,6 +731,7 @@ vec3 pbrIblModelSphericalHarmonics(const in vec3 wNormal,
     vec3 color = layeredColor * ambientOcclusion;
 
     return color;
+#endif
 }
 #endif
 

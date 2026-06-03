@@ -1131,11 +1131,11 @@ void TestQgs3DMaterialRendering::testMetalRoughEnvironmentLight_data()
   QTest::newRow( "60% rough metal anisotropy 0.8 rotated 45" ) << 1.0 << 0.6 << QColor( 100, 100, 100 ) << 0.5 << 0.8 << 45.0 << QColor() << 0.5 << 0.0 << 0.0 << 1.0 << "env_light_anisotropy_rotated_45";
   QTest::newRow( "60% rough metal anisotropy 0.8 rotated 90" ) << 1.0 << 0.6 << QColor( 100, 100, 100 ) << 0.5 << 0.8 << 90.0 << QColor() << 0.5 << 0.0 << 0.0 << 1.0 << "env_light_anisotropy_rotated_90";
 
-  QTest::newRow( "red velvet" ) << 0.0 << 1.0 << QColor::fromRgbF( 0.05, 0.0, 0.0 ) << 0.5 << 0.0 << 0.0 << QColor::fromRgbF( 0.85, 0.1, 0.1 ) << 0.9 << 0.0 << 0.0 << 0.0 << "red_velvet";
-  QTest::newRow( "smooth silk" ) << 0.0 << 1.0 << QColor::fromRgbF( 0.5, 0.35, 0.15 ) << 0.5 << 0.0 << 0.0 << QColor::fromRgbF( 0.9, 0.85, 0.7 ) << 0.3 << 0.0 << 0.0 << 0.0 << "smooth_silk";
-  QTest::newRow( "denim" ) << 0.0 << 1.0 << QColor::fromRgbF( 0.04, 0.08, 0.15 ) << 0.5 << 0.0 << 0.0 << QColor::fromRgbF( 0.04, 0.04, 0.04 ) << 0.9 << 0.0 << 0.0 << 0.0 << "denim";
-  QTest::newRow( "shot silk" ) << 0.0 << 1.0 << QColor::fromRgbF( 0.15, 0.0, 0.3 ) << 0.5 << 0.0 << 0.0 << QColor::fromRgbF( 0.2, 0.7, 0.3 ) << 0.4 << 0.0 << 0.0 << 0.0 << "shot_silk";
-  QTest::newRow( "nylon" ) << 0.0 << 1.0 << QColor::fromRgbF( 0.9, 0.4, 0.0 ) << 0.5 << 0.0 << 0.0 << QColor::fromRgbF( 0.5, 0.5, 0.5 ) << 0.55 << 0.0 << 0.0 << 0.0 << "nylon";
+  QTest::newRow( "red velvet" ) << 0.0 << 1.0 << QColor::fromRgbF( 0.05, 0.0, 0.0 ) << 0.5 << 0.0 << 0.0 << QColor::fromRgbF( 0.85, 0.1, 0.1 ) << 0.9 << 0.0 << 0.0 << 1.0 << "red_velvet";
+  QTest::newRow( "smooth silk" ) << 0.0 << 1.0 << QColor::fromRgbF( 0.5, 0.35, 0.15 ) << 0.5 << 0.0 << 0.0 << QColor::fromRgbF( 0.9, 0.85, 0.7 ) << 0.3 << 0.0 << 0.0 << 1.0 << "smooth_silk";
+  QTest::newRow( "denim" ) << 0.0 << 1.0 << QColor::fromRgbF( 0.04, 0.08, 0.15 ) << 0.5 << 0.0 << 0.0 << QColor::fromRgbF( 0.04, 0.04, 0.04 ) << 0.9 << 0.0 << 0.0 << 1.0 << "denim";
+  QTest::newRow( "shot silk" ) << 0.0 << 1.0 << QColor::fromRgbF( 0.15, 0.0, 0.3 ) << 0.5 << 0.0 << 0.0 << QColor::fromRgbF( 0.2, 0.7, 0.3 ) << 0.4 << 0.0 << 0.0 << 1.0 << "shot_silk";
+  QTest::newRow( "nylon" ) << 0.0 << 1.0 << QColor::fromRgbF( 0.9, 0.4, 0.0 ) << 0.5 << 0.0 << 0.0 << QColor::fromRgbF( 0.5, 0.5, 0.5 ) << 0.55 << 0.0 << 0.0 << 1.0 << "nylon";
 
   QTest::newRow( "metal clear coat 100" ) << 1.0 << 0.8 << QColor( 0, 0, 220 ) << 0.5 << 0.0 << 0.0 << QColor() << 0.5 << 1.0 << 0.0 << 1.0 << "env_light_metal_clear_coat_100";
   QTest::newRow( "metal rough clear coat 100 " ) << 1.0 << 0.8 << QColor( 0, 0, 220 ) << 0.5 << 0.0 << 0.0 << QColor() << 0.5 << 1.0 << 0.5 << 1.0 << "env_light_metal_rough_clear_coat_100";
