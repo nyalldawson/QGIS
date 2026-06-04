@@ -4324,6 +4324,7 @@ int QgisEvent = QEvent::User + 1;
       ShowLightSourceOrigins = 1 << 4,   //!< Shows the light source origins as a sphere.
       ShowFPS = 1 << 5,                  //!< Shows the frames per second (FPS).
       ShowDebugPanel = 1 << 6,           //!< Shows the debug panel next to the map.
+      ShowGeometryNormals = 1 << 7,      //!< Shows geometry normals as lines
     };
     Q_ENUM( Map3DDebugFlag )
     Q_DECLARE_FLAGS( Map3DDebugFlags, Map3DDebugFlag )

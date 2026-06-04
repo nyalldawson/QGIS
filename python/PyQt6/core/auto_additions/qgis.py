@@ -7742,6 +7742,7 @@ Qgis.Map3DDebugFlag.ShowCameraRotationCenter.__doc__ = "Shows the camera's rotat
 Qgis.Map3DDebugFlag.ShowLightSourceOrigins.__doc__ = "Shows the light source origins as a sphere."
 Qgis.Map3DDebugFlag.ShowFPS.__doc__ = "Shows the frames per second (FPS)."
 Qgis.Map3DDebugFlag.ShowDebugPanel.__doc__ = "Shows the debug panel next to the map."
+Qgis.Map3DDebugFlag.ShowGeometryNormals.__doc__ = "Shows geometry normals as lines"
 Qgis.Map3DDebugFlag.__doc__ = """Flags that control debug options for 3D maps.
 
 .. warning::
@@ -7757,6 +7758,7 @@ Qgis.Map3DDebugFlag.__doc__ = """Flags that control debug options for 3D maps.
 * ``ShowLightSourceOrigins``: Shows the light source origins as a sphere.
 * ``ShowFPS``: Shows the frames per second (FPS).
 * ``ShowDebugPanel``: Shows the debug panel next to the map.
+* ``ShowGeometryNormals``: Shows geometry normals as lines
 
 """
 # --

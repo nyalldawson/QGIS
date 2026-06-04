@@ -53,6 +53,7 @@
 #include "qgsmeshlayer3drenderer.h"
 #include "qgsmessageoutput.h"
 #include "qgsmetalroughmaterial.h"
+#include "qgsnormaldebugmaterial.h"
 #include "qgsoverlaytexturerenderview.h"
 #include "qgspoint3dbillboardmaterial.h"
 #include "qgspoint3dsymbol.h"
@@ -78,6 +79,7 @@
 #include <QSurface>
 #include <QTimer>
 #include <QUrl>
+#include <Qt3DCore/QGeometry>
 #include <Qt3DExtras/QDiffuseSpecularMaterial>
 #include <Qt3DExtras/QForwardRenderer>
 #include <Qt3DExtras/QPhongMaterial>
@@ -87,6 +89,7 @@
 #include <Qt3DRender/QCullFace>
 #include <Qt3DRender/QDepthTest>
 #include <Qt3DRender/QEffect>
+#include <Qt3DRender/QGeometryRenderer>
 #include <Qt3DRender/QMaterial>
 #include <Qt3DRender/QMesh>
 #include <Qt3DRender/QRenderPass>
@@ -138,6 +141,8 @@ Qgs3DMapScene::Qgs3DMapScene( Qgs3DMapSettings &map, QgsAbstract3DEngine *engine
     mCameraController->resetGlobe( 10'000'000 );
   else
     mCameraController->resetView( 1000 );
+
+  mNormalMaterial = new QgsNormalDebugMaterial( this );
 
   addCameraViewCenterEntity( mEngine->camera() );
   addCameraRotationCenterEntity( mCameraController );
@@ -605,6 +610,116 @@ void Qgs3DMapScene::update2DMapOverlay( const QVector<QgsPointXY> &extent2DAsPoi
   const QgsRectangle overviewExtent = QgsRectangle::fromCenterAndSize( extentCenter2D, adjustedHalfExtent, adjustedHalfExtent );
   const bool showFrustum = mMap.viewFrustumVisualizationEnabled();
   mMapOverlayEntity->update( overviewExtent, extent2DAsPoints, mCameraController->yaw(), showFrustum );
+}
+
+void Qgs3DMapScene::addNormalRenderers( QNode *node )
+{
+  if ( Qt3DCore::QEntity *entity = qobject_cast<Qt3DCore::QEntity *>( node ) )
+  {
+    // prevent infinite recursion on already created normal entities
+    if ( entity->property( "isNormalEntity" ).toBool() )
+      return;
+
+    const QVector<Qt3DRender::QGeometryRenderer *> renderers = entity->componentsOfType<Qt3DRender::QGeometryRenderer>();
+    QgsFrameGraph *frameGraph = mEngine->frameGraph();
+    for ( Qt3DRender::QGeometryRenderer *geomRenderer : std::as_const( renderers ) )
+    {
+      if ( !geomRenderer->geometry() )
+        continue;
+
+      Qt3DRender::QGeometryRenderer *normalRenderer = createNormalRenderer( geomRenderer->geometry(), geomRenderer->vertexCount() );
+      if ( !normalRenderer )
+        continue;
+
+      auto normalEntity = new Qt3DCore::QEntity( entity );
+      normalEntity->setProperty( "isNormalEntity", true );
+
+      normalEntity->addComponent( normalRenderer );
+      normalEntity->addComponent( mNormalMaterial );
+
+      normalEntity->addComponent( frameGraph->forwardRenderView().renderLayer() );
+      mNormalEntities.append( normalEntity );
+    }
+  }
+
+  const QList<Qt3DCore::QNode *> children = node->childNodes();
+  for ( Qt3DCore::QNode *child : std::as_const( children ) )
+  {
+    addNormalRenderers( child );
+  }
+}
+
+Qt3DRender::QGeometryRenderer *Qgs3DMapScene::createNormalRenderer( Qt3DCore::QGeometry *sourceGeometry, int vertexCount )
+{
+  Qt3DCore::QAttribute *sourcePosAttr = nullptr;
+  Qt3DCore::QAttribute *sourceNormAttr = nullptr;
+
+  const QList<Qt3DCore::QAttribute *> attributes = sourceGeometry->attributes();
+  for ( Qt3DCore::QAttribute *attr : attributes )
+  {
+    if ( attr->name() == Qt3DCore::QAttribute::defaultPositionAttributeName() )
+      sourcePosAttr = attr;
+    else if ( attr->name() == Qt3DCore::QAttribute::defaultNormalAttributeName() )
+      sourceNormAttr = attr;
+  }
+
+  // abort if the geometry lacks normals or positions
+  if ( !sourcePosAttr || !sourceNormAttr )
+    return nullptr;
+
+  auto renderer = new Qt3DRender::QGeometryRenderer;
+  auto newGeometry = new Qt3DCore::QGeometry( renderer );
+
+  // reuse existing buffers but set divisor to 1 so they step per instance
+  auto instPosAttr = new Qt3DCore::QAttribute( newGeometry );
+  instPosAttr->setName( sourcePosAttr->name() );
+  instPosAttr->setBuffer( sourcePosAttr->buffer() );
+  instPosAttr->setVertexBaseType( sourcePosAttr->vertexBaseType() );
+  instPosAttr->setVertexSize( sourcePosAttr->vertexSize() );
+  instPosAttr->setByteOffset( sourcePosAttr->byteOffset() );
+  instPosAttr->setByteStride( sourcePosAttr->byteStride() );
+  instPosAttr->setDivisor( 1 );
+
+  auto instNormAttr = new Qt3DCore::QAttribute( newGeometry );
+  instNormAttr->setName( sourceNormAttr->name() );
+  instNormAttr->setBuffer( sourceNormAttr->buffer() );
+  instNormAttr->setVertexBaseType( sourceNormAttr->vertexBaseType() );
+  instNormAttr->setVertexSize( sourceNormAttr->vertexSize() );
+  instNormAttr->setByteOffset( sourceNormAttr->byteOffset() );
+  instNormAttr->setByteStride( sourceNormAttr->byteStride() );
+  instNormAttr->setDivisor( 1 );
+
+  // create a base attribute to distinguish line start from line tip
+  QByteArray tipBytes;
+  tipBytes.resize( 2 * sizeof( float ) );
+  float *tipData = reinterpret_cast<float *>( tipBytes.data() );
+  tipData[0] = 0.0f;
+  tipData[1] = 1.0f;
+
+  auto tipBuffer = new Qt3DCore::QBuffer( newGeometry );
+  tipBuffer->setData( tipBytes );
+
+  auto tipAttr = new Qt3DCore::QAttribute( newGeometry );
+  tipAttr->setName( u"isTip"_s );
+  tipAttr->setBuffer( tipBuffer );
+  tipAttr->setVertexBaseType( Qt3DCore::QAttribute::Float );
+  tipAttr->setVertexSize( 1 );
+  tipAttr->setByteOffset( 0 );
+  tipAttr->setByteStride( sizeof( float ) );
+  tipAttr->setDivisor( 0 );
+
+  newGeometry->addAttribute( instPosAttr );
+  newGeometry->addAttribute( instNormAttr );
+  newGeometry->addAttribute( tipAttr );
+
+  renderer->setGeometry( newGeometry );
+  renderer->setPrimitiveType( Qt3DRender::QGeometryRenderer::Lines );
+
+  // draw a 2-vertex line segment instanced for every original vertex
+  renderer->setVertexCount( 2 );
+  renderer->setInstanceCount( sourcePosAttr->count() );
+
+  return renderer;
 }
 
 void Qgs3DMapScene::createTerrain()
@@ -1119,6 +1234,11 @@ void Qgs3DMapScene::finalizeNewEntity( Qt3DCore::QEntity *newEntity )
   {
     // handle shadows for entities without materials -- eg point models
     newEntity->addComponent( shadowCastingEntityLayer );
+  }
+
+  if ( true ) //mMap.debugFlags()... )
+  {
+    addNormalRenderers( newEntity );
   }
 }
 

@@ -25,10 +25,15 @@
 #include <Qt3DCore/QEntity>
 
 #ifndef SIP_RUN
+namespace Qt3DCore
+{
+  class QGeometry;
+}
 namespace Qt3DRender
 {
   class QRenderSettings;
   class QCamera;
+  class QGeometryRenderer;
 } // namespace Qt3DRender
 
 namespace Qt3DLogic
@@ -61,6 +66,7 @@ class QgsDoubleRange;
 class Qgs3DMapSceneEntity;
 class QgsCameraController;
 class QgsEnvironmentLight;
+class QgsNormalDebugMaterial;
 
 /**
  * \ingroup qgis_3d
@@ -399,6 +405,8 @@ class _3D_EXPORT Qgs3DMapScene : public QObject
 
     void schedule2DMapOverlayUpdate();
     void update2DMapOverlay( const QVector<QgsPointXY> &extent2DAsPoints );
+    void addNormalRenderers( Qt3DCore::QNode *node );
+    Qt3DRender::QGeometryRenderer *createNormalRenderer( Qt3DCore::QGeometry *sourceGeometry, int vertexCount );
 
   private:
     Qgs3DMapSettings &mMap;
@@ -435,6 +443,9 @@ class _3D_EXPORT Qgs3DMapScene : public QObject
     //! 2d map overlay
     QObjectUniquePtr<QgsMapOverlayEntity> mMapOverlayEntity = nullptr;
     QTimer *mOverlayUpdateTimer = nullptr;
+
+    QList<Qt3DCore::QEntity *> mNormalEntities;
+    QgsNormalDebugMaterial *mNormalMaterial = nullptr;
 
     friend class TestQgs3DRendering;
 };
