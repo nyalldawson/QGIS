@@ -248,3 +248,64 @@ int QgsPolygon3DSymbol::renderedFacade()
   else
     return 0;
 }
+
+#include "qgsmetalroughmaterialsettings.h"
+QgsPolygon3DInstancedSymbol::QgsPolygon3DInstancedSymbol()
+{
+  mMaterialSettings = std::make_unique< QgsMetalRoughMaterialSettings >();
+}
+
+QgsPolygon3DInstancedSymbol::~QgsPolygon3DInstancedSymbol()
+{}
+
+QgsPolygon3DInstancedSymbol *QgsPolygon3DInstancedSymbol::clone() const
+{
+  auto result = std::make_unique< QgsPolygon3DInstancedSymbol >();
+
+  result->mInstanceCount = mInstanceCount;
+  copyBaseSettings( result.get() );
+
+  return result.release();
+}
+
+void QgsPolygon3DInstancedSymbol::writeXml( QDomElement &elem, const QgsReadWriteContext &context ) const
+{
+  Q_UNUSED( context )
+
+  QDomDocument doc = elem.ownerDocument();
+
+  QDomElement elemDataProperties = doc.createElement( u"data"_s );
+  elemDataProperties.setAttribute( u"instance-count"_s, mInstanceCount );
+
+  elem.appendChild( elemDataProperties );
+}
+
+void QgsPolygon3DInstancedSymbol::readXml( const QDomElement &elem, const QgsReadWriteContext &context )
+{
+  Q_UNUSED( context )
+
+  const QDomElement elemDataProperties = elem.firstChildElement( u"data"_s );
+
+  // default to 1000 instances if the attribute is missing
+  mInstanceCount = elemDataProperties.attribute( u"instance-count"_s, u"1000"_s ).toInt();
+}
+
+void QgsPolygon3DInstancedSymbol::setMaterialSettings( QgsAbstractMaterialSettings *materialSettings )
+{
+  mMaterialSettings.reset( materialSettings );
+}
+
+QgsAbstractMaterialSettings *QgsPolygon3DInstancedSymbol::materialSettings() const
+{
+  return mMaterialSettings.get();
+}
+
+int QgsPolygon3DInstancedSymbol::instanceCount() const
+{
+  return mInstanceCount;
+}
+
+void QgsPolygon3DInstancedSymbol::setInstanceCount( int count )
+{
+  mInstanceCount = count;
+}

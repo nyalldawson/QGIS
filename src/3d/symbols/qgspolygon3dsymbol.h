@@ -217,4 +217,31 @@ class _3D_EXPORT QgsPolygon3DSymbol : public QgsAbstract3DSymbol SIP_NODEFAULTCT
 };
 
 
+class QgsPolygon3DInstancedSymbol : public QgsAbstract3DSymbol
+{
+  public:
+    QgsPolygon3DInstancedSymbol();
+    ~QgsPolygon3DInstancedSymbol() override;
+
+    QgsPolygon3DInstancedSymbol *clone() const override;
+    void writeXml( QDomElement &elem, const QgsReadWriteContext &context ) const override;
+    void readXml( const QDomElement &elem, const QgsReadWriteContext &context ) override;
+    QString type() const override { return "polygonInstanced"; }
+    void setMaterialSettings( QgsAbstractMaterialSettings *materialSettings SIP_TRANSFER ) override;
+    QgsAbstractMaterialSettings *materialSettings() const override;
+    /**
+   * Returns the number of instances to generate per polygon
+   */
+    int instanceCount() const;
+
+    /**
+   * Sets the number of instances to generate per polygon
+   */
+    void setInstanceCount( int count );
+
+  private:
+    int mInstanceCount = 10;
+    std::unique_ptr<QgsAbstractMaterialSettings> mMaterialSettings;
+};
+
 #endif // QGSPOLYGON3DSYMBOL_H

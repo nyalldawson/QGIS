@@ -41,7 +41,7 @@ class QgsBloomDownsampleEntity : public QgsRenderPassQuad
     Q_OBJECT
   public:
     //! Constructor
-    QgsBloomDownsampleEntity( Qt3DRender::QTexture2D *texture, Qt3DRender::QLayer *layer, QNode *parent = nullptr );
+    QgsBloomDownsampleEntity( Qt3DRender::QTexture2D *texture, Qt3DRender::QLayer *layer, int mipLevel, QNode *parent = nullptr );
 
   private:
     Qt3DRender::QParameter *mSourceTextureParameter = nullptr;

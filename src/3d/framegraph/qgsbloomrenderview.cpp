@@ -119,7 +119,7 @@ void QgsBloomRenderView::buildRenderPasses( Qt3DRender::QTexture2D *sourceTextur
     layerFilter->addLayer( passLayer );
 
     // owned by rootEntity
-    ( void ) new QgsBloomDownsampleEntity( currentInputTexture, passLayer, rootEntity );
+    ( void ) new QgsBloomDownsampleEntity( currentInputTexture, passLayer, i, rootEntity );
 
     currentInputTexture = mipTexture;
   }

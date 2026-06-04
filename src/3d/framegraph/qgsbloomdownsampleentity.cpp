@@ -15,6 +15,8 @@
 
 #include "qgsbloomdownsampleentity.h"
 
+#include "qgs3dutils.h"
+
 #include <QString>
 #include <Qt3DRender/QMaterial>
 #include <Qt3DRender/QParameter>
@@ -25,7 +27,7 @@
 
 using namespace Qt::StringLiterals;
 
-QgsBloomDownsampleEntity::QgsBloomDownsampleEntity( Qt3DRender::QTexture2D *texture, Qt3DRender::QLayer *layer, QNode *parent )
+QgsBloomDownsampleEntity::QgsBloomDownsampleEntity( Qt3DRender::QTexture2D *texture, Qt3DRender::QLayer *layer, int mipLevel, QNode *parent )
   : QgsRenderPassQuad( layer, parent )
 {
   mSourceTextureParameter = new Qt3DRender::QParameter( u"srcTexture"_s, texture );
@@ -34,6 +36,12 @@ QgsBloomDownsampleEntity::QgsBloomDownsampleEntity( Qt3DRender::QTexture2D *text
   const QString vertexShaderPath = u"qrc:/shaders/postprocess.vert"_s;
   const QString fragmentShaderPath = u"qrc:/shaders/bloom_downsample.frag"_s;
 
+  const QByteArray fragmentShaderCode = Qt3DRender::QShaderProgram::loadSource( QUrl( fragmentShaderPath ) );
+
+  QStringList defines;
+  if ( mipLevel == 0 )
+    defines << u"FIRST_PASS"_s;
+
   mShader->setVertexShaderCode( Qt3DRender::QShaderProgram::loadSource( QUrl( vertexShaderPath ) ) );
-  mShader->setFragmentShaderCode( Qt3DRender::QShaderProgram::loadSource( QUrl( fragmentShaderPath ) ) );
+  mShader->setShaderCode( Qt3DRender::QShaderProgram::Fragment, Qgs3DUtils::addDefinesToShaderCode( fragmentShaderCode, defines ) );
 }
