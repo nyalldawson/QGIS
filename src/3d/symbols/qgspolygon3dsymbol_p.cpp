@@ -567,9 +567,11 @@ class QgsPolygon3DInstancedSymbolHandler : public QgsFeature3DHandler
     {
         std::size_t count = 0;
         QByteArray data;
+        QVector3D minExtent = QVector3D( std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max() );
+        QVector3D maxExtent = QVector3D( std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest() );
     };
 
-    PointData mPointData;
+    std::map< std::pair< int, int >, PointData > mGridCells;
 
     std::unique_ptr<QgsPolygon3DInstancedSymbol> mSymbol;
     QgsFeatureIds mSelectedIds;
@@ -592,7 +594,7 @@ bool QgsPolygon3DInstancedSymbolHandler::prepare( const Qgs3DRenderContext &cont
 
 static Qt3DCore::QGeometry *createGrassBladeGeometry()
 {
-  Qt3DCore::QGeometry *geometry = new Qt3DCore::QGeometry(  );
+  Qt3DCore::QGeometry *geometry = new Qt3DCore::QGeometry();
 
   const int vertexCount = 14;
   const int indexCount = 30;
@@ -606,22 +608,120 @@ static Qt3DCore::QGeometry *createGrassBladeGeometry()
   // ghost of shushima style
   const float v[] = {
     // front face: pos (3), norm (3), uv (2)
-    -0.05f, 0.0f,  0.0f,   -0.5f, 0.15f, 0.85f,   0.0f, 0.0f,
-    0.05f, 0.0f,  0.0f,    0.5f, 0.15f, 0.85f,   1.0f, 0.0f,
-    -0.04f, 0.15f, -0.05f, -0.5f, 0.38f, 0.77f,   0.0f, 0.3f,
-    0.04f, 0.15f, -0.05f,  0.5f, 0.38f, 0.77f,   1.0f, 0.3f,
-    -0.02f, 0.35f, -0.15f, -0.5f, 0.50f, 0.70f,   0.0f, 0.7f,
-    0.02f, 0.35f, -0.15f,  0.5f, 0.50f, 0.70f,   1.0f, 0.7f,
-    0.0f,  0.5f,  -0.25f,  0.0f, 0.55f, 0.83f,   0.5f, 1.0f,
+    -0.05f,
+    0.0f,
+    0.0f,
+    -0.5f,
+    0.15f,
+    0.85f,
+    0.0f,
+    0.0f,
+    0.05f,
+    0.0f,
+    0.0f,
+    0.5f,
+    0.15f,
+    0.85f,
+    1.0f,
+    0.0f,
+    -0.04f,
+    0.15f,
+    -0.05f,
+    -0.5f,
+    0.38f,
+    0.77f,
+    0.0f,
+    0.3f,
+    0.04f,
+    0.15f,
+    -0.05f,
+    0.5f,
+    0.38f,
+    0.77f,
+    1.0f,
+    0.3f,
+    -0.02f,
+    0.35f,
+    -0.15f,
+    -0.5f,
+    0.50f,
+    0.70f,
+    0.0f,
+    0.7f,
+    0.02f,
+    0.35f,
+    -0.15f,
+    0.5f,
+    0.50f,
+    0.70f,
+    1.0f,
+    0.7f,
+    0.0f,
+    0.5f,
+    -0.25f,
+    0.0f,
+    0.55f,
+    0.83f,
+    0.5f,
+    1.0f,
 
     // back face: pos (3), norm (3), uv (2)
-    -0.05f, 0.0f,  0.0f,   -0.5f, -0.15f, -0.85f, 0.0f, 0.0f,
-    0.05f, 0.0f,  0.0f,    0.5f, -0.15f, -0.85f, 1.0f, 0.0f,
-    -0.04f, 0.15f, -0.05f, -0.5f, -0.38f, -0.77f, 0.0f, 0.3f,
-    0.04f, 0.15f, -0.05f,  0.5f, -0.38f, -0.77f, 1.0f, 0.3f,
-    -0.02f, 0.35f, -0.15f, -0.5f, -0.50f, -0.70f, 0.0f, 0.7f,
-    0.02f, 0.35f, -0.15f,  0.5f, -0.50f, -0.70f, 1.0f, 0.7f,
-    0.0f,  0.5f,  -0.25f,  0.0f, -0.55f, -0.83f, 0.5f, 1.0f
+    -0.05f,
+    0.0f,
+    0.0f,
+    -0.5f,
+    -0.15f,
+    -0.85f,
+    0.0f,
+    0.0f,
+    0.05f,
+    0.0f,
+    0.0f,
+    0.5f,
+    -0.15f,
+    -0.85f,
+    1.0f,
+    0.0f,
+    -0.04f,
+    0.15f,
+    -0.05f,
+    -0.5f,
+    -0.38f,
+    -0.77f,
+    0.0f,
+    0.3f,
+    0.04f,
+    0.15f,
+    -0.05f,
+    0.5f,
+    -0.38f,
+    -0.77f,
+    1.0f,
+    0.3f,
+    -0.02f,
+    0.35f,
+    -0.15f,
+    -0.5f,
+    -0.50f,
+    -0.70f,
+    0.0f,
+    0.7f,
+    0.02f,
+    0.35f,
+    -0.15f,
+    0.5f,
+    -0.50f,
+    -0.70f,
+    1.0f,
+    0.7f,
+    0.0f,
+    0.5f,
+    -0.25f,
+    0.0f,
+    -0.55f,
+    -0.83f,
+    0.5f,
+    1.0f
   };
   std::memcpy( vertices, v, sizeof( v ) );
 
@@ -665,13 +765,37 @@ static Qt3DCore::QGeometry *createGrassBladeGeometry()
 
   const uint idx[] = {
     // front face indices
-    0, 1, 2,  1, 3, 2,
-    2, 3, 4,  3, 5, 4,
-    4, 5, 6,
+    0,
+    1,
+    2,
+    1,
+    3,
+    2,
+    2,
+    3,
+    4,
+    3,
+    5,
+    4,
+    4,
+    5,
+    6,
     // back face indices (reversed winding)
-    9, 8, 7,  9, 10, 8,
-    11, 10, 9,  11, 12, 10,
-    13, 12, 11
+    9,
+    8,
+    7,
+    9,
+    10,
+    8,
+    11,
+    10,
+    9,
+    11,
+    12,
+    10,
+    13,
+    12,
+    11
   };
   std::memcpy( indices, idx, sizeof( idx ) );
 
@@ -708,42 +832,59 @@ void QgsPolygon3DInstancedSymbolHandler::processFeature( const QgsFeature &f, co
     return;
 
   const QVector< QgsPointXY > points = geom.randomPointsInPolygon( mSymbol->instanceCount(), []( const QgsPointXY & ) { return true; }, 0, nullptr, 10 );
-  const int newInstances = points.size();
+  if ( points.empty() )
+    return;
 
-  const std::size_t currentSize = mPointData.count;
-  mPointData.count += newInstances;
-  mPointData.data.resize( mPointData.count * ( 3 + 4 + 3) * static_cast<std::size_t>( sizeof( float ) ) );
-
-  float *dataPtr = reinterpret_cast<float *>( mPointData.data.data() ) + ( currentSize * ( 3 + 4 + 3) );
+  const float gridSize = 20.0f;
 
   for ( const QgsPointXY &pt : points )
   {
     QgsPoint pt3d( pt );
 
     // clamp the point directly to the scene's terrain elevation
-    const float z =Qgs3DUtils::clampAltitude( pt3d, Qgis::AltitudeClamping::Terrain, Qgis::AltitudeBinding::Vertex, 0.0f,pt3d, context );
+    const float z = Qgs3DUtils::clampAltitude( pt3d, Qgis::AltitudeClamping::Terrain, Qgis::AltitudeBinding::Vertex, 0.0f, pt3d, context );
 
-    // populate instance translation
-    *dataPtr++ = static_cast<float>( pt.x() - mChunkOrigin.x() );
-    *dataPtr++ = static_cast<float>( pt.y() - mChunkOrigin.y() );
-    *dataPtr++ = static_cast<float>( z - mChunkOrigin.z() );
+    const int gridX = static_cast<int>( std::floor( pt.x() / gridSize ) );
+    const int gridY = static_cast<int>( std::floor( pt.y() / gridSize ) );
+    const std::pair< int, int > gridKey( gridX, gridY );
+    PointData &cell = mGridCells[gridKey];
+
+    float instanceData[10];
+    instanceData[0] = static_cast<float>( pt.x() - mChunkOrigin.x() );
+    instanceData[1] = static_cast<float>( pt.y() - mChunkOrigin.y() );
+    instanceData[2] = static_cast<float>( z - mChunkOrigin.z() );
 
     // populate instance rotation as a quaternion around z-axis
     const float rot = static_cast<float>( std::rand() % 360 );
     const QQuaternion quat = QQuaternion::fromAxisAndAngle( 0.0f, 0.0f, 1.0f, rot );
     QVector4D rotVector = quat.toVector4D();
-    *dataPtr++ = rotVector.x();
-    *dataPtr++ = rotVector.y();
-    *dataPtr++ = rotVector.z();
-    *dataPtr++ = rotVector.w();
+    instanceData[3] = rotVector.x();
+    instanceData[4] = rotVector.y();
+    instanceData[5] = rotVector.z();
+    instanceData[6] = rotVector.w();
 
     // populate instance scale
     const float scale = 0.8f + 0.4f * ( std::rand() / static_cast<float>( RAND_MAX ) );
-    *dataPtr++ = scale;
-    *dataPtr++ = scale;
-    *dataPtr++ = 3.0f + 2.0f * ( std::rand() / static_cast<float>( RAND_MAX ) );
-    mZMin = std::min( mZMin, static_cast<float>( z - mChunkOrigin.z() ) );
-    mZMax = std::max( mZMax, static_cast<float>( z - mChunkOrigin.z() ) + ( 0.5f * scale * 4.0f ) );
+    const float heightScale = 3.0f + 2.0f * ( std::rand() / static_cast<float>( RAND_MAX ) );
+    instanceData[7] = scale;
+    instanceData[8] = scale;
+    instanceData[9] = heightScale;
+
+    cell.data.append( reinterpret_cast<const char *>( instanceData ), 10 * sizeof( float ) );
+    cell.count++;
+
+    const float localX = instanceData[0];
+    const float localY = instanceData[1];
+    const float localZ = instanceData[2];
+
+    // Add padding for the blade width (approx 0.1 * scale) and height (0.5 * heightScale)
+    cell.minExtent.setX( std::min( cell.minExtent.x(), localX - ( 0.1f * scale ) ) );
+    cell.minExtent.setY( std::min( cell.minExtent.y(), localY - ( 0.1f * scale ) ) );
+    cell.minExtent.setZ( std::min( cell.minExtent.z(), localZ ) );
+
+    cell.maxExtent.setX( std::max( cell.maxExtent.x(), localX + ( 0.1f * scale ) ) );
+    cell.maxExtent.setY( std::max( cell.maxExtent.y(), localY + ( 0.1f * scale ) ) );
+    cell.maxExtent.setZ( std::max( cell.maxExtent.z(), localZ + ( 0.5f * heightScale ) ) );
   }
 
 
@@ -756,10 +897,7 @@ void QgsPolygon3DInstancedSymbolHandler::processFeature( const QgsFeature &f, co
 
 class QgsGrassMaterial : public QgsMaterial
 {
-
-
   public:
-
     explicit QgsGrassMaterial( Qt3DCore::QNode *parent = nullptr )
       : QgsMaterial( parent )
     {
@@ -778,22 +916,22 @@ class QgsGrassMaterial : public QgsMaterial
       const QByteArray fragCode = Qt3DRender::QShaderProgram::loadSource( QUrl( u"qrc:/shaders/grass.frag"_s ) );
       shaderProgram->setFragmentShaderCode( Qgs3DUtils::addDefinesToShaderCode( fragCode, fragShaderDefines ) );
 
-        QStringList defines;
+      QStringList defines;
       defines << u"HAS_TEXTURE"_s;
-        defines << u"USE_INSTANCE_SCALE"_s;
-        defines << u"USE_INSTANCE_ROTATION"_s;
+      defines << u"USE_INSTANCE_SCALE"_s;
+      defines << u"USE_INSTANCE_ROTATION"_s;
       const QByteArray vertCode = Qt3DRender::QShaderProgram::loadSource( QUrl( u"qrc:/shaders/grass.vert"_s ) );
       shaderProgram->setVertexShaderCode( Qgs3DUtils::addDefinesToShaderCode( vertCode, defines ) );
 
       pass->setShaderProgram( shaderProgram );
 
-      Qt3DRender::QParameter *colorParam = new Qt3DRender::QParameter( u"color"_s, Qgs3DUtils::srgbToLinear( QColor(61,142,75) ) );
+      Qt3DRender::QParameter *colorParam = new Qt3DRender::QParameter( u"color"_s, Qgs3DUtils::srgbToLinear( QColor( 61, 142, 75 ) ) );
       pass->addParameter( colorParam );
-      Qt3DRender::QParameter *color2Param = new Qt3DRender::QParameter( u"color2"_s, Qgs3DUtils::srgbToLinear( QColor(107,193,122) ) );
+      Qt3DRender::QParameter *color2Param = new Qt3DRender::QParameter( u"color2"_s, Qgs3DUtils::srgbToLinear( QColor( 107, 193, 122 ) ) );
       pass->addParameter( color2Param );
-      Qt3DRender::QParameter *aoColorParam = new Qt3DRender::QParameter( u"aoColor"_s, Qgs3DUtils::srgbToLinear( QColor(50,99,58) ) );
+      Qt3DRender::QParameter *aoColorParam = new Qt3DRender::QParameter( u"aoColor"_s, Qgs3DUtils::srgbToLinear( QColor( 50, 99, 58 ) ) );
       pass->addParameter( aoColorParam );
-      Qt3DRender::QParameter *tipColorParam = new Qt3DRender::QParameter( u"tipColor"_s, Qgs3DUtils::srgbToLinear( QColor(179,199,126) ) );
+      Qt3DRender::QParameter *tipColorParam = new Qt3DRender::QParameter( u"tipColor"_s, Qgs3DUtils::srgbToLinear( QColor( 179, 199, 126 ) ) );
       pass->addParameter( tipColorParam );
 
       Qt3DRender::QParameter *timeParameter = new Qt3DRender::QParameter( u"currentTime"_s, 0.0f );
@@ -811,76 +949,87 @@ class QgsGrassMaterial : public QgsMaterial
       effect->addTechnique( technique );
       setEffect( effect );
     }
-    ~QgsGrassMaterial() override
-    {
-
-    }
-
+    ~QgsGrassMaterial() override {}
 };
 
 
 void QgsPolygon3DInstancedSymbolHandler::finalize( Qt3DCore::QEntity *parent, const Qgs3DRenderContext &context )
 {
-  if ( mPointData.count == 0 )
+  if ( mGridCells.empty() )
     return;
 
-  Qt3DCore::QBuffer *instanceBuffer = new Qt3DCore::QBuffer();
-  instanceBuffer->setData( mPointData.data );
-
-  Qt3DCore::QAttribute *instanceTranslationAttribute = new Qt3DCore::QAttribute;
-  instanceTranslationAttribute->setName( u"instanceTranslation"_s );
-  instanceTranslationAttribute->setAttributeType( Qt3DCore::QAttribute::VertexAttribute );
-  instanceTranslationAttribute->setVertexBaseType( Qt3DCore::QAttribute::Float );
-  instanceTranslationAttribute->setVertexSize( 3 );
-  instanceTranslationAttribute->setByteOffset( 0 );
-  instanceTranslationAttribute->setDivisor( 1 );
-  instanceTranslationAttribute->setBuffer( instanceBuffer );
-  instanceTranslationAttribute->setCount( mPointData.count );
-  instanceTranslationAttribute->setByteStride( (3 +4+3) * sizeof( float ) );
-
-  Qt3DCore::QGeometry *geometry = createGrassBladeGeometry();
-  //Qt3DExtras::QSphereGeometry *geometry = new Qt3DExtras::QSphereGeometry;
-  geometry->addAttribute( instanceTranslationAttribute );
-  geometry->setBoundingVolumePositionAttribute( instanceTranslationAttribute );
-
-  auto instanceScaleAttribute = new Qt3DCore::QAttribute;
-  instanceScaleAttribute->setName( u"instanceScale"_s );
-  instanceScaleAttribute->setAttributeType( Qt3DCore::QAttribute::VertexAttribute );
-  instanceScaleAttribute->setVertexBaseType( Qt3DCore::QAttribute::Float );
-  instanceScaleAttribute->setVertexSize( 3 );
-  instanceScaleAttribute->setByteOffset( (3 +4) * sizeof( float ) );
-  instanceScaleAttribute->setDivisor( 1 );
-  instanceScaleAttribute->setByteStride( (3 +4+3) * sizeof( float ) );
-  instanceScaleAttribute->setCount( mPointData.count );
-
-  instanceScaleAttribute->setBuffer( instanceBuffer );
-  geometry->addAttribute( instanceScaleAttribute );
-
-  auto instanceRotationAttribute = new Qt3DCore::QAttribute;
-  instanceRotationAttribute->setName( u"instanceRotation"_s );
-  instanceRotationAttribute->setAttributeType( Qt3DCore::QAttribute::VertexAttribute );
-  instanceRotationAttribute->setVertexBaseType( Qt3DCore::QAttribute::Float );
-  instanceRotationAttribute->setVertexSize( 4 );
-  instanceRotationAttribute->setByteOffset( 3 * sizeof( float ) );
-  instanceRotationAttribute->setDivisor( 1 );
-  instanceRotationAttribute->setByteStride( (3 +4+3) * sizeof( float ) );
-  instanceRotationAttribute->setCount( mPointData.count );
-
-  instanceRotationAttribute->setBuffer( instanceBuffer );
-  geometry->addAttribute( instanceRotationAttribute );
-
-  Qt3DRender::QGeometryRenderer *renderer = new Qt3DRender::QGeometryRenderer;
-  renderer->setGeometry( geometry );
-  renderer->setInstanceCount( mPointData.count );
+  Qt3DCore::QEntity *featureEntity = new Qt3DCore::QEntity( parent );
+  featureEntity->setObjectName( parent->objectName() + u"_INSTANCED_GRASS"_s );
 
   QgsGeoTransform *tr = new QgsGeoTransform;
   tr->setGeoTranslation( mChunkOrigin );
+  featureEntity->addComponent( tr );
 
-  Qt3DCore::QEntity *entity = new Qt3DCore::QEntity( parent );
-  entity->addComponent( renderer );
-  entity->addComponent( new QgsGrassMaterial() );
-  entity->addComponent( tr );
-  entity->setObjectName( parent->objectName() + u"_INSTANCED_GRASS"_s );
+  QgsGrassMaterial *mat = new QgsGrassMaterial();
+  featureEntity->addComponent( mat );
+
+  for ( const auto &it : mGridCells )
+  {
+    const PointData &cell = it.second;
+    if ( cell.count == 0 )
+      continue;
+    Qt3DCore::QEntity *cellEntity = new Qt3DCore::QEntity( featureEntity );
+
+    Qt3DCore::QBuffer *instanceBuffer = new Qt3DCore::QBuffer();
+    instanceBuffer->setData( cell.data );
+
+    Qt3DCore::QGeometry *geometry = createGrassBladeGeometry();
+
+    Qt3DCore::QAttribute *instanceTranslationAttribute = new Qt3DCore::QAttribute;
+    instanceTranslationAttribute->setName( u"instanceTranslation"_s );
+    instanceTranslationAttribute->setAttributeType( Qt3DCore::QAttribute::VertexAttribute );
+    instanceTranslationAttribute->setVertexBaseType( Qt3DCore::QAttribute::Float );
+    instanceTranslationAttribute->setVertexSize( 3 );
+    instanceTranslationAttribute->setByteOffset( 0 );
+    instanceTranslationAttribute->setDivisor( 1 );
+    instanceTranslationAttribute->setBuffer( instanceBuffer );
+    instanceTranslationAttribute->setCount( cell.count );
+    instanceTranslationAttribute->setByteStride( ( 3 + 4 + 3 ) * sizeof( float ) );
+    geometry->addAttribute( instanceTranslationAttribute );
+    geometry->setBoundingVolumePositionAttribute( instanceTranslationAttribute );
+
+    auto instanceScaleAttribute = new Qt3DCore::QAttribute;
+    instanceScaleAttribute->setName( u"instanceScale"_s );
+    instanceScaleAttribute->setAttributeType( Qt3DCore::QAttribute::VertexAttribute );
+    instanceScaleAttribute->setVertexBaseType( Qt3DCore::QAttribute::Float );
+    instanceScaleAttribute->setVertexSize( 3 );
+    instanceScaleAttribute->setByteOffset( ( 3 + 4 ) * sizeof( float ) );
+    instanceScaleAttribute->setDivisor( 1 );
+    instanceScaleAttribute->setByteStride( ( 3 + 4 + 3 ) * sizeof( float ) );
+    instanceScaleAttribute->setCount( cell.count );
+
+    instanceScaleAttribute->setBuffer( instanceBuffer );
+    geometry->addAttribute( instanceScaleAttribute );
+
+    auto instanceRotationAttribute = new Qt3DCore::QAttribute;
+    instanceRotationAttribute->setName( u"instanceRotation"_s );
+    instanceRotationAttribute->setAttributeType( Qt3DCore::QAttribute::VertexAttribute );
+    instanceRotationAttribute->setVertexBaseType( Qt3DCore::QAttribute::Float );
+    instanceRotationAttribute->setVertexSize( 4 );
+    instanceRotationAttribute->setByteOffset( 3 * sizeof( float ) );
+    instanceRotationAttribute->setDivisor( 1 );
+    instanceRotationAttribute->setByteStride( ( 3 + 4 + 3 ) * sizeof( float ) );
+    instanceRotationAttribute->setCount( cell.count );
+
+    instanceRotationAttribute->setBuffer( instanceBuffer );
+    geometry->addAttribute( instanceRotationAttribute );
+
+    Qt3DRender::QGeometryRenderer *renderer = new Qt3DRender::QGeometryRenderer;
+    renderer->setGeometry( geometry );
+    renderer->setInstanceCount( cell.count );
+    renderer->setVertexCount( 30 );
+
+    renderer->setMinPoint( cell.minExtent );
+    renderer->setMaxPoint( cell.maxExtent );
+
+    cellEntity->addComponent( renderer );
+    cellEntity->addComponent( mat );
+  }
 }
 
 // --------------

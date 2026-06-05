@@ -79,6 +79,7 @@ void main()
 
         texCoord = vertexTexCoord;
 
+
         gl_Position = mvp * vec4(vertexPositionChunk, 1.0);
 
     #ifdef CLIPPING
