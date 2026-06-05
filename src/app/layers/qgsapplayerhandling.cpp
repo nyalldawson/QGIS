@@ -571,6 +571,24 @@ template<> std::unique_ptr<QgsVectorTileLayer> createLayer( const QString &uri, 
   const QgsVectorTileLayer::LayerOptions options( QgsProject::instance()->transformContext() );
   return std::make_unique<QgsVectorTileLayer>( uri, name, options );
 }
+template<> std::unique_ptr<QgsRasterLayer> createLayer( const QString &uri, const QString &name, const QString &provider )
+{
+  QgsRasterLayer::LayerOptions options( true, QgsProject::instance()->transformContext() );
+  options.preferredCrs << QgsProject::instance()->crs();
+  return std::make_unique<QgsRasterLayer>( uri, name, provider, options );
+}
+template<> std::unique_ptr<QgsMeshLayer> createLayer( const QString &uri, const QString &name, const QString &provider )
+{
+  QgsMeshLayer::LayerOptions options( QgsProject::instance()->transformContext() );
+  options.preferredCrs << QgsProject::instance()->crs();
+  return std::make_unique<QgsMeshLayer>( uri, name, provider, options );
+}
+template<> std::unique_ptr<QgsTiledSceneLayer> createLayer( const QString &uri, const QString &name, const QString &provider )
+{
+  QgsTiledSceneLayer::LayerOptions options( QgsProject::instance()->transformContext() );
+  options.preferredCrs << QgsProject::instance()->crs();
+  return std::make_unique<QgsTiledSceneLayer>( uri, name, provider, options );
+}
 template<> std::unique_ptr<QgsPluginLayer> createLayer( const QString &uri, const QString &name, const QString &provider )
 {
   std::unique_ptr<QgsPluginLayer> layer( QgsApplication::pluginLayerRegistry()->createLayer( provider, uri ) );
@@ -809,6 +827,9 @@ QList<QgsMapLayer *> QgsAppLayerHandling::addSublayers( const QList<QgsProviderS
     QgsProviderSublayerDetails::LayerOptions options( QgsProject::instance()->transformContext() );
     options.loadDefaultStyle = false;
     options.loadAllStoredStyle = true;
+
+    // prefer to load layers in the current project CRS, if possible
+    options.preferredCrs << QgsProject::instance()->crs();
 
     std::unique_ptr<QgsMapLayer> layer( sublayer.toLayer( options ) );
     if ( !layer )
@@ -1499,6 +1520,8 @@ template<typename T> QList<T *> QgsAppLayerHandling::addLayerPrivate( Qgis::Laye
     // contain at most one single layer
     QgsMapLayerFactory::LayerOptions options( QgsProject::instance()->transformContext() );
     options.loadDefaultStyle = false;
+    // prefer to load layers in the current project CRS, if possible
+    options.preferredCrs.append( QgsProject::instance()->crs() );
     result.push_back( qobject_cast<T *>( QgsMapLayerFactory::createLayer( uri, name, type, options, providerKey ) ) );
     if ( !result.isEmpty() )
     {
