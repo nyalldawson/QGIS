@@ -94,7 +94,25 @@ class TestQgsWmsCapabilities : public QObject
       QVERIFY( capabilities.parseResponse( content, config ) );
       QCOMPARE( capabilities.supportedLayers().size(), 5 );
 
-      QCOMPARE( capabilities.supportedLayers().at( 0 ).preferredAvailableCrs(), u"EPSG:3857"_s );
+      QCOMPARE( capabilities.supportedLayers().at( 0 ).preferredAvailableCrs( {} ), u"EPSG:3857"_s );
+
+      QCOMPARE(
+        capabilities.supportedLayers().at( 0 ).preferredAvailableCrs( {
+          QgsCoordinateReferenceSystem( u"EPSG:3111"_s ),
+          QgsCoordinateReferenceSystem( u"EPSG:3068"_s ),
+
+        } ),
+        u"EPSG:3068"_s
+      );
+
+      QCOMPARE(
+        capabilities.supportedLayers().at( 0 ).preferredAvailableCrs( {
+          QgsCoordinateReferenceSystem( u"EPSG:3068"_s ),
+          QgsCoordinateReferenceSystem( u"EPSG:31468"_s ),
+
+        } ),
+        u"EPSG:3068"_s
+      );
     }
 
     void wmstSettings()

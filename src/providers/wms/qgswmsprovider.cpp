@@ -206,7 +206,7 @@ QgsWmsProvider::QgsWmsProvider( QString const &uri, const ProviderOptions &optio
       {
         if ( property.name == mSettings.mActiveSubLayers[0] )
         {
-          mSettings.mCrsId = property.preferredAvailableCrs();
+          mSettings.mCrsId = property.preferredAvailableCrs( options.preferredCrs );
           break;
         }
       }

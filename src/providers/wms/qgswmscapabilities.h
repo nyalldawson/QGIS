@@ -18,6 +18,7 @@
 #include "qgsapplication.h"
 #include "qgsauthmanager.h"
 #include "qgsauthorizationsettings.h"
+#include "qgscoordinatereferencesystem.h"
 #include "qgscoordinatetransformcontext.h"
 #include "qgshttpheaders.h"
 #include "qgsinterval.h"
@@ -390,11 +391,30 @@ struct QgsWmsLayerProperty
     /**
    * Attempts to return a preferred CRS from the list of available CRS definitions.
    *
-   * Prioritizes the first listed CRS, unless it's a block listed value.
+   * An ordered list of preferred CRS can be specified, so that these CRS will be selected
+   * if they are available.
+   *
+   * Otherwise this method prioritizes the first listed CRS, unless it's a block listed value.
    */
-    QString preferredAvailableCrs() const
+    QString preferredAvailableCrs( const QList< QgsCoordinateReferenceSystem > &preferredCrs ) const
     {
       static QSet<QString> sSkipList { u"EPSG:900913"_s };
+
+      // first priority -- look through list of preferredCrs in order to determine
+      // if there's any matches
+      for ( const QgsCoordinateReferenceSystem &desiredCrs : preferredCrs )
+      {
+        if ( sSkipList.contains( desiredCrs.authid() ) )
+          continue;
+
+        for ( const QString &candidate : crs )
+        {
+          if ( QgsCoordinateReferenceSystem::fromOgcWmsCrs( candidate ) == desiredCrs )
+            return candidate;
+        }
+      }
+
+      // fallback to first listed, non block-listed CRS
       for ( const QString &candidate : crs )
       {
         if ( sSkipList.contains( candidate ) )
