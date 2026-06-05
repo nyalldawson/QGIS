@@ -2,8 +2,8 @@
 QgsDataProvider.EvaluateDefaultValues = QgsDataProvider.ProviderProperty.EvaluateDefaultValues
 QgsDataProvider.CustomData = QgsDataProvider.ProviderProperty.CustomData
 try:
-    QgsDataProvider.ProviderOptions.__attribute_docs__ = {'transformContext': 'Coordinate transform context'}
-    QgsDataProvider.ProviderOptions.__annotations__ = {'transformContext': 'QgsCoordinateTransformContext'}
+    QgsDataProvider.ProviderOptions.__attribute_docs__ = {'transformContext': 'Coordinate transform context', 'preferredCrs': 'An ordered list of preferable coordinate reference systems to use for the data provider.\n\nData providers with backends that supply data in a range of coordinate reference systems may use this\nto select an appropriate default CRS to use.\n\n.. versionadded:: 4.2'}
+    QgsDataProvider.ProviderOptions.__annotations__ = {'transformContext': 'QgsCoordinateTransformContext', 'preferredCrs': 'List[QgsCoordinateReferenceSystem]'}
     QgsDataProvider.ProviderOptions.__doc__ = """Setting options for creating vector data providers.
 
 .. note::

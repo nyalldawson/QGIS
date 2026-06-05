@@ -96,9 +96,26 @@ class CORE_EXPORT QgsDataProvider : public QObject
     struct ProviderOptions
     {
         /**
+       * Constructor for ProviderOptions
+       */
+        ProviderOptions( const QgsCoordinateTransformContext &transformContext = QgsCoordinateTransformContext() )
+          : transformContext( transformContext )
+        {}
+
+        /**
        * Coordinate transform context
        */
         QgsCoordinateTransformContext transformContext;
+
+        /**
+         * An ordered list of preferable coordinate reference systems to use for the data provider.
+         *
+         * Data providers with backends that supply data in a range of coordinate reference systems may use this
+         * to select an appropriate default CRS to use.
+         *
+         * \since QGIS 4.2
+         */
+        QList< QgsCoordinateReferenceSystem > preferredCrs;
     };
 
     /**
