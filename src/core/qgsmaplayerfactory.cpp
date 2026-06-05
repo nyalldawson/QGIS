@@ -104,6 +104,7 @@ QgsMapLayer *QgsMapLayerFactory::createLayer( const QString &uri, const QString 
       QgsRasterLayer::LayerOptions rasterOptions;
       rasterOptions.transformContext = options.transformContext;
       rasterOptions.loadDefaultStyle = options.loadDefaultStyle;
+      rasterOptions.preferredCrs = options.preferredCrs;
       return new QgsRasterLayer( uri, name, provider, rasterOptions );
     }
 
@@ -112,6 +113,7 @@ QgsMapLayer *QgsMapLayerFactory::createLayer( const QString &uri, const QString 
       QgsMeshLayer::LayerOptions meshOptions;
       meshOptions.transformContext = options.transformContext;
       meshOptions.loadDefaultStyle = options.loadDefaultStyle;
+      meshOptions.preferredCrs = options.preferredCrs;
       return new QgsMeshLayer( uri, name, provider, meshOptions );
     }
 
@@ -146,6 +148,7 @@ QgsMapLayer *QgsMapLayerFactory::createLayer( const QString &uri, const QString 
       QgsTiledSceneLayer::LayerOptions tiledSceneOptions;
       tiledSceneOptions.loadDefaultStyle = options.loadDefaultStyle;
       tiledSceneOptions.transformContext = options.transformContext;
+      tiledSceneOptions.preferredCrs = options.preferredCrs;
       return new QgsTiledSceneLayer( uri, name, provider, tiledSceneOptions );
     }
 
