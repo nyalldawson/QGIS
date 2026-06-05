@@ -143,7 +143,9 @@ QgsRasterLayer::QgsRasterLayer( const QString &uri, const QString &baseName, con
   QgsDebugMsgLevel( u"Entered"_s, 4 );
   setProviderType( providerKey );
 
-  const QgsDataProvider::ProviderOptions providerOptions { options.transformContext };
+  QgsDataProvider::ProviderOptions providerOptions { options.transformContext };
+  providerOptions.preferredCrs = options.preferredCrs;
+
   Qgis::DataProviderReadFlags providerFlags;
   if ( options.loadDefaultStyle )
   {

@@ -68,6 +68,8 @@ Constructor for LayerOptions.
         QgsCoordinateTransformContext transformContext;
 
         bool skipCrsValidation;
+
+        QList< QgsCoordinateReferenceSystem > preferredCrs;
     };
 
     explicit QgsRasterLayer( const QString &uri, const QString &baseName = QString(), const QString &providerType = "gdal", const QgsRasterLayer::LayerOptions &options = QgsRasterLayer::LayerOptions() );

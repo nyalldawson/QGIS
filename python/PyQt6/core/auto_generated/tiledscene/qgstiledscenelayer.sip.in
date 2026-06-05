@@ -36,6 +36,8 @@ Constructor for LayerOptions with optional ``transformContext``.
         bool loadDefaultStyle;
 
         bool skipCrsValidation;
+
+        QList< QgsCoordinateReferenceSystem > preferredCrs;
     };
 
     explicit QgsTiledSceneLayer(

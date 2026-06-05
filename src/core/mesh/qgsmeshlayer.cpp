@@ -64,7 +64,8 @@ QgsMeshLayer::QgsMeshLayer( const QString &meshLayerPath, const QString &baseNam
 {
   mShouldValidateCrs = !options.skipCrsValidation;
 
-  const QgsDataProvider::ProviderOptions providerOptions { options.transformContext };
+  QgsDataProvider::ProviderOptions providerOptions { options.transformContext };
+  providerOptions.preferredCrs = options.preferredCrs;
   Qgis::DataProviderReadFlags flags;
   if ( options.loadDefaultStyle )
   {

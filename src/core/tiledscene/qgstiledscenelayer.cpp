@@ -43,7 +43,8 @@ QgsTiledSceneLayer::QgsTiledSceneLayer( const QString &uri, const QString &baseN
 {
   if ( !uri.isEmpty() && !provider.isEmpty() )
   {
-    const QgsDataProvider::ProviderOptions providerOptions { options.transformContext };
+    QgsDataProvider::ProviderOptions providerOptions { options.transformContext };
+    providerOptions.preferredCrs = options.preferredCrs;
     Qgis::DataProviderReadFlags providerFlags;
     if ( options.loadDefaultStyle )
     {
