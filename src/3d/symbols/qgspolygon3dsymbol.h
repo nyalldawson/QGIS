@@ -240,7 +240,7 @@ class QgsPolygon3DInstancedSymbol : public QgsAbstract3DSymbol
     void setInstanceCount( int count );
 
   private:
-    int mInstanceCount = 10;
+    int mInstanceCount = 10000;
     std::unique_ptr<QgsAbstractMaterialSettings> mMaterialSettings;
 };
 
