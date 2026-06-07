@@ -469,30 +469,6 @@ QString QgsWMSItemBase::createUri( bool withStyle )
     mDataSourceUri.setParam( "allowTemporalUpdates"_L1, "true"_L1 );
   }
 
-  const QString projectCrs = QgsProject::instance()->crs().authid();
-  QString crs;
-  // if project CRS is supported then use it, otherwise use first available CRS
-  if ( !mLayerProperty.crs.isEmpty() )
-  {
-    QgsCoordinateReferenceSystem testCrs;
-    for ( const QString &c : std::as_const( mLayerProperty.crs ) )
-    {
-      testCrs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( c );
-      if ( testCrs.authid().compare( projectCrs, Qt::CaseInsensitive ) == 0 )
-      {
-        crs = projectCrs;
-        break;
-      }
-    }
-
-    if ( crs.isEmpty() )
-    {
-      crs = mLayerProperty.crs[0];
-    }
-  }
-
-  mDataSourceUri.setParam( u"crs"_s, crs );
-
   // Set default featureCount to 10, old connections might miss this
   // setting.
   if ( !mDataSourceUri.hasParam( u"featureCount"_s ) )
