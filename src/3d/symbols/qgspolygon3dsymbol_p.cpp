@@ -894,6 +894,7 @@ void QgsPolygon3DInstancedSymbolHandler::processFeature( const QgsFeature &f, co
 #include <Qt3DRender/QGraphicsApiFilter>
 #include <Qt3DRender/QParameter>
 #include <QPropertyAnimation>
+#include "qgsvectorlayerchunkloader_p.h"
 
 class QgsGrassMaterial : public QgsMaterial
 {
@@ -973,7 +974,7 @@ void QgsPolygon3DInstancedSymbolHandler::finalize( Qt3DCore::QEntity *parent, co
     const PointData &cell = it.second;
     if ( cell.count == 0 )
       continue;
-    Qt3DCore::QEntity *cellEntity = new Qt3DCore::QEntity( featureEntity );
+    QgsVectorLayerLodEntity *cellEntity = new QgsVectorLayerLodEntity( featureEntity );
 
     Qt3DCore::QBuffer *instanceBuffer = new Qt3DCore::QBuffer();
     instanceBuffer->setData( cell.data );
@@ -1029,6 +1030,7 @@ void QgsPolygon3DInstancedSymbolHandler::finalize( Qt3DCore::QEntity *parent, co
 
     cellEntity->addComponent( renderer );
     cellEntity->addComponent( mat );
+    cellEntity->setBox3D( QgsBox3D( QgsVector3D( cell.minExtent ) + mChunkOrigin, QgsVector3D( cell.maxExtent ) + mChunkOrigin ) );
   }
 }
 
@@ -1053,3 +1055,51 @@ namespace Qgs3DSymbolImpl
 } // namespace Qgs3DSymbolImpl
 
 /// @endcond
+
+void QgsVectorLayerLodEntity::handleSceneUpdate( const Qgs3DMapSceneEntity::SceneContext &sceneContext, const QgsVector3D &mapOrigin )
+{
+  const QgsAABB aabb = QgsAABB::fromBox3D( mBox3D, mapOrigin );
+
+  // cull entity if it is outside the view frustum
+  if ( Qgs3DUtils::isCullable( aabb, sceneContext.viewProjectionMatrix ) )
+  {
+    setEnabled( false );
+    return;
+  }
+
+  const QgsVector3D cameraPosMapCoords = QgsVector3D( sceneContext.cameraPos ) + mapOrigin;
+  const float distance = static_cast<float>( mBox3D.distanceTo( cameraPosMapCoords ) );
+
+  // determine the base geometric error epsilon using the bounding box size
+  const float epsilon = static_cast<float>( std::min( mBox3D.width(), mBox3D.height() ) ) / 10.0f;
+  const float sse = Qgs3DUtils::screenSpaceError( epsilon, distance, sceneContext.screenSizePx, sceneContext.cameraFov );
+
+  const float CULL_THRESHOLD = 5.f;
+  const float LOD_THRESHOLD = 2.0f;
+
+  // disable the entity entirely if it falls below the minimum visual threshold
+  if ( !sceneContext.cameraPos.isNull() && sse < CULL_THRESHOLD )
+  {
+    setEnabled( false );
+    return;
+  }
+
+  setEnabled( true );
+
+#if 0
+  if ( !mHighResModel || !mLowResModel )
+    return;
+
+  // swap models based on the screen space error calculation
+  if ( sceneContext.cameraPos.isNull() || sse < LOD_THRESHOLD )
+  {
+    mHighResModel->setEnabled( false );
+    mLowResModel->setEnabled( true );
+  }
+  else
+  {
+    mHighResModel->setEnabled( true );
+    mLowResModel->setEnabled( false );
+  }
+#endif
+}

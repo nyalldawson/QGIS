@@ -127,6 +127,8 @@ class QgsVectorLayerChunkedEntity : public QgsAbstractFeatureBasedChunkedEntity
     explicit QgsVectorLayerChunkedEntity( Qgs3DMapSettings *map, QgsVectorLayer *vl, double zMin, double zMax, const QgsVectorLayer3DTilingSettings &tilingSettings, QgsAbstract3DSymbol *symbol );
 
     ~QgsVectorLayerChunkedEntity() override;
+    void handleSceneUpdate( const SceneContext &sceneContext ) override;
+    bool needsUpdate() const override { return true; }
 
   private:
     bool applyTerrainOffset() const override;

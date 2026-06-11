@@ -249,6 +249,30 @@ QgsVectorLayerChunkedEntity::~QgsVectorLayerChunkedEntity()
   cancelActiveJobs();
 }
 
+#include "qgspolygon3dsymbol_p.h"
+
+void QgsVectorLayerChunkedEntity::handleSceneUpdate( const SceneContext &sceneContext )
+{
+  // execute base class chunk management first
+  QgsAbstractFeatureBasedChunkedEntity::handleSceneUpdate( sceneContext );
+
+  const QgsVector3D mapOrigin = mMapSettings->origin();
+  const QList<QgsChunkNode *> activeChunkNodes = activeNodes();
+
+  // process custom lod entities within active chunks
+  for ( QgsChunkNode *node : std::as_const( activeChunkNodes ) )
+  {
+    if ( !node->entity() )
+      continue;
+
+    const QList<QgsVectorLayerLodEntity *> lodEntities = node->entity()->findChildren<QgsVectorLayerLodEntity *>();
+    for ( QgsVectorLayerLodEntity *lodEntity : std::as_const( lodEntities ) )
+    {
+      lodEntity->handleSceneUpdate( sceneContext, mapOrigin );
+    }
+  }
+}
+
 // if the AltitudeClamping is `Absolute`, do not apply the offset
 bool QgsVectorLayerChunkedEntity::applyTerrainOffset() const
 {
