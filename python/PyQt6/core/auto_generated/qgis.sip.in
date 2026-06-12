@@ -2520,6 +2520,18 @@ The development version
       Always,
     };
 
+    enum class TileEdge /BaseType=IntFlag/
+    {
+      Left,
+      Right,
+      Top,
+      Bottom,
+      All
+    };
+
+    typedef QFlags<Qgis::TileEdge> TileEdges;
+
+
     enum class ToneMappingMethod /BaseType=IntEnum/
     {
       Clamp,
@@ -4189,6 +4201,8 @@ QFlags<Qgis::ArcGisRestServiceCapability> operator|(Qgis::ArcGisRestServiceCapab
 QFlags<Qgis::InstancedMaterialFlag> operator|(Qgis::InstancedMaterialFlag f1, QFlags<Qgis::InstancedMaterialFlag> f2);
 
 QFlags<Qgis::Map3DDebugFlag> operator|(Qgis::Map3DDebugFlag f1, QFlags<Qgis::Map3DDebugFlag> f2);
+
+QFlags<Qgis::TileEdge> operator|(Qgis::TileEdge f1, QFlags<Qgis::TileEdge> f2);
 
 QFlags<Qgis::SensorThingsExtension> operator|(Qgis::SensorThingsExtension f1, QFlags<Qgis::SensorThingsExtension> f2);
 

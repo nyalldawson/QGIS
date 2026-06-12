@@ -4494,6 +4494,29 @@ int QgisEvent = QEvent::User + 1;
     Q_ENUM( VerticalAxisInversion )
 
     /**
+     * Tile edge flags.
+     *
+     * \since QGIS 4.2
+     */
+    enum class TileEdge : int SIP_ENUM_BASETYPE( IntFlag )
+    {
+      Left = 1 << 0,                    //!< Left edge
+      Right = 1 << 1,                   //!< Right edge
+      Top = 1 << 2,                     //!< Top edge
+      Bottom = 1 << 3,                  //!< Bottom edge
+      All = Left | Right | Top | Bottom //!< Skirts on all edges
+    };
+    Q_ENUM( TileEdge )
+
+    /**
+     * Tile edge flags.
+     *
+     * \since QGIS 4.2
+     */
+    Q_DECLARE_FLAGS( TileEdges, TileEdge )
+    Q_FLAG( TileEdges )
+
+    /**
      * Defines the method used to map High Dynamic Range (HDR) scene colors
      * to the Standard Dynamic Range (SDR) of a display monitor.
      *
@@ -7155,6 +7178,7 @@ Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::SymbolConverterCapabilities )
 Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::ArcGisRestServiceCapabilities )
 Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::InstancedMaterialFlags )
 Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::Map3DDebugFlags )
+Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::TileEdges )
 Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::SensorThingsExtensions )
 Q_DECLARE_METATYPE( Qgis::LayoutRenderFlags )
 Q_DECLARE_METATYPE( QTimeZone )

@@ -109,16 +109,25 @@ Qt3DCore::QEntity *QgsDemTerrainTileLoader::createEntity( Qt3DCore::QEntity *par
 
   Qgs3DMapSettings *map = terrain()->mapSettings();
   Qgs3DRenderContext context = Qgs3DRenderContext::fromMapSettings( map );
-  QgsChunkNodeId nodeId = mNode->tileId();
-  QgsRectangle extent = map->terrainGenerator()->tilingScheme().tileToExtent( nodeId );
-  double side = extent.width();
+  const QgsChunkNodeId nodeId = mNode->tileId();
+  const QgsRectangle extent = map->terrainGenerator()->tilingScheme().tileToExtent( nodeId );
+  const double side = extent.width();
+
+  // work out which edges of this tile are internal edges vs which are on the outer edges of the map
+  const QgsRectangle rootExtent = map->terrainGenerator()->tilingScheme().tileToExtent( 0, 0, 0 );
+  const double eps = side * 0.01;
+  Qgis::TileEdges internalEdges;
+  internalEdges.setFlag( Qgis::TileEdge::Left, !qgsDoubleNear( extent.xMinimum(), rootExtent.xMinimum(), eps ) );
+  internalEdges.setFlag( Qgis::TileEdge::Right, !qgsDoubleNear( extent.xMaximum(), rootExtent.xMaximum(), eps ) );
+  internalEdges.setFlag( Qgis::TileEdge::Top, !qgsDoubleNear( extent.yMaximum(), rootExtent.yMaximum(), eps ) );
+  internalEdges.setFlag( Qgis::TileEdge::Bottom, !qgsDoubleNear( extent.yMinimum(), rootExtent.yMinimum(), eps ) );
 
   QgsTerrainTileEntity *entity = new QgsTerrainTileEntity( nodeId );
 
   // create geometry renderer
 
   Qt3DRender::QGeometryRenderer *mesh = new Qt3DRender::QGeometryRenderer;
-  mesh->setGeometry( new DemTerrainTileGeometry( mResolution, side, map->terrainSettings()->verticalScale(), mSkirtHeight, mHeightMap, mesh ) );
+  mesh->setGeometry( new DemTerrainTileGeometry( mResolution, side, map->terrainSettings()->verticalScale(), mSkirtHeight, mHeightMap, internalEdges, mesh ) );
   entity->addComponent( mesh ); // takes ownership if the component has no parent
 
   // create material
