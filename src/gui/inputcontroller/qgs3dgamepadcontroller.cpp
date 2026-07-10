@@ -92,88 +92,166 @@ bool QgsGamepad3DMapController::isConnected() const
 
 void QgsGamepad3DMapController::updateNavigation()
 {
-  if ( axisMax() > 0.12 && !mTimer->isActive() )
+  if ( mTimer->isActive() )
+    return;
+
+  if ( axisMax() > 0.10 )
   {
-    disconnect( mGamepad.data(), &QGamepad::axisLeftXChanged, this, &QgsGamepad3DMapController::updateNavigation );
-    disconnect( mGamepad.data(), &QGamepad::axisLeftYChanged, this, &QgsGamepad3DMapController::updateNavigation );
-    disconnect( mGamepad.data(), &QGamepad::axisRightXChanged, this, &QgsGamepad3DMapController::updateNavigation );
-    disconnect( mGamepad.data(), &QGamepad::axisRightYChanged, this, &QgsGamepad3DMapController::updateNavigation );
-    disconnect( mGamepad.data(), &QGamepad::buttonL2Changed, this, &QgsGamepad3DMapController::updateNavigation );
-    disconnect( mGamepad.data(), &QGamepad::buttonR2Changed, this, &QgsGamepad3DMapController::updateNavigation );
-
-    mTimer->start( 50 );
+    mTimer->start( 16 );
     mElapsedTimer.restart();
-
     navigationTimeout();
   }
 }
 
 void QgsGamepad3DMapController::navigationTimeout()
 {
-  if ( axisMax() <= 0.12 )
+  const qint64 elapsed = mElapsedTimer.elapsed();
+  mElapsedTimer.restart();
+
+  const double dt = static_cast< double >( elapsed ) / 1000.0; // Seconds
+
+  constexpr double EPSILON = 0.001;
+  const bool inputActive = hasInput();
+  const bool velocityActive = ( std::fabs( mCurrentMoveX ) > EPSILON )
+                              || ( std::fabs( mCurrentMoveY ) > EPSILON )
+                              || ( std::fabs( mCurrentMoveZ ) > EPSILON )
+                              || ( std::fabs( mCurrentPitch ) > EPSILON )
+                              || ( std::fabs( mCurrentYaw ) > EPSILON );
+  if ( !inputActive && !velocityActive )
   {
-    connect( mGamepad.data(), &QGamepad::axisLeftXChanged, this, &QgsGamepad3DMapController::updateNavigation );
-    connect( mGamepad.data(), &QGamepad::axisLeftYChanged, this, &QgsGamepad3DMapController::updateNavigation );
-    connect( mGamepad.data(), &QGamepad::axisRightXChanged, this, &QgsGamepad3DMapController::updateNavigation );
-    connect( mGamepad.data(), &QGamepad::axisRightYChanged, this, &QgsGamepad3DMapController::updateNavigation );
-    connect( mGamepad.data(), &QGamepad::buttonL2Changed, this, &QgsGamepad3DMapController::updateNavigation );
-    connect( mGamepad.data(), &QGamepad::buttonR2Changed, this, &QgsGamepad3DMapController::updateNavigation );
+    mCurrentMoveX = 0.0;
+    mCurrentMoveY = 0.0;
+    mCurrentMoveZ = 0.0;
+    mCurrentPitch = 0.0;
+    mCurrentYaw = 0.0;
+    mTimePushedToEdge = 0.0;
     mTimer->stop();
     return;
   }
 
-  const qint64 elapsed = mElapsedTimer.elapsed();
-  mElapsedTimer.restart();
 
-  const double scale = std::min( 2.0, static_cast< double >( elapsed ) / 50 );
-  if ( !qgsDoubleNear( scale, 1 ) )
-  {
-    // QgsDebugError( u"%1"_s.arg( scale ));
-  }
-  constexpr double maxPitchYaw = 5;
-  constexpr double expPitchYaw = 3;
+  const double scale = std::min( 4.0, static_cast< double >( elapsed ) / 16 );
+
+  constexpr double maxMovementSpeed = 3.0;
+  constexpr double maxStrafeSpeed = 1.5;
+  constexpr double expMovement = 3.0;
+
+  constexpr double maxPitchYaw = 1.5;
+  constexpr double expPitchYaw = 2;
+
+  constexpr double SMOOTHING_FACTOR = 10.0; // Lower values glide further; higher values stop faster
+  const double blend = 1.0 - std::exp( -SMOOTHING_FACTOR * dt );
 
   auto scaleExp = []( double value, double domainMin, double domainMax, double rangeMin, double rangeMax, double exponent ) -> double {
     return ( ( rangeMax - rangeMin ) / pow( domainMax - domainMin, exponent ) ) * pow( value - domainMin, exponent ) + rangeMin;
   };
 
-  constexpr double expMovement = 3;
+  double targetMoveX = 0;
+  double targetMoveY = 0;
+  double targetMoveZ = 0;
 
-  double moveX = 0;
-  double moveY = 0;
-  double moveZ = 0;
+  double processedLeftX = 0.0;
+  double processedLeftY = 0.0;
+  applyRadialDeadzone( mGamepad->axisLeftX(), mGamepad->axisLeftY(), processedLeftX, processedLeftY );
 
-  if ( std::fabs( mGamepad->axisLeftY() ) > 0.1 )
+  if ( std::fabs( processedLeftY ) > 0.0 )
   {
-    moveX = scaleExp( std::fabs( mGamepad->axisLeftY() ), 0, 1, 0, 1, expMovement ) * ( mGamepad->axisLeftY() > 0 ? -1 : 1 );
+    targetMoveX = scaleExp( std::fabs( processedLeftY ), 0, 1, 0, maxStrafeSpeed, expMovement ) * ( processedLeftY > 0 ? -1 : 1 );
   }
-  if ( std::fabs( mGamepad->axisLeftX() ) > 0.1 )
+  if ( std::fabs( processedLeftX ) > 0.0 )
   {
-    moveY = scaleExp( std::fabs( mGamepad->axisLeftX() ), 0, 1, 0, 1, expMovement ) * ( mGamepad->axisLeftX() > 0 ? -1 : 1 );
-  }
-  if ( mGamepad->buttonL2() > 0.1 || mGamepad->buttonR2() > 0.1 )
-  {
-    moveZ = scaleExp( mGamepad->buttonL2(), 0, 1, 0, 1, expMovement ) * -1 + scaleExp( mGamepad->buttonR2(), 0, 1, 0, 1, expMovement );
+    targetMoveY = scaleExp( std::fabs( processedLeftX ), 0, 1, 0, maxMovementSpeed, expMovement ) * ( processedLeftX > 0 ? -1 : 1 );
   }
 
-  if ( !qgsDoubleNear( moveX * scale, 0.0 ) || !qgsDoubleNear( moveY * scale, 0.0 ) || !qgsDoubleNear( moveZ * scale, 0.0 ) )
+  constexpr double TRIGGER_DEADZONE = 0.15;
+  double rawL2 = mGamepad->buttonL2();
+  double rawR2 = mGamepad->buttonR2();
+  double processedL2 = rawL2 > TRIGGER_DEADZONE ? ( rawL2 - TRIGGER_DEADZONE ) / ( 1.0 - TRIGGER_DEADZONE ) : 0.0;
+  double processedR2 = rawR2 > TRIGGER_DEADZONE ? ( rawR2 - TRIGGER_DEADZONE ) / ( 1.0 - TRIGGER_DEADZONE ) : 0.0;
+
+  if ( processedL2 > 0.0 || processedR2 > 0.0 )
   {
-    emit walkView( scale * moveX, scale * moveY, scale * moveZ );
+    targetMoveZ = scaleExp( processedL2, 0, 1, 0, maxMovementSpeed, expMovement ) * -1 + scaleExp( processedR2, 0, 1, 0, maxMovementSpeed, expMovement );
   }
 
-  double pitch = 0.0;
-  double yaw = 0.0;
-  if ( std::fabs( mGamepad->axisRightY() ) > 0.2 )
+  mCurrentMoveX += ( targetMoveX - mCurrentMoveX ) * blend;
+  mCurrentMoveY += ( targetMoveY - mCurrentMoveY ) * blend;
+  mCurrentMoveZ += ( targetMoveZ - mCurrentMoveZ ) * blend;
+
+  if ( !qgsDoubleNear( mCurrentMoveX * scale, 0.0 ) || !qgsDoubleNear( mCurrentMoveY * scale, 0.0 ) || !qgsDoubleNear( mCurrentMoveZ * scale, 0.0 ) )
   {
-    pitch = scaleExp( std::fabs( mGamepad->axisRightY() ), 0, 1, 0, maxPitchYaw, expPitchYaw ) * ( mGamepad->axisRightY() > 0 ? -1 : 1 );
+    emit walkView( scale * mCurrentMoveX, scale * mCurrentMoveY, scale * mCurrentMoveZ );
   }
-  if ( std::fabs( mGamepad->axisRightX() ) > 0.2 )
+
+  double processedRightX = 0.0;
+  double processedRightY = 0.0;
+  applyRadialDeadzone( mGamepad->axisRightX(), mGamepad->axisRightY(), processedRightX, processedRightY );
+
+  // Look Acceleration Accumulator Logic
+  double rightStickMag = std::sqrt( mGamepad->axisRightX() * mGamepad->axisRightX() + mGamepad->axisRightY() * mGamepad->axisRightY() );
+  if ( rightStickMag > 0.95 )
   {
-    yaw = scaleExp( std::fabs( mGamepad->axisRightX() ), 0, 1, 0, maxPitchYaw, expPitchYaw ) * ( mGamepad->axisRightX() > 0 ? -1 : 1 );
+    mTimePushedToEdge += dt;
   }
-  if ( !qgsDoubleNear( scale * pitch, 0 ) || !qgsDoubleNear( scale * yaw, 0 ) )
+  else
   {
-    emit rotateCamera( scale * pitch, scale * yaw );
+    mTimePushedToEdge = 0.0;
+  }
+  // Up to an extra 1.5x speed multiplier over 0.4 seconds of continuous perimeter pinning
+  double accelerationMultiplier = 1.0 + std::min( 0.5, mTimePushedToEdge / 0.8 );
+
+  double targetPitch = 0.0;
+  double targetYaw = 0.0;
+
+  if ( std::fabs( processedRightY ) > 0.0 )
+  {
+    targetPitch = scaleExp( std::fabs( processedRightY ), 0, 1, 0, maxPitchYaw, expPitchYaw ) * ( processedRightY > 0 ? -1 : 1 ) * accelerationMultiplier;
+  }
+  if ( std::fabs( processedRightX ) > 0.0 )
+  {
+    targetYaw = scaleExp( std::fabs( processedRightX ), 0, 1, 0, maxPitchYaw, expPitchYaw ) * ( processedRightX > 0 ? -1 : 1 ) * accelerationMultiplier;
+  }
+
+  // Low-Pass Inertial Filter: Slide towards the rotation destination
+  mCurrentPitch += ( targetPitch - mCurrentPitch ) * blend;
+  mCurrentYaw += ( targetYaw - mCurrentYaw ) * blend;
+
+  if ( !qgsDoubleNear( scale * mCurrentPitch, 0 ) || !qgsDoubleNear( scale * mCurrentYaw, 0 ) )
+  {
+    emit rotateCamera( scale * mCurrentPitch, scale * mCurrentYaw );
+  }
+}
+
+bool QgsGamepad3DMapController::hasInput() const
+{
+  constexpr double DEADZONE = 0.15;
+  double leftMag = std::sqrt( mGamepad->axisLeftX() * mGamepad->axisLeftX() + mGamepad->axisLeftY() * mGamepad->axisLeftY() );
+  double rightMag = std::sqrt( mGamepad->axisRightX() * mGamepad->axisRightX() + mGamepad->axisRightY() * mGamepad->axisRightY() );
+
+  return ( leftMag > DEADZONE ) || ( rightMag > DEADZONE ) || ( mGamepad->buttonL2() > DEADZONE ) || ( mGamepad->buttonR2() > DEADZONE );
+}
+
+void QgsGamepad3DMapController::applyRadialDeadzone( double rawX, double rawY, double &outX, double &outY ) const
+{
+  constexpr double DEADZONE = 0.15;
+  double magnitude = std::sqrt( rawX * rawX + rawY * rawY );
+
+  if ( magnitude < DEADZONE )
+  {
+    outX = 0.0;
+    outY = 0.0;
+  }
+  else
+  {
+    double dirX = rawX / magnitude;
+    double dirY = rawY / magnitude;
+
+    // Rescale vector from zero right at the boundary up to full deflection
+    double scaledMagnitude = ( magnitude - DEADZONE ) / ( 1.0 - DEADZONE );
+    scaledMagnitude = std::min( 1.0, scaledMagnitude );
+
+    outX = dirX * scaledMagnitude;
+    outY = dirY * scaledMagnitude;
   }
 }
 

@@ -377,10 +377,21 @@ class GUI_EXPORT QgsGamepad3DMapController : public QgsAbstract3DMapController
   private:
     double axisMax();
 
+    bool hasInput() const;
+    void applyRadialDeadzone( double rawX, double rawY, double &outX, double &outY ) const;
+
     int mGamepadDeviceId = -1;
     QPointer< QGamepad> mGamepad;
     QTimer *mTimer = nullptr;
     QElapsedTimer mElapsedTimer;
+
+    double mCurrentMoveX = 0.0;
+    double mCurrentMoveY = 0.0;
+    double mCurrentMoveZ = 0.0;
+    double mCurrentPitch = 0.0;
+    double mCurrentYaw = 0.0;
+
+    double mTimePushedToEdge = 0.0;
 };
 
 
