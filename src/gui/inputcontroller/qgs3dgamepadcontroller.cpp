@@ -14,6 +14,7 @@
  ***************************************************************************/
 
 #include "qgs3dgamepadcontroller.h"
+
 #include "qgslogger.h"
 
 #include <QString>
@@ -61,7 +62,7 @@ QgsGamepad3DMapController::QgsGamepad3DMapController( int gamepadDeviceId, QObje
   mTimer = new QTimer( this );
   connect( mTimer, &QTimer::timeout, this, &QgsGamepad3DMapController::navigationTimeout );
 
-  connect( mGamepad.data(), &QGamepad::connectedChanged, this, [=]( bool connected ) {
+  connect( mGamepad.data(), &QGamepad::connectedChanged, this, [this]( bool connected ) {
     if ( !connected )
       mTimer->stop();
   } );
@@ -125,9 +126,9 @@ void QgsGamepad3DMapController::navigationTimeout()
   mElapsedTimer.restart();
 
   const double scale = std::min( 2.0, static_cast< double >( elapsed ) / 50 );
-  if ( !qgsDoubleNear( scale, 1 ))
+  if ( !qgsDoubleNear( scale, 1 ) )
   {
- // QgsDebugError( QStringLiteral("%1").arg( scale ));
+    // QgsDebugError( u"%1"_s.arg( scale ));
   }
   constexpr double maxPitchYaw = 5;
   constexpr double expPitchYaw = 3;
@@ -155,9 +156,9 @@ void QgsGamepad3DMapController::navigationTimeout()
     moveZ = scaleExp( mGamepad->buttonL2(), 0, 1, 0, 1, expMovement ) * -1 + scaleExp( mGamepad->buttonR2(), 0, 1, 0, 1, expMovement );
   }
 
-  if ( !qgsDoubleNear( moveX * scale, 0.0 ) || qgsDoubleNear( moveY * scale,  0.0 ) || !qgsDoubleNear( moveZ * scale,  0.0 ) )
+  if ( !qgsDoubleNear( moveX * scale, 0.0 ) || !qgsDoubleNear( moveY * scale, 0.0 ) || !qgsDoubleNear( moveZ * scale, 0.0 ) )
   {
-    emit walkView( scale * moveX, scale* moveY,scale* moveZ );
+    emit walkView( scale * moveX, scale * moveY, scale * moveZ );
   }
 
   double pitch = 0.0;
@@ -171,7 +172,9 @@ void QgsGamepad3DMapController::navigationTimeout()
     yaw = scaleExp( std::fabs( mGamepad->axisRightX() ), 0, 1, 0, maxPitchYaw, expPitchYaw ) * ( mGamepad->axisRightX() > 0 ? -1 : 1 );
   }
   if ( !qgsDoubleNear( scale * pitch, 0 ) || !qgsDoubleNear( scale * yaw, 0 ) )
-  emit rotateCamera( scale * pitch, scale * yaw );
+  {
+    emit rotateCamera( scale * pitch, scale * yaw );
+  }
 }
 
 double QgsGamepad3DMapController::axisMax()
