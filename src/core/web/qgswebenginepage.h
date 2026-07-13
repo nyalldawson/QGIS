@@ -25,13 +25,16 @@
 
 #include <QObject>
 #include <QPageLayout>
+#include <QPageRanges>
 #include <QSize>
+#include <QThread>
 #include <QUrl>
 
 SIP_IF_MODULE( HAVE_WEBENGINE_SIP )
 
 class QWebEnginePage;
 class QPainter;
+class QgsFeedback;
 
 /**
  * \ingroup core
@@ -121,6 +124,36 @@ class CORE_EXPORT QgsWebEnginePage : public QObject
      */
     bool render( QPainter *painter, const QRectF &painterRect ) SIP_THROW( QgsNotSupportedException );
 
+    /**
+     * Renders HTML content to a PDF file asynchronously.
+     *
+     * This method is safe to call on either the main or background threads, and will safely ensure
+     * that the main thread event loop is NOT run during the HTML rendering or PDF generation.
+     *
+     * \since QGIS 4.4
+     */
+    static bool printToPdfBlocking( const QByteArray &data, const QString &pdfFileName, const QString &mimeType = QString(), const QUrl &baseUrl = QUrl(), QgsFeedback *feedback = nullptr );
+
+    /**
+     * Renders HTML content to a PDF file asynchronously.
+     *
+     * This method is safe to call on either the main or background threads, and will safely ensure
+     * that the main thread event loop is NOT run during the HTML rendering or PDF generation.
+     *
+     * \since QGIS 4.4
+     */
+    static bool printToPdfBlocking( const QString &html, const QString &pdfFileName, const QUrl &baseUrl = QUrl(), QgsFeedback *feedback = nullptr );
+
+    /**
+     * Renders HTML content to a PDF file asynchronously.
+     *
+     * This method is safe to call on either the main or background threads, and will safely ensure
+     * that the main thread event loop is NOT run during the HTML rendering or PDF generation.
+     *
+     * \since QGIS 4.4
+     */
+    static bool printToPdfBlocking( const QUrl &url, const QString &pdfFileName, QgsFeedback *feedback = nullptr );
+
   signals:
 
     /**
@@ -146,10 +179,36 @@ class CORE_EXPORT QgsWebEnginePage : public QObject
     void loadFinished( bool ok );
 
   private:
+    // TO determine -- is this ALWAYS 96?
+    static constexpr double RENDER_TO_PDF_DPI = 96;
     void handlePostBlockingLoadOperations();
+
+    static bool printToPdfBlockingInternal( const QString &pdfFileName, QgsFeedback *feedback, std::function< void( QWebEnginePage *page ) > loadContent );
 
     std::unique_ptr< QWebEnginePage > mPage;
     mutable QSize mCachedSize;
 };
+
+///@cond PRIVATE
+#ifndef SIP_RUN
+
+class WebEngineRenderThread : public QThread
+{
+    Q_OBJECT
+
+  public:
+    WebEngineRenderThread( const std::function<void()> &function, QObject *parent = nullptr )
+      : QThread( parent )
+      , mFunction( function )
+    {}
+
+    void run() override { mFunction(); }
+
+  private:
+    std::function<void()> mFunction;
+};
+
+#endif
+///@endcond
 
 #endif // QGSWEBENGINEPAGE_H

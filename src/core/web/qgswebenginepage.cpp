@@ -18,8 +18,12 @@
 #include "qgsconfig.h"
 #include "qgswebenginepage.h"
 
+#include "qgsfeedback.h"
+
+#include <QCoreApplication>
 #include <QEventLoop>
 #include <QSizeF>
+#include <QThread>
 #include <QWebEnginePage>
 
 #include "moc_qgswebenginepage.cpp"
@@ -189,9 +193,7 @@ bool QgsWebEnginePage::render( QPainter *painter, const QRectF &painterRect )
 {
   const QSize actualSize = documentSize();
 
-  // TODO -- is this ALWAYS 96?
-  static constexpr double dpi = 96.0;
-  const QSizeF pageSize = QSizeF( actualSize.width() / dpi, actualSize.height() / dpi );
+  const QSizeF pageSize = QSizeF( actualSize.width() / RENDER_TO_PDF_DPI, actualSize.height() / RENDER_TO_PDF_DPI );
 
   QEventLoop loop;
   bool finished = false;
@@ -232,3 +234,133 @@ bool QgsWebEnginePage::render( QPainter *, const QRectF & )
   throw QgsNotSupportedException( QObject::tr( "Rendering web pages requires a QGIS build with PDF4Qt library support" ) );
 }
 #endif
+
+bool QgsWebEnginePage::printToPdfBlockingInternal( const QString &pdfFileName, QgsFeedback *feedback, std::function<void( QWebEnginePage * )> loadContent )
+{
+  const bool requestMadeFromMainThread = QThread::currentThread() == QCoreApplication::instance()->thread();
+
+  bool result = false;
+
+  const std::function<void()> runFunction = [feedback, pdfFileName, &loadContent, &result]() {
+    // this function will always be run in worker threads -- either the blocking call is being made in a worker thread,
+    // or the blocking call has been made from the main thread and we've fired up a new thread for this function
+    Q_ASSERT( QThread::currentThread() != QCoreApplication::instance()->thread() );
+
+    QWebEnginePage page;
+
+    QEventLoop loadLoop;
+    // connecting to aboutToQuit avoids an on-going process to remain stalled
+    // when QThreadPool::globalInstance()->waitForDone()
+    // is called at process termination
+    connect( qApp, &QCoreApplication::aboutToQuit, &loadLoop, &QEventLoop::quit, Qt::DirectConnection );
+
+    bool finished = false;
+    connect( &page, &QWebEnginePage::loadFinished, &loadLoop, [&loadLoop, &finished, &result]( bool ok ) {
+      finished = true;
+      result = ok;
+      loadLoop.exit();
+    } );
+
+    if ( feedback )
+    {
+      QObject::connect( feedback, &QgsFeedback::canceled, &loadLoop, &QEventLoop::quit );
+    }
+
+    loadContent( &page );
+    if ( !finished )
+    {
+      loadLoop.exec();
+    }
+
+    if ( !result || ( feedback && feedback->isCanceled() ) )
+    {
+      result = false;
+      return;
+    }
+
+    QEventLoop calculateSizeLoop;
+    connect( qApp, &QCoreApplication::aboutToQuit, &calculateSizeLoop, &QEventLoop::quit, Qt::DirectConnection );
+
+    if ( feedback )
+    {
+      QObject::connect( feedback, &QgsFeedback::canceled, &calculateSizeLoop, &QEventLoop::quit );
+    }
+
+    finished = false;
+    result = false;
+    int width = -1;
+    int height = -1;
+    page.runJavaScript( "[document.documentElement.scrollWidth, document.documentElement.scrollHeight];", [&width, &height, &calculateSizeLoop, &finished, &result]( QVariant javaScriptResult ) {
+      width = javaScriptResult.toList().value( 0 ).toInt();
+      height = javaScriptResult.toList().value( 1 ).toInt();
+      finished = true;
+      result = true;
+      calculateSizeLoop.exit();
+    } );
+    if ( !finished )
+    {
+      calculateSizeLoop.exec();
+    }
+
+    if ( !result || ( feedback && feedback->isCanceled() ) )
+    {
+      result = false;
+      return;
+    }
+
+
+    QEventLoop printLoop;
+    connect( qApp, &QCoreApplication::aboutToQuit, &printLoop, &QEventLoop::quit, Qt::DirectConnection );
+
+    finished = false;
+    connect( &page, &QWebEnginePage::pdfPrintingFinished, &printLoop, [&printLoop, &finished, &result]( const QString &, bool ok ) {
+      finished = true;
+      result = ok;
+      printLoop.exit();
+    } );
+
+    if ( feedback )
+    {
+      QObject::connect( feedback, &QgsFeedback::canceled, &printLoop, &QEventLoop::quit );
+    }
+
+    const QSizeF pageSize = QSizeF( width / RENDER_TO_PDF_DPI, height / RENDER_TO_PDF_DPI );
+
+    const QPageLayout layout = QPageLayout( QPageSize( pageSize, QPageSize::Inch ), QPageLayout::Portrait, QMarginsF( 0, 0, 0, 0 ), QPageLayout::Inch, QMarginsF( 0, 0, 0, 0 ) );
+    page.printToPdf( pdfFileName, layout );
+
+    if ( !finished )
+    {
+      printLoop.exec();
+    }
+  };
+
+  if ( requestMadeFromMainThread )
+  {
+    auto processThread = std::make_unique<WebEngineRenderThread>( runFunction );
+    processThread->start();
+    // wait for thread to gracefully exit
+    processThread->wait();
+  }
+  else
+  {
+    runFunction();
+  }
+
+  return result;
+}
+
+bool QgsWebEnginePage::printToPdfBlocking( const QByteArray &data, const QString &pdfFileName, const QString &mimeType, const QUrl &baseUrl, QgsFeedback *feedback )
+{
+  return printToPdfBlockingInternal( pdfFileName, feedback, [data, mimeType, baseUrl]( QWebEnginePage *page ) { page->setContent( data, mimeType, baseUrl ); } );
+}
+
+bool QgsWebEnginePage::printToPdfBlocking( const QString &html, const QString &pdfFileName, const QUrl &baseUrl, QgsFeedback *feedback )
+{
+  return printToPdfBlockingInternal( pdfFileName, feedback, [html, baseUrl]( QWebEnginePage *page ) { page->setHtml( html, baseUrl ); } );
+}
+
+bool QgsWebEnginePage::printToPdfBlocking( const QUrl &url, const QString &pdfFileName, QgsFeedback *feedback )
+{
+  return printToPdfBlockingInternal( pdfFileName, feedback, [url]( QWebEnginePage *page ) { page->setUrl( url ); } );
+}
