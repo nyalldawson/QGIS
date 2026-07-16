@@ -23,6 +23,21 @@
 
 class QGamepad;
 
+class QgsGamepadStickPositionWidget : public QWidget
+{
+    Q_OBJECT
+  public:
+    explicit QgsGamepadStickPositionWidget( QWidget *parent = nullptr );
+    void setPosition( double x, double y );
+
+  protected:
+    void paintEvent( QPaintEvent *event ) override;
+
+  private:
+    double mX = 0.0;
+    double mY = 0.0;
+};
+
 /**
  * \ingroup app
  * \class QgsGamepadOptionsWidget
@@ -50,6 +65,8 @@ class QgsGamepadOptionsWidget : public QgsOptionsPageWidget, private Ui::QgsGame
   private:
     int mDeviceId = -1;
     QPointer< QGamepad > mGamepad;
+    QgsGamepadStickPositionWidget *mLeftStickWidget = nullptr;
+    QgsGamepadStickPositionWidget *mRightStickWidget = nullptr;
 };
 
 

@@ -19,12 +19,69 @@
 #include "qgssettings.h"
 #include "qgssettingsregistrycore.h"
 
+#include <QFontMetrics>
 #include <QMessageBox>
+#include <QPainter>
 #include <QString>
+#include <QVBoxLayout>
 #include <QtGamepadLegacy/QGamepad>
 #include <QtGamepadLegacy/QGamepadManager>
 
 using namespace Qt::StringLiterals;
+
+QgsGamepadStickPositionWidget::QgsGamepadStickPositionWidget( QWidget *parent )
+  : QWidget( parent )
+{
+  const QFontMetrics fm( font() );
+  setFixedSize( fm.height() * 10, fm.height() * 10 );
+}
+
+void QgsGamepadStickPositionWidget::setPosition( double x, double y )
+{
+  mX = std::clamp( x, -1.0, 1.0 );
+  mY = std::clamp( y, -1.0, 1.0 );
+  update();
+}
+
+void QgsGamepadStickPositionWidget::paintEvent( QPaintEvent * )
+{
+  constexpr double KNOB_RADIUS = 10;
+  constexpr double MARGIN = 8 + KNOB_RADIUS / 2;
+
+  QPainter painter( this );
+  painter.setRenderHint( QPainter::Antialiasing );
+
+  const QPalette pal = palette();
+
+  const double radius = ( width() - 2 * MARGIN ) / 2.0;
+  const QPointF center( width() / 2.0, height() / 2.0 );
+
+  // background
+  painter.setPen( Qt::NoPen );
+  painter.setBrush( pal.brush( QPalette::Base ) );
+  painter.drawEllipse( center, radius, radius );
+
+  // axis crosshairs
+  const QPen crosshairPen( pal.color( QPalette::Mid ), 1, Qt::DashLine );
+  painter.setPen( crosshairPen );
+  painter.setBrush( Qt::NoBrush );
+  painter.drawLine( center.x() - radius, center.y(), center.x() + radius, center.y() );
+  painter.drawLine( center.x(), center.y() - radius, center.x(), center.y() + radius );
+
+  // outer perimeter
+  const QPen boundaryPen( pal.color( QPalette::Mid ), 2, Qt::SolidLine );
+  painter.setPen( boundaryPen );
+  painter.drawEllipse( center, radius, radius );
+
+  // analog stick coordinates
+  const double indicatorX = center.x() + mX * radius;
+  const double indicatorY = center.y() + mY * radius;
+  const QPointF indicatorPos( indicatorX, indicatorY );
+  const QColor accentColor = pal.color( QPalette::Highlight );
+  painter.setPen( QPen( accentColor.darker( 120 ), 2 ) );
+  painter.setBrush( QBrush( accentColor ) );
+  painter.drawEllipse( indicatorPos, KNOB_RADIUS, KNOB_RADIUS );
+}
 
 //
 // QgsGamepadOptionsWidget
@@ -34,6 +91,20 @@ QgsGamepadOptionsWidget::QgsGamepadOptionsWidget( QWidget *parent )
   : QgsOptionsPageWidget( parent )
 {
   setupUi( this );
+
+  mLeftStickWidget = new QgsGamepadStickPositionWidget();
+  auto vl = new QVBoxLayout();
+  vl->setContentsMargins( 0, 0, 0, 0 );
+  vl->addWidget( mLeftStickWidget );
+  mLeftStickFrame->setLayout( vl );
+  mLeftStickFrame->setFixedSize( mLeftStickWidget->size() );
+
+  mRightStickWidget = new QgsGamepadStickPositionWidget();
+  vl = new QVBoxLayout();
+  vl->setContentsMargins( 0, 0, 0, 0 );
+  vl->addWidget( mRightStickWidget );
+  mRightStickFrame->setLayout( vl );
+  mRightStickFrame->setFixedSize( mRightStickWidget->size() );
 
   QGamepadManager *manager = QGamepadManager::instance();
   for ( int deviceId : manager->connectedGamepads() )
@@ -109,6 +180,9 @@ void QgsGamepadOptionsWidget::updateValues()
 
   mLeftAxisLabel->setText( u"%1, %2"_s.arg( mGamepad->axisLeftX() ).arg( mGamepad->axisLeftY() ) );
   mRightAxisLabel->setText( u"%1, %2"_s.arg( mGamepad->axisRightX() ).arg( mGamepad->axisRightY() ) );
+
+  mLeftStickWidget->setPosition( mGamepad->axisLeftX(), mGamepad->axisLeftY() );
+  mRightStickWidget->setPosition( mGamepad->axisRightX(), mGamepad->axisRightY() );
 
   mButtonALabel->setText( mGamepad->buttonA() ? tr( "Pressed" ) : QString() );
   mButtonBLabel->setText( mGamepad->buttonB() ? tr( "Pressed" ) : QString() );
