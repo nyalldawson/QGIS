@@ -190,11 +190,13 @@ void QgsGamepadOptionsWidget::updateValues()
   mButtonYLabel->setText( mGamepad->buttonY() ? tr( "Pressed" ) : QString() );
 
   mLabelButtonL1->setText( mGamepad->buttonL1() ? tr( "Pressed" ) : QString() );
-  mLabelButtonL2->setText( QString::number( mGamepad->buttonL2() ) );
+  mBarL2->setFormat( QString::number( mGamepad->buttonL2() ) );
+  mBarL2->setValue( mGamepad->buttonL2() * mBarL2->maximum() );
   mLabelButtonL3->setText( mGamepad->buttonL3() ? tr( "Pressed" ) : QString() );
 
   mLabelButtonR1->setText( mGamepad->buttonR1() ? tr( "Pressed" ) : QString() );
-  mLabelButtonR2->setText( QString::number( mGamepad->buttonR2() ) );
+  mBarR2->setFormat( QString::number( mGamepad->buttonR2() ) );
+  mBarR2->setValue( mGamepad->buttonR2() * mBarR2->maximum() );
   mLabelButtonR3->setText( mGamepad->buttonR3() ? tr( "Pressed" ) : QString() );
 
   mCenterButtonLabel->setText( mGamepad->buttonCenter() ? tr( "Pressed" ) : QString() );
