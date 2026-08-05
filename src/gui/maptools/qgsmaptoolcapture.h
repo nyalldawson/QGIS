@@ -427,6 +427,7 @@ class GUI_EXPORT QgsMapToolCapture : public QgsMapToolAdvancedDigitizing
 
     //! Rubber band for polylines and polygons
     QObjectUniquePtr<QgsRubberBand> mRubberBand;
+    QObjectUniquePtr<QgsRubberBand> mLayerPreviewRubberBand;
 
     //! Temporary rubber band for polylines and polygons. this connects the last added point to the mouse cursor position
     QObjectParentUniquePtr<QgsMapToolCaptureRubberBand> mTempRubberBand;

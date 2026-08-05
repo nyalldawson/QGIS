@@ -263,9 +263,6 @@ QgsVertexTool::QgsVertexTool( QgsMapCanvas *canvas, QgsAdvancedDigitizingDockWid
   mEdgeCenterMarker->setPenWidth( QgsGuiUtils::scaleIconSize( 3 ) );
   mEdgeCenterMarker->setVisible( false );
 
-  mFeatureBand = createRubberBand( Qgis::GeometryType::Line );
-  mFeatureBand->setVisible( false );
-
   QColor color = digitizingStrokeColor();
   mFeatureBandMarkers = new QgsRubberBand( canvas );
   mFeatureBandMarkers->setIcon( Qgis::RubberBandIconType::Circle );
@@ -309,7 +306,6 @@ QgsVertexTool::QgsVertexTool( QgsMapCanvas *canvas, QgsAdvancedDigitizingDockWid
 QgsVertexTool::~QgsVertexTool()
 {
   delete mEdgeCenterMarker;
-  delete mFeatureBand;
   delete mFeatureBandMarkers;
   delete mVertexBand;
   delete mEdgeBand;
@@ -915,7 +911,7 @@ void QgsVertexTool::canvasDoubleClickEvent( QgsMapMouseEvent *e )
 
 void QgsVertexTool::removeTemporaryRubberBands()
 {
-  mFeatureBand->setVisible( false );
+  mFeatureBand.reset();
   mFeatureBandMarkers->setVisible( false );
   mFeatureBandLayer = nullptr;
   mFeatureBandFid = QgsFeatureId();
@@ -1487,14 +1483,15 @@ void QgsVertexTool::updateFeatureBand( const QgsPointLocator::Match &m )
 
     if ( QgsWkbTypes::isCurvedType( geom.wkbType() ) )
       geom = QgsGeometry( geom.constGet()->segmentize() );
+    mFeatureBand.reset( createRubberBand( Qgis::GeometryType::Line ) );
+    prepareRubberBandForLayer( mFeatureBand.get(), m.layer(), { m.featureId() } );
     mFeatureBand->setToGeometry( geom, m.layer() );
-    mFeatureBand->setVisible( true );
     mFeatureBandLayer = m.layer();
     mFeatureBandFid = m.featureId();
   }
   else
   {
-    mFeatureBand->setVisible( false );
+    mFeatureBand.reset();
     mFeatureBandMarkers->setVisible( false );
     mNurbsControlPolygonBand->reset( Qgis::GeometryType::Line );
     mNurbsControlPolygonBand->setVisible( false );

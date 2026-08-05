@@ -454,6 +454,11 @@ void QgsMapToolCapture::setCurrentShapeMapToolIsActivated( bool activated )
 
 void QgsMapToolCapture::onTransientGeometryChanged( const QgsReferencedGeometry &geometry )
 {
+  if ( mLayerPreviewRubberBand )
+  {
+    mLayerPreviewRubberBand->setToGeometry( geometry, geometry.crs() );
+  }
+
   emit transientGeometryChanged( geometry );
 }
 
@@ -1008,7 +1013,13 @@ int QgsMapToolCapture::addVertex( const QgsPointXY &point, const QgsPointLocator
     }
 
     if ( !mRubberBand )
+    {
       mRubberBand.reset( createRubberBand( mCaptureMode == CapturePolygon ? Qgis::GeometryType::Polygon : Qgis::GeometryType::Line ) );
+    }
+    if ( !mLayerPreviewRubberBand )
+    {
+      mLayerPreviewRubberBand.reset( createRubberBandForLayer( currentVectorLayer(), { -1 } ) );
+    }
 
     if ( !mTempRubberBand )
     {
@@ -1093,6 +1104,10 @@ int QgsMapToolCapture::addCurve( QgsCurve *c )
   {
     mRubberBand.reset( createRubberBand( mCaptureMode == CapturePolygon ? Qgis::GeometryType::Polygon : Qgis::GeometryType::Line ) );
   }
+  if ( !mLayerPreviewRubberBand )
+  {
+    mLayerPreviewRubberBand.reset( createRubberBandForLayer( currentVectorLayer(), { -1 } ) );
+  }
 
   if ( mTempRubberBand )
   {
@@ -1168,6 +1183,29 @@ void QgsMapToolCapture::undo( bool isAutoRepeat )
     mBezierDragHandleIndex = -1;
     mBezierMoveAnchorIndex = -1;
     mCadDockWidget->removePreviousPoint();
+
+    // Re-evaluate Poly-Bézier transient geometry if points remain
+    QgsCoordinateReferenceSystem targetCrs = layer() ? layer()->crs() : mCanvas->mapSettings().destinationCrs();
+    const QgsPointSequence interpolated = mBezierData->interpolateLine();
+    if ( interpolated.size() >= 2 )
+    {
+      auto lineString = std::make_unique<QgsLineString>( interpolated );
+      if ( mCaptureMode == CapturePolygon )
+      {
+        auto curvePolygon = std::make_unique<QgsCurvePolygon>();
+        lineString->close();
+        curvePolygon->setExteriorRing( lineString.release() );
+        onTransientGeometryChanged( QgsReferencedGeometry( QgsGeometry( std::move( curvePolygon ) ), targetCrs ) );
+      }
+      else
+      {
+        onTransientGeometryChanged( QgsReferencedGeometry( QgsGeometry( std::move( lineString ) ), targetCrs ) );
+      }
+    }
+    else
+    {
+      onTransientGeometryChanged( QgsReferencedGeometry() );
+    }
     return;
   }
 
@@ -1268,6 +1306,30 @@ void QgsMapToolCapture::undo( bool isAutoRepeat )
 
     mCadDockWidget->removePreviousPoint();
     validateGeometry();
+
+    // Determine target CRS
+    QgsCoordinateReferenceSystem targetCrs = layer() ? layer()->crs() : mCanvas->mapSettings().destinationCrs();
+
+    // Emit updated transient geometry
+    if ( mCaptureCurve.numPoints() > 0 )
+    {
+      std::unique_ptr< QgsCompoundCurve > tempCurve( mCaptureCurve.clone() );
+      if ( mCaptureMode == CapturePolygon )
+      {
+        auto curvePolygon = std::make_unique< QgsCurvePolygon >();
+        tempCurve->close();
+        curvePolygon->setExteriorRing( tempCurve.release() );
+        onTransientGeometryChanged( QgsReferencedGeometry( QgsGeometry( std::move( curvePolygon ) ), targetCrs ) );
+      }
+      else
+      {
+        onTransientGeometryChanged( QgsReferencedGeometry( QgsGeometry( std::move( tempCurve ) ), targetCrs ) );
+      }
+    }
+    else
+    {
+      onTransientGeometryChanged( QgsReferencedGeometry() );
+    }
   }
 }
 
@@ -1401,6 +1463,7 @@ bool QgsMapToolCapture::isCapturing() const
 void QgsMapToolCapture::stopCapturing()
 {
   mRubberBand.reset();
+  mLayerPreviewRubberBand.reset();
 
   deleteTempRubberBand();
 

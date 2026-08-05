@@ -348,7 +348,7 @@ class APP_EXPORT QgsVertexTool : public QgsMapToolAdvancedDigitizing
      */
     QgsVertexMarker *mEdgeCenterMarker = nullptr;
     //! rubber band for highlight of a whole feature on mouse over and not dragging anything
-    QgsRubberBand *mFeatureBand = nullptr;
+    QObjectUniquePtr<QgsRubberBand > mFeatureBand;
     //! rubber band for highlight of all vertices of a feature on mouse over and not dragging anything, also used for locked feature vertices
     QgsRubberBand *mFeatureBandMarkers = nullptr;
     //! source layer for mFeatureBand (null if mFeatureBand is null)
