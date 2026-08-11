@@ -20,6 +20,7 @@
 #define QGSPROCESSINGWIDGETWRAPPERIMPL_H
 
 #include "ui_qgsheatmappixelsizewidgetbase.h"
+#include "ui_qgsinterpolationsourcewidgetbase.h"
 #include "ui_qgsprocessingreliefcolorswidgetbase.h"
 
 #include "qgshighlightablelineedit.h"
@@ -2467,6 +2468,29 @@ class GUI_EXPORT QgsProcessingExecuteSqlWidgetWrapper : public QgsAbstractProces
 
     friend class TestProcessingGui;
 };
+
+class GUI_EXPORT QgsInterpolationSourceWidget : public QWidget, private Ui::QgsInterpolationSourceWidgetBase
+{
+    Q_OBJECT
+
+  public:
+    explicit QgsInterpolationSourceWidget( QWidget *parent = nullptr );
+
+    void setValue( const QString &value );
+    QString value() const;
+
+  signals:
+    void hasChanged();
+
+  private slots:
+    void addLayer();
+    void removeLayer();
+    void layerChanged( QgsVectorLayer *layer );
+
+  private:
+    void addLayerData( QgsVectorLayer *layer, const QString &attribute );
+};
+
 
 ///@endcond PRIVATE
 
