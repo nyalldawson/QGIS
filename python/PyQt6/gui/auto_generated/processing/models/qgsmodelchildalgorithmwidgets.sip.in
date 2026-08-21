@@ -1,0 +1,67 @@
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/gui/processing/models/qgsmodelchildalgorithmwidgets.h            *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.py again   *
+ ************************************************************************/
+
+
+
+
+
+
+
+class QgsProcessingModelerParametersPanelWidget : QgsPanelWidget
+{
+%Docstring(signature="appended")
+A panel widget displaying the configuration for a child algorithm in a
+Processing model.
+
+.. warning::
+
+   Not stable API
+
+.. versionadded:: 4.4
+%End
+
+%TypeHeaderCode
+#include "qgsmodelchildalgorithmwidgets.h"
+%End
+  public:
+    QgsProcessingModelerParametersPanelWidget(
+      const QgsProcessingAlgorithm *alg,
+      QgsProcessingModelAlgorithm *model,
+      const QString &algName = QString(),
+      const QVariantMap &configuration = QVariantMap(),
+      QWidget *parent = 0,
+      QgsProcessingContext *context = 0,
+      QWidget *dialog = 0
+    );
+%Docstring
+Constructor for QgsProcessingModelerParametersPanelWidget.
+%End
+
+    ~QgsProcessingModelerParametersPanelWidget();
+
+    const QgsProcessingAlgorithm *algorithm() const;
+%Docstring
+Returns the algorithm associated with the widget.
+%End
+
+    std::unique_ptr< QgsProcessingModelChildAlgorithm > createAlgorithm();
+%Docstring
+Creates the child algorithm instance populated with current widget
+values.
+%End
+
+};
+
+
+/************************************************************************
+ * This file has been generated automatically from                      *
+ *                                                                      *
+ * src/gui/processing/models/qgsmodelchildalgorithmwidgets.h            *
+ *                                                                      *
+ * Do not edit manually ! Edit header and run scripts/sipify.py again   *
+ ************************************************************************/
