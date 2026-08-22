@@ -64,10 +64,10 @@ class GUI_EXPORT QgsProcessingModelerParametersPanelWidget : public QgsPanelWidg
     QgsProcessingModelerParametersPanelWidget(
       const QgsProcessingAlgorithm *alg,
       QgsProcessingModelAlgorithm *model,
+      QgsProcessingContext &context,
       const QString &childId = QString(),
       const QVariantMap &configuration = QVariantMap(),
       QWidget *parent = nullptr,
-      QgsProcessingContext *context = nullptr,
       QWidget *dialog = nullptr
     );
 
@@ -96,7 +96,7 @@ class GUI_EXPORT QgsProcessingModelerParametersPanelWidget : public QgsPanelWidg
     QgsProcessingModelAlgorithm *mModel = nullptr;
     QString mChildId;
     QVariantMap mConfiguration;
-    QgsProcessingContext *mContext = nullptr;
+    QgsProcessingContext &mContext;
     QWidget *mDialog = nullptr;
 
     QMap< QString, QgsProcessingModelOutput > mPreviousOutputDefinitions;
@@ -129,10 +129,10 @@ class GUI_EXPORT QgsProcessingModelerParametersWidget : public QgsProcessingMode
     QgsProcessingModelerParametersWidget(
       const QgsProcessingAlgorithm *alg,
       QgsProcessingModelAlgorithm *model,
+      QgsProcessingContext &context,
       const QString &childId = QString(),
       const QVariantMap &configuration = QVariantMap(),
       QWidget *parent = nullptr,
-      QgsProcessingContext *context = nullptr,
       QWidget *dialog = nullptr
     );
 
@@ -215,7 +215,12 @@ class GUI_EXPORT QgsProcessingModelerParametersDialog : public QDialog
    * Constructor for QgsProcessingModelerParametersDialog.
    */
     QgsProcessingModelerParametersDialog(
-      const QgsProcessingAlgorithm *alg, QgsProcessingModelAlgorithm *model, const QString &childId = QString(), const QVariantMap &configuration = QVariantMap(), QWidget *parent = nullptr
+      const QgsProcessingAlgorithm *alg,
+      QgsProcessingModelAlgorithm *model,
+      QgsProcessingContext &context,
+      const QString &childId = QString(),
+      const QVariantMap &configuration = QVariantMap(),
+      QWidget *parent = nullptr
     );
 
     ~QgsProcessingModelerParametersDialog() override;
@@ -273,7 +278,6 @@ class GUI_EXPORT QgsProcessingModelerParametersDialog : public QDialog
     void openHelp();
 
   private:
-    std::unique_ptr< QgsProcessingContext > mContext;
     QgsProcessingModelerParametersWidget *mWidget = nullptr;
     QDialogButtonBox *mButtonBox = nullptr;
 };

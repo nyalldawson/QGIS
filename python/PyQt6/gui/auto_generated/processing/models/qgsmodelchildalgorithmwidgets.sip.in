@@ -34,10 +34,10 @@ child algorithm in a Processing model.
     QgsProcessingModelerParametersWidget(
       const QgsProcessingAlgorithm *alg,
       QgsProcessingModelAlgorithm *model,
+      QgsProcessingContext &context,
       const QString &childId = QString(),
       const QVariantMap &configuration = QVariantMap(),
       QWidget *parent = 0,
-      QgsProcessingContext *context = 0,
       QWidget *dialog = 0
     );
 %Docstring
@@ -117,7 +117,12 @@ algorithm in a Processing model.
 %End
   public:
     QgsProcessingModelerParametersDialog(
-      const QgsProcessingAlgorithm *alg, QgsProcessingModelAlgorithm *model, const QString &childId = QString(), const QVariantMap &configuration = QVariantMap(), QWidget *parent = 0
+      const QgsProcessingAlgorithm *alg,
+      QgsProcessingModelAlgorithm *model,
+      QgsProcessingContext &context,
+      const QString &childId = QString(),
+      const QVariantMap &configuration = QVariantMap(),
+      QWidget *parent = 0
     );
 %Docstring
 Constructor for QgsProcessingModelerParametersDialog.

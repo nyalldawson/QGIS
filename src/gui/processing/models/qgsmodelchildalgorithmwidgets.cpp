@@ -47,7 +47,7 @@ using namespace Qt::StringLiterals;
 //
 
 QgsProcessingModelerParametersPanelWidget::QgsProcessingModelerParametersPanelWidget(
-  const QgsProcessingAlgorithm *alg, QgsProcessingModelAlgorithm *model, const QString &childId, const QVariantMap &configuration, QWidget *parent, QgsProcessingContext *context, QWidget *dialog
+  const QgsProcessingAlgorithm *alg, QgsProcessingModelAlgorithm *model, QgsProcessingContext &context, const QString &childId, const QVariantMap &configuration, QWidget *parent, QWidget *dialog
 )
   : QgsPanelWidget( parent )
   , mAlgorithm( alg ? alg->create() : nullptr )
@@ -57,7 +57,6 @@ QgsProcessingModelerParametersPanelWidget::QgsProcessingModelerParametersPanelWi
   , mContext( context )
   , mDialog( dialog )
 {
-  //mContextGenerator = std::make_unique< InternalContextGenerator >( mContext );
   setupUi();
 
   setStateFromChildAlgorithm();
@@ -144,7 +143,7 @@ void QgsProcessingModelerParametersPanelWidget::setupUi()
         continue;
 
       // note: ownership of widget is transferred to parent layout below
-      QgsProcessingModelerParameterWidget *widget = QgsGui::processingGuiRegistry()->createModelerParameterWidget( mModel, mChildId, param, *mContext );
+      QgsProcessingModelerParameterWidget *widget = QgsGui::processingGuiRegistry()->createModelerParameterWidget( mModel, mChildId, param, mContext );
       if ( !widget )
         continue;
 
@@ -177,7 +176,7 @@ void QgsProcessingModelerParametersPanelWidget::setupUi()
         continue;
 
       // note: ownership of widget is transferred to parent layout below
-      QgsProcessingModelerParameterWidget *widget = QgsGui::processingGuiRegistry()->createModelerParameterWidget( mModel, mChildId, output, *mContext );
+      QgsProcessingModelerParameterWidget *widget = QgsGui::processingGuiRegistry()->createModelerParameterWidget( mModel, mChildId, output, mContext );
       if ( !widget )
         continue;
 
@@ -490,12 +489,12 @@ std::unique_ptr< QgsProcessingModelChildAlgorithm > QgsProcessingModelerParamete
 //
 
 QgsProcessingModelerParametersWidget::QgsProcessingModelerParametersWidget(
-  const QgsProcessingAlgorithm *alg, QgsProcessingModelAlgorithm *model, const QString &childId, const QVariantMap &configuration, QWidget *parent, QgsProcessingContext *context, QWidget *dialog
+  const QgsProcessingAlgorithm *alg, QgsProcessingModelAlgorithm *model, QgsProcessingContext &context, const QString &childId, const QVariantMap &configuration, QWidget *parent, QWidget *dialog
 )
   : QgsProcessingModelConfigWidget( parent )
   , mAlg( alg ? alg->create() : nullptr )
 {
-  mParametersPanel = new QgsProcessingModelerParametersPanelWidget( alg, model, childId, configuration, this, context, dialog );
+  mParametersPanel = new QgsProcessingModelerParametersPanelWidget( alg, model, context, childId, configuration, this, dialog );
   connect( mParametersPanel, &QgsProcessingModelerParametersPanelWidget::widgetChanged, this, &QgsProcessingModelConfigWidget::widgetChanged );
 
   // TODO: should be emitting widgetChanged when comment or comment color is changed
@@ -597,7 +596,7 @@ std::unique_ptr< QgsProcessingModelChildAlgorithm > QgsProcessingModelerParamete
 //
 
 QgsProcessingModelerParametersDialog::QgsProcessingModelerParametersDialog(
-  const QgsProcessingAlgorithm *alg, QgsProcessingModelAlgorithm *model, const QString &childId, const QVariantMap &configuration, QWidget *parent
+  const QgsProcessingAlgorithm *alg, QgsProcessingModelAlgorithm *model, QgsProcessingContext &context, const QString &childId, const QVariantMap &configuration, QWidget *parent
 )
   : QDialog( parent )
 {
@@ -606,10 +605,7 @@ QgsProcessingModelerParametersDialog::QgsProcessingModelerParametersDialog(
   // TODO: is this needed? it was in the python version...
   // self.setStyleSheet(iface.mainWindow().styleSheet())
 
-  // TODO fix
-  mContext = std::make_unique< QgsProcessingContext >();
-
-  mWidget = new QgsProcessingModelerParametersWidget( alg, model, childId, configuration, this, mContext.get(), this );
+  mWidget = new QgsProcessingModelerParametersWidget( alg, model, context, childId, configuration, this, this );
 
   setWindowTitle( alg ? ( alg->group().isEmpty() ? alg->displayName() : u"%1 - %2"_s.arg( alg->group(), alg->displayName() ) ) : QString() );
 
