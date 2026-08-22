@@ -17,6 +17,7 @@
 
 #include "qgsapplication.h"
 #include "qgsmessagelog.h"
+#include "qgsmodelchildalgorithmwidgets.h"
 #include "qgsmodelgraphicitem.h"
 #include "qgsmodelgraphicsscene.h"
 #include "qgsmodelgraphicsview.h"
@@ -1539,6 +1540,38 @@ int QgsModelChildAlgorithmGraphicItem::indexForOutput( const QString &output ) c
   return -1;
 }
 
+void QgsModelChildAlgorithmGraphicItem::editComponent()
+{
+  edit( false );
+}
+
+void QgsModelChildAlgorithmGraphicItem::editComment()
+{
+  edit( true );
+}
+
+void QgsModelChildAlgorithmGraphicItem::applyNewAlgorithm( const QgsProcessingModelChildAlgorithm &algorithm )
+{
+  const QgsProcessingModelChildAlgorithm *child = dynamic_cast< const QgsProcessingModelChildAlgorithm * >( component() );
+  if ( !child )
+    return;
+
+  QgsProcessingModelChildAlgorithm newAlgorithm = algorithm;
+  newAlgorithm.setChildId( child->childId() );
+  newAlgorithm.copyNonDefinitionPropertiesFromModel( model() );
+  if ( newAlgorithm.toVariant() == child->toVariant() )
+  {
+    // nothing changed, treat as cancel was pressed
+    return;
+  }
+
+  const QString undoCommandId = u"alg:%1"_s.arg( child->childId() );
+  emit aboutToChange( tr( "Edit %1" ).arg( newAlgorithm.description() ), undoCommandId );
+  model()->setChildAlgorithm( newAlgorithm );
+  emit requestModelRepaint();
+  emit changed();
+}
+
 void QgsModelChildAlgorithmGraphicItem::paintBackground( QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget )
 {
   if ( mProgress < 0 )
@@ -1653,6 +1686,36 @@ void QgsModelChildAlgorithmGraphicItem::activateAlgorithm()
           "Activate them them before trying to activate it.."
         )
       );
+    }
+  }
+}
+
+void QgsModelChildAlgorithmGraphicItem::edit( bool editComment )
+{
+  const QgsProcessingModelChildAlgorithm *child = dynamic_cast< const QgsProcessingModelChildAlgorithm * >( component() );
+  if ( !child )
+    return;
+
+  // TODO FIX
+  QgsProcessingContext context;
+
+  const QgsProcessingAlgorithm *algorithm = child->algorithm();
+  QgsProcessingModelerParametersDialog dlg( algorithm, model(), context, child->childId(), child->configuration(), this->scene()->views().at( 0 ) );
+  dlg.setModal( true );
+  dlg.setComments( child->comment()->description() );
+  dlg.setCommentColor( child->comment()->color() );
+  if ( editComment )
+  {
+    dlg.switchToCommentTab();
+  }
+
+  if ( dlg.exec() )
+  {
+    std::unique_ptr< QgsProcessingModelChildAlgorithm > alg = dlg.createAlgorithm();
+    if ( alg )
+    {
+      applyNewAlgorithm( *alg );
+      emit rebuildConfigurationDockWidget();
     }
   }
 }
