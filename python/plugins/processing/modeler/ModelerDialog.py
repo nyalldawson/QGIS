@@ -62,7 +62,6 @@ from processing.gui.algorithm_widget import AlgorithmWidget
 from processing.modeler.ModelerParameterDefinitionDialog import (
     ModelerParameterDefinitionDialog,
 )
-from processing.modeler.ModelerParametersDialog import ModelerParametersDialog
 from processing.modeler.ModelerScene import ModelerScene
 from processing.modeler.ModelerUtils import ModelerUtils
 from processing.modeler.ProjectProvider import PROJECT_PROVIDER_ID
