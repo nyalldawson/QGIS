@@ -22,6 +22,7 @@
 #include <memory>
 
 #include "qgis_gui.h"
+#include "qgsmodeldesignerconfigwidget.h"
 #include "qgspanelwidget.h"
 
 class QgsProcessingAlgorithm;
@@ -35,11 +36,16 @@ class QgsProcessingAlgorithmConfigurationWidget;
 class QgsProcessingModelerParameterWidget;
 class QgsModelChildDependenciesWidget;
 class QgsProcessingContextGenerator;
+class QTabWidget;
+class QgsPanelWidgetStack;
+class QTextEdit;
+class QgsColorButton;
 
+#ifndef SIP_RUN
 /**
  * A panel widget displaying the configuration for a child algorithm in a Processing model.
  *
- * \warning Not stable API
+ * \note Not available in Python bindings
  *
  * \ingroup gui
  * \since QGIS 4.4
@@ -74,14 +80,14 @@ class GUI_EXPORT QgsProcessingModelerParametersPanelWidget : public QgsPanelWidg
    */
     std::unique_ptr< QgsProcessingModelChildAlgorithm > createAlgorithm();
 
+    /**
+     * Sets widget state from the existing child algorithm definition in the model.
+     */
+    void setStateFromChildAlgorithm();
+
   private:
     void setupUi();
     void emitChangedSignal();
-
-    /**
-   * Sets widget state from the existing child algorithm definition in the model.
-   */
-    void setStateFromChildAlgorithm();
 
     std::unique_ptr< QgsProcessingAlgorithm > mAlgorithm;
     QgsProcessingModelAlgorithm *mModel = nullptr;
@@ -100,6 +106,93 @@ class GUI_EXPORT QgsProcessingModelerParametersPanelWidget : public QgsPanelWidg
     QgsModelChildDependenciesWidget *mDependenciesPanel = nullptr;
     std::unique_ptr< QgsProcessingContextGenerator > mContextGenerator;
 };
+#endif
 
+/**
+ * A panel config widget combining parameter settings and comments for a child algorithm in a Processing model.
+ *
+ * \warning Not stable API
+ * \ingroup gui
+ * \since QGIS 4.4
+ */
+class GUI_EXPORT QgsProcessingModelerParametersWidget : public QgsProcessingModelConfigWidget
+{
+    Q_OBJECT
+
+  public:
+    /**
+   * Constructor for QgsProcessingModelerParametersWidget.
+   */
+    QgsProcessingModelerParametersWidget(
+      const QgsProcessingAlgorithm *alg,
+      QgsProcessingModelAlgorithm *model,
+      const QString &algName = QString(),
+      const QVariantMap &configuration = QVariantMap(),
+      QWidget *parent = nullptr,
+      QgsProcessingContext *context = nullptr,
+      QWidget *dialog = nullptr
+    );
+
+    ~QgsProcessingModelerParametersWidget() override;
+
+    /**
+   * Returns the algorithm associated with the widget.
+   */
+    const QgsProcessingAlgorithm *algorithm() const;
+
+    /**
+   * Sets the comment \a text.
+   *
+   * \see comments()
+   */
+    void setComments( const QString &text );
+
+    /**
+   * Returns the comment text.
+   *
+   * \see setComments()
+   */
+    QString comments() const;
+
+    /**
+   * Sets the comment's \a color.
+   *
+   * \see commentColor()
+   */
+    void setCommentColor( const QColor &color );
+
+    /**
+   * Returns the comment's color.
+   *
+   * \see setCommentColor()
+   */
+    QColor commentColor() const;
+
+    /**
+   * Focuses the widget on the comment editing tab.
+   */
+    void switchToCommentTab();
+
+    /**
+   * Sets widget state from the existing child algorithm definition in the model.
+   */
+    void setStateFromChildAlgorithm();
+
+    /**
+   * Creates the child algorithm instance, populated with the current widget parameter values and comments.
+   */
+    std::unique_ptr< QgsProcessingModelChildAlgorithm > createAlgorithm();
+
+  private:
+    void setupUi();
+
+    std::unique_ptr< QgsProcessingAlgorithm > mAlg;
+
+    QTabWidget *mTab = nullptr;
+    QgsPanelWidgetStack *mPanelWidgetStack = nullptr;
+    QgsProcessingModelerParametersPanelWidget *mParametersPanel = nullptr;
+    QTextEdit *mCommentEdit = nullptr;
+    QgsColorButton *mCommentColorButton = nullptr;
+};
 
 #endif // QGSPROCESSINGMODELCHILDALGORITHMNWIDGETS_H

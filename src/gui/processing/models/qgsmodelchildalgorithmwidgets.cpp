@@ -19,6 +19,7 @@
 #include "qgsmodelchildalgorithmwidgets.h"
 
 #include "qgscollapsiblegroupbox.h"
+#include "qgscolorbutton.h"
 #include "qgsgui.h"
 #include "qgsmessagebar.h"
 #include "qgsmodeldesignerdialog.h"
@@ -476,5 +477,112 @@ std::unique_ptr< QgsProcessingModelChildAlgorithm > QgsProcessingModelerParamete
   alg->setModelOutputs( outputs );
   alg->setDependencies( mDependenciesPanel->value() );
 
+  return alg;
+}
+
+
+//
+// QgsProcessingModelerParametersWidget
+//
+
+QgsProcessingModelerParametersWidget::QgsProcessingModelerParametersWidget(
+  const QgsProcessingAlgorithm *alg, QgsProcessingModelAlgorithm *model, const QString &algName, const QVariantMap &configuration, QWidget *parent, QgsProcessingContext *context, QWidget *dialog
+)
+  : QgsProcessingModelConfigWidget( parent )
+  , mAlg( alg ? alg->create() : nullptr )
+{
+  mParametersPanel = new QgsProcessingModelerParametersPanelWidget( alg, model, algName, configuration, this, context, dialog );
+  connect( mParametersPanel, &QgsProcessingModelerParametersPanelWidget::widgetChanged, this, &QgsProcessingModelConfigWidget::widgetChanged );
+
+  setupUi();
+}
+
+QgsProcessingModelerParametersWidget::~QgsProcessingModelerParametersWidget() = default;
+
+const QgsProcessingAlgorithm *QgsProcessingModelerParametersWidget::algorithm() const
+{
+  return mAlg.get();
+}
+
+void QgsProcessingModelerParametersWidget::switchToCommentTab()
+{
+  mTab->setCurrentIndex( 1 );
+  mCommentEdit->setFocus();
+  mCommentEdit->selectAll();
+}
+
+void QgsProcessingModelerParametersWidget::setupUi()
+{
+  auto mainLayout = new QVBoxLayout();
+  mainLayout->setContentsMargins( 0, 0, 0, 0 );
+
+  mTab = new QTabWidget();
+  mainLayout->addWidget( mTab );
+
+  mPanelWidgetStack = new QgsPanelWidgetStack();
+  mParametersPanel->setDockMode( true );
+  mPanelWidgetStack->setMainPanel( mParametersPanel );
+
+  mTab->addTab( mPanelWidgetStack, tr( "Properties" ) );
+
+  auto commentLayout = new QVBoxLayout();
+  mCommentEdit = new QTextEdit();
+  mCommentEdit->setAcceptRichText( false );
+  commentLayout->addWidget( mCommentEdit, 1 );
+
+  auto hl = new QHBoxLayout();
+  hl->setContentsMargins( 0, 0, 0, 0 );
+  hl->addWidget( new QLabel( tr( "Color" ) ) );
+
+  mCommentColorButton = new QgsColorButton();
+  mCommentColorButton->setAllowOpacity( true );
+  mCommentColorButton->setWindowTitle( tr( "Comment Color" ) );
+  mCommentColorButton->setShowNull( true, tr( "Default" ) );
+  hl->addWidget( mCommentColorButton );
+  commentLayout->addLayout( hl );
+
+  auto commentWidget = new QWidget();
+  commentWidget->setLayout( commentLayout );
+  mTab->addTab( commentWidget, tr( "Comments" ) );
+
+  setLayout( mainLayout );
+}
+
+void QgsProcessingModelerParametersWidget::setComments( const QString &text )
+{
+  mCommentEdit->setPlainText( text );
+}
+
+QString QgsProcessingModelerParametersWidget::comments() const
+{
+  return mCommentEdit->toPlainText();
+}
+
+void QgsProcessingModelerParametersWidget::setCommentColor( const QColor &color )
+{
+  if ( color.isValid() )
+    mCommentColorButton->setColor( color );
+  else
+    mCommentColorButton->setToNull();
+}
+
+QColor QgsProcessingModelerParametersWidget::commentColor() const
+{
+  return !mCommentColorButton->isNull() ? mCommentColorButton->color() : QColor();
+}
+
+void QgsProcessingModelerParametersWidget::setStateFromChildAlgorithm()
+{
+  mParametersPanel->setStateFromChildAlgorithm();
+}
+
+std::unique_ptr< QgsProcessingModelChildAlgorithm > QgsProcessingModelerParametersWidget::createAlgorithm()
+{
+  std::unique_ptr< QgsProcessingModelChildAlgorithm > alg = mParametersPanel->createAlgorithm();
+  if ( alg )
+  {
+    alg->comment()->setDescription( comments() );
+    alg->comment()->setColor( commentColor() );
+  }
   return alg;
 }
