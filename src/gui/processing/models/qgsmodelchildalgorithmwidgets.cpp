@@ -494,6 +494,7 @@ QgsProcessingModelerParametersWidget::QgsProcessingModelerParametersWidget(
   mParametersPanel = new QgsProcessingModelerParametersPanelWidget( alg, model, algName, configuration, this, context, dialog );
   connect( mParametersPanel, &QgsProcessingModelerParametersPanelWidget::widgetChanged, this, &QgsProcessingModelConfigWidget::widgetChanged );
 
+  // TODO: should be emitting widgetChanged when comment or comment color is changed
   setupUi();
 }
 
