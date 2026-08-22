@@ -31,6 +31,7 @@ from qgis.gui import (
     QgsModelOutputGraphicItem,
     QgsModelParameterGraphicItem,
     QgsProcessingContextGenerator,
+    QgsProcessingModelerParametersDialog,
     QgsProcessingParameterDefinitionDialog,
     QgsProcessingParameterWidgetContext,
 )
@@ -40,7 +41,6 @@ from qgis.utils import iface
 from processing.modeler.ModelerParameterDefinitionDialog import (
     ModelerParameterDefinitionDialog,
 )
-from processing.modeler.ModelerParametersDialog import ModelerParametersDialog
 from processing.tools.dataobjects import createContext
 
 
@@ -189,7 +189,7 @@ class ModelerChildAlgorithmGraphicItem(QgsModelChildAlgorithmGraphicItem):
 
     def edit(self, edit_comment=False):
         elemAlg = self.component().algorithm()
-        dlg = ModelerParametersDialog(
+        dlg = QgsProcessingModelerParametersDialog(
             elemAlg,
             self.model(),
             self.component().childId(),

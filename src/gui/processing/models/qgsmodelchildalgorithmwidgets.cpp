@@ -21,16 +21,20 @@
 #include "qgscollapsiblegroupbox.h"
 #include "qgscolorbutton.h"
 #include "qgsgui.h"
+#include "qgshelp.h"
 #include "qgsmessagebar.h"
 #include "qgsmodeldesignerdialog.h"
 #include "qgsprocessingalgorithm.h"
 #include "qgsprocessingalgorithmconfigurationwidget.h"
+#include "qgsprocessingcontext.h"
 #include "qgsprocessingguiregistry.h"
 #include "qgsprocessingmodelalgorithm.h"
 #include "qgsprocessingmodelerparameterwidget.h"
+#include "qgsprocessingprovider.h"
 #include "qgsprocessingwidgetwrapper.h"
 #include "qgsscrollarea.h"
 
+#include <QDesktopServices>
 #include <QLabel>
 #include <QLineEdit>
 #include <QString>
@@ -43,12 +47,12 @@ using namespace Qt::StringLiterals;
 //
 
 QgsProcessingModelerParametersPanelWidget::QgsProcessingModelerParametersPanelWidget(
-  const QgsProcessingAlgorithm *alg, QgsProcessingModelAlgorithm *model, const QString &algName, const QVariantMap &configuration, QWidget *parent, QgsProcessingContext *context, QWidget *dialog
+  const QgsProcessingAlgorithm *alg, QgsProcessingModelAlgorithm *model, const QString &childId, const QVariantMap &configuration, QWidget *parent, QgsProcessingContext *context, QWidget *dialog
 )
   : QgsPanelWidget( parent )
   , mAlgorithm( alg ? alg->create() : nullptr )
   , mModel( model )
-  , mChildId( algName )
+  , mChildId( childId )
   , mConfiguration( configuration )
   , mContext( context )
   , mDialog( dialog )
@@ -486,12 +490,12 @@ std::unique_ptr< QgsProcessingModelChildAlgorithm > QgsProcessingModelerParamete
 //
 
 QgsProcessingModelerParametersWidget::QgsProcessingModelerParametersWidget(
-  const QgsProcessingAlgorithm *alg, QgsProcessingModelAlgorithm *model, const QString &algName, const QVariantMap &configuration, QWidget *parent, QgsProcessingContext *context, QWidget *dialog
+  const QgsProcessingAlgorithm *alg, QgsProcessingModelAlgorithm *model, const QString &childId, const QVariantMap &configuration, QWidget *parent, QgsProcessingContext *context, QWidget *dialog
 )
   : QgsProcessingModelConfigWidget( parent )
   , mAlg( alg ? alg->create() : nullptr )
 {
-  mParametersPanel = new QgsProcessingModelerParametersPanelWidget( alg, model, algName, configuration, this, context, dialog );
+  mParametersPanel = new QgsProcessingModelerParametersPanelWidget( alg, model, childId, configuration, this, context, dialog );
   connect( mParametersPanel, &QgsProcessingModelerParametersPanelWidget::widgetChanged, this, &QgsProcessingModelConfigWidget::widgetChanged );
 
   // TODO: should be emitting widgetChanged when comment or comment color is changed
@@ -586,4 +590,106 @@ std::unique_ptr< QgsProcessingModelChildAlgorithm > QgsProcessingModelerParamete
     alg->comment()->setColor( commentColor() );
   }
   return alg;
+}
+
+//
+// QgsProcessingModelerParametersDialog
+//
+
+QgsProcessingModelerParametersDialog::QgsProcessingModelerParametersDialog(
+  const QgsProcessingAlgorithm *alg, QgsProcessingModelAlgorithm *model, const QString &childId, const QVariantMap &configuration, QWidget *parent
+)
+  : QDialog( parent )
+{
+  setObjectName( u"QgsProcessingModelerParametersDialog"_s );
+
+  // TODO: is this needed? it was in the python version...
+  // self.setStyleSheet(iface.mainWindow().styleSheet())
+
+  // TODO fix
+  mContext = std::make_unique< QgsProcessingContext >();
+
+  mWidget = new QgsProcessingModelerParametersWidget( alg, model, childId, configuration, this, mContext.get(), this );
+
+  setWindowTitle( alg ? ( alg->group().isEmpty() ? alg->displayName() : u"%1 - %2"_s.arg( alg->group(), alg->displayName() ) ) : QString() );
+
+  QgsGui::enableAutoGeometryRestore( this );
+
+  mButtonBox = new QDialogButtonBox();
+  mButtonBox->setOrientation( Qt::Orientation::Horizontal );
+  mButtonBox->setStandardButtons( QDialogButtonBox::StandardButton::Cancel | QDialogButtonBox::StandardButton::Ok | QDialogButtonBox::StandardButton::Help );
+
+  connect( mButtonBox, &QDialogButtonBox::accepted, this, &QgsProcessingModelerParametersDialog::okPressed );
+  connect( mButtonBox, &QDialogButtonBox::rejected, this, &QDialog::reject );
+  connect( mButtonBox, &QDialogButtonBox::helpRequested, this, &QgsProcessingModelerParametersDialog::openHelp );
+
+  auto mainLayout = new QVBoxLayout();
+  mainLayout->addWidget( mWidget, 1 );
+  mainLayout->addWidget( mButtonBox );
+  setLayout( mainLayout );
+}
+
+QgsProcessingModelerParametersDialog::~QgsProcessingModelerParametersDialog() = default;
+
+const QgsProcessingAlgorithm *QgsProcessingModelerParametersDialog::algorithm() const
+{
+  return mWidget->algorithm();
+}
+
+void QgsProcessingModelerParametersDialog::setComments( const QString &text )
+{
+  mWidget->setComments( text );
+}
+
+QString QgsProcessingModelerParametersDialog::comments() const
+{
+  return mWidget->comments();
+}
+
+void QgsProcessingModelerParametersDialog::setCommentColor( const QColor &color )
+{
+  mWidget->setCommentColor( color );
+}
+
+QColor QgsProcessingModelerParametersDialog::commentColor() const
+{
+  return mWidget->commentColor();
+}
+
+void QgsProcessingModelerParametersDialog::switchToCommentTab()
+{
+  mWidget->switchToCommentTab();
+}
+
+void QgsProcessingModelerParametersDialog::setStateFromChildAlgorithm()
+{
+  mWidget->setStateFromChildAlgorithm();
+}
+
+std::unique_ptr< QgsProcessingModelChildAlgorithm > QgsProcessingModelerParametersDialog::createAlgorithm()
+{
+  return mWidget->createAlgorithm();
+}
+
+void QgsProcessingModelerParametersDialog::okPressed()
+{
+  if ( createAlgorithm() )
+    accept();
+}
+
+void QgsProcessingModelerParametersDialog::openHelp()
+{
+  if ( !algorithm() )
+    return;
+
+  QString algHelp = algorithm()->helpUrl();
+  if ( algHelp.isEmpty() && algorithm()->provider() )
+  {
+    algHelp = QgsHelp::helpUrl( u"processing_algs/%1/%2.html#%3"_s
+                                  .arg( algorithm()->provider()->helpId(), algorithm()->groupId(), u"%1%2"_s.arg( algorithm()->provider()->helpId(), QString( algorithm()->name() ).replace( '_', '-' ) ) ) )
+                .toString();
+  }
+
+  if ( !algHelp.isEmpty() )
+    QDesktopServices::openUrl( QUrl( algHelp ) );
 }
