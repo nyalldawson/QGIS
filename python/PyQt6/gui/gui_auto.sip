@@ -456,7 +456,6 @@
 %Include auto_generated/processing/qgsprocessingtoolboxtreeview.sip
 %Include auto_generated/processing/qgsprocessingwidgetwrapper.sip
 %Include auto_generated/processing/models/qgsmodelarrowitem.sip
-%Include auto_generated/processing/models/qgsmodelchildalgorithmwidgets.sip
 %Include auto_generated/processing/models/qgsmodelcomponentgraphicitem.sip
 %Include auto_generated/processing/models/qgsmodeldesignerconfigwidget.sip
 %Include auto_generated/processing/models/qgsmodeldesignerdialog.sip

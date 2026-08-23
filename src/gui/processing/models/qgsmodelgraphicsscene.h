@@ -292,7 +292,7 @@ class GUI_EXPORT QgsModelGraphicsScene : public QGraphicsScene
     /**
      * Creates a new graphic item for a model child algorithm.
      */
-    QgsModelChildAlgorithmGraphicItem *createChildAlgGraphicItem( QgsProcessingModelAlgorithm *model, QgsProcessingModelChildAlgorithm *child ) const SIP_FACTORY;
+    SIP_SKIP QgsModelChildAlgorithmGraphicItem *createChildAlgGraphicItem( QgsProcessingModelAlgorithm *model, QgsProcessingModelChildAlgorithm *child ) const SIP_FACTORY;
 
     /**
      * Creates a new graphic item for a model output.
@@ -302,12 +302,12 @@ class GUI_EXPORT QgsModelGraphicsScene : public QGraphicsScene
     /**
      * Creates a new graphic item for a model comment.
      */
-    virtual QgsModelComponentGraphicItem *createCommentGraphicItem( QgsProcessingModelAlgorithm *model, QgsProcessingModelComment *comment, QgsModelComponentGraphicItem *parentItem ) const SIP_FACTORY;
+    SIP_SKIP QgsModelComponentGraphicItem *createCommentGraphicItem( QgsProcessingModelAlgorithm *model, QgsProcessingModelComment *comment, QgsModelComponentGraphicItem *parentItem ) const SIP_FACTORY;
 
     /**
      * Creates a new graphic item for a model group box.
      */
-    QgsModelComponentGraphicItem *createGroupBoxGraphicItem( QgsProcessingModelAlgorithm *model, QgsProcessingModelGroupBox *box ) const SIP_FACTORY;
+    SIP_SKIP QgsModelComponentGraphicItem *createGroupBoxGraphicItem( QgsProcessingModelAlgorithm *model, QgsProcessingModelGroupBox *box ) const SIP_FACTORY;
 
   private:
     struct LinkSource

@@ -27,6 +27,8 @@
 
 #include <QDialog>
 
+#define SIP_NO_FILE
+
 class QgsProcessingAlgorithm;
 class QgsProcessingModelAlgorithm;
 class QgsProcessingContext;
@@ -44,7 +46,7 @@ class QTextEdit;
 class QgsColorButton;
 class QDialogButtonBox;
 
-#ifndef SIP_RUN
+
 /**
  * A panel widget displaying the configuration for a child algorithm in a Processing model.
  *
@@ -109,12 +111,12 @@ class GUI_EXPORT QgsProcessingModelerParametersPanelWidget : public QgsPanelWidg
     QgsModelChildDependenciesWidget *mDependenciesPanel = nullptr;
     std::unique_ptr< QgsProcessingContextGenerator > mContextGenerator;
 };
-#endif
 
 /**
  * A panel config widget combining parameter settings and comments for a child algorithm in a Processing model.
  *
- * \warning Not stable API
+ * \note Not available in Python bindings
+ *
  * \ingroup gui
  * \since QGIS 4.4
  */
@@ -203,7 +205,7 @@ class GUI_EXPORT QgsProcessingModelerParametersWidget : public QgsProcessingMode
  * A dialog for configuring parameter settings and comments for a child algorithm in a Processing model.
 
  * \ingroup gui
- * \note Not stable API.
+ * \note Not available in Python bindings
  * \since QGIS 4.4
  */
 class GUI_EXPORT QgsProcessingModelerParametersDialog : public QDialog
