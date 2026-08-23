@@ -194,16 +194,15 @@ void QgsProcessingModelerParametersPanelWidget::setupUi()
     }
   }
 
-  // TODO ... really??
-  auto spacerLabel = new QLabel( u" "_s );
-  verticalLayout->addWidget( spacerLabel );
+  const QFontMetrics fm( font() );
+  auto spacer = new QSpacerItem( 20, fm.height() );
+  verticalLayout->addItem( spacer );
 
   auto dependenciesLabel = new QLabel( tr( "Dependencies" ) );
   mDependenciesPanel = new QgsModelChildDependenciesWidget( this, mModel, mChildId );
   verticalLayout->addWidget( dependenciesLabel );
   verticalLayout->addWidget( mDependenciesPanel );
-  // TODO... really?
-  verticalLayout->addStretch( 1000 );
+  verticalLayout->addStretch( 1 );
 
   auto scrollAreaContainer = new QVBoxLayout();
   scrollAreaContainer->setSpacing( 2 );
@@ -244,7 +243,7 @@ void QgsProcessingModelerParametersPanelWidget::setStateFromChildAlgorithm()
     // for algorithms with a custom config widget, we need to iterate over parameters defined
     // when that algorithm is created respecting the custom config widget.
 
-    // WARNING: we CANNOT overwrite mAlgorithm here, as all the exiting wrappers have already
+    // WARNING: we CANNOT overwrite mAlgorithm here, as all the existing wrappers have already
     // been created with references to that algorithm instance!
     tempAlgorithm.reset( childAlgorithm.algorithm()->create( mAlgorithmItem->configuration() ) );
     sourceAlgorithm = tempAlgorithm.get();
