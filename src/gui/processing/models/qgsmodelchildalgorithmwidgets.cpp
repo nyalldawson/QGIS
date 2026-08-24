@@ -64,6 +64,18 @@ QgsProcessingModelerParametersPanelWidget::QgsProcessingModelerParametersPanelWi
 
 QgsProcessingModelerParametersPanelWidget::~QgsProcessingModelerParametersPanelWidget() = default;
 
+void QgsProcessingModelerParametersPanelWidget::setWidgetContext( const QgsProcessingParameterWidgetContext &context )
+{
+  if ( mAlgorithmItem )
+  {
+    mAlgorithmItem->setWidgetContext( context );
+  }
+  for ( auto it = mWrappers.constBegin(); it != mWrappers.constEnd(); ++it )
+  {
+    it.value()->setWidgetContext( context );
+  }
+}
+
 const QgsProcessingAlgorithm *QgsProcessingModelerParametersPanelWidget::algorithm() const
 {
   return mAlgorithm.get();
@@ -98,18 +110,11 @@ void QgsProcessingModelerParametersPanelWidget::setupUi()
   line->setFrameShadow( QFrame::Shadow::Sunken );
   verticalLayout->addWidget( line );
 
-  // TODO -- fix this!
-  QgsProcessingParameterWidgetContext widgetContext;
-  widgetContext.setProject( QgsProject::instance() );
-  widgetContext.setModel( mModel );
-  widgetContext.setModelChildAlgorithmId( mChildId );
-
   if ( mAlgorithm )
   {
     mAlgorithmItem = QgsGui::processingGuiRegistry()->algorithmConfigurationWidget( mAlgorithm.get() );
     if ( mAlgorithmItem )
     {
-      mAlgorithmItem->setWidgetContext( widgetContext );
       mAlgorithmItem->registerProcessingContextGenerator( mContextGenerator.get() );
       if ( !mConfiguration.isEmpty() )
         mAlgorithmItem->setConfiguration( mConfiguration );
@@ -148,7 +153,6 @@ void QgsProcessingModelerParametersPanelWidget::setupUi()
         continue;
 
       widget->setDialog( mDialog );
-      widget->setWidgetContext( widgetContext );
       widget->registerProcessingContextGenerator( mContextGenerator.get() );
       connect( widget, &QgsProcessingModelerParameterWidget::changed, this, &QgsProcessingModelerParametersPanelWidget::emitChangedSignal );
       mWrappers.insert( param->name(), widget );
@@ -181,7 +185,6 @@ void QgsProcessingModelerParametersPanelWidget::setupUi()
         continue;
 
       widget->setDialog( mDialog );
-      widget->setWidgetContext( widgetContext );
       widget->registerProcessingContextGenerator( mContextGenerator.get() );
       connect( widget, &QgsProcessingModelerParameterWidget::changed, this, &QgsProcessingModelerParametersPanelWidget::emitChangedSignal );
 
@@ -502,6 +505,11 @@ QgsProcessingModelerParametersWidget::QgsProcessingModelerParametersWidget(
 
 QgsProcessingModelerParametersWidget::~QgsProcessingModelerParametersWidget() = default;
 
+void QgsProcessingModelerParametersWidget::setWidgetContext( const QgsProcessingParameterWidgetContext &context )
+{
+  mParametersPanel->setWidgetContext( context );
+}
+
 const QgsProcessingAlgorithm *QgsProcessingModelerParametersWidget::algorithm() const
 {
   return mAlg.get();
@@ -625,6 +633,11 @@ QgsProcessingModelerParametersDialog::QgsProcessingModelerParametersDialog(
 }
 
 QgsProcessingModelerParametersDialog::~QgsProcessingModelerParametersDialog() = default;
+
+void QgsProcessingModelerParametersDialog::setWidgetContext( const QgsProcessingParameterWidgetContext &context )
+{
+  mWidget->setWidgetContext( context );
+}
 
 const QgsProcessingAlgorithm *QgsProcessingModelerParametersDialog::algorithm() const
 {

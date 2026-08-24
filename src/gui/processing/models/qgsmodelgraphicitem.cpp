@@ -136,6 +136,9 @@ QgsModelGraphicsView *QgsModelDesignerFlatButtonGraphicItem::view()
   return qobject_cast<QgsModelGraphicsView *>( scene()->views().first() );
 }
 
+void QgsModelDesignerFlatButtonGraphicItem::registerWidgetContextGenerator( QgsProcessingWidgetContextGenerator *generator )
+{}
+
 void QgsModelDesignerFlatButtonGraphicItem::setPicture( const QPicture &picture )
 {
   mPicture = picture;

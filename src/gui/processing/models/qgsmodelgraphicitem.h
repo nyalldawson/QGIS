@@ -27,6 +27,7 @@
 
 class QgsModelGraphicsView;
 class QgsModelViewMouseEvent;
+class QgsProcessingWidgetContextGenerator;
 
 ///@cond NOT_STABLE
 

@@ -855,6 +855,14 @@ QList<QgsModelArrowItem *> QgsModelComponentGraphicItem::outgoingArrows()
   return arrows;
 }
 
+void QgsModelComponentGraphicItem::registerWidgetContextGenerator( QgsProcessingWidgetContextGenerator *generator )
+{
+  mWidgetContextGenerator = generator;
+}
+
+QgsProcessingParameterWidgetContext QgsModelComponentGraphicItem::createWidgetContext()
+{}
+
 QgsModelParameterGraphicItem::QgsModelParameterGraphicItem( QgsProcessingModelParameter *parameter, QgsProcessingModelAlgorithm *model, QGraphicsItem *parent )
   : QgsModelComponentGraphicItem( parameter, model, parent )
 {
@@ -1704,6 +1712,9 @@ void QgsModelChildAlgorithmGraphicItem::edit( bool editComment )
   dlg.setModal( true );
   dlg.setComments( child->comment()->description() );
   dlg.setCommentColor( child->comment()->color() );
+
+  // TODO -- set widget context
+
   if ( editComment )
   {
     dlg.switchToCommentTab();

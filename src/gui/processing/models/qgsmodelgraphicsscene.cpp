@@ -148,12 +148,17 @@ void QgsModelGraphicsScene::flagChildrenAsOutdated( const QSet<QString> &childre
   }
 }
 
+void QgsModelGraphicsScene::registerWidgetContextGenerator( QgsProcessingWidgetContextGenerator *generator )
+{
+  mWidgetContextGenerator = generator;
+}
+
 QgsModelComponentGraphicItem *QgsModelGraphicsScene::createParameterGraphicItem( QgsProcessingModelAlgorithm *model, QgsProcessingModelParameter *param ) const
 {
   return new QgsModelParameterGraphicItem( param, model, nullptr );
 }
 
-QgsModelChildAlgorithmGraphicItem *QgsModelGraphicsScene::createChildAlgGraphicItem( QgsProcessingModelAlgorithm *model, QgsProcessingModelChildAlgorithm *child ) const
+QgsModelChildAlgorithmGraphicItem *QgsModelGraphicsScene::createChildAlgGraphicItem( QgsProcessingModelAlgorithm *model, QgsProcessingModelChildAlgorithm *child, QgsProcessingContext &context ) const
 {
   return new QgsModelChildAlgorithmGraphicItem( child, model, nullptr );
 }
@@ -181,6 +186,7 @@ void QgsModelGraphicsScene::createItems( QgsProcessingModelAlgorithm *model, Qgs
   for ( const QgsProcessingModelGroupBox &box : boxes )
   {
     QgsModelComponentGraphicItem *item = createGroupBoxGraphicItem( model, box.clone() );
+    item->registerWidgetContextGenerator( mWidgetContextGenerator );
     addItem( item );
     item->setPos( box.position().x(), box.position().y() );
     mGroupBoxItems.insert( box.uuid(), item );
@@ -194,6 +200,7 @@ void QgsModelGraphicsScene::createItems( QgsProcessingModelAlgorithm *model, Qgs
   for ( auto it = params.constBegin(); it != params.constEnd(); ++it )
   {
     QgsModelComponentGraphicItem *item = createParameterGraphicItem( model, it.value().clone() );
+    item->registerWidgetContextGenerator( mWidgetContextGenerator );
     addItem( item );
     item->setPos( it.value().position().x(), it.value().position().y() );
     mParameterItems.insert( it.value().parameterName(), item );
@@ -224,7 +231,8 @@ void QgsModelGraphicsScene::createItems( QgsProcessingModelAlgorithm *model, Qgs
   const QMap<QString, QgsProcessingModelChildAlgorithm> childAlgs = model->childAlgorithms();
   for ( auto it = childAlgs.constBegin(); it != childAlgs.constEnd(); ++it )
   {
-    QgsModelChildAlgorithmGraphicItem *item = createChildAlgGraphicItem( model, it.value().clone() );
+    QgsModelChildAlgorithmGraphicItem *item = createChildAlgGraphicItem( model, it.value().clone(), context );
+    item->registerWidgetContextGenerator( mWidgetContextGenerator );
     addItem( item );
     item->setPos( it.value().position().x(), it.value().position().y() );
 
@@ -350,6 +358,7 @@ void QgsModelGraphicsScene::createItems( QgsProcessingModelAlgorithm *model, Qgs
     for ( auto outputIt = outputs.constBegin(); outputIt != outputs.constEnd(); ++outputIt )
     {
       QgsModelComponentGraphicItem *item = createOutputGraphicItem( model, outputIt.value().clone() );
+      item->registerWidgetContextGenerator( mWidgetContextGenerator );
       addItem( item );
       connect( item, &QgsModelComponentGraphicItem::requestModelRepaint, this, &QgsModelGraphicsScene::rebuildRequired );
       connect( item, &QgsModelComponentGraphicItem::changed, this, &QgsModelGraphicsScene::componentChanged );
@@ -677,6 +686,7 @@ void QgsModelGraphicsScene::addCommentItemForComponent( QgsProcessingModelAlgori
     return;
 
   QgsModelComponentGraphicItem *commentItem = createCommentGraphicItem( model, component.comment()->clone(), parentItem );
+  commentItem->registerWidgetContextGenerator( mWidgetContextGenerator );
   commentItem->setPos( component.comment()->position().x(), component.comment()->position().y() );
   addItem( commentItem );
   connect( commentItem, &QgsModelComponentGraphicItem::requestModelRepaint, this, &QgsModelGraphicsScene::rebuildRequired );

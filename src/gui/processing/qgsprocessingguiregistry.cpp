@@ -293,6 +293,8 @@ QgsProcessingModelConfigWidget *QgsProcessingGuiInternalModelConfigWidgetFactory
 
     std::unique_ptr< QgsProcessingAlgorithm > algorithm( childAlg->algorithm()->create() );
     auto widget = new QgsProcessingModelerParametersWidget( algorithm.get(), widgetContext.model(), context, childId, childAlg->configuration(), nullptr );
+    widget->setWidgetContext( widgetContext );
+
     widget->setComments( childAlg->comment()->description() );
     widget->setCommentColor( childAlg->comment()->color() );
 

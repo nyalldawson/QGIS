@@ -76,6 +76,13 @@ class GUI_EXPORT QgsProcessingModelerParametersPanelWidget : public QgsPanelWidg
     ~QgsProcessingModelerParametersPanelWidget() override;
 
     /**
+     * Sets the \a context in which the panel is shown, e.g., the
+     * parent model algorithm, a linked map canvas, and other relevant information which allows the widget
+     * to fine-tune its behavior.
+     */
+    void setWidgetContext( const QgsProcessingParameterWidgetContext &context );
+
+    /**
    * Returns the algorithm associated with the widget.
    */
     const QgsProcessingAlgorithm *algorithm() const;
@@ -109,6 +116,8 @@ class GUI_EXPORT QgsProcessingModelerParametersPanelWidget : public QgsPanelWidg
     QgsProcessingAlgorithmConfigurationWidget *mAlgorithmItem = nullptr;
     QMap< QString, QgsProcessingModelerParameterWidget * > mWrappers;
     QgsModelChildDependenciesWidget *mDependenciesPanel = nullptr;
+
+    // TODO remove
     std::unique_ptr< QgsProcessingContextGenerator > mContextGenerator;
 };
 
@@ -139,6 +148,13 @@ class GUI_EXPORT QgsProcessingModelerParametersWidget : public QgsProcessingMode
     );
 
     ~QgsProcessingModelerParametersWidget() override;
+
+    /**
+     * Sets the \a context in which the panel is shown, e.g., the
+     * parent model algorithm, a linked map canvas, and other relevant information which allows the widget
+     * to fine-tune its behavior.
+     */
+    void setWidgetContext( const QgsProcessingParameterWidgetContext &context );
 
     /**
    * Returns the algorithm associated with the widget.
@@ -226,6 +242,13 @@ class GUI_EXPORT QgsProcessingModelerParametersDialog : public QDialog
     );
 
     ~QgsProcessingModelerParametersDialog() override;
+
+    /**
+     * Sets the \a context in which the dialog is shown, e.g., the
+     * parent model algorithm, a linked map canvas, and other relevant information which allows the widget
+     * to fine-tune its behavior.
+     */
+    void setWidgetContext( const QgsProcessingParameterWidgetContext &context );
 
     /**
    * Returns the algorithm associated with the dialog.
