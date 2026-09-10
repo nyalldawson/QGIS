@@ -112,7 +112,7 @@ class sieve(GdalAlgorithm):
         return "rasteranalysis"
 
     def icon(self):
-        return QIcon(os.path.join(pluginPath, "images", "gdaltools", "sieve.png"))
+        return self.get_png_icon("sieve.png")
 
     def commandName(self):
         return "gdal_sieve"

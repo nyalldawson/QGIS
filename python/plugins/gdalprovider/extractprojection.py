@@ -68,9 +68,7 @@ class ExtractProjection(GdalAlgorithm):
         return self.tr("Extract projection")
 
     def icon(self):
-        return QIcon(
-            os.path.join(pluginPath, "images", "gdaltools", "projection-export.png")
-        )
+        return self.get_png_icon("projection-export.png")
 
     def group(self):
         return self.tr("Raster projections")

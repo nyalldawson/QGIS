@@ -33,6 +33,7 @@ from qgis.core import (
     QgsVectorFileWriter,
 )
 from qgis.PyQt.QtCore import QCoreApplication
+from qgis.PyQt.QtGui import QIcon
 
 from .gdal_algorithm_widget import GdalAlgorithmWidget
 from .gdal_utils import GdalConnectionDetails, GdalUtils
@@ -55,6 +56,10 @@ class GdalAlgorithm(QgsProcessingAlgorithm):
 
     def svgIconPath(self):
         return QgsApplication.iconPath("providerGdal.svg")
+
+    @staticmethod
+    def get_png_icon(name: str) -> QIcon:
+        return QIcon(os.path.join(os.path.dirname(__file__), "images", name))
 
     def createInstance(self, config={}):
         return self.__class__()

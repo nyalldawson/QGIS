@@ -169,7 +169,7 @@ class contour(GdalAlgorithm):
         return self.tr("Contour")
 
     def icon(self):
-        return QIcon(os.path.join(pluginPath, "images", "gdaltools", "contour.png"))
+        return self.get_png_icon("contour.png")
 
     def group(self):
         return self.tr("Raster extraction")

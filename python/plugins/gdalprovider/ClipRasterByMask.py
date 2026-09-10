@@ -254,7 +254,7 @@ class ClipRasterByMask(GdalAlgorithm):
         return self.tr("Clip raster by mask layer")
 
     def icon(self):
-        return QIcon(os.path.join(pluginPath, "images", "gdaltools", "raster-clip.png"))
+        return self.get_png_icon("raster-clip.png")
 
     def group(self):
         return self.tr("Raster extraction")

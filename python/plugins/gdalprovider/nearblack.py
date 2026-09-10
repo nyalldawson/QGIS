@@ -129,7 +129,7 @@ class nearblack(GdalAlgorithm):
         return "rasteranalysis"
 
     def icon(self):
-        return QIcon(os.path.join(pluginPath, "images", "gdaltools", "nearblack.png"))
+        return self.get_png_icon("nearblack.png")
 
     def commandName(self):
         return "nearblack"

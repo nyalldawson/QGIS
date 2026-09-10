@@ -204,7 +204,7 @@ class GridNearestNeighbor(GdalAlgorithm):
         return "rasteranalysis"
 
     def icon(self):
-        return QIcon(os.path.join(pluginPath, "images", "gdaltools", "grid.png"))
+        return self.get_png_icon("grid.png")
 
     def commandName(self):
         return "gdal_grid"

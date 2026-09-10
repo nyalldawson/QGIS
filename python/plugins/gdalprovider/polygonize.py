@@ -107,7 +107,7 @@ class polygonize(GdalAlgorithm):
         return "rasterconversion"
 
     def icon(self):
-        return QIcon(os.path.join(pluginPath, "images", "gdaltools", "polygonize.png"))
+        return self.get_png_icon("polygonize.png")
 
     def commandName(self):
         return "gdal_polygonize"

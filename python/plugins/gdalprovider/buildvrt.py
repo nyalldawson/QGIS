@@ -214,7 +214,7 @@ class buildvrt(GdalAlgorithm):
         return QCoreApplication.translate("buildvrt", "Build virtual raster")
 
     def icon(self):
-        return QIcon(os.path.join(pluginPath, "images", "gdaltools", "vrt.png"))
+        return self.get_png_icon("vrt.png")
 
     def group(self):
         return QCoreApplication.translate("buildvrt", "Raster miscellaneous")

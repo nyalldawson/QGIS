@@ -237,7 +237,7 @@ class rasterize(GdalAlgorithm):
         return "vectorconversion"
 
     def icon(self):
-        return QIcon(os.path.join(pluginPath, "images", "gdaltools", "rasterize.png"))
+        return self.get_png_icon("rasterize.png")
 
     def commandName(self):
         return "gdal_rasterize"

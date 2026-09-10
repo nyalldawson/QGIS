@@ -227,7 +227,7 @@ class GridDataMetrics(GdalAlgorithm):
         return self.tr("Grid (Data metrics)")
 
     def icon(self):
-        return QIcon(os.path.join(pluginPath, "images", "gdaltools", "grid.png"))
+        return self.get_png_icon("grid.png")
 
     def group(self):
         return self.tr("Raster analysis")

@@ -80,9 +80,7 @@ class pct2rgb(GdalAlgorithm):
         return "rasterconversion"
 
     def icon(self):
-        return QIcon(
-            os.path.join(pluginPath, "images", "gdaltools", "8-to-24-bits.png")
-        )
+        return self.get_png_icon("8-to-24-bits.png")
 
     def commandName(self):
         return "pct2rgb"

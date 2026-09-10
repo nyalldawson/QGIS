@@ -63,9 +63,7 @@ class AssignProjection(GdalAlgorithm):
         return self.tr("Assign projection")
 
     def icon(self):
-        return QIcon(
-            os.path.join(pluginPath, "images", "gdaltools", "projection-add.png")
-        )
+        return self.get_png_icon("projection-add.png")
 
     def tags(self):
         tags = self.tr("assign,set,transform,reproject,crs,srs").split(",")

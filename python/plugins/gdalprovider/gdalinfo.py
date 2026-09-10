@@ -112,7 +112,7 @@ class gdalinfo(GdalAlgorithm):
         return "rastermiscellaneous"
 
     def icon(self):
-        return QIcon(os.path.join(pluginPath, "images", "gdaltools", "raster-info.png"))
+        return self.get_png_icon("raster-info.png")
 
     def commandName(self):
         return "gdalinfo"

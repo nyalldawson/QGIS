@@ -184,7 +184,7 @@ class merge(GdalAlgorithm):
         return "rastermiscellaneous"
 
     def icon(self):
-        return QIcon(os.path.join(pluginPath, "images", "gdaltools", "merge.png"))
+        return self.get_png_icon("merge.png")
 
     def commandName(self):
         return "gdal_merge"

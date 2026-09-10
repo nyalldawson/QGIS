@@ -236,7 +236,7 @@ class warp(GdalAlgorithm):
         return "rasterprojections"
 
     def icon(self):
-        return QIcon(os.path.join(pluginPath, "images", "gdaltools", "warp.png"))
+        return self.get_png_icon("warp.png")
 
     def commandName(self):
         return "gdalwarp"

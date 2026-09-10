@@ -144,9 +144,7 @@ class gdaladdo(GdalAlgorithm):
         return "rastermiscellaneous"
 
     def icon(self):
-        return QIcon(
-            os.path.join(pluginPath, "images", "gdaltools", "raster-overview.png")
-        )
+        return self.get_png_icon("raster-overview.png")
 
     def commandName(self):
         return "gdaladdo"

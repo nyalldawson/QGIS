@@ -76,9 +76,7 @@ class rgb2pct(GdalAlgorithm):
         return "rasterconversion"
 
     def icon(self):
-        return QIcon(
-            os.path.join(pluginPath, "images", "gdaltools", "24-to-8-bits.png")
-        )
+        return self.get_png_icon("24-to-8-bits.png")
 
     def commandName(self):
         return "rgb2pct"

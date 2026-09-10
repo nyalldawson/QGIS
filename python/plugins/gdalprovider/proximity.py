@@ -70,7 +70,7 @@ class proximity(GdalAlgorithm):
     ]
 
     def icon(self):
-        return QIcon(os.path.join(pluginPath, "images", "gdaltools", "proximity.png"))
+        return self.get_png_icon("proximity.png")
 
     def __init__(self):
         super().__init__()

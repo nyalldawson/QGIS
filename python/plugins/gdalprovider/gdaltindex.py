@@ -145,7 +145,7 @@ class gdaltindex(GdalAlgorithm):
         return "rastermiscellaneous"
 
     def icon(self):
-        return QIcon(os.path.join(pluginPath, "images", "gdaltools", "tiles.png"))
+        return self.get_png_icon("tiles.png")
 
     def commandName(self):
         return "gdaltindex"
