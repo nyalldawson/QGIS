@@ -101,6 +101,7 @@ class QgsXyzTilesBaseAlgorithm : public QgsProcessingAlgorithm
 
     void startJobs();
     virtual void processMetaTile( QgsMapRendererSequentialJob *job ) = 0;
+    virtual bool supportsWebP() const { return true; }
 
     QgsRectangle mExtent;
     QColor mBackgroundColor;
@@ -171,6 +172,7 @@ class QgsXyzTilesMbtilesAlgorithm : public QgsXyzTilesBaseAlgorithm
     QVariantMap processAlgorithm( const QVariantMap &parameters, QgsProcessingContext &context, QgsProcessingFeedback *feedback ) override;
 
     void processMetaTile( QgsMapRendererSequentialJob *job ) override;
+    bool supportsWebP() const override { return false; }
 
   private:
     std::unique_ptr<QgsMbTiles> mMbtilesWriter;
