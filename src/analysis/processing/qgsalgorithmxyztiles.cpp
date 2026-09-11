@@ -106,8 +106,12 @@ void QgsXyzTilesBaseAlgorithm::createCommonParameters()
   addParameter( new QgsProcessingParameterExtent( u"EXTENT"_s, QObject::tr( "Extent" ) ) );
   addParameter( new QgsProcessingParameterNumber( u"ZOOM_MIN"_s, QObject::tr( "Minimum zoom" ), Qgis::ProcessingNumberParameterType::Integer, 12, false, 0, 25 ) );
   addParameter( new QgsProcessingParameterNumber( u"ZOOM_MAX"_s, QObject::tr( "Maximum zoom" ), Qgis::ProcessingNumberParameterType::Integer, 12, false, 0, 25 ) );
+
+  // TODO advanced
   addParameter( new QgsProcessingParameterNumber( u"DPI"_s, QObject::tr( "DPI" ), Qgis::ProcessingNumberParameterType::Integer, 96, false, 48, 600 ) );
   addParameter( new QgsProcessingParameterColor( u"BACKGROUND_COLOR"_s, QObject::tr( "Background color" ), QColor( Qt::transparent ), true, true ) );
+
+  // TODO advanced
   addParameter( new QgsProcessingParameterBoolean( u"ANTIALIAS"_s, QObject::tr( "Enable antialiasing" ), true ) );
 
   QStringList formatOptions = { u"PNG"_s, u"JPG"_s };
@@ -116,6 +120,8 @@ void QgsXyzTilesBaseAlgorithm::createCommonParameters()
     formatOptions.append( u"WEBP"_s );
   }
   addParameter( new QgsProcessingParameterEnum( u"TILE_FORMAT"_s, QObject::tr( "Tile format" ), formatOptions, false, 0 ) );
+
+  // TODO advanced
   addParameter( new QgsProcessingParameterNumber( u"QUALITY"_s, QObject::tr( "Quality (JPG only)" ), Qgis::ProcessingNumberParameterType::Integer, 75, false, 1, 100 ) );
   addParameter( new QgsProcessingParameterNumber( u"METATILESIZE"_s, QObject::tr( "Metatile size" ), Qgis::ProcessingNumberParameterType::Integer, 4, false, 1, 20 ) );
 }
