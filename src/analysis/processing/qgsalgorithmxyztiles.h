@@ -176,6 +176,48 @@ class QgsXyzTilesMbtilesAlgorithm : public QgsXyzTilesBaseAlgorithm
     std::unique_ptr<QgsMbTiles> mMbtilesWriter;
 };
 
+/**
+ * Utility class for creating and populating GeoPackage raster tile databases.
+ */
+class QgsGeoPackageTiles
+{
+  public:
+    explicit QgsGeoPackageTiles( const QString &filename );
+    ~QgsGeoPackageTiles();
+
+    bool create( const QgsRectangle &mercatorExtent, int minZoom, int maxZoom, int tileWidth = 256, int tileHeight = 256 );
+    bool setTileData( int zoom, int column, int row, const QByteArray &data );
+    bool close();
+
+  private:
+    QString mFilename;
+    sqlite3 *mDb = nullptr;
+    sqlite3_stmt *mInsertStmt = nullptr;
+};
+
+/**
+ * Native GeoPackage raster tiles algorithm.
+ */
+class QgsXyzTilesGpkgAlgorithm : public QgsXyzTilesBaseAlgorithm
+{
+  public:
+    QgsXyzTilesGpkgAlgorithm() = default;
+    void initAlgorithm( const QVariantMap &configuration = QVariantMap() ) override;
+    QString name() const override;
+    QString displayName() const override;
+    QStringList tags() const override;
+    QString shortHelpString() const override;
+    QgsXyzTilesGpkgAlgorithm *createInstance() const override SIP_FACTORY;
+
+  protected:
+    QVariantMap processAlgorithm( const QVariantMap &parameters, QgsProcessingContext &context, QgsProcessingFeedback *feedback ) override;
+
+    void processMetaTile( QgsMapRendererSequentialJob *job ) override;
+
+  private:
+    std::unique_ptr<QgsGeoPackageTiles> mGpkgWriter;
+};
+
 ///@endcond PRIVATE
 
 #endif // QGSALGORITHMXYZTILES_H

@@ -635,4 +635,299 @@ void QgsXyzTilesMbtilesAlgorithm::processMetaTile( QgsMapRendererSequentialJob *
   }
 }
 
+
+//
+// QgsGeoPackageTiles
+//
+
+QgsGeoPackageTiles::QgsGeoPackageTiles( const QString &filename )
+  : mFilename( filename )
+{}
+
+QgsGeoPackageTiles::~QgsGeoPackageTiles()
+{
+  close();
+}
+
+bool QgsGeoPackageTiles::create( const QgsRectangle &mercExtent, int minZoom, int maxZoom, int tileWidth, int tileHeight )
+{
+  if ( sqlite3_open( mFilename.toUtf8().constData(), &mDb ) != SQLITE_OK )
+    return false;
+
+  sqlite3_exec( mDb, "PRAGMA application_id = 1196444487;", nullptr, nullptr, nullptr );
+  sqlite3_exec( mDb, "PRAGMA user_version = 10200;", nullptr, nullptr, nullptr );
+  sqlite3_exec( mDb, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr );
+
+  const char *schemaSql = "CREATE TABLE gpkg_spatial_ref_sys ("
+                          "  srs_name TEXT NOT NULL, srs_id INTEGER NOT NULL PRIMARY KEY,"
+                          "  organization TEXT NOT NULL, organization_coordsys_id INTEGER NOT NULL,"
+                          "  definition TEXT NOT NULL, description TEXT"
+                          ");"
+                          "CREATE TABLE gpkg_contents ("
+                          "  table_name TEXT NOT NULL PRIMARY KEY, data_type TEXT NOT NULL,"
+                          "  identifier TEXT UNIQUE, description TEXT DEFAULT '',"
+                          "  last_change DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),"
+                          "  min_x DOUBLE, min_y DOUBLE, max_x DOUBLE, max_y DOUBLE, srs_id INTEGER"
+                          ");"
+                          "CREATE TABLE gpkg_tile_matrix_set ("
+                          "  table_name TEXT NOT NULL PRIMARY KEY, srs_id INTEGER NOT NULL,"
+                          "  min_x DOUBLE NOT NULL, min_y DOUBLE NOT NULL,"
+                          "  max_x DOUBLE NOT NULL, max_y DOUBLE NOT NULL"
+                          ");"
+                          "CREATE TABLE gpkg_tile_matrix ("
+                          "  table_name TEXT NOT NULL, zoom_level INTEGER NOT NULL,"
+                          "  matrix_width INTEGER NOT NULL, matrix_height INTEGER NOT NULL,"
+                          "  tile_width INTEGER NOT NULL, tile_height INTEGER NOT NULL,"
+                          "  pixel_x_size DOUBLE NOT NULL, pixel_y_size DOUBLE NOT NULL,"
+                          "  CONSTRAINT pk_ttm PRIMARY KEY (table_name, zoom_level)"
+                          ");"
+                          "CREATE TABLE tiles ("
+                          "  id INTEGER PRIMARY KEY AUTOINCREMENT, zoom_level INTEGER NOT NULL,"
+                          "  tile_column INTEGER NOT NULL, tile_row INTEGER NOT NULL,"
+                          "  tile_data BLOB NOT NULL,"
+                          "  CONSTRAINT uk_tiles UNIQUE (zoom_level, tile_column, tile_row)"
+                          ");";
+
+  if ( sqlite3_exec( mDb, schemaSql, nullptr, nullptr, nullptr ) != SQLITE_OK )
+    return false;
+
+  // Insert standard GeoPackage SRS entries
+  const char *srsSql
+    = "INSERT INTO gpkg_spatial_ref_sys VALUES "
+      "('Undefined cartesian', -1, 'NONE', -1, 'undefined', 'undefined')," // #spellok
+      "('Undefined geographic', 0, 'NONE', 0, 'undefined', 'undefined'),"
+      "('WGS 84', 4326, 'EPSG', 4326, 'GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433]]', 'WGS 84'),"
+      "('WGS 84 / Pseudo-Mercator', 3857, 'EPSG', 3857, 'PROJCS[\"WGS 84 / Pseudo-Mercator\",GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS "
+      "84\",6378137,298.257223563]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433]],PROJECTION[\"Mercator_1SP\"],PARAMETER[\"central_meridian\",0],PARAMETER[\"scale_factor\",1],"
+      "PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1]]', 'EPSG:3857');";
+  sqlite3_exec( mDb, srsSql, nullptr, nullptr, nullptr );
+
+  const double mercMax = 20037508.342789244;
+  const double mercMin = -mercMax;
+  const double worldWidth = 2.0 * mercMax;
+
+  // Use Mercator meters for gpkg_contents extents
+  QString contentsSql = QString(
+                          "INSERT INTO gpkg_contents (table_name, data_type, identifier, min_x, min_y, max_x, max_y, srs_id) "
+                          "VALUES ('tiles', 'tiles', 'tiles', %1, %2, %3, %4, 3857);"
+  )
+                          .arg( mercExtent.xMinimum(), 0, 'f', 4 )
+                          .arg( mercExtent.yMinimum(), 0, 'f', 4 )
+                          .arg( mercExtent.xMaximum(), 0, 'f', 4 )
+                          .arg( mercExtent.yMaximum(), 0, 'f', 4 );
+  sqlite3_exec( mDb, contentsSql.toUtf8().constData(), nullptr, nullptr, nullptr );
+
+  QString tmsSql
+    = QString( "INSERT INTO gpkg_tile_matrix_set VALUES ('tiles', 3857, %1, %2, %3, %4);" ).arg( mercMin, 0, 'f', 4 ).arg( mercMin, 0, 'f', 4 ).arg( mercMax, 0, 'f', 4 ).arg( mercMax, 0, 'f', 4 );
+  sqlite3_exec( mDb, tmsSql.toUtf8().constData(), nullptr, nullptr, nullptr );
+
+  for ( int z = minZoom; z <= maxZoom; ++z )
+  {
+    long long matrixDim = 1LL << z;
+    double pixelXSize = worldWidth / ( matrixDim * tileWidth );
+    double pixelYSize = worldWidth / ( matrixDim * tileHeight );
+
+    QString matrixSql = QString( "INSERT INTO gpkg_tile_matrix VALUES ('tiles', %1, %2, %3, %4, %5, %6, %7);" )
+                          .arg( z )
+                          .arg( matrixDim )
+                          .arg( matrixDim )
+                          .arg( tileWidth )
+                          .arg( tileHeight )
+                          .arg( pixelXSize, 0, 'g', 12 )
+                          .arg( pixelYSize, 0, 'g', 12 );
+
+    sqlite3_exec( mDb, matrixSql.toUtf8().constData(), nullptr, nullptr, nullptr );
+  }
+
+  const char *insertQuery = "INSERT INTO tiles (zoom_level, tile_column, tile_row, tile_data) VALUES (?, ?, ?, ?);";
+  return sqlite3_prepare_v2( mDb, insertQuery, -1, &mInsertStmt, nullptr ) == SQLITE_OK;
+}
+
+bool QgsGeoPackageTiles::setTileData( int zoom, int column, int row, const QByteArray &data )
+{
+  if ( !mInsertStmt )
+    return false;
+
+  sqlite3_reset( mInsertStmt );
+  sqlite3_bind_int( mInsertStmt, 1, zoom );
+  sqlite3_bind_int( mInsertStmt, 2, column );
+  sqlite3_bind_int( mInsertStmt, 3, row ); // Standard top-left origin (no TMS inversion)
+  sqlite3_bind_blob( mInsertStmt, 4, data.constData(), data.size(), SQLITE_TRANSIENT );
+
+  return sqlite3_step( mInsertStmt ) == SQLITE_DONE;
+}
+
+bool QgsGeoPackageTiles::close()
+{
+  if ( mInsertStmt )
+  {
+    sqlite3_finalize( mInsertStmt );
+    mInsertStmt = nullptr;
+  }
+  if ( mDb )
+  {
+    sqlite3_exec( mDb, "COMMIT;", nullptr, nullptr, nullptr );
+    sqlite3_close( mDb );
+    mDb = nullptr;
+  }
+  return true;
+}
+
+
+//
+// QgsXyzTilesGpkgAlgorithm
+//
+
+QString QgsXyzTilesGpkgAlgorithm::name() const
+{
+  return u"tilesxyzgpkg"_s;
+}
+
+QString QgsXyzTilesGpkgAlgorithm::displayName() const
+{
+  return QObject::tr( "Generate XYZ tiles (GeoPackage)" );
+}
+
+QStringList QgsXyzTilesGpkgAlgorithm::tags() const
+{
+  return QObject::tr( "tiles,xyz,geopackage,gpkg,raster" ).split( ',' );
+}
+
+QString QgsXyzTilesGpkgAlgorithm::shortHelpString() const
+{
+  return QObject::tr( "Generates XYZ raster tiles of map canvas content and saves them into an OGC GeoPackage file." );
+}
+
+QgsXyzTilesGpkgAlgorithm *QgsXyzTilesGpkgAlgorithm::createInstance() const
+{
+  return new QgsXyzTilesGpkgAlgorithm();
+}
+
+void QgsXyzTilesGpkgAlgorithm::initAlgorithm( const QVariantMap & )
+{
+  createCommonParameters();
+  addParameter( new QgsProcessingParameterFileDestination( u"OUTPUT_FILE"_s, QObject::tr( "Output file" ), QObject::tr( "GeoPackage files (*.gpkg *.GPKG)" ) ) );
+}
+
+QVariantMap QgsXyzTilesGpkgAlgorithm::processAlgorithm( const QVariantMap &parameters, QgsProcessingContext &context, QgsProcessingFeedback *feedback )
+{
+  // TODO -- delete if exists
+  const QString outputFile = parameterAsString( parameters, u"OUTPUT_FILE"_s, context );
+
+  QgsRectangle mercatorExtent;
+  try
+  {
+    QgsCoordinateTransform extentTransform = QgsCoordinateTransform( QgsCoordinateReferenceSystem( "EPSG:4326" ), QgsCoordinateReferenceSystem( "EPSG:3857" ), mTransformContext );
+    extentTransform.setBallparkTransformsAreAppropriate( true );
+    mercatorExtent = extentTransform.transformBoundingBox( mWgs84Extent );
+  }
+  catch ( QgsCsException & )
+  {
+    throw QgsProcessingException( QObject::tr( "Could not transform the extent into web mercator" ) );
+  }
+
+  mGpkgWriter = std::make_unique<QgsGeoPackageTiles>( outputFile );
+  if ( !mGpkgWriter->create( mercatorExtent, mMinZoom, mMaxZoom, mTileWidth, mTileHeight ) )
+  {
+    throw QgsProcessingException( QObject::tr( "Failed to create GeoPackage file %1" ).arg( outputFile ) );
+  }
+
+  long long totalTiles = 0;
+  mTotalMetaTiles = 0;
+  for ( int z = mMinZoom; z <= mMaxZoom; z++ )
+  {
+    if ( feedback->isCanceled() )
+      break;
+
+    long long tileCount = 0;
+    mMetaTiles += getMetatiles( mWgs84Extent, z, tileCount, mMetaTileSize );
+    feedback->pushInfo( QObject::tr( "%1 metatiles (%2 tiles) will be created for zoom level %3" ).arg( mMetaTiles.size() - mTotalMetaTiles ).arg( tileCount ).arg( z ) );
+    mTotalMetaTiles = mMetaTiles.size();
+    totalTiles += tileCount;
+  }
+  if ( mTotalMetaTiles == 0 )
+  {
+    throw QgsProcessingException( QObject::tr( "No metatiles will be created -- please check the extent and zoom limits" ) );
+  }
+  feedback->pushInfo( QObject::tr( "A total of %1 metatiles (%2 tiles) will be created" ).arg( mTotalMetaTiles ).arg( totalTiles ) );
+
+  checkLayersUsagePolicy( feedback );
+
+  for ( QgsMapLayer *layer : std::as_const( mLayers ) )
+  {
+    layer->moveToThread( QThread::currentThread() );
+  }
+  mJobOwner.reset( new QObject() );
+
+  QEventLoop loop;
+  mEventLoop = &loop;
+  startJobs();
+  loop.exec();
+  mGpkgWriter->close();
+
+  qDeleteAll( mLayers );
+  mLayers.clear();
+
+  QVariantMap results;
+  results.insert( u"OUTPUT_FILE"_s, outputFile );
+  return results;
+}
+
+void QgsXyzTilesGpkgAlgorithm::processMetaTile( QgsMapRendererSequentialJob *job )
+{
+  MetaTile metaTile = mRendererJobs.value( job );
+  QImage img = job->renderedImage();
+
+  QMap<QPair<int, int>, Tile>::const_iterator it = metaTile.tiles.constBegin();
+  while ( it != metaTile.tiles.constEnd() )
+  {
+    QPair<int, int> tm = it.key();
+    Tile tile = it.value();
+    QImage tileImage = img.copy( mTileWidth * tm.first, mTileHeight * tm.second, mTileWidth, mTileHeight );
+
+    QByteArray ba;
+    QBuffer buffer( &ba );
+    buffer.open( QIODevice::WriteOnly );
+    tileImage.save( &buffer, mTileFormat.toStdString().c_str(), mJpgQuality );
+
+    // GeoPackage uses tile.y directly (Top-Left origin)
+    mGpkgWriter->setTileData( tile.z, tile.x, tile.y, ba );
+    ++it;
+  }
+
+  mRendererJobs.remove( job );
+  job->deleteLater();
+
+  mFeedback->setProgress( 100.0 * ( mProcessedMetaTiles++ ) / mTotalMetaTiles );
+
+  if ( mFeedback->isCanceled() )
+  {
+    while ( mRendererJobs.size() > 0 )
+    {
+      QgsMapRendererSequentialJob *j = mRendererJobs.firstKey();
+      j->cancel();
+      mRendererJobs.remove( j );
+      j->deleteLater();
+    }
+    mRendererJobs.clear();
+    if ( mEventLoop )
+    {
+      mEventLoop->exit();
+    }
+    return;
+  }
+
+  if ( mMetaTiles.size() > 0 )
+  {
+    startJobs();
+  }
+  else if ( mMetaTiles.size() == 0 && mRendererJobs.size() == 0 )
+  {
+    if ( mEventLoop )
+    {
+      mEventLoop->exit();
+    }
+  }
+}
+
 ///@endcond
