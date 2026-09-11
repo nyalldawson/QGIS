@@ -806,6 +806,9 @@ QgsXyzTilesGpkgAlgorithm *QgsXyzTilesGpkgAlgorithm::createInstance() const
 void QgsXyzTilesGpkgAlgorithm::initAlgorithm( const QVariantMap & )
 {
   createCommonParameters();
+  addParameter( new QgsProcessingParameterNumber( u"TILE_WIDTH"_s, QObject::tr( "Tile width" ), Qgis::ProcessingNumberParameterType::Integer, 256, false, 1, 4096 ) );
+  addParameter( new QgsProcessingParameterNumber( u"TILE_HEIGHT"_s, QObject::tr( "Tile height" ), Qgis::ProcessingNumberParameterType::Integer, 256, false, 1, 4096 ) );
+
   addParameter( new QgsProcessingParameterFileDestination( u"OUTPUT_FILE"_s, QObject::tr( "Output file" ), QObject::tr( "GeoPackage files (*.gpkg *.GPKG)" ) ) );
 }
 
