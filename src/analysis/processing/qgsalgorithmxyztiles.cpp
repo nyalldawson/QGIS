@@ -70,32 +70,7 @@ namespace
     double n = M_PI - 2.0 * M_PI * y / ( double ) ( 1 << z );
     return 180.0 / M_PI * std::atan( 0.5 * ( std::exp( n ) - std::exp( -n ) ) );
   }
-} //namespace
 
-
-void MetaTile::addTile( const int row, const int col, Tile tileToAdd )
-{
-  tiles.insert( QPair<int, int>( row, col ), tileToAdd );
-  if ( row >= rows )
-  {
-    rows = row + 1;
-  }
-  if ( col >= cols )
-  {
-    cols = col + 1;
-  }
-}
-
-QgsRectangle MetaTile::extent() const
-{
-  const Tile first = tiles.first();
-  const Tile last = tiles.last();
-  return QgsRectangle( tileX2lon( first.x, first.z ), tileY2lat( last.y + 1, last.z ), tileX2lon( last.x + 1, last.z ), tileY2lat( first.y, first.z ) );
-}
-
-
-namespace
-{
   QList<MetaTile> getMetatiles( const QgsRectangle extent, const int zoom, long long &tileCount, const int tileSize )
   {
     int minX = lon2tileX( extent.xMinimum(), zoom );
@@ -120,6 +95,28 @@ namespace
     return tiles.values();
   }
 } //namespace
+
+
+void MetaTile::addTile( const int row, const int col, Tile tileToAdd )
+{
+  tiles.insert( QPair<int, int>( row, col ), tileToAdd );
+  if ( row >= rows )
+  {
+    rows = row + 1;
+  }
+  if ( col >= cols )
+  {
+    cols = col + 1;
+  }
+}
+
+QgsRectangle MetaTile::extent() const
+{
+  const Tile first = tiles.first();
+  const Tile last = tiles.last();
+  return QgsRectangle( tileX2lon( first.x, first.z ), tileY2lat( last.y + 1, last.z ), tileX2lon( last.x + 1, last.z ), tileY2lat( first.y, first.z ) );
+}
+
 
 /**
  * Queue for rendered tiles to write to a database.
