@@ -46,8 +46,10 @@ from processing.tools.dataobjects import createContext
 
 
 class ParametersPanel(QgsProcessingParametersWidget):
-    def __init__(self, parent, alg, in_place=False, active_layer=None):
-        super().__init__(alg, parent)
+    def __init__(
+        self, parent, alg, in_place=False, active_layer=None, message_bar=None
+    ):
+        super().__init__(alg, in_place, active_layer, message_bar, parent)
         self.in_place = in_place
 
         self.active_layer = active_layer

@@ -131,7 +131,9 @@ class AlgorithmWidget(QgsProcessingAlgorithmWidgetBase):
         )
 
     def getParametersPanel(self, alg, parent):
-        panel = ParametersPanel(parent, alg, self.in_place, self.active_layer)
+        panel = ParametersPanel(
+            parent, alg, self.in_place, self.active_layer, self.messageBar()
+        )
         return panel
 
     def runAsBatch(self):
