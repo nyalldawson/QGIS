@@ -1641,113 +1641,113 @@ void QgsMapRendererJob::composeSecondPass( std::vector<LayerRenderJob> &secondPa
   // compose the second pass with the mask
   for ( LayerRenderJob &job : secondPassJobs )
   {
-    if ( !job.maskJobs.empty() )
+    if ( job.maskJobs.empty() )
+      continue;
+
+    switch ( job.maskRenderFormat )
     {
-      switch ( job.maskRenderFormat )
+      case Qgis::RenderFormat::Raster:
       {
-        case Qgis::RenderFormat::Raster:
+        // Merge all mask images into the first one if we have more than one mask image
+        if ( job.maskJobs.size() > 1 )
         {
-          // Merge all mask images into the first one if we have more than one mask image
-          if ( job.maskJobs.size() > 1 )
+          QPainter *maskPainter = nullptr;
+          for ( const LayerRenderJob::MaskJob &p : job.maskJobs )
           {
-            QPainter *maskPainter = nullptr;
-            for ( const LayerRenderJob::MaskJob &p : job.maskJobs )
+            if ( !maskPainter )
             {
-              if ( !maskPainter )
+              if ( p.layerRenderJob )
               {
-                if ( p.layerRenderJob )
-                {
-                  maskPainter = p.layerRenderJob->maskPainter.get();
-                }
-                else
-                {
-                  Q_ASSERT( p.maskPaintDeviceId >= 0 && p.maskPaintDeviceId < static_cast< int >( labelJob.maskPainters.size() ) );
-                  maskPainter = labelJob.maskPainters[p.maskPaintDeviceId].get();
-                }
-                Q_ASSERT( maskPainter );
+                maskPainter = p.layerRenderJob->maskPainter.get();
               }
               else
               {
-                QPaintDevice *maskPaintDevice = nullptr;
-                if ( p.layerRenderJob )
-                {
-                  maskPaintDevice = p.layerRenderJob->maskPaintDevice.get();
-                }
-                else
-                {
-                  Q_ASSERT( p.maskPaintDeviceId >= 0 && p.maskPaintDeviceId < static_cast< int >( labelJob.maskPaintDevices.size() ) );
-                  maskPaintDevice = labelJob.maskPaintDevices[p.maskPaintDeviceId].get();
-                }
-                Q_ASSERT( maskPaintDevice );
-                QImage *maskImage = dynamic_cast<QImage *>( maskPaintDevice );
-
-                QgsGeometryPaintDevice *geometryDevice = dynamic_cast< QgsGeometryPaintDevice * >( maskPaintDevice );
-                Q_ASSERT( maskImage );
-                maskPainter->drawImage( 0, 0, *maskImage );
+                Q_ASSERT( p.maskPaintDeviceId >= 0 && p.maskPaintDeviceId < static_cast< int >( labelJob.maskPainters.size() ) );
+                maskPainter = labelJob.maskPainters[p.maskPaintDeviceId].get();
               }
+              Q_ASSERT( maskPainter );
             }
-          }
-
-          // All have been merged into the first
-          LayerRenderJob::MaskJob p = *job.maskJobs.begin();
-          QPaintDevice *firstMaskPaintDevice = nullptr;
-          if ( p.layerRenderJob )
-          {
-            firstMaskPaintDevice = p.layerRenderJob->maskPaintDevice.get();
-          }
-          else
-          {
-            Q_ASSERT( p.maskPaintDeviceId >= 0 && p.maskPaintDeviceId < static_cast< int >( labelJob.maskPaintDevices.size() ) );
-            firstMaskPaintDevice = labelJob.maskPaintDevices[p.maskPaintDeviceId].get();
-          }
-
-          QImage *firstMaskImage = dynamic_cast<QImage *>( firstMaskPaintDevice );
-          Q_ASSERT( firstMaskImage );
-
-          // Only retain parts of the second rendering that are "inside" the mask image
-          QPainter *painter = job.context()->painter();
-
-          painter->setCompositionMode( QPainter::CompositionMode_DestinationIn );
-
-          //Create an "alpha binarized" image of the maskImage to :
-          //* Eliminate antialiasing artifact
-          //* Avoid applying mask opacity to elements under the mask but not masked
-          QImage maskBinAlpha = firstMaskImage->createMaskFromColor( 0 );
-          QVector<QRgb> mswTable;
-          mswTable.push_back( qRgba( 0, 0, 0, 255 ) );
-          mswTable.push_back( qRgba( 0, 0, 0, 0 ) );
-          maskBinAlpha.setColorTable( mswTable );
-          painter->drawImage( 0, 0, maskBinAlpha );
-
-          // Modify the first pass' image ...
-          {
-            QPainter tempPainter;
-
-            // reuse the first pass painter, if available
-            QPainter *painter1 = job.firstPassJob->context()->painter();
-            if ( !painter1 )
+            else
             {
-              tempPainter.begin( job.firstPassJob->destinationImage.get() );
-              painter1 = &tempPainter;
+              QPaintDevice *maskPaintDevice = nullptr;
+              if ( p.layerRenderJob )
+              {
+                maskPaintDevice = p.layerRenderJob->maskPaintDevice.get();
+              }
+              else
+              {
+                Q_ASSERT( p.maskPaintDeviceId >= 0 && p.maskPaintDeviceId < static_cast< int >( labelJob.maskPaintDevices.size() ) );
+                maskPaintDevice = labelJob.maskPaintDevices[p.maskPaintDeviceId].get();
+              }
+              Q_ASSERT( maskPaintDevice );
+              QImage *maskImage = dynamic_cast<QImage *>( maskPaintDevice );
+
+              QgsGeometryPaintDevice *geometryDevice = dynamic_cast< QgsGeometryPaintDevice * >( maskPaintDevice );
+              Q_ASSERT( maskImage );
+              maskPainter->drawImage( 0, 0, *maskImage );
             }
-
-            // ... first retain parts that are "outside" the mask image
-            painter1->setCompositionMode( QPainter::CompositionMode_DestinationOut );
-            painter1->drawImage( 0, 0, *firstMaskImage );
-
-            // ... and overpaint the second pass' image on it
-            painter1->setCompositionMode( QPainter::CompositionMode_DestinationOver );
-            painter1->drawImage( 0, 0, *job.destinationImage );
           }
-          break;
         }
 
-        case Qgis::RenderFormat::Vector:
+        // All have been merged into the first
+        LayerRenderJob::MaskJob p = *job.maskJobs.begin();
+        QPaintDevice *firstMaskPaintDevice = nullptr;
+        if ( p.layerRenderJob )
         {
-          job.firstPassJob->picture = std::move( job.picture );
-          job.picture = nullptr;
-          break;
+          firstMaskPaintDevice = p.layerRenderJob->maskPaintDevice.get();
         }
+        else
+        {
+          Q_ASSERT( p.maskPaintDeviceId >= 0 && p.maskPaintDeviceId < static_cast< int >( labelJob.maskPaintDevices.size() ) );
+          firstMaskPaintDevice = labelJob.maskPaintDevices[p.maskPaintDeviceId].get();
+        }
+
+        QImage *firstMaskImage = dynamic_cast<QImage *>( firstMaskPaintDevice );
+        Q_ASSERT( firstMaskImage );
+
+        // Only retain parts of the second rendering that are "inside" the mask image
+        QPainter *painter = job.context()->painter();
+
+        painter->setCompositionMode( QPainter::CompositionMode_DestinationIn );
+
+        //Create an "alpha binarized" image of the maskImage to :
+        //* Eliminate antialiasing artifact
+        //* Avoid applying mask opacity to elements under the mask but not masked
+        QImage maskBinAlpha = firstMaskImage->createMaskFromColor( 0 );
+        QVector<QRgb> mswTable;
+        mswTable.push_back( qRgba( 0, 0, 0, 255 ) );
+        mswTable.push_back( qRgba( 0, 0, 0, 0 ) );
+        maskBinAlpha.setColorTable( mswTable );
+        painter->drawImage( 0, 0, maskBinAlpha );
+
+        // Modify the first pass' image ...
+        {
+          QPainter tempPainter;
+
+          // reuse the first pass painter, if available
+          QPainter *painter1 = job.firstPassJob->context()->painter();
+          if ( !painter1 )
+          {
+            tempPainter.begin( job.firstPassJob->destinationImage.get() );
+            painter1 = &tempPainter;
+          }
+
+          // ... first retain parts that are "outside" the mask image
+          painter1->setCompositionMode( QPainter::CompositionMode_DestinationOut );
+          painter1->drawImage( 0, 0, *firstMaskImage );
+
+          // ... and overpaint the second pass' image on it
+          painter1->setCompositionMode( QPainter::CompositionMode_DestinationOver );
+          painter1->drawImage( 0, 0, *job.destinationImage );
+        }
+        break;
+      }
+
+      case Qgis::RenderFormat::Vector:
+      {
+        job.firstPassJob->picture = std::move( job.picture );
+        job.picture = nullptr;
+        break;
       }
     }
   }
