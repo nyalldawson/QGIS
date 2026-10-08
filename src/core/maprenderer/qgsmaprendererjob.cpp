@@ -932,7 +932,6 @@ std::vector< LayerRenderJob > QgsMapRendererJob::prepareSecondPassJobs( std::vec
         break;
     }
 
-
     switch ( renderFormat )
     {
       case Qgis::RenderFormat::Vector:
@@ -1660,8 +1659,19 @@ void QgsMapRendererJob::composeSecondPass( std::vector<LayerRenderJob> &secondPa
 
           // All have been merged into the first
           LayerRenderJob::MaskJob p = *job.maskJobs.begin();
+          QPaintDevice *firstMaskPaintDevice = nullptr;
+          if ( p.layerRenderJob )
+          {
+            firstMaskPaintDevice = p.layerRenderJob->maskPaintDevice.get();
+          }
+          else
+          {
+            Q_ASSERT( p.maskPaintDeviceId >= 0 && p.maskPaintDeviceId < static_cast< int >( labelJob.maskPaintDevices.size() ) );
+            firstMaskPaintDevice = labelJob.maskPaintDevices[p.maskPaintDeviceId].get();
+          }
 
-          QImage *maskImage = static_cast<QImage *>( p.layerRenderJob ? p.layerRenderJob->maskPaintDevice.get() : labelJob.maskPaintDevices[p.maskPaintDeviceId].get() );
+          QImage *firstMaskImage = dynamic_cast<QImage *>( firstMaskPaintDevice );
+          Q_ASSERT( firstMaskImage );
 
           // Only retain parts of the second rendering that are "inside" the mask image
           QPainter *painter = job.context()->painter();
@@ -1671,7 +1681,7 @@ void QgsMapRendererJob::composeSecondPass( std::vector<LayerRenderJob> &secondPa
           //Create an "alpha binarized" image of the maskImage to :
           //* Eliminate antialiasing artifact
           //* Avoid applying mask opacity to elements under the mask but not masked
-          QImage maskBinAlpha = maskImage->createMaskFromColor( 0 );
+          QImage maskBinAlpha = firstMaskImage->createMaskFromColor( 0 );
           QVector<QRgb> mswTable;
           mswTable.push_back( qRgba( 0, 0, 0, 255 ) );
           mswTable.push_back( qRgba( 0, 0, 0, 0 ) );
@@ -1692,7 +1702,7 @@ void QgsMapRendererJob::composeSecondPass( std::vector<LayerRenderJob> &secondPa
 
             // ... first retain parts that are "outside" the mask image
             painter1->setCompositionMode( QPainter::CompositionMode_DestinationOut );
-            painter1->drawImage( 0, 0, *maskImage );
+            painter1->drawImage( 0, 0, *firstMaskImage );
 
             // ... and overpaint the second pass' image on it
             painter1->setCompositionMode( QPainter::CompositionMode_DestinationOver );
