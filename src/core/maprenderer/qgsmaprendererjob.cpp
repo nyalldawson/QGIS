@@ -1648,62 +1648,49 @@ void QgsMapRendererJob::composeSecondPass( std::vector<LayerRenderJob> &secondPa
     {
       case Qgis::RenderFormat::Raster:
       {
-        // Merge all mask images into the first one if we have more than one mask image
-        if ( job.maskJobs.size() > 1 )
-        {
-          QPainter *maskPainter = nullptr;
-          for ( const LayerRenderJob::MaskJob &p : job.maskJobs )
-          {
-            if ( !maskPainter )
-            {
-              if ( p.layerRenderJob )
-              {
-                maskPainter = p.layerRenderJob->maskPainter.get();
-              }
-              else
-              {
-                Q_ASSERT( p.maskPaintDeviceId >= 0 && p.maskPaintDeviceId < static_cast< int >( labelJob.maskPainters.size() ) );
-                maskPainter = labelJob.maskPainters[p.maskPaintDeviceId].get();
-              }
-              Q_ASSERT( maskPainter );
-            }
-            else
-            {
-              QPaintDevice *maskPaintDevice = nullptr;
-              if ( p.layerRenderJob )
-              {
-                maskPaintDevice = p.layerRenderJob->maskPaintDevice.get();
-              }
-              else
-              {
-                Q_ASSERT( p.maskPaintDeviceId >= 0 && p.maskPaintDeviceId < static_cast< int >( labelJob.maskPaintDevices.size() ) );
-                maskPaintDevice = labelJob.maskPaintDevices[p.maskPaintDeviceId].get();
-              }
-              Q_ASSERT( maskPaintDevice );
-              QImage *maskImage = dynamic_cast<QImage *>( maskPaintDevice );
-
-              QgsGeometryPaintDevice *geometryDevice = dynamic_cast< QgsGeometryPaintDevice * >( maskPaintDevice );
-              Q_ASSERT( maskImage );
-              maskPainter->drawImage( 0, 0, *maskImage );
-            }
-          }
-        }
-
-        // All have been merged into the first
+        // First find the primary mask image
         LayerRenderJob::MaskJob p = *job.maskJobs.begin();
         QPaintDevice *firstMaskPaintDevice = nullptr;
+        QPainter *firstMaskPainter = nullptr;
         if ( p.layerRenderJob )
         {
           firstMaskPaintDevice = p.layerRenderJob->maskPaintDevice.get();
+          firstMaskPainter = p.layerRenderJob->maskPainter.get();
         }
         else
         {
           Q_ASSERT( p.maskPaintDeviceId >= 0 && p.maskPaintDeviceId < static_cast< int >( labelJob.maskPaintDevices.size() ) );
           firstMaskPaintDevice = labelJob.maskPaintDevices[p.maskPaintDeviceId].get();
+          firstMaskPainter = labelJob.maskPainters[p.maskPaintDeviceId].get();
         }
 
         QImage *firstMaskImage = dynamic_cast<QImage *>( firstMaskPaintDevice );
-        Q_ASSERT( firstMaskImage );
+        Q_ASSERT_X( firstMaskImage, "QgsMapRendererJob::composeSecondPass", "FORMAT MISMATCH -- expected a raster mask format, but mask paint device is not a QImage!!" );
+        Q_ASSERT( firstMaskPainter );
+
+        // Merge all reamining mask images into the first one if we have more than one mask image
+        if ( job.maskJobs.size() > 1 )
+        {
+          for ( size_t i = 1; i < job.maskJobs.size(); ++i )
+          {
+            const LayerRenderJob::MaskJob &nextJob = job.maskJobs[i];
+            QPaintDevice *nextJobPaintDevice = nullptr;
+            if ( nextJob.layerRenderJob )
+            {
+              nextJobPaintDevice = nextJob.layerRenderJob->maskPaintDevice.get();
+            }
+            else
+            {
+              Q_ASSERT( nextJob.maskPaintDeviceId >= 0 && nextJob.maskPaintDeviceId < static_cast< int >( labelJob.maskPaintDevices.size() ) );
+              nextJobPaintDevice = labelJob.maskPaintDevices[nextJob.maskPaintDeviceId].get();
+            }
+            Q_ASSERT( nextJobPaintDevice );
+
+            QImage *nextJobImage = dynamic_cast<QImage *>( nextJobPaintDevice );
+            Q_ASSERT_X( nextJobImage, "QgsMapRendererJob::composeSecondPass", "FORMAT MISMATCH -- expected a raster mask format, but mask paint device is not a QImage!!" );
+            firstMaskPainter->drawImage( 0, 0, *nextJobImage );
+          }
+        }
 
         // Only retain parts of the second rendering that are "inside" the mask image
         QPainter *painter = job.context()->painter();
