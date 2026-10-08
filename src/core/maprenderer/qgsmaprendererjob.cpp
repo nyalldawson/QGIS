@@ -1100,7 +1100,7 @@ std::vector< LayerRenderJob > QgsMapRendererJob::prepareSecondPassJobs( std::vec
     {
       std::unique_ptr< QPaintDevice > maskPaintDevice;
       std::unique_ptr< QPainter > maskPainter;
-      = switch ( mapSettings().rasterizedRenderingPolicy() )
+      switch ( mapSettings().rasterizedRenderingPolicy() )
       {
         case Qgis::RasterizedRenderingPolicy::Default:
           job.maskRenderFormat = Qgis::RenderFormat::Raster;
@@ -1611,7 +1611,7 @@ void QgsMapRendererJob::composeSecondPass( std::vector<LayerRenderJob> &secondPa
   // compose the second pass with the mask
   for ( LayerRenderJob &job : secondPassJobs )
   {
-    if ( !job.maskJobs.isEmpty() )
+    if ( !job.maskJobs.empty() )
     {
       switch ( job.maskRenderFormat )
       {
