@@ -912,11 +912,41 @@ std::vector< LayerRenderJob > QgsMapRendererJob::prepareSecondPassJobs( std::vec
   if ( maskedSymbolLayers.isEmpty() )
     return secondPassJobs;
 
+  QMap<int, bool> labelMaskRequiresRaster;
+  QMap<QString, bool> layerMaskRequiresRaster;
+
+  for ( auto it = maskedSymbolLayers.constBegin(); it != maskedSymbolLayers.constEnd(); ++it )
+  {
+    const QString &maskedLayerId = it.key();
+    LayerRenderJob *targetJob = layerJobMapping.value( maskedLayerId );
+
+    // Check if target layer itself forces rasterization
+    bool targetForcesRaster = !targetJob || ( targetJob->renderer && targetJob->renderer->forceRasterRender() ) || ( targetJob->blendMode != QPainter::CompositionMode_SourceOver );
+
+    for ( const MaskSource &source : it->maskSourceList )
+    {
+      bool sourceRequiresRaster = source.hasEffects || targetForcesRaster;
+
+      if ( source.labelMaskId != -1 )
+      {
+        if ( labelHasEffects[source.labelMaskId] || sourceRequiresRaster )
+          labelMaskRequiresRaster[source.labelMaskId] = true;
+      }
+      else
+      {
+        if ( maskLayerHasEffects[source.layerId] || sourceRequiresRaster )
+          layerMaskRequiresRaster[source.layerId] = true;
+      }
+    }
+  }
+
   // Prepare label mask images
   for ( int maskId = 0; maskId < labelJob.maskIdProvider.size(); maskId++ )
   {
     std::unique_ptr< QPaintDevice > maskPaintDevice;
     std::unique_ptr< QPainter > maskPainter;
+
+    bool forceRaster = labelMaskRequiresRaster.value( maskId, false ) || mapSettings().testFlag( Qgis::MapSettingsFlag::ForceRasterMasks );
 
     Qgis::RenderFormat renderFormat = Qgis::RenderFormat::Raster;
     switch ( mapSettings().rasterizedRenderingPolicy() )
@@ -925,9 +955,10 @@ std::vector< LayerRenderJob > QgsMapRendererJob::prepareSecondPassJobs( std::vec
         renderFormat = Qgis::RenderFormat::Raster;
         break;
       case Qgis::RasterizedRenderingPolicy::PreferVector:
-        renderFormat = !mapSettings().testFlag( Qgis::MapSettingsFlag::ForceRasterMasks ) && !labelHasEffects[maskId] ? Qgis::RenderFormat::Vector : Qgis::RenderFormat::Raster;
+        renderFormat = !mapSettings().testFlag( Qgis::MapSettingsFlag::ForceRasterMasks ) && !labelMaskRequiresRaster.value( maskId, false ) ? Qgis::RenderFormat::Vector : Qgis::RenderFormat::Raster;
         break;
       case Qgis::RasterizedRenderingPolicy::ForceVector:
+        // was just !forceRaster
         renderFormat = !mapSettings().testFlag( Qgis::MapSettingsFlag::ForceRasterMasks ) ? Qgis::RenderFormat::Vector : Qgis::RenderFormat::Raster;
         break;
     }
