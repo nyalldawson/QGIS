@@ -1513,13 +1513,36 @@ void QgsMapRendererJob::composeSecondPass( std::vector<LayerRenderJob> &secondPa
       QPainter *maskPainter = nullptr;
       for ( const LayerRenderJob::MaskJob &p : job.maskJobs )
       {
-        QImage *maskImage = static_cast<QImage *>( p.layerRenderJob ? p.layerRenderJob->maskPaintDevice.get() : labelJob.maskPaintDevices[p.maskPaintDeviceId].get() );
         if ( !maskPainter )
         {
-          maskPainter = p.layerRenderJob ? p.layerRenderJob->maskPainter.get() : labelJob.maskPainters[p.maskPaintDeviceId].get();
+          if ( p.layerRenderJob )
+          {
+            maskPainter = p.layerRenderJob->maskPainter.get();
+          }
+          else
+          {
+            Q_ASSERT( p.maskPaintDeviceId >= 0 && p.maskPaintDeviceId < static_cast< int >( labelJob.maskPainters.size() ) );
+            maskPainter = labelJob.maskPainters[p.maskPaintDeviceId].get();
+          }
+          Q_ASSERT( maskPainter );
         }
         else
         {
+          QPaintDevice *maskPaintDevice = nullptr;
+          if ( p.layerRenderJob )
+          {
+            maskPaintDevice = p.layerRenderJob->maskPaintDevice.get();
+          }
+          else
+          {
+            Q_ASSERT( p.maskPaintDeviceId >= 0 && p.maskPaintDeviceId < static_cast< int >( labelJob.maskPaintDevices.size() ) );
+            maskPaintDevice = labelJob.maskPaintDevices[p.maskPaintDeviceId].get();
+          }
+          Q_ASSERT( maskPaintDevice );
+          QImage *maskImage = dynamic_cast<QImage *>( maskPaintDevice );
+
+          QgsGeometryPaintDevice *geometryDevice = dynamic_cast< QgsGeometryPaintDevice * >( maskPaintDevice );
+          Q_ASSERT( maskImage );
           maskPainter->drawImage( 0, 0, *maskImage );
         }
       }
