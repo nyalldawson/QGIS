@@ -1929,10 +1929,10 @@ class TestSelectiveMasking(QgisTestCase):
         map_settings.setDestinationCrs(crs)
         map_settings.setLayers([points, polys])
 
-        im = QImage(map_settings.outputSize(), QImage.Format_RGB32)
+        im = QImage(map_settings.outputSize(), QImage.Format.Format_RGB32)
         im.setDotsPerMeterX(int(map_settings.outputDpi() / 25.4 * 1000))
         im.setDotsPerMeterY(int(map_settings.outputDpi() / 25.4 * 1000))
-        im.fill(Qt.transparent)
+        im.fill(Qt.GlobalColor.transparent)
         p = QPainter(im)
 
         job = QgsMapRendererCustomPainterJob(map_settings, p)
@@ -1946,10 +1946,10 @@ class TestSelectiveMasking(QgisTestCase):
         polys.setOpacity(1.0)
         points.setOpacity(0.5)
 
-        im = QImage(map_settings.outputSize(), QImage.Format_RGB32)
+        im = QImage(map_settings.outputSize(), QImage.Format.Format_RGB32)
         im.setDotsPerMeterX(int(map_settings.outputDpi() / 25.4 * 1000))
         im.setDotsPerMeterY(int(map_settings.outputDpi() / 25.4 * 1000))
-        im.fill(Qt.transparent)
+        im.fill(Qt.GlobalColor.transparent)
         p = QPainter(im)
 
         job = QgsMapRendererCustomPainterJob(map_settings, p)
@@ -2013,10 +2013,10 @@ class TestSelectiveMasking(QgisTestCase):
         map_settings.setDestinationCrs(crs)
         map_settings.setLayers([polys])
 
-        im = QImage(map_settings.outputSize(), QImage.Format_RGB32)
+        im = QImage(map_settings.outputSize(), QImage.Format.Format_RGB32)
         im.setDotsPerMeterX(int(map_settings.outputDpi() / 25.4 * 1000))
         im.setDotsPerMeterY(int(map_settings.outputDpi() / 25.4 * 1000))
-        im.fill(Qt.transparent)
+        im.fill(Qt.GlobalColor.transparent)
         p = QPainter(im)
 
         job = QgsMapRendererCustomPainterJob(map_settings, p)
@@ -2030,10 +2030,10 @@ class TestSelectiveMasking(QgisTestCase):
         polys.setOpacity(1.0)
         points.setOpacity(0.5)
 
-        im = QImage(map_settings.outputSize(), QImage.Format_RGB32)
+        im = QImage(map_settings.outputSize(), QImage.Format.Format_RGB32)
         im.setDotsPerMeterX(int(map_settings.outputDpi() / 25.4 * 1000))
         im.setDotsPerMeterY(int(map_settings.outputDpi() / 25.4 * 1000))
-        im.fill(Qt.transparent)
+        im.fill(Qt.GlobalColor.transparent)
         p = QPainter(im)
 
         job = QgsMapRendererCustomPainterJob(map_settings, p)
@@ -2105,10 +2105,10 @@ class TestSelectiveMasking(QgisTestCase):
         map_settings.setDestinationCrs(crs)
         map_settings.setLayers([points, polys])
 
-        im = QImage(map_settings.outputSize(), QImage.Format_RGB32)
+        im = QImage(map_settings.outputSize(), QImage.Format.Format_RGB32)
         im.setDotsPerMeterX(int(map_settings.outputDpi() / 25.4 * 1000))
         im.setDotsPerMeterY(int(map_settings.outputDpi() / 25.4 * 1000))
-        im.fill(Qt.transparent)
+        im.fill(Qt.GlobalColor.transparent)
         p = QPainter(im)
 
         job = QgsMapRendererCustomPainterJob(map_settings, p)
@@ -2122,10 +2122,10 @@ class TestSelectiveMasking(QgisTestCase):
         polys.setBlendMode(QPainter.CompositionMode.CompositionMode_SourceOver)
         points.setBlendMode(QPainter.CompositionMode.CompositionMode_Multiply)
 
-        im = QImage(map_settings.outputSize(), QImage.Format_RGB32)
+        im = QImage(map_settings.outputSize(), QImage.Format.Format_RGB32)
         im.setDotsPerMeterX(int(map_settings.outputDpi() / 25.4 * 1000))
         im.setDotsPerMeterY(int(map_settings.outputDpi() / 25.4 * 1000))
-        im.fill(Qt.transparent)
+        im.fill(Qt.GlobalColor.transparent)
         p = QPainter(im)
 
         job = QgsMapRendererCustomPainterJob(map_settings, p)
