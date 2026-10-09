@@ -43,8 +43,9 @@ Q_GLOBAL_STATIC( QgsStringMap, sVariableHelpTexts )
 Q_GLOBAL_STATIC( QgsStringMap, sGroups )
 
 HelpTextHash QgsExpression::sFunctionHelpTexts;
-QRecursiveMutex QgsExpression::sFunctionsMutex;
-QMap< QString, int> QgsExpression::sFunctionIndexMap;
+QMutex QgsExpression::sFunctionWriteMutex;
+std::atomic<QgsExpression::FunctionListSnapshot> QgsExpression::sFunctions;
+QStringList QgsExpression::sBuiltinFunctionNames;
 
 ///@cond PRIVATE
 HelpTextHash &QgsExpression::functionHelpTexts()
@@ -138,24 +139,29 @@ QString QgsExpression::quotedValue( const QVariant &value, QVariant::Type type )
 
 bool QgsExpression::isFunctionName( const QString &name )
 {
-  return functionIndex( name ) != -1;
+  const QgsExpression::FunctionListSnapshot functions = QgsExpression::getFunctionsSnapshot();
+  const int fnIndex = functions->functionIndex( name );
+  return fnIndex != -1;
 }
 
 int QgsExpression::functionIndex( const QString &name )
 {
-  QMutexLocker locker( &sFunctionsMutex );
+  const QgsExpression::FunctionListSnapshot functions = QgsExpression::getFunctionsSnapshot();
+  return functions->functionIndex( name );
+}
 
-  auto it = sFunctionIndexMap.constFind( name );
-  if ( it != sFunctionIndexMap.constEnd() )
+int QgsExpression::SharedFunctionPtrList::functionIndex( const QString &name ) const
+{
+  auto it = mFunctionIndexMap.constFind( name );
+  if ( it != mFunctionIndexMap.constEnd() )
     return *it;
 
-  const QList<QgsExpressionFunction *> &functions = QgsExpression::Functions();
   int i = 0;
-  for ( const QgsExpressionFunction *function : functions )
+  for ( const QgsExpression::SharedFunctionPtr &function : *this )
   {
     if ( QString::compare( name, function->name(), Qt::CaseInsensitive ) == 0 )
     {
-      sFunctionIndexMap.insert( name, i );
+      mFunctionIndexMap.insert( name, i );
       return i;
     }
     const QStringList aliases = function->aliases();
@@ -163,7 +169,7 @@ int QgsExpression::functionIndex( const QString &name )
     {
       if ( QString::compare( name, alias, Qt::CaseInsensitive ) == 0 )
       {
-        sFunctionIndexMap.insert( name, i );
+        mFunctionIndexMap.insert( name, i );
         return i;
       }
     }
@@ -172,11 +178,16 @@ int QgsExpression::functionIndex( const QString &name )
   return -1;
 }
 
-int QgsExpression::functionCount()
+QgsExpression::SharedFunctionPtr QgsExpression::SharedFunctionPtrList::getFunction( int index ) const
 {
-  return Functions().size();
+  return ( *this )[index];
 }
 
+int QgsExpression::functionCount()
+{
+  const QgsExpression::FunctionListSnapshot functions = QgsExpression::getFunctionsSnapshot();
+  return functions->size();
+}
 
 QgsExpression::QgsExpression( const QString &expr )
   : d( new QgsExpressionPrivate )
@@ -569,6 +580,20 @@ double QgsExpression::evaluateToDouble( const QString &text, const double fallba
     return fallbackValue;
   }
   return convertedValue;
+}
+
+QList<QgsExpressionFunction *> QgsExpression::Functions()
+{
+  const QgsExpression::FunctionListSnapshot functions = QgsExpression::getFunctionsSnapshot();
+  QList<QgsExpressionFunction *> res;
+  for ( const SharedFunctionPtr &it : *functions )
+  {
+    // not safe -- we convert back to raw pointer, so there's a chance this may
+    // be a dangling pointer. This method is only for use for Python code anyway, where thread
+    // safety is not so critical...
+    res.append( it.get() );
+  }
+  return res;
 }
 
 QString QgsExpression::helpText( QString name )

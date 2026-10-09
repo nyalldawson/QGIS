@@ -27,6 +27,7 @@
 #include <QDomDocument>
 #include <QList>
 #include <QMetaType>
+#include <QReadWriteLock>
 #include <QRecursiveMutex>
 #include <QSet>
 #include <QString>
@@ -195,6 +196,24 @@ class CORE_EXPORT QgsExpression
 {
     Q_DECLARE_TR_FUNCTIONS( QgsExpression )
   public:
+#ifndef SIP_RUN
+    using SharedFunctionPtr = std::shared_ptr<QgsExpressionFunction>;
+
+    class SharedFunctionPtrList : public QList< SharedFunctionPtr >
+    {
+      public:
+        //! Returns index of the function in Functions array
+        int functionIndex( const QString &name ) const;
+
+        SharedFunctionPtr getFunction( int index ) const;
+
+        // todo - make sure this is copied
+        mutable QMap< QString, int> mFunctionIndexMap;
+    };
+
+    using FunctionListSnapshot = std::shared_ptr< const SharedFunctionPtrList >;
+#endif
+
     /**
      * Details about any parser errors that were found when parsing the expression.
      */
@@ -596,9 +615,17 @@ class CORE_EXPORT QgsExpression
       soWithin,
     };
 
-    static const QList<QgsExpressionFunction *> &Functions();
+    SIP_SKIP static const FunctionListSnapshot getFunctionsSnapshot();
 
-    static const QStringList &BuiltinFunctions();
+    // NOTE tagged as deprecated as we don't want this used from c++ code
+    /**
+     * Returns a list of all registered functions.
+     *
+     * \warning This is not thread safe, and should not be called from outside the main thread.
+     */
+    Q_DECL_DEPRECATED static QList<QgsExpressionFunction *> Functions();
+
+    static QStringList BuiltinFunctions();
 
     /**
      * Registers a function to the expression engine. This is required to allow expressions to utilize the function.
@@ -608,17 +635,6 @@ class CORE_EXPORT QgsExpression
      * \see unregisterFunction
      */
     static bool registerFunction( QgsExpressionFunction *function, bool transferOwnership = false );
-
-    /**
-     * Registers a function to the expression engine. This is required to allow expressions to utilize the function.
-     *
-     * \warning This is an unsafe method which bypasses the internal thread safety protection and name uniqueness checks.
-     *
-     * \note Not available in Python bindings
-     *
-     * \since QGIS 4.4
-     */
-    SIP_SKIP static bool registerFunctionUnsafe( QgsExpressionFunction *function, bool transferOwnership = false );
 
     /**
      * Unregisters a function from the expression engine. The function will no longer be usable in expressions.
@@ -635,8 +651,13 @@ class CORE_EXPORT QgsExpression
     //! tells whether the identifier is a name of existing function
     static bool isFunctionName( const QString &name );
 
-    //! Returns index of the function in Functions array
-    static int functionIndex( const QString &name );
+    // NOTE tagged as deprecated as we don't want this used from c++ code
+    /**
+     * Returns index of the function in Functions array.
+     *
+     * \warning This is not thread safe, and should not be called from outside the main thread.
+     */
+    Q_DECL_DEPRECATED static int functionIndex( const QString &name );
 
     /**
      * Returns the number of functions defined in the parser
@@ -855,8 +876,11 @@ class CORE_EXPORT QgsExpression
     static void buildVariableHelp() SIP_SKIP;
 
     friend class QgsExpressionNodeFunction;
-    static QRecursiveMutex sFunctionsMutex;
-    static QMap< QString, int> sFunctionIndexMap;
+
+    static std::atomic<FunctionListSnapshot> sFunctions;
+    static QMutex sFunctionWriteMutex;
+
+    static QStringList sBuiltinFunctionNames;
 
     friend class QgsOgcUtils;
 };
