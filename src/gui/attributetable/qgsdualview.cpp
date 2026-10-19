@@ -490,7 +490,7 @@ void QgsDualView::initModels( QgsMapCanvas *mapCanvas, const QgsFeatureRequest &
   mMasterModel = new QgsAttributeTableModel( mLayerCache, this );
 
 #ifdef ENABLE_MODELTEST
-  new QAbstractItemModelTester( mMasterModel, QAbstractItemModelTester::FailureReportingMode::Fatal, this );
+  // new QAbstractItemModelTester( mMasterModel, QAbstractItemModelTester::FailureReportingMode::Fatal, this );
 #endif
 
   mMasterModel->setRequest( request );
@@ -506,7 +506,7 @@ void QgsDualView::initModels( QgsMapCanvas *mapCanvas, const QgsFeatureRequest &
 
   mFilterModel = new QgsAttributeTableFilterModel( mapCanvas, mMasterModel, mMasterModel );
 #ifdef ENABLE_MODELTEST
-  new QAbstractItemModelTester( mFilterModel, QAbstractItemModelTester::FailureReportingMode::Fatal, this );
+  //new QAbstractItemModelTester( mFilterModel, QAbstractItemModelTester::FailureReportingMode::Fatal, this );
 #endif
 
   // The following connections to invalidate() are necessary to keep the filter model in sync

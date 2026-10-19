@@ -34,125 +34,33 @@
 #include <QItemSelectionModel>
 #include <QString>
 
+#ifdef ENABLE_MODELTEST
+#include <QAbstractItemModelTester>
+#endif
+
 #include "moc_qgsattributetablefiltermodel.cpp"
 
 using namespace Qt::StringLiterals;
 
-//////////////////
-// Filter Model //
-//////////////////
+//
+// QgsAttributeTableReorderedColumnModel
+//
 
-QgsAttributeTableFilterModel::QgsAttributeTableFilterModel( QgsMapCanvas *canvas, QgsAttributeTableModel *sourceModel, QObject *parent )
-  : QSortFilterProxyModel( parent )
-  , mCanvas( canvas )
+QgsAttributeTableReorderedColumnModel::QgsAttributeTableReorderedColumnModel( QgsAttributeTableModel *tableModel, QObject *parent )
+  : QIdentityProxyModel( parent )
+  , mTableModel( tableModel )
 {
-  setSourceModel( sourceModel );
-  setDynamicSortFilter( true );
-  setSortRole( static_cast<int>( QgsAttributeTableModel::CustomRole::Sort ) );
-  connect( layer(), &QgsVectorLayer::selectionChanged, this, &QgsAttributeTableFilterModel::selectionChanged );
+  for ( int i = 0; i < mTableModel->columnCount(); ++i )
+  {
+    mProxyColumnSource.append( i );
+  }
 
-  mReloadVisibleTimer.setSingleShot( true );
-  connect( &mReloadVisibleTimer, &QTimer::timeout, this, &QgsAttributeTableFilterModel::reloadVisible );
-  mFilterFeaturesTimer.setSingleShot( true );
-  connect( &mFilterFeaturesTimer, &QTimer::timeout, this, &QgsAttributeTableFilterModel::filterFeatures );
+  setSourceModel( mTableModel );
+  connect( mTableModel, &QgsAttributeTableModel::layoutAboutToBeChanged, this, &QgsAttributeTableReorderedColumnModel::sourceLayoutAboutToBeChanged );
+  connect( mTableModel, &QgsAttributeTableModel::layoutChanged, this, &QgsAttributeTableReorderedColumnModel::sourceLayoutChanged );
 }
 
-bool QgsAttributeTableFilterModel::lessThan( const QModelIndex &left, const QModelIndex &right ) const
-{
-  if ( mSelectedOnTop )
-  {
-    const bool leftSelected = layer()->selectedFeatureIds().contains( masterModel()->rowToId( left.row() ) );
-    const bool rightSelected = layer()->selectedFeatureIds().contains( masterModel()->rowToId( right.row() ) );
-
-    if ( leftSelected && !rightSelected )
-    {
-      return sortOrder() == Qt::AscendingOrder;
-    }
-    else if ( rightSelected && !leftSelected )
-    {
-      return sortOrder() == Qt::DescendingOrder;
-    }
-  }
-
-  if ( mTableModel->sortCacheExpression().isEmpty() )
-  {
-    //shortcut when no sort order set
-    return false;
-  }
-
-  return qgsVariantLessThan( left.data( static_cast<int>( QgsAttributeTableModel::CustomRole::Sort ) ), right.data( static_cast<int>( QgsAttributeTableModel::CustomRole::Sort ) ) );
-}
-
-void QgsAttributeTableFilterModel::sort( int column, Qt::SortOrder order )
-{
-  if ( order != Qt::AscendingOrder && order != Qt::DescendingOrder )
-    order = Qt::AscendingOrder;
-  if ( column < 0 || column >= mProxyColumnSource.size() )
-  {
-    sort( QString() );
-  }
-  else
-  {
-    const int myColumn = mProxyColumnSource.at( column );
-    masterModel()->prefetchColumnData( myColumn );
-    QSortFilterProxyModel::sort( myColumn, order );
-  }
-  emit sortColumnChanged( column, order );
-}
-
-QVariant QgsAttributeTableFilterModel::data( const QModelIndex &index, int role ) const
-{
-  if ( mapColumnToSource( index.column() ) == -1 ) // actions
-  {
-    if ( role == static_cast<int>( CustomRole::Type ) )
-      return ColumnTypeActionButton;
-    else if ( role == static_cast<int>( QgsAttributeTableModel::CustomRole::FeatureId ) )
-    {
-      const QModelIndex fieldIndex = QSortFilterProxyModel::mapToSource( QSortFilterProxyModel::index( index.row(), 0, index.parent() ) );
-      return sourceModel()->data( fieldIndex, static_cast<int>( QgsAttributeTableModel::CustomRole::FeatureId ) );
-    }
-    else if ( role == static_cast<int>( QgsAttributeTableModel::CustomRole::Sort ) )
-    {
-      const QModelIndex fieldIndex = QSortFilterProxyModel::mapToSource( QSortFilterProxyModel::index( index.row(), 0, index.parent() ) );
-      return sourceModel()->data( fieldIndex, static_cast<int>( QgsAttributeTableModel::CustomRole::Sort ) );
-    }
-  }
-  else if ( role == static_cast<int>( CustomRole::Type ) )
-    return ColumnTypeField;
-
-  return QSortFilterProxyModel::data( index, role );
-}
-
-QVariant QgsAttributeTableFilterModel::headerData( int section, Qt::Orientation orientation, int role ) const
-{
-  if ( orientation == Qt::Horizontal )
-  {
-    if ( mProxyColumnSource.at( section ) == -1 && role == Qt::DisplayRole )
-      return tr( "Actions" );
-    else
-    {
-      const int sourceSection = mapColumnToSource( section );
-      return sourceModel()->headerData( sourceSection, orientation, role );
-    }
-  }
-  else
-  {
-    if ( role == Qt::DisplayRole )
-      return section + 1;
-    else
-    {
-      const int sourceSection = mapToSource( index( section, ( !mProxyColumnSource.isEmpty() && mProxyColumnSource.at( 0 ) == -1 ) ? 1 : 0 ) ).row();
-      return sourceModel()->headerData( sourceSection, orientation, role );
-    }
-  }
-}
-
-int QgsAttributeTableFilterModel::actionColumnIndex() const
-{
-  return mProxyColumnSource.indexOf( -1 );
-}
-
-int QgsAttributeTableFilterModel::columnCount( const QModelIndex &parent ) const
+int QgsAttributeTableReorderedColumnModel::columnCount( const QModelIndex &parent ) const
 {
   if ( parent.isValid() )
     return 0;
@@ -160,28 +68,212 @@ int QgsAttributeTableFilterModel::columnCount( const QModelIndex &parent ) const
   return mProxyColumnSource.count();
 }
 
-void QgsAttributeTableFilterModel::setAttributeTableConfig( const QgsAttributeTableConfig &config, bool force )
+QVariant QgsAttributeTableReorderedColumnModel::data( const QModelIndex &index, int role ) const
+{
+  const int attributeIndex = proxyColumnToAttributeIndex( index.column() );
+  if ( attributeIndex == -1 ) // actions column
+  {
+    if ( role == static_cast<int>( QgsAttributeTableFilterModel::CustomRole::Type ) )
+      return QgsAttributeTableFilterModel::ColumnTypeActionButton;
+    else if ( role == static_cast<int>( QgsAttributeTableModel::CustomRole::FeatureId ) )
+    {
+      const QModelIndex fieldIndex = mapToSource( QIdentityProxyModel::index( index.row(), 0, index.parent() ) );
+      return sourceModel()->data( fieldIndex, static_cast<int>( QgsAttributeTableModel::CustomRole::FeatureId ) );
+    }
+    else if ( role == static_cast<int>( QgsAttributeTableModel::CustomRole::Sort ) )
+    {
+      const QModelIndex fieldIndex = mapToSource( QIdentityProxyModel::index( index.row(), 0, index.parent() ) );
+      return sourceModel()->data( fieldIndex, static_cast<int>( QgsAttributeTableModel::CustomRole::Sort ) );
+    }
+  }
+  else if ( role == static_cast<int>( QgsAttributeTableFilterModel::CustomRole::Type ) )
+  {
+    return QgsAttributeTableFilterModel::ColumnTypeField;
+  }
+
+  return QIdentityProxyModel::data( index, role );
+}
+
+Qt::ItemFlags QgsAttributeTableReorderedColumnModel::flags( const QModelIndex &index ) const
+{
+  if ( !index.isValid() )
+    return Qt::ItemFlag::NoItemFlags;
+
+  // Handle the action column flags here, the master model doesn't know it
+  const int attributeIndex = proxyColumnToAttributeIndex( index.column() );
+  if ( attributeIndex == -1 )
+  {
+    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+  }
+
+  return QIdentityProxyModel::flags( index );
+}
+
+QVariant QgsAttributeTableReorderedColumnModel::headerData( int section, Qt::Orientation orientation, int role ) const
+{
+  if ( orientation == Qt::Horizontal )
+  {
+    const int attributeIndex = proxyColumnToAttributeIndex( section );
+    if ( attributeIndex == -1 )
+    {
+      if ( role == Qt::DisplayRole )
+      {
+        return tr( "Actions" );
+      }
+      else
+      {
+        return QVariant();
+      }
+    }
+    else
+    {
+      return sourceModel()->headerData( attributeIndex, orientation, role );
+    }
+  }
+  else
+  {
+    if ( role == Qt::DisplayRole )
+    {
+      return section + 1;
+    }
+    else
+    {
+      return sourceModel()->headerData( section, orientation, role );
+    }
+  }
+}
+
+QModelIndex QgsAttributeTableReorderedColumnModel::index( int row, int column, const QModelIndex &parent ) const
+{
+  if ( row < 0 || column < 0 || column >= columnCount( parent ) )
+    return QModelIndex();
+
+  return createIndex( row, column );
+}
+
+QModelIndex QgsAttributeTableReorderedColumnModel::parent( const QModelIndex &child ) const
+{
+  const int attributeIndex = proxyColumnToAttributeIndex( child.column() );
+  if ( attributeIndex < 0 )
+  {
+    // Create an index for column 0 and use that to get the parent.
+    const QModelIndex proxySibling = createIndex( child.row(), 0, child.internalPointer() );
+    return QIdentityProxyModel::parent( proxySibling );
+  }
+  return QIdentityProxyModel::parent( child );
+}
+
+QModelIndex QgsAttributeTableReorderedColumnModel::mapToSource( const QModelIndex &proxyIndex ) const
+{
+  if ( !proxyIndex.isValid() )
+    return QModelIndex();
+
+  const int attributeIndex = proxyColumnToAttributeIndex( proxyIndex.column() );
+  if ( attributeIndex < 0 )
+  {
+    // does not exist in the source model
+    return QModelIndex();
+  }
+
+  return mTableModel->index( proxyIndex.row(), attributeIndex );
+}
+
+QItemSelection QgsAttributeTableReorderedColumnModel::mapSelectionToSource( const QItemSelection &selection ) const
+{
+  QItemSelection sourceSelection;
+  // mapToSource will give invalid index for our additional columns, so truncate the selection
+  // to the columns known by the source model
+  for ( auto it = selection.constBegin(); it != selection.constEnd(); ++it )
+  {
+    QItemSelection newSelection;
+    for ( const QModelIndex &proxyIndex : it->indexes() )
+    {
+      const QModelIndex sourceIndex = mapToSource( proxyIndex );
+      if ( sourceIndex.isValid() )
+      {
+        newSelection << QItemSelectionRange( sourceIndex, sourceIndex );
+      }
+    }
+    sourceSelection.merge( newSelection, QItemSelectionModel::Select );
+  }
+
+  return sourceSelection;
+}
+
+QModelIndex QgsAttributeTableReorderedColumnModel::mapFromSource( const QModelIndex &sourceIndex ) const
+{
+  if ( !sourceIndex.isValid() )
+    return QModelIndex();
+
+  const int proxyColumn = attributeIndexToProxyColumn( sourceIndex.column() );
+  if ( proxyColumn < 0 )
+  {
+    // attribute does not exist in this model
+    return QModelIndex();
+  }
+
+  return createIndex( sourceIndex.row(), proxyColumn );
+}
+
+QModelIndex QgsAttributeTableReorderedColumnModel::sibling( int row, int column, const QModelIndex &idx ) const
+{
+  if ( row == idx.row() && column == idx.column() )
+  {
+    return idx;
+  }
+  return index( row, column, parent( idx ) );
+}
+
+QModelIndex QgsAttributeTableReorderedColumnModel::buddy( const QModelIndex &proxyIndex ) const
+{
+  const int attributeIndex = proxyColumnToAttributeIndex( proxyIndex.column() );
+  if ( attributeIndex < 0 )
+  {
+    // does not exist in the source model
+    return proxyIndex;
+  }
+
+  return QIdentityProxyModel::buddy( proxyIndex );
+}
+
+void QgsAttributeTableReorderedColumnModel::setAttributeTableConfig( const QgsAttributeTableConfig &config )
 {
   const QgsAttributeTableConfig oldConfig = mConfig;
   mConfig = config;
-  mConfig.update( layer()->fields() );
-
-  if ( !force && mConfig.hasSameColumns( oldConfig ) )
-  {
-    return;
-  }
+  QgsVectorLayer *layer = mTableModel->layer();
 
   QVector<int> newColumnMapping;
-  const auto constColumns = mConfig.columns();
+  QSet<int> newHiddenColumns;
+  const QVector<QgsAttributeTableConfig::ColumnConfig> constColumns = mConfig.columns();
   for ( const QgsAttributeTableConfig::ColumnConfig &columnConfig : constColumns )
   {
-    // Hidden? Forget about this column
-    if ( columnConfig.hidden )
-      continue;
-
     // The new value for the mapping (field index or -1 for action column)
-    const int newValue = ( columnConfig.type == QgsAttributeTableConfig::Action ) ? -1 : layer()->fields().lookupField( columnConfig.name );
-    newColumnMapping << newValue;
+    switch ( columnConfig.type )
+    {
+      case QgsAttributeTableConfig::Field:
+      {
+        const int fieldIndex = layer->fields().lookupField( columnConfig.name );
+        if ( fieldIndex >= 0 )
+        {
+          if ( columnConfig.hidden )
+          {
+            newHiddenColumns.insert( fieldIndex );
+          }
+          else
+          {
+            newColumnMapping << fieldIndex;
+          }
+        }
+        break;
+      }
+
+      case QgsAttributeTableConfig::Action:
+        if ( !columnConfig.hidden )
+        {
+          newColumnMapping << -1;
+        }
+        break;
+    }
   }
 
   if ( newColumnMapping != mProxyColumnSource )
@@ -189,6 +281,7 @@ void QgsAttributeTableFilterModel::setAttributeTableConfig( const QgsAttributeTa
     bool requiresReset = false;
     int firstRemovedColumn = -1;
     int removedColumnCount = 0;
+    mHiddenColumns = newHiddenColumns;
 
     // Check if there have a contiguous set of columns have been removed or if we require a full reset
     for ( int i = 0; i < std::min( newColumnMapping.size(), mProxyColumnSource.size() - removedColumnCount ); ++i )
@@ -252,10 +345,178 @@ void QgsAttributeTableFilterModel::setAttributeTableConfig( const QgsAttributeTa
       endResetModel();
     }
   }
+}
 
-  if ( !config.sortExpression().isEmpty() )
+int QgsAttributeTableReorderedColumnModel::proxyColumnToAttributeIndex( int column ) const
+{
+  return mProxyColumnSource.value( column, -1 );
+}
+
+int QgsAttributeTableReorderedColumnModel::attributeIndexToProxyColumn( int index ) const
+{
+  if ( mHiddenColumns.contains( index ) )
+    return -1;
+
+  return mProxyColumnSource.indexOf( index );
+}
+
+void QgsAttributeTableReorderedColumnModel::sourceLayoutAboutToBeChanged( const QList<QPersistentModelIndex> &sourceParents, LayoutChangeHint hint )
+{
+  QList<QPersistentModelIndex> parents;
+  parents.reserve( sourceParents.size() );
+  for ( const QPersistentModelIndex &parent : sourceParents )
   {
-    sort( config.sortExpression(), config.sortOrder() );
+    if ( !parent.isValid() )
+    {
+      parents << QPersistentModelIndex();
+      continue;
+    }
+    const QModelIndex mappedParent = mapFromSource( parent );
+    parents << mappedParent;
+  }
+
+  emit layoutAboutToBeChanged( parents, hint );
+
+  const QModelIndexList persistentIndexList = QIdentityProxyModel::persistentIndexList();
+  layoutChangePersistentIndexes.reserve( persistentIndexList.size() );
+  layoutChangeProxyColumns.reserve( persistentIndexList.size() );
+
+  for ( QModelIndex proxyPersistentIndex : persistentIndexList )
+  {
+    proxyIndexes << proxyPersistentIndex;
+    const int column = proxyPersistentIndex.column();
+    layoutChangeProxyColumns << column;
+
+    const int attributeIndex = proxyColumnToAttributeIndex( column );
+    if ( attributeIndex < 0 )
+    {
+      proxyPersistentIndex = proxyPersistentIndex.sibling( proxyPersistentIndex.row(), 0 );
+    }
+
+    const QPersistentModelIndex srcPersistentIndex = mapToSource( proxyPersistentIndex );
+    layoutChangePersistentIndexes << srcPersistentIndex;
+  }
+}
+
+void QgsAttributeTableReorderedColumnModel::sourceLayoutChanged( const QList<QPersistentModelIndex> &sourceParents, LayoutChangeHint hint )
+{
+  for ( int i = 0; i < proxyIndexes.size(); ++i )
+  {
+    const QModelIndex proxyIdx = proxyIndexes.at( i );
+    QModelIndex newProxyIdx = mapFromSource( layoutChangePersistentIndexes.at( i ) );
+    const int attributeIndex = proxyColumnToAttributeIndex( proxyIdx.column() );
+    if ( attributeIndex < 0 )
+    {
+      newProxyIdx = newProxyIdx.sibling( newProxyIdx.row(), layoutChangeProxyColumns.at( i ) );
+    }
+    changePersistentIndex( proxyIdx, newProxyIdx );
+  }
+
+  layoutChangePersistentIndexes.clear();
+  layoutChangeProxyColumns.clear();
+  proxyIndexes.clear();
+
+  QList<QPersistentModelIndex> parents;
+  parents.reserve( sourceParents.size() );
+  for ( const QPersistentModelIndex &parent : sourceParents )
+  {
+    if ( !parent.isValid() )
+    {
+      parents << QPersistentModelIndex();
+      continue;
+    }
+    const QModelIndex mappedParent = mapFromSource( parent );
+    parents << mappedParent;
+  }
+
+  emit layoutChanged( parents, hint );
+}
+
+
+//////////////////
+// Filter Model //
+//////////////////
+
+QgsAttributeTableFilterModel::QgsAttributeTableFilterModel( QgsMapCanvas *canvas, QgsAttributeTableModel *sourceModel, QObject *parent )
+  : QSortFilterProxyModel( parent )
+  , mCanvas( canvas )
+{
+  setSourceModel( sourceModel );
+
+  setDynamicSortFilter( true );
+  setSortRole( static_cast<int>( QgsAttributeTableModel::CustomRole::Sort ) );
+  connect( layer(), &QgsVectorLayer::selectionChanged, this, &QgsAttributeTableFilterModel::selectionChanged );
+
+  mReloadVisibleTimer.setSingleShot( true );
+  connect( &mReloadVisibleTimer, &QTimer::timeout, this, &QgsAttributeTableFilterModel::reloadVisible );
+  mFilterFeaturesTimer.setSingleShot( true );
+  connect( &mFilterFeaturesTimer, &QTimer::timeout, this, &QgsAttributeTableFilterModel::filterFeatures );
+}
+
+bool QgsAttributeTableFilterModel::lessThan( const QModelIndex &left, const QModelIndex &right ) const
+{
+  if ( mSelectedOnTop )
+  {
+    const bool leftSelected = layer()->selectedFeatureIds().contains( masterModel()->rowToId( left.row() ) );
+    const bool rightSelected = layer()->selectedFeatureIds().contains( masterModel()->rowToId( right.row() ) );
+
+    if ( leftSelected && !rightSelected )
+    {
+      return sortOrder() == Qt::AscendingOrder;
+    }
+    else if ( rightSelected && !leftSelected )
+    {
+      return sortOrder() == Qt::DescendingOrder;
+    }
+  }
+
+  if ( mTableModel->sortCacheExpression().isEmpty() )
+  {
+    //shortcut when no sort order set
+    return false;
+  }
+
+  return qgsVariantLessThan( left.data( static_cast<int>( QgsAttributeTableModel::CustomRole::Sort ) ), right.data( static_cast<int>( QgsAttributeTableModel::CustomRole::Sort ) ) );
+}
+
+void QgsAttributeTableFilterModel::sort( int column, Qt::SortOrder order )
+{
+  if ( order != Qt::AscendingOrder && order != Qt::DescendingOrder )
+    order = Qt::AscendingOrder;
+
+  const int attributeIndexForColumn = mReorderedColumnModel->proxyColumnToAttributeIndex( column );
+  if ( attributeIndexForColumn < 0 )
+  {
+    sort( QString() );
+  }
+  else
+  {
+    masterModel()->prefetchColumnData( attributeIndexForColumn );
+    QSortFilterProxyModel::sort( column, order );
+  }
+  emit sortColumnChanged( column, order );
+}
+
+int QgsAttributeTableFilterModel::actionColumnIndex() const
+{
+  return mReorderedColumnModel->attributeIndexToProxyColumn( -1 );
+}
+
+void QgsAttributeTableFilterModel::setAttributeTableConfig( const QgsAttributeTableConfig &config, bool force )
+{
+  const QgsAttributeTableConfig oldConfig = mConfig;
+  mConfig = config;
+  mConfig.update( mTableModel->layer()->fields() );
+
+  if ( !force && mConfig.hasSameColumns( oldConfig ) )
+  {
+    return;
+  }
+
+  mReorderedColumnModel->setAttributeTableConfig( mConfig );
+  if ( !mConfig.sortExpression().isEmpty() )
+  {
+    sort( mConfig.sortExpression(), mConfig.sortOrder() );
   }
 }
 
@@ -303,13 +564,12 @@ void QgsAttributeTableFilterModel::setSelectedOnTop( bool selectedOnTop )
 void QgsAttributeTableFilterModel::setSourceModel( QgsAttributeTableModel *sourceModel )
 {
   mTableModel = sourceModel;
+  mReorderedColumnModel = new QgsAttributeTableReorderedColumnModel( mTableModel, this );
+#ifdef ENABLE_MODELTEST
+  new QAbstractItemModelTester( mReorderedColumnModel, QAbstractItemModelTester::FailureReportingMode::Fatal, this );
+#endif
 
-  for ( int i = 0; i < mTableModel->columnCount() - mTableModel->extraColumns(); ++i )
-  {
-    mProxyColumnSource.append( i );
-  }
-
-  QSortFilterProxyModel::setSourceModel( sourceModel );
+  QSortFilterProxyModel::setSourceModel( mReorderedColumnModel );
 
   // The following connections are needed in order to keep the filter model in sync, see: regression #15974
   connect( mTableModel, &QAbstractItemModel::columnsAboutToBeInserted, this, &QgsAttributeTableFilterModel::onColumnsChanged );
@@ -558,7 +818,6 @@ void QgsAttributeTableFilterModel::filterFeatures()
   }
 }
 
-
 void QgsAttributeTableFilterModel::selectionChanged()
 {
   if ( ShowSelected == mFilterMode )
@@ -574,24 +833,6 @@ void QgsAttributeTableFilterModel::selectionChanged()
 void QgsAttributeTableFilterModel::onColumnsChanged()
 {
   setAttributeTableConfig( mConfig );
-}
-
-int QgsAttributeTableFilterModel::mapColumnToSource( int column ) const
-{
-  if ( mProxyColumnSource.isEmpty() )
-    return column;
-  if ( column < 0 || column >= mProxyColumnSource.size() )
-    return -1;
-  else
-    return mProxyColumnSource.at( column );
-}
-
-int QgsAttributeTableFilterModel::mapColumnFromSource( int column ) const
-{
-  if ( mProxyColumnSource.isEmpty() )
-    return column;
-  else
-    return mProxyColumnSource.indexOf( column );
 }
 
 void QgsAttributeTableFilterModel::generateListOfVisibleFeatures()
@@ -686,7 +927,7 @@ void QgsAttributeTableFilterModel::generateListOfVisibleFeatures()
 
 QgsFeatureId QgsAttributeTableFilterModel::rowToId( const QModelIndex &row )
 {
-  return masterModel()->rowToId( mapToSource( row ).row() );
+  return masterModel()->rowToId( mapToMaster( row ).row() );
 }
 
 QModelIndex QgsAttributeTableFilterModel::fidToIndex( QgsFeatureId fid )
@@ -706,59 +947,27 @@ QModelIndexList QgsAttributeTableFilterModel::fidToIndexList( QgsFeatureId fid )
   return indexes;
 }
 
-QModelIndex QgsAttributeTableFilterModel::mapToSource( const QModelIndex &proxyIndex ) const
-{
-  if ( !proxyIndex.isValid() )
-    return QModelIndex();
-
-  int sourceColumn = mapColumnToSource( proxyIndex.column() );
-
-  // For the action column there is no matching column in the source model, just return invalid
-  if ( sourceColumn == -1 )
-    return QModelIndex();
-
-  return QSortFilterProxyModel::mapToSource( index( proxyIndex.row(), sourceColumn, proxyIndex.parent() ) );
-}
-
-QModelIndex QgsAttributeTableFilterModel::mapFromSource( const QModelIndex &sourceIndex ) const
-{
-  const QModelIndex proxyIndex = QSortFilterProxyModel::mapFromSource( sourceIndex );
-
-  if ( proxyIndex.column() < 0 )
-    return QModelIndex();
-
-  int col = mapColumnFromSource( proxyIndex.column() );
-
-  if ( col == -1 )
-    col = 0;
-
-  return index( proxyIndex.row(), col, proxyIndex.parent() );
-}
-
-Qt::ItemFlags QgsAttributeTableFilterModel::flags( const QModelIndex &index ) const
-{
-  if ( !index.isValid() )
-    return Qt::ItemFlag::NoItemFlags;
-
-  // Handle the action column flags here, the master model doesn't know it
-  if ( mapColumnToSource( index.column() ) == -1 )
-    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
-
-  const QModelIndex source_index = mapToSource( index );
-  return masterModel()->flags( source_index );
-}
-
 QModelIndex QgsAttributeTableFilterModel::mapToMaster( const QModelIndex &proxyIndex ) const
 {
   if ( !proxyIndex.isValid() )
     return QModelIndex();
 
-  int sourceColumn = mapColumnToSource( proxyIndex.column() );
+  const QModelIndex columnModelIndex = QSortFilterProxyModel::mapToSource( proxyIndex );
+  const int attributeIndex = mReorderedColumnModel->proxyColumnToAttributeIndex( columnModelIndex.column() );
 
   // For the action column there is no matching column in the source model, just return the first one
   // so we are still able to query for the feature id, the feature...
-  if ( sourceColumn == -1 )
-    sourceColumn = 0;
+  if ( attributeIndex == -1 )
+  {
+    return mReorderedColumnModel->mapToSource( mReorderedColumnModel->index( columnModelIndex.row(), 0 ) );
+  }
+  else
+  {
+    return mReorderedColumnModel->mapToSource( columnModelIndex );
+  }
+}
 
-  return QSortFilterProxyModel::mapToSource( index( proxyIndex.row(), sourceColumn, proxyIndex.parent() ) );
+QModelIndex QgsAttributeTableFilterModel::mapFromMaster( const QModelIndex &sourceIndex ) const
+{
+  return mapFromSource( mReorderedColumnModel->mapFromSource( sourceIndex ) );
 }

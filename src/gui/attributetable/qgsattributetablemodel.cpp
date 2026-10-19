@@ -442,7 +442,7 @@ void QgsAttributeTableModel::loadAttributes()
     beginRemoveColumns( QModelIndex(), attributes.size(), mFieldCount - 1 );
   }
 
-  QgsDebugError( u"Changing field count from %1 to %2"_s.arg( mFieldCount).arg(attributes.size()));
+  QgsDebugError( u"Changing field count from %1 to %2"_s.arg( mFieldCount ).arg( attributes.size() ) );
   mFieldCount = attributes.size();
 
   mAttributes = attributes;

@@ -21,6 +21,7 @@
 #include "qgsattributetablemodel.h"
 #include "qgsfeaturemodel.h"
 
+#include <QIdentityProxyModel>
 #include <QModelIndex>
 #include <QSortFilterProxyModel>
 #include <QTimer>
@@ -28,6 +29,66 @@
 class QgsVectorLayerCache;
 class QgsMapCanvas;
 class QItemSelectionModel;
+
+// based on KExtraColumnsProxyModel
+
+class GUI_EXPORT QgsAttributeTableReorderedColumnModel : public QAbstractTableModel
+{
+    Q_OBJECT
+
+  public:
+    explicit QgsAttributeTableReorderedColumnModel( QgsAttributeTableModel *tableModel, QObject *parent SIP_TRANSFERTHIS = nullptr );
+
+    int columnCount( const QModelIndex &parent = QModelIndex() ) const override;
+    QVariant data( const QModelIndex &index, int role = Qt::DisplayRole ) const override;
+    Qt::ItemFlags flags( const QModelIndex &index ) const override;
+    QVariant headerData( int section, Qt::Orientation orientation, int role = Qt::DisplayRole ) const override;
+    QModelIndex index( int row, int column, const QModelIndex &parent = QModelIndex() ) const override;
+    QModelIndex parent( const QModelIndex &child ) const override;
+    QModelIndex mapToSource( const QModelIndex &proxyIndex ) const;
+    QModelIndex mapFromSource( const QModelIndex &sourceIndex ) const;
+    QModelIndex sibling( int row, int column, const QModelIndex &idx ) const override;
+    QModelIndex buddy( const QModelIndex &index ) const override;
+
+    /**
+     * Set the attribute table configuration to control which fields are shown,
+     * in which order they are shown as well as if and where an action column
+     * is shown.
+     * \param config attribute table config
+     */
+    void setAttributeTableConfig( const QgsAttributeTableConfig &config );
+
+    /**
+     * Returns the attribute index corresponding to the specified model \a column, or -1
+     * if the column does not correspond to an attribute.
+     */
+    int proxyColumnToAttributeIndex( int column ) const;
+
+    /**
+     * Returns the proxy column corresponding to a source model attribute \a index.
+     *
+     * Returns -1 if the attribute is not displayed in this reordered column model.
+     */
+    int attributeIndexToProxyColumn( int index ) const;
+
+  private slots:
+
+    void sourceLayoutAboutToBeChanged( const QList<QPersistentModelIndex> &, QAbstractItemModel::LayoutChangeHint );
+    void sourceLayoutChanged( const QList<QPersistentModelIndex> &, QAbstractItemModel::LayoutChangeHint );
+
+  private:
+    QgsAttributeTableModel *mTableModel = nullptr;
+
+    QgsAttributeTableConfig mConfig;
+
+    // vector values are either source table attribute indices, or -1 if the column represents the special "actions" column
+    QVector<int> mProxyColumnSource;
+    QSet<int> mHiddenColumns;
+
+    QList<QPersistentModelIndex> layoutChangePersistentIndexes;
+    QList<int> layoutChangeProxyColumns;
+    QModelIndexList proxyIndexes;
+};
 
 /**
  * \ingroup gui
@@ -193,13 +254,7 @@ class GUI_EXPORT QgsAttributeTableFilterModel : public QSortFilterProxyModel, pu
 
     QModelIndex mapToMaster( const QModelIndex &proxyIndex ) const;
 
-    inline QModelIndex mapFromMaster( const QModelIndex &sourceIndex ) const { return mapFromSource( sourceIndex ); }
-
-    QModelIndex mapToSource( const QModelIndex &proxyIndex ) const override;
-
-    QModelIndex mapFromSource( const QModelIndex &sourceIndex ) const override;
-
-    Qt::ItemFlags flags( const QModelIndex &index ) const override;
+    QModelIndex mapFromMaster( const QModelIndex &sourceIndex ) const;
 
     /**
      * Sort by the given column using the given order.
@@ -227,17 +282,11 @@ class GUI_EXPORT QgsAttributeTableFilterModel : public QSortFilterProxyModel, pu
     //! Returns the map canvas
     QgsMapCanvas *mapCanvas() const { return mCanvas; }
 
-    QVariant data( const QModelIndex &index, int role ) const override;
-
-    QVariant headerData( int section, Qt::Orientation orientation, int role ) const override;
-
     /**
      * Gets the index of the first column that contains an action widget.
      * Returns -1 if none is defined.
      */
     int actionColumnIndex() const;
-
-    int columnCount( const QModelIndex &parent ) const override;
 
     /**
      * Set the attribute table configuration to control which fields are shown,
@@ -289,12 +338,6 @@ class GUI_EXPORT QgsAttributeTableFilterModel : public QSortFilterProxyModel, pu
     void filterError( const QString &errorMessage );
 
   protected:
-    /**
-     * Returns TRUE if the source row will be accepted
-     *
-     * \param sourceRow row from the source model
-     * \param sourceParent parent index in the source model
-     */
     bool filterAcceptsRow( int sourceRow, const QModelIndex &sourceParent ) const override;
 
     /**
@@ -339,18 +382,13 @@ class GUI_EXPORT QgsAttributeTableFilterModel : public QSortFilterProxyModel, pu
     QgsMapCanvas *mCanvas = nullptr;
     FilterMode mFilterMode = FilterMode::ShowAll;
     bool mSelectedOnTop = false;
+
     QgsAttributeTableModel *mTableModel = nullptr;
-
+    QgsAttributeTableReorderedColumnModel *mReorderedColumnModel = nullptr;
     QgsAttributeTableConfig mConfig;
-
-    // vector values are either source table attribute indices, or -1 if the column represents the special "actions" column
-    QVector<int> mProxyColumnSource;
 
     QgsExpression mFilterExpression;
     QgsExpressionContext mFilterExpressionContext;
-
-    int mapColumnToSource( int column ) const;
-    int mapColumnFromSource( int column ) const;
 
     QTimer mReloadVisibleTimer;
     QTimer mFilterFeaturesTimer;
