@@ -113,24 +113,11 @@ bool QgsAttributeTableModel::loadFeatureAtId( QgsFeatureId fid, int fieldIdx ) c
 
 int QgsAttributeTableModel::extraColumns() const
 {
-  return mExtraColumns;
+  return 0;
 }
 
-void QgsAttributeTableModel::setExtraColumns( int extraColumns )
-{
-  if ( extraColumns > mExtraColumns )
-  {
-    beginInsertColumns( QModelIndex(), mFieldCount + mExtraColumns, mFieldCount + extraColumns - 1 );
-    mExtraColumns = extraColumns;
-    endInsertColumns();
-  }
-  else if ( extraColumns < mExtraColumns )
-  {
-    beginRemoveColumns( QModelIndex(), mFieldCount + extraColumns, mFieldCount + mExtraColumns - 1 );
-    mExtraColumns = extraColumns;
-    endRemoveColumns();
-  }
-}
+void QgsAttributeTableModel::setExtraColumns( int )
+{}
 
 void QgsAttributeTableModel::featuresDeleted( const QgsFeatureIds &fids )
 {
@@ -444,18 +431,20 @@ void QgsAttributeTableModel::loadAttributes()
     attributes << idx;
   }
 
-  if ( mFieldCount + mExtraColumns < attributes.size() + mExtraColumns )
+  if ( mFieldCount < attributes.size() )
   {
     ins = true;
-    beginInsertColumns( QModelIndex(), mFieldCount + mExtraColumns, attributes.size() - 1 );
+    beginInsertColumns( QModelIndex(), mFieldCount, attributes.size() - 1 );
   }
-  else if ( attributes.size() + mExtraColumns < mFieldCount + mExtraColumns )
+  else if ( attributes.size() < mFieldCount )
   {
     rm = true;
-    beginRemoveColumns( QModelIndex(), attributes.size(), mFieldCount + mExtraColumns - 1 );
+    beginRemoveColumns( QModelIndex(), attributes.size(), mFieldCount - 1 );
   }
 
+  QgsDebugError( u"Changing field count from %1 to %2"_s.arg( mFieldCount).arg(attributes.size()));
   mFieldCount = attributes.size();
+
   mAttributes = attributes;
   mWidgetDatas.clear();
   mWidgetDatas.resize( mFieldCount );
@@ -639,7 +628,7 @@ int QgsAttributeTableModel::columnCount( const QModelIndex &parent ) const
   if ( parent.isValid() )
     return 0;
 
-  return std::max( 1, mFieldCount + mExtraColumns ); // if there are zero columns all model indices will be considered invalid
+  return std::max( 1, mFieldCount ); // if there are zero columns all model indices will be considered invalid
 }
 
 QVariant QgsAttributeTableModel::headerData( int section, Qt::Orientation orientation, int role ) const
