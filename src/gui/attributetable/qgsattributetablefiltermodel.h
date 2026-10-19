@@ -342,7 +342,10 @@ class GUI_EXPORT QgsAttributeTableFilterModel : public QSortFilterProxyModel, pu
     QgsAttributeTableModel *mTableModel = nullptr;
 
     QgsAttributeTableConfig mConfig;
-    QVector<int> mColumnMapping;
+
+    // vector values are either source table attribute indices, or -1 if the column represents the special "actions" column
+    QVector<int> mProxyColumnSource;
+
     QgsExpression mFilterExpression;
     QgsExpressionContext mFilterExpressionContext;
 
