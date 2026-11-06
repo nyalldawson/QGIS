@@ -190,11 +190,11 @@ QgsAttributeDialog::QgsAttributeDialog( QgsVectorLayer *vl, QgsFeature *thepFeat
 {
   mWidgetStack = new QgsPanelWidgetStack();
   auto vLayout = new QVBoxLayout();
-  vLayout->setContentsMargins( 0, 0, 0, 0 );
   vLayout->addWidget( mWidgetStack );
   setLayout( vLayout );
 
   mPanelWidget = new QgsAttributePanelWidget( vl, thepFeature, featureOwner, nullptr, showDialogButtons, context );
+  mPanelWidget->setDockMode( true );
 
   mWidgetStack->setMainPanel( mPanelWidget );
 

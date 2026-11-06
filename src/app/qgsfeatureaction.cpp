@@ -237,37 +237,67 @@ QgsFeatureAction::AddFeatureResult QgsFeatureAction::addFeature(
   }
   else
   {
-    QgsAttributeDialog *dialog = newDialog( false );
-    // delete the dialog when it is closed
-    dialog->setAttribute( Qt::WA_DeleteOnClose );
-    dialog->setMode( QgsAttributeEditorContext::AddFeatureMode );
-    dialog->setEditCommandMessage( text() );
-    if ( scope )
-      dialog->setExtraContextScope( new QgsExpressionContextScope( *scope ) );
-    if ( highlight )
-      dialog->setHighlight( highlight.release() );
-
-    connect( dialog->attributeForm(), &QgsAttributeForm::featureSaved, this, &QgsFeatureAction::onFeatureSaved );
-
-    if ( !context.showModal() )
+    QgsPanelWidget *parentPanel = nullptr;
+    if ( context.parentWidget() )
     {
-      setParent( dialog ); // keep this action alive until the dialog is closed and destructed
-      connect( dialog, &QgsAttributeDialog::finished, this, &QgsFeatureAction::addFeatureFinished );
-      dialog->show();
+      parentPanel = QgsPanelWidget::findParentPanel( context.parentWidget() );
+    }
 
-      if ( context.hideParent() )
-      {
-        connect( this, &QgsFeatureAction::addFeatureFinished, this, &QgsFeatureAction::unhideParentWidget );
-        hideParentWidget();
-      }
+    if ( parentPanel )
+    {
+      QgsAttributeEditorContext editorContext( QgisApp::instance()->createAttributeEditorContext() );
 
+      QgsAttributePanelWidget *dialog = new QgsAttributePanelWidget( mLayer, mFeature, false, nullptr, true, editorContext );
+      parentPanel->openPanel( dialog );
+      dialog->setMode( QgsAttributeEditorContext::AddFeatureMode );
+      dialog->setEditCommandMessage( text() );
+      if ( scope )
+        dialog->setExtraContextScope( new QgsExpressionContextScope( *scope ) );
+      if ( highlight )
+        dialog->setHighlight( highlight.release() );
+      connect( dialog->attributeForm(), &QgsAttributeForm::featureSaved, this, &QgsFeatureAction::onFeatureSaved );
+
+      connect( dialog, &QgsAttributePanelWidget::accepted, this, [dialog, this] {
+        dialog->acceptPanel();
+        emit addFeatureFinished();
+      } );
+      connect( dialog, &QgsAttributePanelWidget::rejected, this, [dialog, this] {
+        dialog->acceptPanel();
+        emit addFeatureFinished();
+      } );
+
+      setParent( dialog );
       mFeature = nullptr;
       return AddFeatureResult::Pending;
     }
+    else
+    {
+      QgsAttributeDialog *dialog = newDialog( false );
+      // delete the dialog when it is closed
+      dialog->setAttribute( Qt::WA_DeleteOnClose );
+      dialog->setMode( QgsAttributeEditorContext::AddFeatureMode );
+      dialog->setEditCommandMessage( text() );
+      if ( scope )
+        dialog->setExtraContextScope( new QgsExpressionContextScope( *scope ) );
+      if ( highlight )
+        dialog->setHighlight( highlight.release() );
 
-    dialogWasShown = true;
-    dialog->exec();
-    emit addFeatureFinished();
+      connect( dialog->attributeForm(), &QgsAttributeForm::featureSaved, this, &QgsFeatureAction::onFeatureSaved );
+
+      if ( !context.showModal() )
+      {
+        setParent( dialog ); // keep this action alive until the dialog is closed and destructed
+        connect( dialog, &QgsAttributeDialog::finished, this, &QgsFeatureAction::addFeatureFinished );
+        dialog->show();
+
+        mFeature = nullptr;
+        return AddFeatureResult::Pending;
+      }
+
+      dialogWasShown = true;
+      dialog->exec();
+      emit addFeatureFinished();
+    }
   }
 
   // Will be set in the onFeatureSaved slot
