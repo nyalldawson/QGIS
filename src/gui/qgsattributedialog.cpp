@@ -22,6 +22,7 @@
 #include "qgshighlight.h"
 #include "qgsmaplayeractioncontext.h"
 #include "qgsmessagebar.h"
+#include "qgspanelwidgetstack.h"
 #include "qgssettings.h"
 
 #include <QString>
@@ -30,22 +31,182 @@
 
 using namespace Qt::StringLiterals;
 
-QgsAttributeDialog::QgsAttributeDialog( QgsVectorLayer *vl, QgsFeature *thepFeature, bool featureOwner, QWidget *parent, bool showDialogButtons, const QgsAttributeEditorContext &context )
-  : QDialog( parent )
+//
+// QgsAttributePanelWidget
+//
+
+QgsAttributePanelWidget::QgsAttributePanelWidget( QgsVectorLayer *vl, QgsFeature *thepFeature, bool featureOwner, QWidget *parent, bool showDialogButtons, const QgsAttributeEditorContext &context )
+  : QgsPanelWidget( parent )
   , mOwnedFeature( featureOwner ? thepFeature : nullptr )
 {
   init( vl, thepFeature, context, showDialogButtons );
 }
 
+QgsAttributePanelWidget::~QgsAttributePanelWidget()
+{}
+
+void QgsAttributePanelWidget::accept()
+{
+  QString error;
+  const bool didSave = mAttributeForm->saveWithDetails( &error );
+  if ( didSave )
+  {
+    emit accepted();
+  }
+  else
+  {
+    if ( error.isEmpty() )
+      error = tr( "An unknown error was encountered saving attributes" );
+
+    mMessageBar->pushMessage( QString(), error, Qgis::MessageLevel::Critical );
+  }
+}
+
+void QgsAttributePanelWidget::reject()
+{
+  // Delete any actions on other layers that may have been triggered from this dialog
+  if ( mAttributeForm->mode() == QgsAttributeEditorContext::AddFeatureMode )
+    mTrackedVectorLayerTools.rollback();
+
+  emit rejected();
+}
+
+void QgsAttributePanelWidget::setHighlight( QgsHighlight *h )
+{
+  delete mHighlight;
+
+  mHighlight = h;
+}
+
+QgsAttributeForm *QgsAttributePanelWidget::attributeForm() const
+{
+  return mAttributeForm;
+}
+
+QgsMessageBar *QgsAttributePanelWidget::messageBar()
+{
+  return mMessageBar;
+}
+
+const QgsFeature *QgsAttributePanelWidget::feature() const
+{
+  return &mAttributeForm->feature();
+}
+
+bool QgsAttributePanelWidget::editable() const
+{
+  return mAttributeForm->editable();
+}
+
+void QgsAttributePanelWidget::setMode( QgsAttributeEditorContext::Mode mode )
+{
+  mAttributeForm->setMode( mode );
+  mMenu->setMode( mode );
+
+  if ( !mMenu->isEmpty() && !mMenuBar )
+  {
+    mMenuBar = new QMenuBar( this );
+    mMenuBar->addMenu( mMenu );
+    layout()->setMenuBar( mMenuBar );
+  }
+  else if ( mMenu->isEmpty() && mMenuBar )
+  {
+    layout()->setMenuBar( nullptr );
+    delete mMenuBar;
+    mMenuBar = nullptr;
+  }
+}
+
+void QgsAttributePanelWidget::setEditCommandMessage( const QString &message )
+{
+  mAttributeForm->setEditCommandMessage( message );
+}
+
+void QgsAttributePanelWidget::setExtraContextScope( QgsExpressionContextScope *extraScope )
+{
+  mAttributeForm->setExtraContextScope( extraScope );
+}
+
+QgsMapLayerActionContext QgsAttributePanelWidget::createActionContext()
+{
+  QgsMapLayerActionContext context;
+  context.setMessageBar( mMessageBar );
+  return context;
+}
+
+bool QgsAttributePanelWidget::event( QEvent *e )
+{
+  if ( e->type() == QEvent::WindowActivate && mHighlight )
+    mHighlight->show();
+  else if ( e->type() == QEvent::WindowDeactivate && mHighlight )
+    mHighlight->hide();
+
+  return QgsPanelWidget::event( e );
+}
+
+void QgsAttributePanelWidget::init( QgsVectorLayer *layer, QgsFeature *feature, const QgsAttributeEditorContext &context, bool showDialogButtons )
+{
+  QgsAttributeEditorContext trackedContext = context;
+  setPanelTitle( tr( "Feature Attributes" ) );
+  setLayout( new QGridLayout() );
+  layout()->setContentsMargins( 0, 0, 0, 0 );
+  mMessageBar = new QgsMessageBar( this );
+  mMessageBar->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Fixed );
+  layout()->addWidget( mMessageBar );
+
+  setLayout( layout() );
+
+  mTrackedVectorLayerTools.setVectorLayerTools( trackedContext.vectorLayerTools() );
+  trackedContext.setVectorLayerTools( &mTrackedVectorLayerTools );
+  if ( showDialogButtons )
+    trackedContext.setFormMode( QgsAttributeEditorContext::StandaloneDialog );
+
+  mAttributeForm = new QgsAttributeForm( layer, *feature, trackedContext, this );
+  mAttributeForm->disconnectButtonBox();
+  layout()->addWidget( mAttributeForm );
+  QDialogButtonBox *buttonBox = mAttributeForm->findChild<QDialogButtonBox *>();
+  connect( buttonBox, &QDialogButtonBox::rejected, this, &QgsAttributePanelWidget::reject );
+  connect( buttonBox, &QDialogButtonBox::accepted, this, &QgsAttributePanelWidget::accept );
+  connect( layer, &QObject::destroyed, this, &QWidget::close );
+
+  mMenu = new QgsActionMenu( layer, mAttributeForm->feature(), u"Feature"_s, this );
+  mMenu->setActionContextGenerator( this );
+  if ( !mMenu->isEmpty() )
+  {
+    mMenuBar = new QMenuBar( this );
+    mMenuBar->addMenu( mMenu );
+    layout()->setMenuBar( mMenuBar );
+  }
+  focusNextChild();
+}
+
+
+//
+// QgsAttributeDialog
+//
+
+QgsAttributeDialog::QgsAttributeDialog( QgsVectorLayer *vl, QgsFeature *thepFeature, bool featureOwner, QWidget *parent, bool showDialogButtons, const QgsAttributeEditorContext &context )
+  : QDialog( parent )
+{
+  mWidgetStack = new QgsPanelWidgetStack();
+  auto vLayout = new QVBoxLayout();
+  vLayout->setContentsMargins( 0, 0, 0, 0 );
+  vLayout->addWidget( mWidgetStack );
+  setLayout( vLayout );
+
+  mPanelWidget = new QgsAttributePanelWidget( vl, thepFeature, featureOwner, nullptr, showDialogButtons, context );
+
+  mWidgetStack->setMainPanel( mPanelWidget );
+
+  connect( mPanelWidget, &QgsAttributePanelWidget::rejected, this, &QgsAttributeDialog::onPanelRejected );
+  connect( mPanelWidget, &QgsAttributePanelWidget::accepted, this, &QgsAttributeDialog::accept );
+  connect( vl, &QObject::destroyed, this, &QWidget::close );
+
+  setWindowTitle( tr( "%1 - Feature Attributes" ).arg( vl->name() ) );
+}
+
 QgsAttributeDialog::~QgsAttributeDialog()
 {
-  if ( mHighlight )
-  {
-    mHighlight->hide();
-    delete mHighlight;
-  }
-
-
   saveGeometry();
 }
 
@@ -65,26 +226,22 @@ void QgsAttributeDialog::restoreGeometry()
 
 void QgsAttributeDialog::setHighlight( QgsHighlight *h )
 {
-  delete mHighlight;
-
-  mHighlight = h;
+  mPanelWidget->setHighlight( h );
 }
 
-void QgsAttributeDialog::accept()
+QgsAttributeForm *QgsAttributeDialog::attributeForm() const
 {
-  QString error;
-  const bool didSave = mAttributeForm->saveWithDetails( &error );
-  if ( didSave )
-  {
-    QDialog::accept();
-  }
-  else
-  {
-    if ( error.isEmpty() )
-      error = tr( "An unknown error was encountered saving attributes" );
+  return mPanelWidget->attributeForm();
+}
 
-    mMessageBar->pushMessage( QString(), error, Qgis::MessageLevel::Critical );
-  }
+const QgsFeature *QgsAttributeDialog::feature() const
+{
+  return mPanelWidget->feature();
+}
+
+bool QgsAttributeDialog::editable() const
+{
+  return mPanelWidget->editable();
 }
 
 void QgsAttributeDialog::show()
@@ -93,6 +250,12 @@ void QgsAttributeDialog::show()
 
   raise();
   activateWindow();
+}
+
+void QgsAttributeDialog::onPanelRejected()
+{
+  mPanelWasRejected = true;
+  reject();
 }
 
 void QgsAttributeDialog::showEvent( QShowEvent *event )
@@ -109,87 +272,32 @@ void QgsAttributeDialog::showEvent( QShowEvent *event )
 
 void QgsAttributeDialog::reject()
 {
-  // Delete any actions on other layers that may have been triggered from this dialog
-  if ( mAttributeForm->mode() == QgsAttributeEditorContext::AddFeatureMode )
-    mTrackedVectorLayerTools.rollback();
-
-  QDialog::reject();
-}
-
-void QgsAttributeDialog::init( QgsVectorLayer *layer, QgsFeature *feature, const QgsAttributeEditorContext &context, bool showDialogButtons )
-{
-  QgsAttributeEditorContext trackedContext = context;
-  setWindowTitle( tr( "%1 - Feature Attributes" ).arg( layer->name() ) );
-  setLayout( new QGridLayout() );
-  layout()->setContentsMargins( 0, 0, 0, 0 );
-  mMessageBar = new QgsMessageBar( this );
-  mMessageBar->setSizePolicy( QSizePolicy::MinimumExpanding, QSizePolicy::Fixed );
-  layout()->addWidget( mMessageBar );
-
-  setLayout( layout() );
-
-  mTrackedVectorLayerTools.setVectorLayerTools( trackedContext.vectorLayerTools() );
-  trackedContext.setVectorLayerTools( &mTrackedVectorLayerTools );
-  if ( showDialogButtons )
-    trackedContext.setFormMode( QgsAttributeEditorContext::StandaloneDialog );
-
-  mAttributeForm = new QgsAttributeForm( layer, *feature, trackedContext, this );
-  mAttributeForm->disconnectButtonBox();
-  layout()->addWidget( mAttributeForm );
-  QDialogButtonBox *buttonBox = mAttributeForm->findChild<QDialogButtonBox *>();
-  connect( buttonBox, &QDialogButtonBox::rejected, this, &QgsAttributeDialog::reject );
-  connect( buttonBox, &QDialogButtonBox::accepted, this, &QgsAttributeDialog::accept );
-  connect( layer, &QObject::destroyed, this, &QWidget::close );
-
-  mMenu = new QgsActionMenu( layer, mAttributeForm->feature(), u"Feature"_s, this );
-  mMenu->setActionContextGenerator( this );
-  if ( !mMenu->isEmpty() )
+  if ( !mPanelWasRejected )
   {
-    mMenuBar = new QMenuBar( this );
-    mMenuBar->addMenu( mMenu );
-    layout()->setMenuBar( mMenuBar );
+    disconnect( mPanelWidget, &QgsAttributePanelWidget::rejected, this, &QgsAttributeDialog::onPanelRejected );
+    mPanelWidget->reject();
   }
-  focusNextChild();
+  QDialog::reject();
 }
 
 void QgsAttributeDialog::setMode( QgsAttributeEditorContext::Mode mode )
 {
-  mAttributeForm->setMode( mode );
-  mMenu->setMode( mode );
-
-  if ( !mMenu->isEmpty() && !mMenuBar )
-  {
-    mMenuBar = new QMenuBar( this );
-    mMenuBar->addMenu( mMenu );
-    layout()->setMenuBar( mMenuBar );
-  }
-  else if ( mMenu->isEmpty() && mMenuBar )
-  {
-    layout()->setMenuBar( nullptr );
-    delete mMenuBar;
-    mMenuBar = nullptr;
-  }
+  mPanelWidget->setMode( mode );
 }
 
-bool QgsAttributeDialog::event( QEvent *e )
+void QgsAttributeDialog::setEditCommandMessage( const QString &message )
 {
-  if ( e->type() == QEvent::WindowActivate && mHighlight )
-    mHighlight->show();
-  else if ( e->type() == QEvent::WindowDeactivate && mHighlight )
-    mHighlight->hide();
-
-  return QDialog::event( e );
+  mPanelWidget->setEditCommandMessage( message );
 }
 
 void QgsAttributeDialog::setExtraContextScope( QgsExpressionContextScope *extraScope )
 {
-  mAttributeForm->setExtraContextScope( extraScope );
+  mPanelWidget->setExtraContextScope( extraScope );
 }
 
 QgsMapLayerActionContext QgsAttributeDialog::createActionContext()
 {
-  QgsMapLayerActionContext context;
+  QgsMapLayerActionContext context = mPanelWidget->createActionContext();
   context.setAttributeDialog( this );
-  context.setMessageBar( mMessageBar );
   return context;
 }

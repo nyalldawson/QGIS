@@ -22,6 +22,7 @@
 #include "qgsattributeeditorcontext.h"
 #include "qgsattributeform.h"
 #include "qgsmaplayeractioncontextgenerator.h"
+#include "qgspanelwidget.h"
 #include "qgstrackedvectorlayertools.h"
 
 #include <QDialog>
@@ -30,6 +31,107 @@
 
 class QgsHighlight;
 class QgsActionMenu;
+class QgsPanelWidgetStack;
+
+/**
+ * \ingroup gui
+ * \class QgsAttributePanelWidget
+ * \brief A panel widget for showing the attribute entry for a vector layer.
+ *
+ * \since QGIS 4.4
+ */
+class GUI_EXPORT QgsAttributePanelWidget : public QgsPanelWidget, public QgsMapLayerActionContextGenerator
+{
+    Q_OBJECT
+
+  public:
+    QgsAttributePanelWidget(
+      QgsVectorLayer *vl,
+      QgsFeature *thepFeature,
+      bool featureOwner,
+      QWidget *parent SIP_TRANSFERTHIS = nullptr,
+      bool showDialogButtons = true,
+      const QgsAttributeEditorContext &context = QgsAttributeEditorContext()
+    );
+
+    ~QgsAttributePanelWidget() override;
+
+    void accept();
+    void reject();
+
+    /**
+     * \brief setHighlight
+     * \param h The highlight. Ownership is taken.
+     */
+    void setHighlight( QgsHighlight *h );
+
+    /**
+     * Returns the attribute form.
+     */
+    QgsAttributeForm *attributeForm() const;
+
+    /**
+     * Returns the message bar.
+     */
+    QgsMessageBar *messageBar();
+
+    /**
+     * Returns the current feature of the attribute form.
+     */
+    const QgsFeature *feature() const;
+
+    /**
+     * Is this dialog editable?
+     *
+     * \returns returns TRUE, if this dialog was created in an editable manner.
+     */
+    bool editable() const;
+
+    /**
+     * Toggles the form mode.
+     * \param mode form mode. For example, if set to QgsAttributeEditorContext::AddFeatureMode, the dialog will be editable even with an invalid feature and
+     * will add a new feature when the form is accepted.
+     */
+    void setMode( QgsAttributeEditorContext::Mode mode );
+
+    /**
+     * Sets the edit command message (Undo) that will be used when the dialog is accepted
+     *
+     * \param message The message
+     */
+    void setEditCommandMessage( const QString &message );
+
+    /**
+     * Sets \a extraScope as an additional expression context scope to be used
+     * for calculations in this form.
+     *
+     * \since QGIS 3.16
+     */
+    void setExtraContextScope( QgsExpressionContextScope *extraScope SIP_TRANSFER );
+
+    QgsMapLayerActionContext createActionContext() override;
+
+    bool event( QEvent *e ) override;
+
+  signals:
+
+    void accepted();
+    void rejected();
+
+  private:
+    void init( QgsVectorLayer *layer, QgsFeature *feature, const QgsAttributeEditorContext &context, bool showDialogButtons );
+
+    std::unique_ptr<QgsFeature> mOwnedFeature;
+    QgsMessageBar *mMessageBar = nullptr;
+    QgsTrackedVectorLayerTools mTrackedVectorLayerTools;
+    QgsAttributeForm *mAttributeForm = nullptr;
+
+    QgsActionMenu *mMenu;
+    QMenuBar *mMenuBar = nullptr;
+
+    QgsHighlight *mHighlight = nullptr;
+};
+
 
 /**
  * \ingroup gui
@@ -72,19 +174,19 @@ class GUI_EXPORT QgsAttributeDialog : public QDialog, public QgsMapLayerActionCo
     /**
      * Returns the attribute form.
      */
-    QgsAttributeForm *attributeForm() const { return mAttributeForm; }
+    QgsAttributeForm *attributeForm() const;
 
     /**
      * Returns the current feature of the attribute form.
      */
-    const QgsFeature *feature() const { return &mAttributeForm->feature(); }
+    const QgsFeature *feature() const;
 
     /**
      * Is this dialog editable?
      *
      * \returns returns TRUE, if this dialog was created in an editable manner.
      */
-    bool editable() const { return mAttributeForm->editable(); }
+    bool editable() const;
 
     /**
      * Toggles the form mode.
@@ -98,16 +200,7 @@ class GUI_EXPORT QgsAttributeDialog : public QDialog, public QgsMapLayerActionCo
      *
      * \param message The message
      */
-    void setEditCommandMessage( const QString &message ) { mAttributeForm->setEditCommandMessage( message ); }
-
-    /**
-     * Intercept window activate/deactivate events to show/hide the highlighted feature.
-     *
-     * \param e The event
-     *
-     * \returns The same as the parent QDialog
-     */
-    bool event( QEvent *e ) override;
+    void setEditCommandMessage( const QString &message );
 
     void showEvent( QShowEvent *event ) override;
 
@@ -122,31 +215,19 @@ class GUI_EXPORT QgsAttributeDialog : public QDialog, public QgsMapLayerActionCo
     QgsMapLayerActionContext createActionContext() override;
 
   public slots:
-    void accept() override;
     void reject() override;
 
     //! Show the dialog non-blocking. Reparents this dialog to be a child of the dialog form
     void show();
 
   private:
-    void init( QgsVectorLayer *layer, QgsFeature *feature, const QgsAttributeEditorContext &context, bool showDialogButtons );
+    void onPanelRejected();
 
-    QString mSettingsPath;
-    // Used to sync multiple widgets for the same field
-    QgsHighlight *mHighlight = nullptr;
-    QString mReturnvarname;
-    QgsAttributeForm *mAttributeForm = nullptr;
-    std::unique_ptr<QgsFeature> mOwnedFeature;
-    QgsMessageBar *mMessageBar = nullptr;
-
-    QgsTrackedVectorLayerTools mTrackedVectorLayerTools;
-
-    QgsActionMenu *mMenu;
-    QMenuBar *mMenuBar = nullptr;
-
-    static int sFormCounter;
+    QgsAttributePanelWidget *mPanelWidget = nullptr;
+    QgsPanelWidgetStack *mWidgetStack = nullptr;
 
     bool mFirstShow = true;
+    bool mPanelWasRejected = false;
     void saveGeometry();
     void restoreGeometry();
 };
