@@ -62,7 +62,7 @@ QgsAttributeDialog *QgsFeatureAction::newDialog( bool cloneFeature )
   context.setDistanceArea( myDa );
   context.setFormMode( QgsAttributeEditorContext::StandaloneDialog );
 
-  QgsAttributeDialog *dialog = new QgsAttributeDialog( mLayer, f, cloneFeature, parentWidget(), true, context );
+  QgsAttributeDialog *dialog = new QgsAttributeDialog( mLayer, f, cloneFeature, QgisApp::instance(), true, context );
 
   // Skip this code on windows, because the Qt::Tool flag prevents the maximize button to be shown
 #ifndef Q_OS_WIN
@@ -255,10 +255,10 @@ QgsFeatureAction::AddFeatureResult QgsFeatureAction::addFeature(
       connect( dialog, &QgsAttributeDialog::finished, this, &QgsFeatureAction::addFeatureFinished );
       dialog->show();
 
-      if ( context.hideParent() )
+      if ( context.hideParent() && context.parentWidget() )
       {
         connect( this, &QgsFeatureAction::addFeatureFinished, this, &QgsFeatureAction::unhideParentWidget );
-        hideParentWidget();
+        hideParentDialog( context.parentWidget() );
       }
 
       mFeature = nullptr;
@@ -293,25 +293,28 @@ void QgsFeatureAction::onFeatureSaved( const QgsFeature &feature )
   mFeatureSaved = true;
 }
 
-void QgsFeatureAction::hideParentWidget()
+void QgsFeatureAction::hideParentDialog( QWidget *targetWidget )
 {
-  QWidget *dialog = parentWidget();
-  if ( dialog )
+  if ( !targetWidget )
+    return;
+
+  QWidget *window = targetWidget->window();
+  if ( window && window->objectName() != "QgisApp"_L1 )
   {
-    QWidget *triggerWidget = dialog->parentWidget();
-    if ( triggerWidget && triggerWidget->window()->objectName() != "QgisApp"_L1 )
-      triggerWidget->window()->setVisible( false );
+    QgsDebugError( "hiding!" );
+    mHiddenWindow = window;
   }
 }
 
 void QgsFeatureAction::unhideParentWidget()
 {
-  QWidget *dialog = parentWidget();
-  if ( dialog )
+  if ( mHiddenWindow )
   {
-    QWidget *triggerWidget = dialog->parentWidget();
-    if ( triggerWidget )
-      triggerWidget->window()->setVisible( true );
+    QgsDebugError( "unhiding!" );
+    mHiddenWindow->setVisible( true );
+    mHiddenWindow->activateWindow();
+    mHiddenWindow->raise();
+    mHiddenWindow = nullptr;
   }
 }
 
