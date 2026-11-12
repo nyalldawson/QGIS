@@ -24,7 +24,7 @@
 #include <QFutureWatcher>
 #include <QPainter>
 #include <QTimer>
-#include <QtConcurrent>
+#include <QtConcurrentRun>
 
 #include "moc_qgspicturerasterizer.cpp"
 
