@@ -31,7 +31,7 @@
 //
 // QgsPictureRasterizerJob
 //
-
+///@cond PRIVATE
 QgsPictureRasterizerJob::QgsPictureRasterizerJob( const QPicture &picture, const QSize &targetSize )
   : mTargetSize( targetSize )
   , mFeedback( std::make_unique< QgsFeedback >() )
@@ -88,7 +88,7 @@ bool QgsPictureRasterizerJob::isCanceled() const
 {
   return mFeedback->isCanceled();
 }
-
+///@endcond
 
 //
 // QgsPictureRasterizer
