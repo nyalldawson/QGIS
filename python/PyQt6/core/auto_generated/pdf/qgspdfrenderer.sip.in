@@ -14,7 +14,6 @@
 
 
 
-
 class QgsPdfRenderer
 {
 %Docstring(signature="appended")
@@ -73,6 +72,9 @@ page in ``painter`` coordinates.
   private:
     QgsPdfRenderer( const QgsPdfRenderer &other );
 };
+
+
+
 
 /************************************************************************
  * This file has been generated automatically from                      *

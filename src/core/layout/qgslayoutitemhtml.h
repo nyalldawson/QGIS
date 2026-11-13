@@ -24,7 +24,7 @@
 #include "qgslayoutmultiframe.h"
 
 #include <QFutureWatcher>
-#include <QPicture>
+#include <QTemporaryDir>
 #include <QUrl>
 
 class QgsWebPage;
@@ -32,7 +32,7 @@ class QImage;
 class QgsLayoutItemLabel;
 class QgsVectorLayer;
 class QgsNetworkContentFetcher;
-class QgsPictureRasterizer;
+class QgsPdfRasterizer;
 
 ///@cond PRIVATE
 #ifndef SIP_RUN
@@ -41,7 +41,9 @@ class QgsLayoutItemHtmlRenderJob : public QObject
     Q_OBJECT
 
   public:
-    QgsLayoutItemHtmlRenderJob( const QString &html, const QUrl &baseUrl, const QString &userStylesheet, const QVariantMap &featureJson, double frameWidthLayoutUnits, double unitsPerCssPx );
+    QgsLayoutItemHtmlRenderJob(
+      const QString &html, const QString &pdfPath, const QUrl &baseUrl, const QString &userStylesheet, const QVariantMap &featureJson, double frameWidthLayoutUnits, double unitsPerCssPx
+    );
 
     void start();
 
@@ -54,7 +56,7 @@ class QgsLayoutItemHtmlRenderJob : public QObject
     QString errorMessage() const { return mErrorMessage; }
     double frameWidthLayoutUnits() const { return mFrameWidthLayoutUnits; }
     QSizeF size() const { return mSize; }
-    QPicture picture() const { return mPicture; }
+    QString pdfPath() const { return mPdfPath; }
     QImage renderedPage() const { return mRenderedPage; }
 
   signals:
@@ -65,6 +67,7 @@ class QgsLayoutItemHtmlRenderJob : public QObject
 
     QString mHtml;
     QUrl mBaseUrl;
+    QString mPdfPath;
     QString mUserStylesheet;
     QVariantMap mFeatureJson;
     double mFrameWidthLayoutUnits = 0.0;
@@ -76,7 +79,6 @@ class QgsLayoutItemHtmlRenderJob : public QObject
     bool mSuccess = false;
     QString mErrorMessage;
     QSizeF mSize;
-    QPicture mPicture;
     QImage mRenderedPage;
 };
 #endif
@@ -316,7 +318,8 @@ class CORE_EXPORT QgsLayoutItemHtml : public QgsLayoutMultiFrame
     QString mActualFetchedUrl; //may be different if page was redirected
     QSizeF mSize;              //total size in layout units
 
-    QPicture mRenderedPicture;
+    QTemporaryDir mTempDir;
+    QString mRenderedPdfPath;
     QImage mRenderedPage;
 
     bool mEvaluateExpressions = true;
@@ -344,9 +347,11 @@ class CORE_EXPORT QgsLayoutItemHtml : public QgsLayoutMultiFrame
     bool mCacheInvalidated = true;
     QTimer *mBackgroundUpdateTimer = nullptr;
     std::unique_ptr< QgsLayoutItemHtmlRenderJob > mRenderJob;
-    QgsPictureRasterizer *mPictureRasterizer = nullptr;
+    QgsPdfRasterizer *mPdfRasterizer = nullptr;
 
     double layoutUnitsPerCssPixel() const; //calculate scale factor
+    QString createTempPdfPath() const;
+    void setRenderedPdfPath( const QString &path );
 
     void startFetchHtml( const QUrl &url );
     void cancelPendingFetch();

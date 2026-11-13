@@ -31,7 +31,7 @@
 #include "qgsmapsettings.h"
 #include "qgsnetworkcontentfetcher.h"
 #include "qgspainting.h"
-#include "qgspicturerasterizer.h"
+#include "qgspdfrenderer.h"
 #include "qgsproject.h"
 #include "qgsvectorlayer.h"
 
@@ -54,6 +54,8 @@
 #include <QUrl>
 #include <QtConcurrentRun>
 #include <QTimer>
+#include <QFile>
+
 
 #include "moc_qgslayoutitemhtml.cpp"
 
@@ -63,15 +65,15 @@ using namespace Qt::StringLiterals;
 
 QgsLayoutItemHtml::QgsLayoutItemHtml( QgsLayout *layout )
   : QgsLayoutMultiFrame( layout )
-  , mPictureRasterizer( new QgsPictureRasterizer( this ) )
+  , mPdfRasterizer( new QgsPdfRasterizer( this ) )
 {
-  mPictureRasterizer->setMaxCacheSize( 10000 );
+  mPdfRasterizer->setMaxCacheSize( 10000 );
 
   mBackgroundUpdateTimer = new QTimer( this );
   mBackgroundUpdateTimer->setSingleShot( true );
   connect( mBackgroundUpdateTimer, &QTimer::timeout, this, &QgsLayoutItemHtml::recreateCachedImageInBackground );
 
-  connect( mPictureRasterizer, &QgsPictureRasterizer::rendered, this, [this] {
+  connect( mPdfRasterizer, &QgsPdfRasterizer::rendered, this, [this] {
     updateFrames();
     emit previewRefreshed();
   } );
@@ -92,6 +94,8 @@ QgsLayoutItemHtml::~QgsLayoutItemHtml()
   mBackgroundUpdateTimer->stop();
   cancelPendingFetch();
   cancelRunningRenderJob( true );
+  delete mPdfRasterizer;
+  mPdfRasterizer = nullptr;
   emit backgroundTaskCountChanged( 0 );
 }
 
@@ -325,9 +329,9 @@ void QgsLayoutItemHtml::recreateCachedImageInBackground()
     mCacheInvalidated = false;
     mLastRenderedWidth = frameWidthLayoutUnits;
     mSize = QSizeF( 0, 0 );
-    mRenderedPicture = QPicture();
+    setRenderedPdfPath( QString() );
     mRenderedPage = QImage();
-    mPictureRasterizer->clear();
+    mPdfRasterizer->clear();
     recalculateFrameSizes();
     emit contentsChanged();
     updateFrames();
@@ -336,10 +340,17 @@ void QgsLayoutItemHtml::recreateCachedImageInBackground()
     return;
   }
 
+  const QString pdfPath = createTempPdfPath();
+  if ( pdfPath.isEmpty() )
+  {
+    QgsDebugError( u"Failed to create temporary PDF for HTML rendering"_s );
+    return;
+  }
+
   emit backgroundTaskCountChanged( 1 );
   mCacheInvalidated = false;
   mRenderJob = std::make_unique<
-    QgsLayoutItemHtmlRenderJob >( mEvaluatedHtml, mResolvedBaseUrl, mEnableUserStylesheet ? mUserStylesheet : QString(), mAtlasFeatureJSON, frameWidthLayoutUnits, layoutUnitsPerCssPixel() );
+    QgsLayoutItemHtmlRenderJob >( mEvaluatedHtml, pdfPath, mResolvedBaseUrl, mEnableUserStylesheet ? mUserStylesheet : QString(), mAtlasFeatureJSON, frameWidthLayoutUnits, layoutUnitsPerCssPixel() );
   connect( mRenderJob.get(), &QgsLayoutItemHtmlRenderJob::finished, this, &QgsLayoutItemHtml::htmlRenderFinished );
   mRenderJob->start();
 }
@@ -349,18 +360,22 @@ void QgsLayoutItemHtml::htmlRenderFinished()
   if ( !mRenderJob )
     return;
 
-  if ( !mRenderJob->success() && !mRenderJob->errorMessage().isEmpty() )
+  if ( !mRenderJob->success() )
   {
     QgsDebugError( mRenderJob->errorMessage() );
+    QFile::remove( mRenderJob->pdfPath() );
+    mRenderJob.reset();
+    emit backgroundTaskCountChanged( 0 );
+    return;
   }
 
   mLastRenderedWidth = mRenderJob->frameWidthLayoutUnits();
   mSize = mRenderJob->size();
-  mRenderedPicture = QgsPainting::deepCopyQPicture( mRenderJob->picture() );
+  setRenderedPdfPath( mRenderJob->pdfPath() );
   mRenderedPage = mRenderJob->renderedPage();
   mRenderJob.reset();
 
-  mPictureRasterizer->setPicture( mRenderedPicture );
+  mPdfRasterizer->setSource( mRenderedPdfPath );
 
   emit backgroundTaskCountChanged( 0 );
 
@@ -385,9 +400,9 @@ void QgsLayoutItemHtml::renderHtmlSynchronously()
   if ( frameWidthLayoutUnits <= 0 || mEvaluatedHtml.isEmpty() )
   {
     mSize = QSizeF( 0, 0 );
-    mRenderedPicture = QPicture();
+    setRenderedPdfPath( QString() );
     mRenderedPage = QImage();
-    mPictureRasterizer->clear();
+    mPdfRasterizer->clear();
     recalculateFrameSizes();
     emit contentsChanged();
     return;
@@ -397,13 +412,12 @@ void QgsLayoutItemHtml::renderHtmlSynchronously()
   const double widthCssPx = frameWidthLayoutUnits / unitsPerCssPx;
 
   QString errorMessage;
-  mRenderedPicture = QPicture();
-  QPainter painter( &mRenderedPicture );
-  painter.setRenderHint( QPainter::Antialiasing, true );
-  painter.setRenderHint( QPainter::TextAntialiasing, true );
-  painter.setRenderHint( QPainter::SmoothPixmapTransform, true );
-
-  QSizeF renderedSizeCssPx;
+  const QString pdfPath = createTempPdfPath();
+  if ( pdfPath.isEmpty() )
+  {
+    QgsDebugError( u"Failed to create temporary PDF for HTML rendering"_s );
+    return;
+  }
 
   QgsHtmlRenderSettings htmlRenderSettings;
   htmlRenderSettings.setBaseUrl( mResolvedBaseUrl );
@@ -413,32 +427,35 @@ void QgsLayoutItemHtml::renderHtmlSynchronously()
   }
   htmlRenderSettings.setFeatureJson( mAtlasFeatureJSON );
 
-  if ( !QgsWebEnginePage::renderBlocking( mEvaluatedHtml, &painter, QRectF( 0, 0, widthCssPx, 9999 ), errorMessage, renderedSizeCssPx, htmlRenderSettings, nullptr ) )
+  if ( !QgsWebEnginePage::printToPdfBlocking( mEvaluatedHtml, pdfPath, errorMessage, widthCssPx, htmlRenderSettings, nullptr ) )
   {
     QgsDebugError( errorMessage );
+    QFile::remove( pdfPath );
+    return;
   }
-  painter.end();
 
-  const double heightCssPx = renderedSizeCssPx.height();
-  mRenderedPicture.setBoundingRect( QRect( 0, 0, static_cast< int >( std::ceil( widthCssPx ) ), static_cast< int >( std::ceil( heightCssPx ) ) ) );
-
-  mSize = QSizeF( frameWidthLayoutUnits, heightCssPx * unitsPerCssPx );
-
-  const QSize pageSizeCssPx( static_cast< int >( std::ceil( widthCssPx ) ), static_cast< int >( std::ceil( heightCssPx ) ) );
-  if ( mUseSmartBreaks && !pageSizeCssPx.isEmpty() )
+  QgsPdfRenderer renderer( pdfPath );
+  if ( renderer.pageCount() < 1 )
   {
-    mRenderedPage = QImage( pageSizeCssPx, QImage::Format_ARGB32 );
-    mRenderedPage.fill( Qt::transparent );
-    QPainter imagePainter( &mRenderedPage );
-    QgsPainting::drawPicture( &imagePainter, QPointF( 0, 0 ), mRenderedPicture );
-    imagePainter.end();
-  }
-  else
-  {
-    mRenderedPage = QImage();
+    QgsDebugError( u"Temporary PDF has no pages" );
+    QFile::remove( pdfPath );
+    return;
   }
 
-  mPictureRasterizer->setPicture( mRenderedPicture );
+  const QRectF mediaBox = renderer.pageMediaBox( 0 );
+  if ( mediaBox.isEmpty() )
+  {
+    QFile::remove( pdfPath );
+    return;
+  }
+
+  const double aspectRatio = mediaBox.height() / mediaBox.width();
+  mSize = QSizeF( frameWidthLayoutUnits, frameWidthLayoutUnits * aspectRatio );
+  setRenderedPdfPath( pdfPath );
+
+  // TODO
+  //mRenderedPage = mUseSmartBreaks ? rasterizeSmartBreakPage( renderer, mediaBox ) : QImage();
+  mPdfRasterizer->setSource( mRenderedPdfPath );
 
   recalculateFrameSizes();
   emit contentsChanged();
@@ -505,9 +522,9 @@ void QgsLayoutItemHtml::render( QgsLayoutItemRenderContext &context, const QRect
       mBackgroundUpdateTimer->start( 1 );
     }
 
-    // main thread preview render ONLY draws the rasterized QImage from QgsPictureRasterizer
+    // main thread preview render ONLY draws the rasterized QImage from QgsPdfRasterizer
     const QSize targetPixelSize = ( mSize * currentScaleFactor ).toSize();
-    const QImage previewImage = mPictureRasterizer->image( targetPixelSize );
+    const QImage previewImage = mPdfRasterizer->image( targetPixelSize );
 
     if ( !previewImage.isNull() && !mSize.isEmpty() )
     {
@@ -518,7 +535,7 @@ void QgsLayoutItemHtml::render( QgsLayoutItemRenderContext &context, const QRect
       painter->setRenderHint( QPainter::SmoothPixmapTransform, true );
       painter->drawImage( QRectF( QPointF( 0, 0 ), mSize ), previewImage );
     }
-    else if ( mFetching || mRenderJob || mBackgroundUpdateTimer->isActive() || mPictureRasterizer->isRendering() )
+    else if ( mFetching || mRenderJob || mBackgroundUpdateTimer->isActive() || mPdfRasterizer->isRendering() )
     {
       if ( QgsLayoutFrame *currentFrame = frame( frameIndex ) )
       {
@@ -552,19 +569,25 @@ void QgsLayoutItemHtml::render( QgsLayoutItemRenderContext &context, const QRect
     renderHtmlSynchronously();
   }
 
-  const QgsScopedQPainterState painterState( painter );
-  painter->setRenderHint( QPainter::Antialiasing );
-  painter->setRenderHint( QPainter::SmoothPixmapTransform );
+  if ( !mRenderedPdfPath.isEmpty() && !mSize.isEmpty() )
+  {
+    const QgsScopedQPainterState painterState( painter );
+    painter->setRenderHint( QPainter::Antialiasing );
+    painter->setRenderHint( QPainter::SmoothPixmapTransform );
 
-  // painter is scaled to dots; scale back to layout units
-  painter->scale( context.renderContext().scaleFactor(), context.renderContext().scaleFactor() );
-  painter->translate( -renderExtent.left(), -renderExtent.top() );
-  painter->setClipRect( renderExtent, Qt::IntersectClip );
-  // scale from CSS pixels (mRenderedPicture's coordinate space) to layout units
-  const double unitsPerCssPx = layoutUnitsPerCssPixel();
-  painter->scale( unitsPerCssPx, unitsPerCssPx );
+    // painter is scaled to dots; scale back to layout units
+    painter->scale( context.renderContext().scaleFactor(), context.renderContext().scaleFactor() );
+    painter->translate( -renderExtent.left(), -renderExtent.top() );
+    painter->setClipRect( renderExtent, Qt::IntersectClip );
 
-  QgsPainting::drawPicture( painter, QPointF( 0, 0 ), mRenderedPicture );
+    // TPDP mpamsdpmapsd
+    // scale from CSS pixels (mRenderedPicture's coordinate space) to layout units
+    //  const double unitsPerCssPx = layoutUnitsPerCssPixel();
+    //painter->scale( unitsPerCssPx, unitsPerCssPx );
+
+    QgsPdfRenderer renderer( mRenderedPdfPath );
+    renderer.render( painter, QRectF( QPointF( 0, 0 ), mSize ), 0 );
+  }
 #else
   Q_UNUSED( renderExtent )
   if ( mLayout->renderContext().isPreviewRender() )
@@ -608,21 +631,47 @@ double QgsLayoutItemHtml::layoutUnitsPerCssPixel() const
   return mLayout->convertToLayoutUnits( QgsLayoutMeasurement( 1.0, Qgis::LayoutUnit::Inches ) ) / 96.0;
 }
 
+QString QgsLayoutItemHtml::createTempPdfPath() const
+{
+  if ( !mTempDir.isValid() )
+    return QString();
+
+  return mTempDir.filePath( u"%1.pdf"_s.arg( QUuid::createUuid().toString( QUuid::Id128 ) ) );
+}
+
+void QgsLayoutItemHtml::setRenderedPdfPath( const QString &path )
+{
+  if ( !mRenderedPdfPath.isEmpty() && mRenderedPdfPath != path )
+  {
+    QFile::remove( mRenderedPdfPath );
+  }
+  mRenderedPdfPath = path;
+}
+
 void QgsLayoutItemHtml::cancelRunningRenderJob( bool block )
 {
   if ( !mRenderJob )
     return;
 
   disconnect( mRenderJob.get(), &QgsLayoutItemHtmlRenderJob::finished, this, &QgsLayoutItemHtml::htmlRenderFinished );
+  const QString jobPdfPath = mRenderJob->pdfPath();
   if ( block )
   {
     mRenderJob->cancelAndWait();
     mRenderJob.reset();
+    if ( !jobPdfPath.isEmpty() )
+    {
+      QFile::remove( jobPdfPath );
+    }
   }
   else
   {
     QgsLayoutItemHtmlRenderJob *oldJob = mRenderJob.release();
-    connect( oldJob, &QgsLayoutItemHtmlRenderJob::finished, oldJob, &QObject::deleteLater );
+    connect( oldJob, &QgsLayoutItemHtmlRenderJob::finished, oldJob, [oldJob, jobPdfPath] {
+      if ( !jobPdfPath.isEmpty() )
+        QFile::remove( jobPdfPath );
+      oldJob->deleteLater();
+    } );
     oldJob->cancelWithoutBlocking();
   }
 }
@@ -638,7 +687,7 @@ void QgsLayoutItemHtml::updateFrames()
 
 void QgsLayoutItemHtml::invalidateCache()
 {
-  mPictureRasterizer->invalidate();
+  mPdfRasterizer->invalidate();
   updateFrames();
 }
 
@@ -742,17 +791,13 @@ void QgsLayoutItemHtml::setUseSmartBreaks( bool useSmartBreaks )
     return;
 
   mUseSmartBreaks = useSmartBreaks;
-  if ( mUseSmartBreaks && mRenderedPage.isNull() && !mRenderedPicture.isNull() && !mSize.isEmpty() )
+  if ( mUseSmartBreaks && mRenderedPage.isNull() && !mRenderedPdfPath.isEmpty() )
   {
-    const double unitsPerCssPx = layoutUnitsPerCssPixel();
-    const QSize pageSizeCssPx( static_cast< int >( std::ceil( mSize.width() / unitsPerCssPx ) ), static_cast< int >( std::ceil( mSize.height() / unitsPerCssPx ) ) );
-    if ( !pageSizeCssPx.isEmpty() )
+    QgsPdfRenderer renderer( mRenderedPdfPath );
+    if ( renderer.pageCount() > 0 )
     {
-      mRenderedPage = QImage( pageSizeCssPx, QImage::Format_ARGB32 );
-      mRenderedPage.fill( Qt::transparent );
-      QPainter imagePainter( &mRenderedPage );
-      QgsPainting::drawPicture( &imagePainter, QPointF( 0, 0 ), mRenderedPicture );
-      imagePainter.end();
+      // TODOKSFSD
+      //mRenderedPage = rasterizeSmartBreakPage( renderer, renderer.pageMediaBox( 0 ) );
     }
   }
 
@@ -833,7 +878,7 @@ bool QgsLayoutItemHtml::readPropertiesFromElement( const QDomElement &itemElem, 
 
 bool QgsLayoutItemHtml::renderInProgress() const
 {
-  return mFetching || mRenderJob || mBackgroundUpdateTimer->isActive() || ( mPictureRasterizer && mPictureRasterizer->isRendering() );
+  return mFetching || mRenderJob || mBackgroundUpdateTimer->isActive() || ( mPdfRasterizer && mPdfRasterizer->isRendering() );
 }
 
 void QgsLayoutItemHtml::setExpressionContext( const QgsFeature &feature, QgsVectorLayer *layer )
@@ -903,10 +948,11 @@ void QgsLayoutItemHtml::refreshDataDefinedProperty( const QgsLayoutObject::DataD
 //
 ///@cond PRIVATE
 QgsLayoutItemHtmlRenderJob::QgsLayoutItemHtmlRenderJob(
-  const QString &html, const QUrl &baseUrl, const QString &userStylesheet, const QVariantMap &featureJson, double frameWidthLayoutUnits, double unitsPerCssPx
+  const QString &html, const QString &pdfPath, const QUrl &baseUrl, const QString &userStylesheet, const QVariantMap &featureJson, double frameWidthLayoutUnits, double unitsPerCssPx
 )
   : mHtml( html )
   , mBaseUrl( baseUrl )
+  , mPdfPath( pdfPath )
   , mUserStylesheet( userStylesheet )
   , mFeatureJson( featureJson )
   , mFrameWidthLayoutUnits( frameWidthLayoutUnits )
@@ -941,34 +987,42 @@ void QgsLayoutItemHtmlRenderJob::run()
 #if defined( HAVE_WEBENGINE ) && defined( HAVE_PDF4QT )
   const double widthCssPx = mFrameWidthLayoutUnits / mUnitsPerCssPx;
 
-  QPainter painter( &mPicture );
-  QSizeF renderedSizeCssPx;
-
   QgsHtmlRenderSettings htmlRenderSettings;
   htmlRenderSettings.setBaseUrl( mBaseUrl );
   htmlRenderSettings.setUserStylesheet( mUserStylesheet );
   htmlRenderSettings.setFeatureJson( mFeatureJson );
 
-  mSuccess = QgsWebEnginePage::renderBlocking( mHtml, &painter, QRectF( 0, 0, widthCssPx, 9999 ), mErrorMessage, renderedSizeCssPx, htmlRenderSettings, &mFeedback );
-  painter.end();
+  mSuccess = QgsWebEnginePage::printToPdfBlocking( mHtml, mPdfPath, mErrorMessage, widthCssPx, htmlRenderSettings, &mFeedback );
+  if ( !mSuccess || mFeedback.isCanceled() )
+  {
+    mSuccess = false;
+    return;
+  }
 
   if ( mFeedback.isCanceled() )
     return;
 
-  const double heightCssPx = renderedSizeCssPx.height();
-  mPicture.setBoundingRect( QRect( 0, 0, static_cast< int >( std::ceil( widthCssPx ) ), static_cast< int >( std::ceil( heightCssPx ) ) ) );
-
-  mSize = QSizeF( mFrameWidthLayoutUnits, heightCssPx * mUnitsPerCssPx );
-
-  const QSize pageSizeCssPx( static_cast< int >( std::ceil( widthCssPx ) ), static_cast< int >( std::ceil( heightCssPx ) ) );
-  if ( !pageSizeCssPx.isEmpty() )
+  QgsPdfRenderer renderer( mPdfPath );
+  if ( renderer.pageCount() < 1 )
   {
-    mRenderedPage = QImage( pageSizeCssPx, QImage::Format_ARGB32 );
-    mRenderedPage.fill( Qt::transparent );
-    QPainter imagePainter( &mRenderedPage );
-    QgsPainting::drawPicture( &imagePainter, QPointF( 0, 0 ), mPicture );
-    imagePainter.end();
+    mSuccess = false;
+    mErrorMessage = u"Temporary PDF contains no pages"_s;
+    return;
   }
+
+  const QRectF mediaBox = renderer.pageMediaBox( 0 );
+  if ( mediaBox.isEmpty() || mediaBox.width() <= 0 )
+  {
+    mSuccess = false;
+    mErrorMessage = u"Temporary PDF has broken page size"_s;
+    return;
+  }
+
+  const double aspectRatio = mediaBox.height() / mediaBox.width();
+  mSize = QSizeF( mFrameWidthLayoutUnits, mFrameWidthLayoutUnits * aspectRatio );
+
+  // astrtjojsdfo
+  //mRenderedPage = rasterizeSmartBreakPage( renderer, mediaBox, &mFeedback );
 #else
   mSuccess = false;
   mErrorMessage = tr( "Rendering HTML requires a QGIS build with WebEngine and PDF4QT support" );

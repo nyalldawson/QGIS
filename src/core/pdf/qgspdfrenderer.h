@@ -26,10 +26,9 @@
 #include "qgis_core.h"
 #include "qgis_sip.h"
 
+#include <QFutureWatcher>
+#include <QImage>
 #include <QString>
-
-#ifdef HAVE_PDF4QT
-#endif
 
 class QPainter;
 class QRectF;
@@ -100,5 +99,144 @@ class CORE_EXPORT QgsPdfRenderer
     std::unique_ptr< PdfDocumentContainer> mDocumentContainer;
 #endif
 };
+
+
+class QgsFeedback;
+
+#ifndef SIP_RUN
+///@cond PRIVATE
+class QgsPdfRasterizerJob : public QObject
+{
+    Q_OBJECT
+
+  public:
+    QgsPdfRasterizerJob( const QString &filename, const QSize &targetSize );
+
+    void cancelWithoutBlocking();
+    void cancelAndWait();
+    bool isCanceled() const;
+    QSize targetSize() const { return mTargetSize; }
+    QImage result() const { return mWatcher.result(); }
+
+  signals:
+    void finished();
+
+  private:
+    QSize mTargetSize;
+    std::unique_ptr< QgsFeedback > mFeedback;
+    QFutureWatcher< QImage > mWatcher;
+};
+///@endcond PRIVATE
+
+
+/**
+ * \class QgsPdfRasterizer
+ * \ingroup core
+ * \brief Rasterizes and caches a PDF as a QImage at a requested size.
+ *
+ * Allows for background asynchronous regeneration of the cached image at a different size.
+ *
+ * This class is useful for generating pre-rendered versions of PDFs for rendering
+ * on the main GUI thread, where those PDFs are too expensive to draw directly.
+ *
+ * \note Not available in Python bindings
+ *
+ * \since QGIS 4.4
+*/
+class CORE_EXPORT QgsPdfRasterizer : public QObject
+{
+    Q_OBJECT
+
+  public:
+    /**
+     * Constructor for QgsPdfRasterizer, with the specified \a parent object.
+     */
+    explicit QgsPdfRasterizer( QObject *parent SIP_TRANSFERTHIS = nullptr );
+    ~QgsPdfRasterizer() override;
+
+    /**
+     * Sets the source PDF file to cache.
+     *
+     * \see source()
+     */
+    void setSource( const QString &filename );
+
+    /**
+     * Returns the PDF source file.
+     *
+     * \see setSource()
+     */
+    QString source() const { return mSource; }
+
+    /**
+     * Clears the source PDF and cached image, canceling any in-progress background render.
+     */
+    void clear();
+
+    /**
+     * Immediately invalidates the current cached image.
+     */
+    void invalidate();
+
+    /**
+     * Immediately returns the best available QImage for the given \a targetSize.
+     *
+     * This method never blocks. If no cached image exists for the specified \a targetSize
+     * or the cache has been invalidated then the previously cached image is returned,
+     * and a background render at the desired \a targetSize will be started.
+     */
+    QImage image( const QSize &targetSize );
+
+    /**
+     * Returns TRUE if a background job is currently running or scheduled.
+     */
+    bool isRendering() const;
+
+    /**
+     * Sets the maximum width or height (in pixels) of the cached QImage.
+     *
+     * \see maxCacheSize()
+     */
+    void setMaxCacheSize( int maxSize );
+
+    /**
+     * Returns the maximum width or height (in pixels) of the cached QImage.
+     *
+     * \see setMaxCacheSize()
+     */
+    int maxCacheSize() const { return mMaxCacheSize; }
+
+  signals:
+
+    /**
+     * Emitted when a background rasterization finishes and a new cached image is available.
+     */
+    void rendered();
+
+  private slots:
+    void startRenderJob();
+    void onRenderJobFinished();
+
+  private:
+#ifdef SIP_RUN
+    QgsPdfRasterizer( const QgsPdfRasterizer & );
+#endif
+
+    void cancelRunningJob( bool block );
+
+    QString mSource;
+    QImage mCachedImage;
+    QSize mTargetSize;
+    bool mInvalidated = true;
+
+    int mMaxCacheSize = 5000;
+
+    QTimer *mUpdateTimer = nullptr;
+    std::unique_ptr< QgsPdfRasterizerJob > mJob;
+
+    QgsPdfRasterizer( const QgsPdfRasterizer & ) = delete;
+    QgsPdfRasterizer &operator=( const QgsPdfRasterizer & ) = delete;
+};
+#endif
 
 #endif // QGSPDFRENDERER_H
