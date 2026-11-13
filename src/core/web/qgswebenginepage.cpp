@@ -394,7 +394,7 @@ bool QgsWebEnginePage::renderBlocking(
     return false;
   }
 
-  QgsPdfRenderer renderer( renderedPdfPath, Qgis::PdfRenderFlag::RenderTextAsText );
+  QgsPdfRenderer renderer( renderedPdfPath );
   if ( renderer.pageCount() < 1 )
   {
     errorMessage = tr( "Generated PDF contains no pages" );
@@ -439,7 +439,7 @@ bool QgsWebEnginePage::renderBlocking( const QUrl &url, QPainter *painter, const
     return false;
   }
 
-  QgsPdfRenderer renderer( renderedPdfPath, Qgis::PdfRenderFlag::RenderTextAsText );
+  QgsPdfRenderer renderer( renderedPdfPath );
   if ( renderer.pageCount() < 1 )
   {
     errorMessage = tr( "Generated PDF contains no pages" );
